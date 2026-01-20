@@ -71,18 +71,315 @@ const parseDateDMY = (str) => {
   if (parts.length === 3) {
     const [day, month, year] = parts;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+};
+
+// ============================================
+// MAIN APP COMPONENT
+// ============================================
+// PARSE UTILITIES
+// ============================================
+
+const parseARSNumber = (str) => {
+  if (!str) return 0;
+  const cleaned = str.toString()
+    .replace(/\$/g, '')
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(/,/g, '.');
+  return parseFloat(cleaned) || 0;
+};
+
+const parseDateDMY = (str) => {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   return str;
 };
 
-const formatUSD = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+// ============================================
+// CUSTOM HOOKS
+// ============================================
+
+const useLocalStorage = (key, initialValue) => {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return [storedValue, setValue];
+};
+
+// ============================================
+// COMPONENTS
+// ============================================
+
+// Ticker Autocomplete Component
+const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(value || '');
+  const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const filteredTickers = useMemo(() => {
+    if (!search) return tickers.slice(0, 50);
+    const searchUpper = search.toUpperCase();
+    return tickers
+      .filter(t => t.ticker.toUpperCase().includes(searchUpper))
+      .slice(0, 50);
+  }, [search, tickers]);
+
+  useEffect(() => {
+    setSearch(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+          inputRef.current && !inputRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (ticker) => {
+    setSearch(ticker.ticker);
+    onChange(ticker.ticker);
+    setIsOpen(false);
+  };
+
+  const assetClassColors = {
+    'CEDEAR': 'text-emerald-400',
+    'ARGY': 'text-blue-400',
+    'BONOS HD': 'text-amber-400',
+    'BONOS PESOS': 'text-purple-400',
+    'OTROS': 'text-slate-400'
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value.toUpperCase());
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        disabled={disabled}
+        placeholder="Buscar ticker..."
+        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+      />
+      {isOpen && filteredTickers.length > 0 && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-slate-800 border border-slate-600 rounded-lg shadow-2xl"
+        >
+          {filteredTickers.map((ticker) => (
+            <button
+              key={ticker.ticker}
+              onClick={() => handleSelect(ticker)}
+              className="w-full px-3 py-2.5 text-left hover:bg-slate-700 transition-colors flex justify-between items-center border-b border-slate-700/50 last:border-0"
+            >
+              <span className="text-white font-mono font-medium">{ticker.ticker}</span>
+              <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-slate-400'}`}>
+                {ticker.assetClass}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Trade Form Modal
+const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
+  const [formData, setFormData] = useState({
+    fecha: '',
+    ticker: '',
+    cantidad: '',
+    precioCompra: ''
+  });
+
+  useEffect(() => {
+    if (trade) {
+      setFormData({
+        fecha: trade.fecha || '',
+        ticker: trade.ticker || '',
+        cantidad: trade.cantidad?.toString() || '',
+        precioCompra: trade.precioCompra?.toString() || ''
+      });
+    } else {
+      setFormData({
+        fecha: new Date().toISOString().split('T')[0],
+        ticker: '',
+        cantidad: '',
+        precioCompra: ''
+      });
+    }
+  }, [trade, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      id: trade?.id || crypto.randomUUID(),
+      fecha: formData.fecha,
+      ticker: formData.ticker.toUpperCase(),
+      cantidad: parseFloat(formData.cantidad) || 0,
+      precioCompra: parseFloat(formData.precioCompra) || 0
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white">
+            {trade ? 'Editar Trade' : 'Nuevo Trade'}
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Fecha</label>
+            <input
+              type="date"
+              value={formData.fecha}
+              onChange={(e) => setFormData({...formData, fecha: e.target.value})}
+              className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Ticker</label>
+            <TickerAutocomplete
+              value={formData.ticker}
+              onChange={(ticker) => setFormData({...formData, ticker})}
+              tickers={tickers}
+              disabled={false}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Cantidad</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.cantidad}
+                onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                placeholder="0"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Precio (ARS)</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.precioCompra}
+                onChange={(e) => setFormData({...formData, precioCompra: e.target.value})}
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+
+          {(isBonoPesos(formData.ticker) || isBonoHardDollar(formData.ticker)) && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-amber-400 text-xs">
+                {isBonoPesos(formData.ticker)
+                  ? '💡 Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
+                  : '💡 Bonos HD: ingresá el precio por cada lámina de 100 USD VN (ej: 1155)'}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors font-semibold"
+            >
+              {trade ? 'Guardar' : 'Agregar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Confirmation Modal
+const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700 shadow-2xl">
+        <div className="text-center">
+          <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-red-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Eliminar Trade</h3>
+          <p className="text-slate-400 mb-6">
+            ¿Eliminar este trade de <span className="text-white font-semibold font-mono">{tradeTicker}</span>?
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors font-semibold"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const formatPercent = (value) => {
