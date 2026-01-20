@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap } from 'lucide-react';
+import { data912 } from './utils/data912';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -550,7 +551,7 @@ export default function PortfolioTracker() {
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
   const [expandedPositions, setExpandedPositions] = useState({});
 
-  // Fetch prices from multiple data912 endpoints
+  // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
     setIsPricesLoading(true);
     const priceMap = {};
@@ -681,7 +682,6 @@ export default function PortfolioTracker() {
 
     } catch (error) {
       console.error('Error fetching prices:', error);
-      // No mostrar alerta molesta - puede ser que el mercado esté cerrado
       setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
     } finally {
       setIsPricesLoading(false);
@@ -693,6 +693,50 @@ export default function PortfolioTracker() {
     fetchPrices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
+
+  // Auto-refresh prices for positions using data912 helper (every 30s)
+  useEffect(() => {
+    if (positions.length === 0) return;
+
+    const refreshPositionPrices = async () => {
+      try {
+        const tickers = positions.map(p => p.ticker);
+
+        // Batch fetch prices and daily returns
+        const [batchPrices, batchReturns] = await Promise.all([
+          data912.getBatchPrices(tickers),
+          data912.getBatchDailyReturns(tickers)
+        ]);
+
+        // Update price map with data912 results
+        setPrices(prevPrices => {
+          const updated = { ...prevPrices };
+          Object.keys(batchPrices).forEach(ticker => {
+            if (updated[ticker]) {
+              const rawPrice = batchPrices[ticker];
+              const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+              updated[ticker] = {
+                ...updated[ticker],
+                precio: adjustedPrice,
+                precioRaw: rawPrice,
+                pctChange: batchReturns[ticker] || updated[ticker].pctChange
+              };
+            }
+          });
+          return updated;
+        });
+      } catch (error) {
+        console.error('Error refreshing position prices:', error);
+      }
+    };
+
+    // Initial refresh
+    refreshPositionPrices();
+
+    // Set up 30s interval
+    const interval = setInterval(refreshPositionPrices, 30000);
+    return () => clearInterval(interval);
+  }, [positions]);
 
   // Download CSV template
   const downloadTemplate = () => {
