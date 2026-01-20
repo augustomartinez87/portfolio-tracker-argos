@@ -1029,20 +1029,16 @@ const now = new Date();
                           <td className="text-right px-4 py-3 text-slate-300 font-mono hidden sm:table-cell">
                             {formatNumber(pos.cantidadTotal)}
                           </td>
-<td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
+                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
                             {isBonoPesos(pos.ticker) 
                               ? `$${pos.precioPromedio.toFixed(4)}` 
-                              : isBonoHardDollar(pos.ticker)
-                                ? `$${((pos.precioPromedio / 100) * mepRate).toFixed(2)}`
-                                : formatARS(pos.precioPromedio)
+                              : formatARS(pos.precioPromedio)
                             }
                           </td>
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
                             {isBonoPesos(pos.ticker) 
                               ? `$${pos.precioActual.toFixed(4)}` 
-                              : isBonoHardDollar(pos.ticker)
-                                ? `$${((pos.precioActual / 100) * mepRate).toFixed(2)}`
-                                : formatARS(pos.precioActual)
+                              : formatARS(pos.precioActual)
                             }
                           </td>
                           <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
