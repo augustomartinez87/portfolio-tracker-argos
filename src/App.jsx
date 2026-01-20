@@ -1,953 +1,1189 @@
-import React, { useState, useEffect } from 'react';
-import { PlusCircle, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3, Filter, Trash2, Edit2, RefreshCw, AlertCircle, Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap } from 'lucide-react';
 
-// Base de datos de tickers con información automática
-const TICKERS_DATA = {
-  // CEDEARs
-  'AAPL': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'GOOGL': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'MSFT': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'MELI': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'Argentina' },
-  'META': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'NFLX': { assetClass: 'CEDEAR', industry: 'Communication', country: 'United States' },
-  'SPY': { assetClass: 'CEDEAR', industry: 'ETF', country: 'United States' },
-  'IBIT': { assetClass: 'CEDEAR', industry: 'ETF', country: 'United States' },
-  'VIST': { assetClass: 'CEDEAR', industry: 'Materials', country: 'United States' },
-  'VALE': { assetClass: 'CEDEAR', industry: 'Materials', country: 'Brazil' },
-  'NU': { assetClass: 'CEDEAR', industry: 'Financials', country: 'Brazil' },
-  'TSLA': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'United States' },
-  'NVDA': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'AMD': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
-  'AMZN': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'United States' },
-  'DIS': { assetClass: 'CEDEAR', industry: 'Communication', country: 'United States' },
-  'KO': { assetClass: 'CEDEAR', industry: 'Consumer Staples', country: 'United States' },
-  'WMT': { assetClass: 'CEDEAR', industry: 'Consumer Staples', country: 'United States' },
-  'BA': { assetClass: 'CEDEAR', industry: 'Industrials', country: 'United States' },
-  'XOM': { assetClass: 'CEDEAR', industry: 'Energy', country: 'United States' },
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 
-  // Acciones Argentinas
-  'GGAL': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
-  'YPFD': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
-  'PAMP': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
-  'ALUA': { assetClass: 'Acción Argentina', industry: 'Industrials', country: 'Argentina' },
-  'TXAR': { assetClass: 'Acción Argentina', industry: 'Industrials', country: 'Argentina' },
-  'LOMA': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
-  'COME': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
-  'SUPV': { assetClass: 'Acción Argentina', industry: 'Consumer Staples', country: 'Argentina' },
-  'TGSU2': { assetClass: 'Acción Argentina', industry: 'Utilities', country: 'Argentina' },
-  'MIRG': { assetClass: 'Acción Argentina', industry: 'Real Estate', country: 'Argentina' },
-  'CRES': { assetClass: 'Acción Argentina', industry: 'Real Estate', country: 'Argentina' },
-  'BBAR': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
-
-  // Bonos Hard Dollar
-  'AE38': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'AL30': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'AL35': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'GD30': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'GD35': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'GD38': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'GD41': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-  'GD46': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
-
-  // Bonos en Pesos
-  'T15E7': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
-  'TTD26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
-  'S29E5': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
-  'TX26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
-  'TZX26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
+const formatARS = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 };
 
-const PortfolioTracker = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [trades, setTrades] = useState([]);
-  const [currentPrices, setCurrentPrices] = useState({});
-  const [filteredPositions, setFilteredPositions] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
-  const [lastPriceUpdate, setLastPriceUpdate] = useState(null);
+const formatUSD = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
 
-  // Filtros
-  const [filterAssetClass, setFilterAssetClass] = useState('all');
-  const [filterIndustry, setFilterIndustry] = useState('all');
+const formatPercent = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+};
 
-  // Cotizaciones
-  const [usdMep, setUsdMep] = useState(1468.19);
-  const [usdCcl, setUsdCcl] = useState(1511.56);
+const formatNumber = (value, decimals = 0) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value);
+};
 
-  // Form para nuevo trade
-  const [newTrade, setNewTrade] = useState({
-    date: new Date().toISOString().split('T')[0],
-    ticker: '',
-    quantity: '',
-    buyPrice: ''
+const parseARSNumber = (str) => {
+  if (!str) return 0;
+  const cleaned = str.toString()
+    .replace(/\$/g, '')
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(/,/g, '.');
+  return parseFloat(cleaned) || 0;
+};
+
+const parseDateDMY = (str) => {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return str;
+};
+
+// Asset class mapping based on data912 panel + custom logic
+const getAssetClass = (ticker, panel, isArgStock = false) => {
+  // Bonos en pesos (letras, boncer, etc)
+  if (ticker.startsWith('T') && (ticker.includes('X') || ticker.includes('E'))) {
+    return 'BONOS PESOS';
+  }
+
+  // Bonos hard dollar
+  if (panel === 'bonds' || ['AE38', 'AL29', 'AL30', 'AL35', 'AL41', 'GD29', 'GD30', 'GD35', 'GD38', 'GD41', 'GD46'].includes(ticker)) {
+    return 'BONOS HD';
+  }
+
+  // Acciones argentinas
+  if (isArgStock || ['GGAL', 'YPFD', 'VIST', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN', 'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA', 'METR'].includes(ticker)) {
+    return 'ARGY';
+  }
+
+  // CEDEARs (default for panel === 'cedear')
+  if (panel === 'cedear') {
+    return 'CEDEAR';
+  }
+
+  return 'OTROS';
+};
+
+// ============================================
+// CUSTOM HOOKS
+// ============================================
+
+const useLocalStorage = (key, initialValue) => {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
   });
 
-  // Formato peso argentino
-  const formatARS = (value) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+  const setValue = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  // Agrupar trades por ticker para el dashboard
-  const groupTradesByTicker = () => {
+  return [storedValue, setValue];
+};
+
+// ============================================
+// COMPONENTS
+// ============================================
+
+// Ticker Autocomplete Component
+const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(value || '');
+  const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const filteredTickers = useMemo(() => {
+    if (!search) return tickers.slice(0, 50);
+    const searchUpper = search.toUpperCase();
+    return tickers
+      .filter(t => t.ticker.toUpperCase().includes(searchUpper))
+      .slice(0, 50);
+  }, [search, tickers]);
+
+  useEffect(() => {
+    setSearch(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+          inputRef.current && !inputRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (ticker) => {
+    setSearch(ticker.ticker);
+    onChange(ticker.ticker);
+    setIsOpen(false);
+  };
+
+  const assetClassColors = {
+    'CEDEAR': 'text-emerald-400',
+    'ARGY': 'text-blue-400',
+    'BONOS HD': 'text-amber-400',
+    'BONOS PESOS': 'text-purple-400',
+    'OTROS': 'text-slate-400'
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value.toUpperCase());
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        disabled={disabled}
+        placeholder="Buscar ticker..."
+        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+      />
+      {isOpen && filteredTickers.length > 0 && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-slate-800 border border-slate-600 rounded-lg shadow-2xl"
+        >
+          {filteredTickers.map((ticker) => (
+            <button
+              key={ticker.ticker}
+              onClick={() => handleSelect(ticker)}
+              className="w-full px-3 py-2.5 text-left hover:bg-slate-700 transition-colors flex justify-between items-center border-b border-slate-700/50 last:border-0"
+            >
+              <span className="text-white font-mono font-medium">{ticker.ticker}</span>
+              <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-slate-400'}`}>
+                {ticker.assetClass}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Trade Form Modal
+const TradeModal = ({ isOpen, onClose, onSave, trade, tickers, isLoading }) => {
+  const [formData, setFormData] = useState({
+    fecha: '',
+    ticker: '',
+    cantidad: '',
+    precioCompra: ''
+  });
+
+  useEffect(() => {
+    if (trade) {
+      setFormData({
+        fecha: trade.fecha || '',
+        ticker: trade.ticker || '',
+        cantidad: trade.cantidad?.toString() || '',
+        precioCompra: trade.precioCompra?.toString() || ''
+      });
+    } else {
+      setFormData({
+        fecha: new Date().toISOString().split('T')[0],
+        ticker: '',
+        cantidad: '',
+        precioCompra: ''
+      });
+    }
+  }, [trade, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      id: trade?.id || crypto.randomUUID(),
+      fecha: formData.fecha,
+      ticker: formData.ticker.toUpperCase(),
+      cantidad: parseFloat(formData.cantidad) || 0,
+      precioCompra: parseFloat(formData.precioCompra) || 0
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white">
+            {trade ? 'Editar Trade' : 'Nuevo Trade'}
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Fecha</label>
+            <input
+              type="date"
+              value={formData.fecha}
+              onChange={(e) => setFormData({...formData, fecha: e.target.value})}
+              className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Ticker</label>
+            <TickerAutocomplete
+              value={formData.ticker}
+              onChange={(ticker) => setFormData({...formData, ticker})}
+              tickers={tickers}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Cantidad</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.cantidad}
+                onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                placeholder="0"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Precio (ARS)</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.precioCompra}
+                onChange={(e) => setFormData({...formData, precioCompra: e.target.value})}
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors font-semibold"
+            >
+              {trade ? 'Guardar' : 'Agregar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Confirmation Modal
+const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700 shadow-2xl">
+        <div className="text-center">
+          <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-red-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Eliminar Trade</h3>
+          <p className="text-slate-400 mb-6">
+            ¿Eliminar este trade de <span className="text-white font-semibold font-mono">{tradeTicker}</span>?
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors font-semibold"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Summary Card Component
+const SummaryCard = ({ title, value, subValue, icon: Icon, trend, isLoading, highlight }) => (
+  <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border transition-all duration-300 ${
+    highlight ? 'border-emerald-500/50 shadow-emerald-500/10 shadow-lg' : 'border-slate-700/50 hover:border-slate-600'
+  }`}>
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p className="text-slate-400 text-sm font-medium mb-1">{title}</p>
+        {isLoading ? (
+          <div className="h-8 w-32 bg-slate-700 animate-pulse rounded" />
+        ) : (
+          <p className="text-2xl font-bold text-white font-mono tracking-tight">{value}</p>
+        )}
+        {subValue && !isLoading && (
+          <p className={`text-sm mt-1 font-semibold ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {subValue}
+          </p>
+        )}
+      </div>
+      <div className={`p-3 rounded-xl ${
+        trend > 0 ? 'bg-emerald-500/15' :
+        trend < 0 ? 'bg-red-500/15' :
+        'bg-slate-700/50'
+      }`}>
+        <Icon className={`w-5 h-5 ${
+          trend > 0 ? 'text-emerald-400' :
+          trend < 0 ? 'text-red-400' :
+          'text-slate-400'
+        }`} />
+      </div>
+    </div>
+  </div>
+);
+
+// Asset Class Breakdown Component
+const AssetBreakdown = ({ positions, totalValue }) => {
+  const breakdown = useMemo(() => {
+    const groups = {};
+    positions.forEach(pos => {
+      const assetClass = pos.assetClass || 'OTROS';
+      if (!groups[assetClass]) {
+        groups[assetClass] = { value: 0, count: 0, resultado: 0 };
+      }
+      groups[assetClass].value += pos.valuacionActual || 0;
+      groups[assetClass].count += 1;
+      groups[assetClass].resultado += pos.resultado || 0;
+    });
+    return Object.entries(groups)
+      .map(([name, data]) => ({
+        name,
+        value: data.value,
+        count: data.count,
+        resultado: data.resultado,
+        percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [positions, totalValue]);
+
+  const colors = {
+    'CEDEAR': { bg: 'bg-emerald-500', text: 'text-emerald-400' },
+    'ARGY': { bg: 'bg-blue-500', text: 'text-blue-400' },
+    'BONOS HD': { bg: 'bg-amber-500', text: 'text-amber-400' },
+    'BONOS PESOS': { bg: 'bg-purple-500', text: 'text-purple-400' },
+    'OTROS': { bg: 'bg-slate-500', text: 'text-slate-400' }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
+      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <Activity className="w-5 h-5 text-emerald-400" />
+        Distribución por Asset Class
+      </h3>
+      <div className="space-y-4">
+        {breakdown.map((item) => (
+          <div key={item.name}>
+            <div className="flex justify-between items-center mb-1.5">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${colors[item.name]?.bg || colors['OTROS'].bg}`} />
+                <span className="text-sm font-medium text-slate-300">{item.name}</span>
+                <span className="text-xs text-slate-500">({item.count})</span>
+              </div>
+              <div className="text-right">
+                <span className="text-sm font-mono text-white">{item.percentage.toFixed(1)}%</span>
+              </div>
+            </div>
+            <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${colors[item.name]?.bg || colors['OTROS'].bg} rounded-full transition-all duration-700`}
+                style={{ width: `${item.percentage}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-xs text-slate-500">{formatARS(item.value)}</span>
+              <span className={`text-xs font-medium ${item.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {formatARS(item.resultado)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// MAIN APP COMPONENT
+// ============================================
+
+export default function PortfolioTracker() {
+  const [trades, setTrades] = useLocalStorage('portfolio-trades-v2', []);
+  const [prices, setPrices] = useLocalStorage('portfolio-prices-v2', {});
+  const [tickers, setTickers] = useState([]);
+  const [mepRate, setMepRate] = useState(1467);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPricesLoading, setIsPricesLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTrade, setEditingTrade] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingTrade, setDeletingTrade] = useState(null);
+  const [importStatus, setImportStatus] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
+  const [expandedPositions, setExpandedPositions] = useState({});
+  const [dataSource, setDataSource] = useState({ mep: 0, argStocks: 0, cedears: 0 });
+
+  // Fetch prices from multiple data912 endpoints
+  const fetchPrices = useCallback(async () => {
+    setIsPricesLoading(true);
+    const priceMap = {};
+    const tickerList = [];
+    let sources = { mep: 0, argStocks: 0, cedears: 0 };
+
+    try {
+      // Fetch from /live/mep (main source - has bonds + cedears with MEP calc)
+      const mepResponse = await fetch('https://data912.com/live/mep');
+      const mepData = await mepResponse.json();
+
+      let avgMep = 0;
+      let mepCount = 0;
+
+      mepData.forEach(item => {
+        const assetClass = getAssetClass(item.ticker, item.panel);
+        priceMap[item.ticker] = {
+          precio: item.mark || item.close,
+          bid: item.bid,
+          ask: item.ask,
+          close: item.close,
+          panel: item.panel,
+          assetClass,
+          source: 'mep',
+          pctChange: null // MEP endpoint doesn't have pct_change
+        };
+
+        tickerList.push({
+          ticker: item.ticker,
+          panel: item.panel,
+          assetClass
+        });
+
+        sources.mep++;
+
+        // Calculate average MEP from liquid tickers
+        if (item.mark > 1400 && item.mark < 1600 && item.panel === 'cedear') {
+          avgMep += item.mark;
+          mepCount++;
+        }
+      });
+
+      if (mepCount > 0) {
+        setMepRate(avgMep / mepCount);
+      }
+
+      // Fetch from /live/arg_stocks (local Argentine stocks)
+      try {
+        const argStocksResponse = await fetch('https://data912.com/live/arg_stocks');
+        const argStocksData = await argStocksResponse.json();
+
+        argStocksData.forEach(item => {
+          const ticker = item.symbol;
+          // Skip D versions (dollar) for now
+          if (ticker.endsWith('D')) return;
+
+          const assetClass = getAssetClass(ticker, null, true);
+
+          // Only add if not already in priceMap or update with pct_change
+          if (!priceMap[ticker]) {
+            priceMap[ticker] = {
+              precio: item.c || item.px_ask || item.px_bid,
+              bid: item.px_bid,
+              ask: item.px_ask,
+              close: item.c,
+              panel: 'arg_stock',
+              assetClass,
+              source: 'arg_stocks',
+              pctChange: item.pct_change
+            };
+
+            tickerList.push({
+              ticker,
+              panel: 'arg_stock',
+              assetClass
+            });
+
+            sources.argStocks++;
+          } else {
+            // Update pct_change from this source
+            priceMap[ticker].pctChange = item.pct_change;
+          }
+        });
+      } catch (e) {
+        console.warn('Could not fetch arg_stocks:', e);
+      }
+
+      // Fetch from /live/arg_cedears (has pct_change)
+      try {
+        const cedearsResponse = await fetch('https://data912.com/live/arg_cedears');
+        const cedearsData = await cedearsResponse.json();
+
+        cedearsData.forEach(item => {
+          const ticker = item.symbol;
+          // Skip D (dollar) and C (cable) versions
+          if (ticker.endsWith('D') || ticker.endsWith('C')) return;
+
+          // Update pct_change for existing tickers
+          if (priceMap[ticker]) {
+            priceMap[ticker].pctChange = item.pct_change;
+            // Update price if newer
+            if (item.c && item.c > 0) {
+              priceMap[ticker].precio = item.c;
+              priceMap[ticker].close = item.c;
+            }
+          }
+          sources.cedears++;
+        });
+      } catch (e) {
+        console.warn('Could not fetch arg_cedears:', e);
+      }
+
+      setPrices(priceMap);
+      setTickers(tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)));
+      setDataSource(sources);
+      setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    } finally {
+      setIsPricesLoading(false);
+    }
+  }, [setPrices]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchPrices();
+  }, [fetchPrices]);
+
+  // Import from Google Sheets
+  const importFromGoogleSheets = async () => {
+    setIsLoading(true);
+    setImportStatus('Importando...');
+    try {
+      const response = await fetch(
+        'https://docs.google.com/spreadsheets/d/14kSIrwStgETRML-_1qCOl4F_F-tdXRHTKch5PdwUMLM/gviz/tq?tqx=out:csv&sheet=Trades'
+      );
+      const csvText = await response.text();
+
+      const lines = csvText.split('\n').slice(1);
+      const newTrades = [];
+
+      lines.forEach((line) => {
+        if (!line.trim()) return;
+
+        const matches = line.match(/("([^"]*)"|[^,]*)(,|$)/g);
+        if (!matches) return;
+
+        const cols = matches.map(m => m.replace(/^"|"$|,$/g, '').trim());
+
+        const fecha = cols[1];
+        const ticker = cols[2];
+        const cantidad = cols[3];
+        const precio = cols[4];
+
+        if (!fecha || !ticker || ticker === 'Ticker') return;
+
+        const parsedDate = parseDateDMY(fecha);
+        const parsedCantidad = parseARSNumber(cantidad);
+        const parsedPrecio = parseARSNumber(precio);
+
+        if (parsedDate && ticker && parsedCantidad > 0) {
+          newTrades.push({
+            id: crypto.randomUUID(),
+            fecha: parsedDate,
+            ticker: ticker.trim().toUpperCase(),
+            cantidad: parsedCantidad,
+            precioCompra: parsedPrecio
+          });
+        }
+      });
+
+      if (newTrades.length > 0) {
+        setTrades(newTrades);
+        setImportStatus(`✓ ${newTrades.length} trades importados`);
+        setTimeout(() => setImportStatus(null), 3000);
+      } else {
+        setImportStatus('No se encontraron trades');
+        setTimeout(() => setImportStatus(null), 3000);
+      }
+    } catch (error) {
+      console.error('Error importing:', error);
+      setImportStatus('Error al importar');
+      setTimeout(() => setImportStatus(null), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate positions (grouped trades)
+  const positions = useMemo(() => {
     const grouped = {};
 
     trades.forEach(trade => {
       if (!grouped[trade.ticker]) {
         grouped[trade.ticker] = {
           ticker: trade.ticker,
-          assetClass: trade.assetClass,
-          industry: trade.industry,
-          country: trade.country,
-          totalQuantity: 0,
-          totalInvested: 0,
-          trades: []
+          trades: [],
+          cantidadTotal: 0,
+          costoTotal: 0
         };
       }
-
-      grouped[trade.ticker].totalQuantity += trade.quantity;
-      grouped[trade.ticker].totalInvested += trade.quantity * trade.buyPrice;
       grouped[trade.ticker].trades.push(trade);
+      grouped[trade.ticker].cantidadTotal += trade.cantidad;
+      grouped[trade.ticker].costoTotal += trade.cantidad * trade.precioCompra;
     });
 
-    // Calcular PPC y crear posiciones
-    return Object.values(grouped).map(group => ({
-      ticker: group.ticker,
-      assetClass: group.assetClass,
-      industry: group.industry,
-      country: group.country,
-      quantity: group.totalQuantity,
-      avgPrice: group.totalInvested / group.totalQuantity, // PPC ponderado
-      currentPrice: currentPrices[group.ticker] || group.totalInvested / group.totalQuantity,
-      trades: group.trades
+    return Object.values(grouped).map(pos => {
+      const priceData = prices[pos.ticker];
+      const precioActual = priceData?.precio || 0;
+      const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
+      const valuacionActual = pos.cantidadTotal * precioActual;
+      const resultado = valuacionActual - pos.costoTotal;
+      const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
+
+      return {
+        ...pos,
+        precioPromedio,
+        precioActual,
+        valuacionActual,
+        resultado,
+        resultadoPct,
+        assetClass: priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel),
+        pctChange: priceData?.pctChange,
+        // USD calculations
+        costoUSD: pos.costoTotal / mepRate,
+        valuacionUSD: valuacionActual / mepRate,
+        resultadoUSD: resultado / mepRate
+      };
+    }).sort((a, b) => b.valuacionActual - a.valuacionActual);
+  }, [trades, prices, mepRate]);
+
+  // Portfolio totals
+  const totals = useMemo(() => {
+    const invertido = positions.reduce((sum, p) => sum + p.costoTotal, 0);
+    const valuacion = positions.reduce((sum, p) => sum + p.valuacionActual, 0);
+    const resultado = valuacion - invertido;
+    const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
+
+    return {
+      invertido,
+      valuacion,
+      resultado,
+      resultadoPct,
+      invertidoUSD: invertido / mepRate,
+      valuacionUSD: valuacion / mepRate,
+      resultadoUSD: resultado / mepRate
+    };
+  }, [positions, mepRate]);
+
+  // Sorted trades for the trades tab
+  const sortedTrades = useMemo(() => {
+    const sorted = [...trades].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      if (sortConfig.key === 'fecha') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [trades, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
 
-  useEffect(() => {
-    loadTrades();
-    loadCurrentPrices();
-    loadLastSnapshot();
-  }, []);
-
-  useEffect(() => {
-    const positions = groupTradesByTicker();
-    let filtered = [...positions];
-
-    if (filterAssetClass !== 'all') {
-      filtered = filtered.filter(p => p.assetClass === filterAssetClass);
+  const handleSaveTrade = (trade) => {
+    if (editingTrade) {
+      setTrades(prev => prev.map(t => t.id === trade.id ? trade : t));
+    } else {
+      setTrades(prev => [...prev, trade]);
     }
+    setModalOpen(false);
+    setEditingTrade(null);
+  };
 
-    if (filterIndustry !== 'all') {
-      filtered = filtered.filter(p => p.industry === filterIndustry);
-    }
-
-    setFilteredPositions(filtered);
-  }, [trades, currentPrices, filterAssetClass, filterIndustry]);
-
-  const loadTrades = () => {
-    try {
-      const stored = localStorage.getItem('portfolio-trades');
-      if (stored) {
-        const loadedTrades = JSON.parse(stored);
-        setTrades(loadedTrades);
-      }
-    } catch (error) {
-      console.log('No hay trades guardados aún');
+  const handleDeleteTrade = () => {
+    if (deletingTrade) {
+      setTrades(prev => prev.filter(t => t.id !== deletingTrade.id));
+      setDeleteModalOpen(false);
+      setDeletingTrade(null);
     }
   };
 
-  const loadCurrentPrices = () => {
-    try {
-      const stored = localStorage.getItem('portfolio-current-prices');
-      if (stored) {
-        setCurrentPrices(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.log('No hay precios guardados');
-    }
+  const togglePosition = (ticker) => {
+    setExpandedPositions(prev => ({
+      ...prev,
+      [ticker]: !prev[ticker]
+    }));
   };
-
-  const loadLastSnapshot = () => {
-    try {
-      const stored = localStorage.getItem('portfolio-snapshot-yesterday');
-      if (stored) {
-        setLastPriceUpdate(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.log('No hay snapshot anterior');
-    }
-  };
-
-  const saveTrades = (updatedTrades) => {
-    try {
-      localStorage.setItem('portfolio-trades', JSON.stringify(updatedTrades));
-      setTrades(updatedTrades);
-    } catch (error) {
-      console.error('Error guardando trades:', error);
-    }
-  };
-
-  const saveCurrentPrices = (prices) => {
-    try {
-      localStorage.setItem('portfolio-current-prices', JSON.stringify(prices));
-      setCurrentPrices(prices);
-    } catch (error) {
-      console.error('Error guardando precios:', error);
-    }
-  };
-
-  const saveSnapshot = () => {
-    const positions = groupTradesByTicker();
-    const snapshot = {
-      date: new Date().toISOString(),
-      positions: positions.map(p => ({
-        ticker: p.ticker,
-        marketValue: p.quantity * p.currentPrice,
-        pnl: (p.quantity * p.currentPrice) - (p.quantity * p.avgPrice)
-      }))
-    };
-
-    try {
-      localStorage.setItem('portfolio-snapshot-yesterday', JSON.stringify(snapshot));
-      setLastPriceUpdate(snapshot);
-    } catch (error) {
-      console.error('Error guardando snapshot:', error);
-    }
-  };
-
-  const updatePricesFromAPI = async () => {
-    setIsUpdatingPrices(true);
-
-    try {
-      saveSnapshot();
-
-      const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
-      const newPrices = { ...currentPrices };
-
-      for (const ticker of uniqueTickers) {
-        try {
-          const endpoints = [
-            `https://api.data912.com/quote/${ticker}`,
-            `https://data912.com/api/quote/${ticker}`,
-            `https://api.data912.com/tickers/${ticker}`
-          ];
-
-          for (const endpoint of endpoints) {
-            try {
-              const response = await fetch(endpoint);
-              if (response.ok) {
-                const data = await response.json();
-                const price = data.price || data.last || data.close || data.currentPrice || data.lastPrice;
-                if (price) {
-                  newPrices[ticker] = parseFloat(price);
-                  break;
-                }
-              }
-            } catch (e) {
-              continue;
-            }
-          }
-        } catch (error) {
-          console.error(`Error actualizando ${ticker}:`, error);
-        }
-      }
-
-      saveCurrentPrices(newPrices);
-      alert('Precios actualizados! (Nota: algunos tickers pueden no haberse actualizado si la API no los reconoce)');
-    } catch (error) {
-      console.error('Error actualizando precios:', error);
-      alert('Error actualizando precios. Verificá la consola del navegador.');
-    } finally {
-      setIsUpdatingPrices(false);
-    }
-  };
-
-  const loadInitialData = () => {
-    // Datos proporcionados por el usuario
-    const rawData = [
-      { date: '23/12/2024', ticker: 'MELI', quantity: 10, price: 17220 },
-      { date: '3/04/2025', ticker: 'MELI', quantity: 12, price: 21000 },
-      { date: '7/04/2025', ticker: 'MSFT', quantity: 31, price: 16075 },
-      { date: '7/04/2025', ticker: 'SPY', quantity: 15, price: 33800 },
-      { date: '7/04/2025', ticker: 'VIST', quantity: 30, price: 16675 },
-      { date: '11/04/2025', ticker: 'AE38', quantity: 1787, price: 839 },
-      { date: '24/04/2025', ticker: 'TTD26', quantity: 1735250, price: 1.01 },
-      { date: '25/04/2025', ticker: 'YPFD', quantity: 19, price: 39875 },
-      { date: '18/07/2025', ticker: 'GOOGL', quantity: 177, price: 4080 },
-      { date: '18/07/2025', ticker: 'GGAL', quantity: 243, price: 6170 },
-      { date: '21/07/2025', ticker: 'YPFD', quantity: 37, price: 40250 },
-      { date: '18/07/2025', ticker: 'VIST', quantity: 37, price: 19300 },
-      { date: '19/08/2025', ticker: 'T15E7', quantity: 2404082, price: 1.03 },
-      { date: '19/08/2025', ticker: 'TTD26', quantity: 2291668, price: 1.08 },
-      { date: '29/08/2025', ticker: 'GGAL', quantity: 182, price: 5470 },
-      { date: '8/09/2025', ticker: 'T15E7', quantity: 1094090, price: 0.91 },
-      { date: '25/09/2025', ticker: 'T15E7', quantity: 1641000, price: 0.91 },
-      { date: '27/10/2025', ticker: 'AAPL', quantity: 26, price: 19470 },
-      { date: '8/04/2025', ticker: 'AAPL', quantity: 41, price: 12150 },
-      { date: '27/10/2025', ticker: 'NU', quantity: 42, price: 11700 },
-      { date: '27/10/2025', ticker: 'MELI', quantity: 18, price: 27980 },
-      { date: '27/10/2025', ticker: 'VALE', quantity: 59, price: 8405 },
-      { date: '7/11/2025', ticker: 'META', quantity: 19, price: 37860 },
-      { date: '10/11/2025', ticker: 'MELI', quantity: 28, price: 26180 },
-      { date: '12/11/2025', ticker: 'IBIT', quantity: 47, price: 8480 },
-      { date: '17/11/2025', ticker: 'IBIT', quantity: 50, price: 7915 },
-      { date: '9/12/2025', ticker: 'IBIT', quantity: 65, price: 7615 },
-      { date: '9/12/2025', ticker: 'MELI', quantity: 56, price: 26780 },
-      { date: '12/12/2025', ticker: 'MELI', quantity: 29, price: 25440 },
-      { date: '14/01/2026', ticker: 'AE38', quantity: 825, price: 1151.40 },
-      { date: '16/01/2026', ticker: 'NFLX', quantity: 266, price: 2794.87 }
-    ];
-
-    const newTrades = rawData.map((item, index) => {
-      const [day, month, year] = item.date.split('/');
-      const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-
-      const tickerData = TICKERS_DATA[item.ticker] || {
-        assetClass: 'CEDEAR',
-        industry: 'Unknown',
-        country: 'Unknown'
-      };
-
-      return {
-        id: Date.now() + index,
-        date: formattedDate,
-        ticker: item.ticker,
-        quantity: item.quantity,
-        buyPrice: item.price,
-        assetClass: tickerData.assetClass,
-        industry: tickerData.industry,
-        country: tickerData.country
-      };
-    });
-
-    saveTrades(newTrades);
-    alert(`${newTrades.length} trades cargados exitosamente!`);
-  };
-
-  const addTrade = () => {
-    if (!newTrade.ticker || !newTrade.quantity || !newTrade.buyPrice || !newTrade.date) {
-      alert('Completá todos los campos obligatorios');
-      return;
-    }
-
-    const ticker = newTrade.ticker.toUpperCase();
-    const tickerData = TICKERS_DATA[ticker] || {
-      assetClass: 'CEDEAR',
-      industry: 'Unknown',
-      country: 'Unknown'
-    };
-
-    const trade = {
-      id: Date.now(),
-      date: newTrade.date,
-      ticker: ticker,
-      quantity: parseFloat(newTrade.quantity),
-      buyPrice: parseFloat(newTrade.buyPrice),
-      assetClass: tickerData.assetClass,
-      industry: tickerData.industry,
-      country: tickerData.country
-    };
-
-    saveTrades([...trades, trade]);
-
-    setNewTrade({
-      date: new Date().toISOString().split('T')[0],
-      ticker: '',
-      quantity: '',
-      buyPrice: ''
-    });
-  };
-
-  const deleteTrade = (id) => {
-    if (window.confirm('¿Seguro que querés eliminar este trade?')) {
-      saveTrades(trades.filter(t => t.id !== id));
-    }
-  };
-
-  const deleteAllTrades = () => {
-    if (window.confirm(`¿Seguro que querés eliminar TODOS los ${trades.length} trades? Esta acción no se puede deshacer.`)) {
-      if (window.confirm('Confirmá nuevamente: ¿Eliminar todos los trades?')) {
-        saveTrades([]);
-        saveCurrentPrices({});
-        alert('Todos los trades han sido eliminados.');
-      }
-    }
-  };
-
-  const startEdit = (trade) => {
-    setEditingId(trade.id);
-    setNewTrade({
-      date: trade.date,
-      ticker: trade.ticker,
-      quantity: trade.quantity.toString(),
-      buyPrice: trade.buyPrice.toString()
-    });
-  };
-
-  const updateTrade = () => {
-    const ticker = newTrade.ticker.toUpperCase();
-    const tickerData = TICKERS_DATA[ticker] || {
-      assetClass: 'CEDEAR',
-      industry: 'Unknown',
-      country: 'Unknown'
-    };
-
-    const updatedTrade = {
-      id: editingId,
-      date: newTrade.date,
-      ticker: ticker,
-      quantity: parseFloat(newTrade.quantity),
-      buyPrice: parseFloat(newTrade.buyPrice),
-      assetClass: tickerData.assetClass,
-      industry: tickerData.industry,
-      country: tickerData.country
-    };
-
-    saveTrades(trades.map(t => t.id === editingId ? updatedTrade : t));
-    setEditingId(null);
-    setNewTrade({
-      date: new Date().toISOString().split('T')[0],
-      ticker: '',
-      quantity: '',
-      buyPrice: ''
-    });
-  };
-
-  const calculatePositionMetrics = (position) => {
-    const invested = position.quantity * position.avgPrice;
-    const marketValue = position.quantity * position.currentPrice;
-    const pnlArs = marketValue - invested;
-    const pnlPct = (pnlArs / invested) * 100;
-
-    let yesterdayValue = null;
-    let changeVsYesterday = null;
-
-    if (lastPriceUpdate && lastPriceUpdate.positions) {
-      const yesterdayPos = lastPriceUpdate.positions.find(p => p.ticker === position.ticker);
-      if (yesterdayPos) {
-        yesterdayValue = yesterdayPos.marketValue;
-        changeVsYesterday = marketValue - yesterdayValue;
-      }
-    }
-
-    return { invested, marketValue, pnlArs, pnlPct, yesterdayValue, changeVsYesterday };
-  };
-
-  const calculateTotals = (positionsList) => {
-    return positionsList.reduce((acc, pos) => {
-      const metrics = calculatePositionMetrics(pos);
-      return {
-        invested: acc.invested + metrics.invested,
-        marketValue: acc.marketValue + metrics.marketValue,
-        pnlArs: acc.pnlArs + metrics.pnlArs,
-        changeVsYesterday: acc.changeVsYesterday + (metrics.changeVsYesterday || 0)
-      };
-    }, { invested: 0, marketValue: 0, pnlArs: 0, changeVsYesterday: 0 });
-  };
-
-  const positions = groupTradesByTicker();
-  const totals = calculateTotals(filteredPositions);
-  const totalPnlPct = totals.invested > 0 ? (totals.pnlArs / totals.invested) * 100 : 0;
-
-  const assetClassBreakdown = filteredPositions.reduce((acc, pos) => {
-    const metrics = calculatePositionMetrics(pos);
-    if (!acc[pos.assetClass]) {
-      acc[pos.assetClass] = { marketValue: 0, pnl: 0 };
-    }
-    acc[pos.assetClass].marketValue += metrics.marketValue;
-    acc[pos.assetClass].pnl += metrics.pnlArs;
-    return acc;
-  }, {});
-
-  const assetClasses = Object.keys(assetClassBreakdown).map(key => ({
-    name: key,
-    value: assetClassBreakdown[key].marketValue,
-    pnl: assetClassBreakdown[key].pnl,
-    percentage: totals.marketValue > 0 ? (assetClassBreakdown[key].marketValue / totals.marketValue) * 100 : 0
-  })).sort((a, b) => b.value - a.value);
-
-  const industries = [...new Set(positions.map(p => p.industry).filter(Boolean))];
-
-  const assetClassColors = {
-    'CEDEAR': 'bg-blue-500',
-    'Bonos en Pesos': 'bg-yellow-500',
-    'Acción Argentina': 'bg-green-500',
-    'Bonos Hard Dollar': 'bg-purple-500'
-  };
-
-  // Ordenar trades por fecha (más recientes primero)
-  const sortedTrades = [...trades].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* Top Header Bar */}
-      <div className="bg-slate-900 border-b border-slate-800 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="text-emerald-400" size={32} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Header */}
+      <header className="border-b border-slate-800/50 bg-slate-900/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Portfolio Tracker</h1>
-              <p className="text-xs text-slate-400">Gestión Profesional de Inversiones</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="text-right">
-              <div className="text-slate-400 text-xs">USD MEP</div>
-              <div className="font-semibold text-emerald-400">{formatARS(usdMep)}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-slate-400 text-xs">USD CCL</div>
-              <div className="font-semibold text-blue-400">{formatARS(usdCcl)}</div>
-            </div>
-            {lastPriceUpdate && (
-              <div className="text-right">
-                <div className="text-slate-400 text-xs">Último Update</div>
-                <div className="font-semibold text-slate-300">
-                  {new Date(lastPriceUpdate.date).toLocaleDateString('es-AR')}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-slate-900/50 border-b border-slate-800">
-        <div className="px-6 flex gap-1">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-6 py-3 font-semibold transition-all relative ${
-              activeTab === 'dashboard'
-                ? 'text-emerald-400 bg-slate-900'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            Dashboard
-            {activeTab === 'dashboard' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('trades')}
-            className={`px-6 py-3 font-semibold transition-all relative ${
-              activeTab === 'trades'
-                ? 'text-emerald-400 bg-slate-900'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            Trades
-            {activeTab === 'trades' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"></div>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="p-6">
-
-      {/* DASHBOARD TAB */}
-      {activeTab === 'dashboard' && (
-        <div className="space-y-6">
-          {/* Botón actualizar precios */}
-          <div className="flex justify-end">
-            <button
-              onClick={updatePricesFromAPI}
-              disabled={isUpdatingPrices}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
-            >
-              <RefreshCw className={isUpdatingPrices ? 'animate-spin' : ''} size={20} />
-              {isUpdatingPrices ? 'Actualizando...' : 'Actualizar Precios'}
-            </button>
-          </div>
-
-          {/* Alert si no hay snapshot */}
-          {!lastPriceUpdate && trades.length > 0 && (
-            <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-l-4 border-yellow-500 p-5 rounded-lg flex items-start gap-4 shadow-lg">
-              <AlertCircle className="text-yellow-400 flex-shrink-0 mt-1" size={24} />
-              <div>
-                <strong className="text-yellow-300 text-base block mb-1">Primera vez usando el tracker</strong>
-                <p className="text-slate-300 text-sm">
-                  No hay datos del día anterior. Clickeá "Actualizar Precios" para crear el primer snapshot y empezar a comparar variaciones diarias.
-                </p>
+              <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                <Zap className="w-6 h-6 text-emerald-400" />
+                Portfolio Tracker
+              </h1>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-sm text-slate-400">
+                  MEP: <span className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</span>
+                </span>
+                {lastUpdate && (
+                  <span className="text-xs text-slate-500">
+                    • {lastUpdate}
+                  </span>
+                )}
+                <span className="text-xs text-slate-600">
+                  • {dataSource.mep + dataSource.argStocks} tickers
+                </span>
               </div>
             </div>
-          )}
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm text-slate-400 font-semibold">Market Value</div>
-                <DollarSign className="text-blue-400" size={20} />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold mb-2">{formatARS(totals.marketValue)}</div>
-              <div className="text-xs text-slate-400">
-                USD: {formatARS(totals.marketValue / usdMep)} MEP
-              </div>
-              {lastPriceUpdate && totals.changeVsYesterday !== 0 && (
-                <div className={`text-sm mt-3 flex items-center gap-1 font-semibold ${totals.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {totals.changeVsYesterday >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                  {formatARS(Math.abs(totals.changeVsYesterday))} vs ayer
-                </div>
-              )}
-            </div>
-
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm text-slate-400 font-semibold">Invertido</div>
-                <DollarSign className="text-slate-400" size={20} />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold mb-2">{formatARS(totals.invested)}</div>
-              <div className="text-xs text-slate-400">
-                USD: {formatARS(totals.invested / usdMep)} MEP
-              </div>
-            </div>
-
-            <div className={`p-6 rounded-xl border-2 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] ${totals.pnlArs >= 0 ? 'bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500' : 'bg-gradient-to-br from-red-900/40 to-red-950/40 border-red-500'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm text-slate-300 font-semibold">P&L Total</div>
-                {totals.pnlArs >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />}
-              </div>
-              <div className={`text-2xl md:text-3xl font-bold mb-2 ${totals.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {formatARS(totals.pnlArs)}
-              </div>
-              <div className="text-xs text-slate-400">
-                USD: {formatARS(totals.pnlArs / usdMep)} MEP
-              </div>
-            </div>
-
-            <div className={`p-6 rounded-xl border-2 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] ${totalPnlPct >= 0 ? 'bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500' : 'bg-gradient-to-br from-red-900/40 to-red-950/40 border-red-500'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm text-slate-300 font-semibold">Retorno %</div>
-              </div>
-              <div className={`text-3xl md:text-4xl font-bold flex items-center gap-2 ${totalPnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalPnlPct >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
-                {totalPnlPct.toFixed(2)}%
-              </div>
-            </div>
-          </div>
-
-          {/* Filtros */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter size={22} className="text-emerald-400" />
-              <span className="font-bold text-lg">Filtros</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Asset Class</label>
-                <select
-                  value={filterAssetClass}
-                  onChange={(e) => setFilterAssetClass(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                >
-                  <option value="all">Todas</option>
-                  <option value="CEDEAR">CEDEARs</option>
-                  <option value="Bonos en Pesos">Bonos en Pesos</option>
-                  <option value="Acción Argentina">Acciones Argentinas</option>
-                  <option value="Bonos Hard Dollar">Bonos Hard Dollar</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Industria</label>
-                <select
-                  value={filterIndustry}
-                  onChange={(e) => setFilterIndustry(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                >
-                  <option value="all">Todas</option>
-                  {industries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Asset Class Breakdown */}
-          {assetClasses.length > 0 && (
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <PieChart className="text-emerald-400" size={24} />
-                Breakdown por Asset Class
-              </h3>
-              <div className="space-y-3">
-                {assetClasses.map((ac) => (
-                  <div key={ac.name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-300">{ac.name}</span>
-                      <span className="font-semibold">{ac.percentage.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-700 rounded-full h-3">
-                        <div
-                          className={`${assetClassColors[ac.name] || 'bg-slate-500'} h-3 rounded-full transition-all`}
-                          style={{ width: `${ac.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-slate-400 min-w-[120px] text-right">
-                        {formatARS(ac.value)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      P&L: <span className={ac.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                        {formatARS(ac.pnl)} ({((ac.pnl / (ac.value - ac.pnl)) * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Posiciones Table - AGRUPADAS */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg overflow-x-auto">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart3 className="text-emerald-400" size={24} />
-              Posiciones Consolidadas
-            </h3>
-            {filteredPositions.length === 0 ? (
-              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas. Andá a "Trades" para agregar.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-slate-400 border-b-2 border-slate-700">
-                      <th className="pb-4 font-semibold">Ticker</th>
-                      <th className="pb-4 font-semibold hidden md:table-cell">Clase</th>
-                      <th className="pb-4 text-right font-semibold">Cant.</th>
-                      <th className="pb-4 text-right font-semibold hidden lg:table-cell">PPC</th>
-                      <th className="pb-4 text-right font-semibold">Precio</th>
-                      <th className="pb-4 text-right font-semibold">Market Value</th>
-                      <th className="pb-4 text-right font-semibold">P&L</th>
-                      <th className="pb-4 text-right font-semibold hidden md:table-cell">vs Ayer</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPositions.map((pos) => {
-                      const metrics = calculatePositionMetrics(pos);
-                      return (
-                        <tr key={pos.ticker} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
-                          <td className="py-4 font-bold text-white">{pos.ticker}</td>
-                          <td className="py-4 text-slate-400 hidden md:table-cell">
-                            <span className="px-2 py-1 bg-slate-700 rounded text-xs">{pos.assetClass}</span>
-                          </td>
-                          <td className="py-4 text-right text-slate-300">{pos.quantity}</td>
-                          <td className="py-4 text-right text-slate-400 hidden lg:table-cell">{formatARS(pos.avgPrice)}</td>
-                          <td className="py-4 text-right text-slate-300 font-semibold">{formatARS(pos.currentPrice)}</td>
-                          <td className="py-4 text-right font-bold text-white">{formatARS(metrics.marketValue)}</td>
-                          <td className={`py-4 text-right font-bold text-lg ${metrics.pnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {metrics.pnlPct >= 0 ? '+' : ''}{metrics.pnlPct.toFixed(2)}%
-                          </td>
-                          <td className={`py-4 text-right font-semibold hidden md:table-cell ${
-                            !metrics.changeVsYesterday ? 'text-slate-500' :
-                            metrics.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'
-                          }`}>
-                            {metrics.changeVsYesterday ? (metrics.changeVsYesterday >= 0 ? '+' : '') + formatARS(metrics.changeVsYesterday) : '-'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TRADES TAB */}
-      {activeTab === 'trades' && (
-        <div className="space-y-6">
-          {/* Header con botones */}
-          <div className="flex justify-between items-center flex-wrap gap-4">
-            <h2 className="text-2xl font-bold">Gestión de Trades</h2>
-            <div className="flex gap-3">
-              {trades.length === 0 && (
-                <button
-                  onClick={loadInitialData}
-                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg"
-                >
-                  <Download size={20} />
-                  Cargar Datos Iniciales (31 trades)
-                </button>
-              )}
+            <div className="flex items-center gap-2">
               <button
-                onClick={deleteAllTrades}
-                disabled={trades.length === 0}
-                className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:opacity-50 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
+                onClick={fetchPrices}
+                disabled={isPricesLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
               >
-                <Trash2 size={20} />
-                Eliminar Todos ({trades.length})
+                <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualizar</span>
               </button>
             </div>
           </div>
 
-          {/* Form */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 md:p-8 rounded-xl border border-slate-700 shadow-lg">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <PlusCircle className="text-emerald-400" size={28} />
-              {editingId ? 'Editar Trade' : 'Nuevo Trade'}
-            </h2>
+          {/* Tabs */}
+          <div className="flex gap-1 mt-4">
+            {['dashboard', 'trades'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-5 py-2 rounded-lg font-medium text-sm transition-all ${
+                  activeTab === tab
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {tab === 'dashboard' ? 'Dashboard' : 'Trades'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Fecha *</label>
-                <input
-                  type="date"
-                  value={newTrade.date}
-                  onChange={(e) => setNewTrade({...newTrade, date: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                />
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {activeTab === 'dashboard' ? (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <SummaryCard
+                title="Invertido"
+                value={formatARS(totals.invertido)}
+                subValue={formatUSD(totals.invertidoUSD)}
+                icon={Activity}
+                isLoading={isPricesLoading}
+              />
+              <SummaryCard
+                title="Valuación Actual"
+                value={formatARS(totals.valuacion)}
+                subValue={formatUSD(totals.valuacionUSD)}
+                icon={TrendingUp}
+                trend={totals.resultado}
+                isLoading={isPricesLoading}
+                highlight
+              />
+              <SummaryCard
+                title="Resultado ARS"
+                value={formatARS(totals.resultado)}
+                subValue={formatPercent(totals.resultadoPct)}
+                icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
+                trend={totals.resultado}
+                isLoading={isPricesLoading}
+              />
+              <SummaryCard
+                title="Resultado USD"
+                value={formatUSD(totals.resultadoUSD)}
+                subValue={formatPercent(totals.resultadoPct)}
+                icon={totals.resultadoUSD >= 0 ? TrendingUp : TrendingDown}
+                trend={totals.resultadoUSD}
+                isLoading={isPricesLoading}
+              />
+            </div>
+
+            {/* Asset Breakdown + Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className="lg:col-span-2">
+                <AssetBreakdown positions={positions} totalValue={totals.valuacion} />
               </div>
+              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
+                <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-slate-700/50">
+                    <span className="text-slate-400">Posiciones</span>
+                    <span className="text-white font-semibold font-mono">{positions.length}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-700/50">
+                    <span className="text-slate-400">Trades Totales</span>
+                    <span className="text-white font-semibold font-mono">{trades.length}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-700/50">
+                    <span className="text-slate-400">Tipo Cambio MEP</span>
+                    <span className="text-emerald-400 font-semibold font-mono">{formatARS(mepRate)}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-400">Data Sources</span>
+                    <span className="text-slate-300 text-sm">data912.com</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Ticker *</label>
-                <input
-                  type="text"
-                  value={newTrade.ticker}
-                  onChange={(e) => setNewTrade({...newTrade, ticker: e.target.value.toUpperCase()})}
-                  list="tickers-list"
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white uppercase focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="AAPL"
-                />
-                <datalist id="tickers-list">
-                  {Object.keys(TICKERS_DATA).map(ticker => (
-                    <option key={ticker} value={ticker} />
-                  ))}
-                </datalist>
-                {newTrade.ticker && TICKERS_DATA[newTrade.ticker] && (
-                  <p className="text-xs text-emerald-400 mt-1">
-                    {TICKERS_DATA[newTrade.ticker].assetClass} - {TICKERS_DATA[newTrade.ticker].industry}
-                  </p>
+            {/* Positions Table */}
+            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
+              <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">Posiciones</h3>
+                <span className="text-sm text-slate-400">{positions.length} activos</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-900/50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticker</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Cant.</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">P. Prom.</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">P. Actual</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Invertido</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valuación</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/30">
+                    {positions.map((pos) => (
+                      <React.Fragment key={pos.ticker}>
+                        <tr
+                          className="hover:bg-slate-700/20 transition-colors cursor-pointer"
+                          onClick={() => togglePosition(pos.ticker)}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`transition-transform ${expandedPositions[pos.ticker] ? 'rotate-180' : ''}`}>
+                                <ChevronDown className="w-4 h-4 text-slate-500" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-white font-mono">{pos.ticker}</span>
+                                  {pos.pctChange !== null && pos.pctChange !== undefined && (
+                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                      pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                    }`}>
+                                      {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-slate-500">{pos.assetClass}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-right px-4 py-3 text-slate-300 font-mono hidden sm:table-cell">
+                            {formatNumber(pos.cantidadTotal)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
+                            {formatARS(pos.precioPromedio)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                            {formatARS(pos.precioActual)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                            {formatARS(pos.costoTotal)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                            {formatARS(pos.valuacionActual)}
+                          </td>
+                          <td className="text-right px-4 py-3">
+                            <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {formatARS(pos.resultado)}
+                              <span className="block text-xs opacity-80">
+                                {formatPercent(pos.resultadoPct)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {expandedPositions[pos.ticker] && (
+                          <tr className="bg-slate-900/50">
+                            <td colSpan={7} className="px-4 py-3">
+                              <div className="text-sm pl-6">
+                                <p className="text-slate-400 mb-2 font-medium">Trades ({pos.trades.length})</p>
+                                <div className="space-y-1">
+                                  {pos.trades.map(trade => (
+                                    <div key={trade.id} className="flex justify-between items-center py-2 px-3 bg-slate-800/50 rounded-lg">
+                                      <span className="text-slate-400 text-xs">{new Date(trade.fecha).toLocaleDateString('es-AR')}</span>
+                                      <span className="text-white font-mono text-sm">{formatNumber(trade.cantidad)} @ {formatARS(trade.precioCompra)}</span>
+                                      <span className="text-slate-400 font-mono text-sm">{formatARS(trade.cantidad * trade.precioCompra)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+                {positions.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-slate-400 mb-2">No hay posiciones</p>
+                    <p className="text-slate-500 text-sm">Importá tus trades desde Google Sheets o agregalos manualmente</p>
+                  </div>
                 )}
               </div>
-
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Cantidad *</label>
-                <input
-                  type="number"
-                  value={newTrade.quantity}
-                  onChange={(e) => setNewTrade({...newTrade, quantity: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="100"
-                  step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio de Compra (ARS) *</label>
-                <input
-                  type="number"
-                  value={newTrade.buyPrice}
-                  onChange={(e) => setNewTrade({...newTrade, buyPrice: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="5000.00"
-                  step="0.01"
-                />
-              </div>
             </div>
-
-            <div className="mt-6 flex gap-3">
+          </>
+        ) : (
+          <>
+            {/* Trades Tab */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <button
-                onClick={editingId ? updateTrade : addTrade}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg"
+                onClick={() => {
+                  setEditingTrade(null);
+                  setModalOpen(true);
+                }}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
               >
-                {editingId ? 'Actualizar' : 'Agregar Trade'}
+                <Plus className="w-4 h-4" />
+                Nuevo Trade
               </button>
-              {editingId && (
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setNewTrade({
-                      date: new Date().toISOString().split('T')[0],
-                      ticker: '',
-                      quantity: '',
-                      buyPrice: ''
-                    });
-                  }}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-all hover:scale-105"
-                >
-                  Cancelar
-                </button>
+              <button
+                onClick={importFromGoogleSheets}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all font-semibold disabled:opacity-50 shadow-lg shadow-blue-600/25"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Importar Google Sheets
+              </button>
+              {importStatus && (
+                <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+                  importStatus.includes('✓') ? 'bg-emerald-500/20 text-emerald-400' :
+                  importStatus.includes('Error') ? 'bg-red-500/20 text-red-400' :
+                  'bg-slate-700 text-slate-300'
+                }`}>
+                  {importStatus}
+                </span>
               )}
             </div>
-          </div>
 
-          {/* Tabla de Trades */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-            <h3 className="text-xl font-bold mb-6">Todos los Trades ({trades.length})</h3>
-            {trades.length === 0 ? (
-              <p className="text-slate-400 text-center py-12 text-lg">No hay trades cargados aún.</p>
-            ) : (
+            {/* Trades Table */}
+            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full">
                   <thead>
-                    <tr className="text-left text-slate-400 border-b-2 border-slate-700">
-                      <th className="pb-4 font-semibold">Fecha</th>
-                      <th className="pb-4 font-semibold">Ticker</th>
-                      <th className="pb-4 font-semibold hidden md:table-cell">Clase</th>
-                      <th className="pb-4 text-right font-semibold">Cantidad</th>
-                      <th className="pb-4 text-right font-semibold">Precio Compra</th>
-                      <th className="pb-4 text-right font-semibold">Precio Actual</th>
-                      <th className="pb-4 text-right font-semibold">P&L Trade</th>
-                      <th className="pb-4 text-center font-semibold">Acciones</th>
+                    <tr className="bg-slate-900/50">
+                      <th
+                        className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleSort('fecha')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Fecha
+                          {sortConfig.key === 'fecha' && (
+                            sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleSort('ticker')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Ticker
+                          {sortConfig.key === 'ticker' && (
+                            sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                          )}
+                        </div>
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Cantidad</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Invertido</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {sortedTrades.map((trade) => {
-                      const currentPrice = currentPrices[trade.ticker] || trade.buyPrice;
-                      const pnl = (currentPrice - trade.buyPrice) * trade.quantity;
-                      const pnlPct = ((currentPrice - trade.buyPrice) / trade.buyPrice) * 100;
-
-                      return (
-                        <tr key={trade.id} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
-                          <td className="py-4 text-slate-300">{new Date(trade.date).toLocaleDateString('es-AR')}</td>
-                          <td className="py-4 font-bold text-white">{trade.ticker}</td>
-                          <td className="py-4 text-slate-400 hidden md:table-cell">
-                            <span className="px-2 py-1 bg-slate-700 rounded text-xs">{trade.assetClass}</span>
-                          </td>
-                          <td className="py-4 text-right text-slate-300">{trade.quantity}</td>
-                          <td className="py-4 text-right text-slate-400">{formatARS(trade.buyPrice)}</td>
-                          <td className="py-4 text-right text-slate-300 font-semibold">{formatARS(currentPrice)}</td>
-                          <td className={`py-4 text-right font-bold ${pnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-                            <div className="text-xs font-normal">
-                              {formatARS(pnl)}
-                            </div>
-                          </td>
-                          <td className="py-4">
-                            <div className="flex justify-center gap-2">
-                              <button
-                                onClick={() => startEdit(trade)}
-                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all hover:scale-110"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => deleteTrade(trade.id)}
-                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all hover:scale-110"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                  <tbody className="divide-y divide-slate-700/30">
+                    {sortedTrades.map((trade) => (
+                      <tr key={trade.id} className="hover:bg-slate-700/20 transition-colors">
+                        <td className="px-4 py-3 text-slate-300 text-sm">
+                          {new Date(trade.fecha).toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-semibold text-white font-mono">{trade.ticker}</span>
+                        </td>
+                        <td className="text-right px-4 py-3 text-slate-300 font-mono">
+                          {formatNumber(trade.cantidad)}
+                        </td>
+                        <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                          {formatARS(trade.precioCompra)}
+                        </td>
+                        <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden sm:table-cell">
+                          {formatARS(trade.cantidad * trade.precioCompra)}
+                        </td>
+                        <td className="text-right px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingTrade(trade);
+                                setModalOpen(true);
+                              }}
+                              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDeletingTrade(trade);
+                                setDeleteModalOpen(true);
+                              }}
+                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
+                {trades.length === 0 && (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Plus className="w-8 h-8 text-slate-600" />
+                    </div>
+                    <p className="text-slate-400 mb-2 font-medium">No hay trades registrados</p>
+                    <p className="text-slate-500 text-sm mb-4">Empezá importando desde Google Sheets o agregando manualmente</p>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        onClick={() => {
+                          setEditingTrade(null);
+                          setModalOpen(true);
+                        }}
+                        className="text-emerald-400 hover:text-emerald-300 font-medium text-sm"
+                      >
+                        Agregar trade
+                      </button>
+                      <span className="text-slate-600">|</span>
+                      <button
+                        onClick={importFromGoogleSheets}
+                        className="text-blue-400 hover:text-blue-300 font-medium text-sm"
+                      >
+                        Importar desde Sheets
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/50 py-4 mt-8">
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
+          <span>Datos: data912.com</span>
+          <span>Portfolio Tracker v2.0</span>
         </div>
-      )}
-      </div>
+      </footer>
+
+      {/* Modals */}
+      <TradeModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingTrade(null);
+        }}
+        onSave={handleSaveTrade}
+        trade={editingTrade}
+        tickers={tickers}
+        isLoading={isPricesLoading}
+      />
+
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDeletingTrade(null);
+        }}
+        onConfirm={handleDeleteTrade}
+        tradeTicker={deletingTrade?.ticker}
+      />
     </div>
   );
-};
-
-export default PortfolioTracker;
+}
