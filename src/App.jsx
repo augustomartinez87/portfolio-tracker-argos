@@ -64,7 +64,6 @@ const PortfolioTracker = () => {
   const [filteredPositions, setFilteredPositions] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState(null);
 
   // Filtros
@@ -267,121 +266,66 @@ const PortfolioTracker = () => {
     }
   };
 
-  const parseCSVNumber = (value) => {
-    if (!value) return NaN;
-    // Eliminar puntos de miles y reemplazar coma decimal por punto
-    const cleaned = value.toString().replace(/\./g, '').replace(',', '.');
-    const number = parseFloat(cleaned);
-    return isNaN(number) ? NaN : number;
-  };
+  const loadInitialData = () => {
+    // Datos proporcionados por el usuario
+    const rawData = [
+      { date: '23/12/2024', ticker: 'MELI', quantity: 10, price: 17220 },
+      { date: '3/04/2025', ticker: 'MELI', quantity: 12, price: 21000 },
+      { date: '7/04/2025', ticker: 'MSFT', quantity: 31, price: 16075 },
+      { date: '7/04/2025', ticker: 'SPY', quantity: 15, price: 33800 },
+      { date: '7/04/2025', ticker: 'VIST', quantity: 30, price: 16675 },
+      { date: '11/04/2025', ticker: 'AE38', quantity: 1787, price: 839 },
+      { date: '24/04/2025', ticker: 'TTD26', quantity: 1735250, price: 1.01 },
+      { date: '25/04/2025', ticker: 'YPFD', quantity: 19, price: 39875 },
+      { date: '18/07/2025', ticker: 'GOOGL', quantity: 177, price: 4080 },
+      { date: '18/07/2025', ticker: 'GGAL', quantity: 243, price: 6170 },
+      { date: '21/07/2025', ticker: 'YPFD', quantity: 37, price: 40250 },
+      { date: '18/07/2025', ticker: 'VIST', quantity: 37, price: 19300 },
+      { date: '19/08/2025', ticker: 'T15E7', quantity: 2404082, price: 1.03 },
+      { date: '19/08/2025', ticker: 'TTD26', quantity: 2291668, price: 1.08 },
+      { date: '29/08/2025', ticker: 'GGAL', quantity: 182, price: 5470 },
+      { date: '8/09/2025', ticker: 'T15E7', quantity: 1094090, price: 0.91 },
+      { date: '25/09/2025', ticker: 'T15E7', quantity: 1641000, price: 0.91 },
+      { date: '27/10/2025', ticker: 'AAPL', quantity: 26, price: 19470 },
+      { date: '8/04/2025', ticker: 'AAPL', quantity: 41, price: 12150 },
+      { date: '27/10/2025', ticker: 'NU', quantity: 42, price: 11700 },
+      { date: '27/10/2025', ticker: 'MELI', quantity: 18, price: 27980 },
+      { date: '27/10/2025', ticker: 'VALE', quantity: 59, price: 8405 },
+      { date: '7/11/2025', ticker: 'META', quantity: 19, price: 37860 },
+      { date: '10/11/2025', ticker: 'MELI', quantity: 28, price: 26180 },
+      { date: '12/11/2025', ticker: 'IBIT', quantity: 47, price: 8480 },
+      { date: '17/11/2025', ticker: 'IBIT', quantity: 50, price: 7915 },
+      { date: '9/12/2025', ticker: 'IBIT', quantity: 65, price: 7615 },
+      { date: '9/12/2025', ticker: 'MELI', quantity: 56, price: 26780 },
+      { date: '12/12/2025', ticker: 'MELI', quantity: 29, price: 25440 },
+      { date: '14/01/2026', ticker: 'AE38', quantity: 825, price: 1151.40 },
+      { date: '16/01/2026', ticker: 'NFLX', quantity: 266, price: 2794.87 }
+    ];
 
-  const parseCSVDate = (dateStr) => {
-    if (!dateStr) return new Date().toISOString().split('T')[0];
+    const newTrades = rawData.map((item, index) => {
+      const [day, month, year] = item.date.split('/');
+      const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
-    // Intentar diferentes formatos de fecha
-    // Formato DD/MM/YYYY
-    const ddmmyyyyMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (ddmmyyyyMatch) {
-      const [, day, month, year] = ddmmyyyyMatch;
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
+      const tickerData = TICKERS_DATA[item.ticker] || {
+        assetClass: 'CEDEAR',
+        industry: 'Unknown',
+        country: 'Unknown'
+      };
 
-    // Formato YYYY-MM-DD (ya está correcto)
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return dateStr;
-    }
+      return {
+        id: Date.now() + index,
+        date: formattedDate,
+        ticker: item.ticker,
+        quantity: item.quantity,
+        buyPrice: item.price,
+        assetClass: tickerData.assetClass,
+        industry: tickerData.industry,
+        country: tickerData.country
+      };
+    });
 
-    // Si no se puede parsear, usar fecha actual
-    return new Date().toISOString().split('T')[0];
-  };
-
-  const importFromGoogleSheets = async () => {
-    setIsImporting(true);
-    try {
-      const url = 'https://docs.google.com/spreadsheets/d/14kSIrwStgETRML-_1qCOl4F_F-tdXRHTKch5PdwUMLM/gviz/tq?tqx=out:csv&sheet=Trades';
-      const response = await fetch(url);
-      const csvText = await response.text();
-
-      // Parsear CSV - manejar comas dentro de comillas
-      const lines = csvText.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-
-      console.log('Headers encontrados:', headers);
-
-      const importedTrades = [];
-      const errors = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        // Parsear línea respetando comillas
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let char of lines[i]) {
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim());
-
-        const dateIdx = headers.findIndex(h => h.toLowerCase().includes('fecha'));
-        const tickerIdx = headers.findIndex(h => h.toLowerCase().includes('ticker'));
-        const quantityIdx = headers.findIndex(h => h.toLowerCase().includes('cantidad'));
-        const priceIdx = headers.findIndex(h => h.toLowerCase().includes('precio'));
-
-        if (values[tickerIdx] && values[quantityIdx] && values[priceIdx]) {
-          const ticker = values[tickerIdx].toUpperCase().trim();
-          const quantity = parseCSVNumber(values[quantityIdx]);
-          const buyPrice = parseCSVNumber(values[priceIdx]);
-          const date = parseCSVDate(values[dateIdx]);
-
-          // Validar que los números sean válidos
-          if (isNaN(quantity) || isNaN(buyPrice) || quantity <= 0 || buyPrice <= 0) {
-            errors.push(`Fila ${i + 1}: ${ticker} - cantidad o precio inválido`);
-            continue;
-          }
-
-          const tickerData = TICKERS_DATA[ticker] || {
-            assetClass: 'CEDEAR',
-            industry: 'Unknown',
-            country: 'Unknown'
-          };
-
-          importedTrades.push({
-            id: Date.now() + i,
-            date: date,
-            ticker: ticker,
-            quantity: quantity,
-            buyPrice: buyPrice,
-            assetClass: tickerData.assetClass,
-            industry: tickerData.industry,
-            country: tickerData.country
-          });
-        }
-      }
-
-      if (importedTrades.length > 0) {
-        saveTrades([...trades, ...importedTrades]);
-        let message = `${importedTrades.length} trades importados exitosamente!`;
-        if (errors.length > 0) {
-          message += `\n\nErrores encontrados (${errors.length}):\n${errors.slice(0, 5).join('\n')}`;
-          if (errors.length > 5) message += `\n... y ${errors.length - 5} más`;
-        }
-        alert(message);
-      } else {
-        alert('No se encontraron trades válidos para importar.\n\n' + (errors.length > 0 ? errors.join('\n') : ''));
-      }
-    } catch (error) {
-      console.error('Error importando:', error);
-      alert('Error al importar desde Google Sheets. Verificá la URL y que la hoja sea pública.');
-    } finally {
-      setIsImporting(false);
-    }
+    saveTrades(newTrades);
+    alert(`${newTrades.length} trades cargados exitosamente!`);
   };
 
   const addTrade = () => {
@@ -822,6 +766,15 @@ const PortfolioTracker = () => {
           <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="text-2xl font-bold">Gestión de Trades</h2>
             <div className="flex gap-3">
+              {trades.length === 0 && (
+                <button
+                  onClick={loadInitialData}
+                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg"
+                >
+                  <Download size={20} />
+                  Cargar Datos Iniciales (31 trades)
+                </button>
+              )}
               <button
                 onClick={deleteAllTrades}
                 disabled={trades.length === 0}
@@ -829,14 +782,6 @@ const PortfolioTracker = () => {
               >
                 <Trash2 size={20} />
                 Eliminar Todos ({trades.length})
-              </button>
-              <button
-                onClick={importFromGoogleSheets}
-                disabled={isImporting}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
-              >
-                <Download className={isImporting ? 'animate-bounce' : ''} size={20} />
-                {isImporting ? 'Importando...' : 'Importar Google Sheets'}
               </button>
             </div>
           </div>
