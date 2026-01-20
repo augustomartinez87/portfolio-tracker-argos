@@ -1116,15 +1116,12 @@ export default function PortfolioTracker() {
               />
             </div>
 
-            {/* Asset Breakdown + Summary */}
+            {/* Distribution Chart + Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <div className="lg:col-span-1">
                 <DistributionChart positions={positions} />
               </div>
-              <div className="lg:col-span-1">
-                <AssetBreakdown positions={positions} totalValue={totals.valuacion} />
-              </div>
-              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
+              <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
                 <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-slate-700/50">
