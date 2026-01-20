@@ -30,10 +30,30 @@ const isBonoPesos = (ticker) => {
   return false;
 };
 
-export const PositionDetailModal = ({ open, onClose, position, trades }) => {
+export default function PositionDetailModal({ open, onClose, position, trades }) {
   const [historical, setHistorical] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [componentError, setComponentError] = useState(null);
+
+  // Error boundary for component crashes
+  if (componentError) {
+    console.error('PositionDetailModal error:', componentError);
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-slate-800 rounded-lg p-6 text-center max-w-md">
+          <p className="text-red-400 mb-4">Error inesperado al cargar el detalle</p>
+          <p className="text-slate-400 text-sm mb-4">{componentError.message}</p>
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Filter trades for this position
   const positionTrades = useMemo(() => {
@@ -58,9 +78,30 @@ export const PositionDetailModal = ({ open, onClose, position, trades }) => {
         const dateStr = fromDate.toISOString().split('T')[0];
 
         const data = await data912.getHistorical(position.ticker, dateStr);
-        setHistorical(data);
+        
+        // Validate data structure
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error('No hay datos históricos disponibles');
+        }
+
+        // Filter out invalid entries
+        const validData = data.filter(item => 
+          item && 
+          item.date && 
+          typeof item.c === 'number' && 
+          item.c > 0
+        );
+
+        if (validData.length === 0) {
+          throw new Error('Datos históricos inválidos');
+        }
+
+        setHistorical(validData);
       } catch (err) {
+        console.error('Error fetching historical data:', err);
         setError(err instanceof Error ? err.message : 'Error cargando históricos');
+        // Set empty array to prevent crashes
+        setHistorical([]);
       } finally {
         setLoading(false);
       }
@@ -71,30 +112,70 @@ export const PositionDetailModal = ({ open, onClose, position, trades }) => {
 
   // Prepare chart data
   const chartData = useMemo(() => {
-    return historical.map(day => ({
-      date: new Date(day.date).toLocaleDateString('es-AR', { month: 'short', day: 'numeric' }),
-      price: day.c,
-      fullDate: day.date
-    }));
+    if (!Array.isArray(historical) || historical.length === 0) {
+      return [];
+    }
+    
+    return historical.map(day => {
+      try {
+        const date = new Date(day.date);
+        return {
+          date: date.toLocaleDateString('es-AR', { month: 'short', day: 'numeric' }),
+          price: day.c,
+          fullDate: day.date
+        };
+      } catch (err) {
+        console.error('Error processing historical date:', err);
+        return null;
+      }
+    }).filter(Boolean); // Remove null entries
   }, [historical]);
 
   // Calculate historical stats
   const stats = useMemo(() => {
-    if (historical.length === 0) return null;
+    if (!Array.isArray(historical) || historical.length === 0) {
+      return null;
+    }
 
-    const prices = historical.map(h => h.c);
-    const high = Math.max(...prices);
-    const low = Math.min(...prices);
-    const first = historical[0].c;
-    const last = historical[historical.length - 1].c;
-    const change = ((last - first) / first) * 100;
+    try {
+      const prices = historical.map(h => h.c).filter(p => typeof p === 'number' && p > 0);
+      
+      if (prices.length === 0) return null;
 
-    return { high, low, change };
+      const high = Math.max(...prices);
+      const low = Math.min(...prices);
+      const first = prices[0];
+      const last = prices[prices.length - 1];
+      const change = first > 0 ? ((last - first) / first) * 100 : 0;
+
+      return { high, low, change };
+    } catch (err) {
+      console.error('Error calculating stats:', err);
+      return null;
+    }
   }, [historical]);
 
   if (!open || !position) return null;
 
-  const invested = position.costoTotal;
+// Add error boundary for component crashes
+if (!position.ticker) {
+  console.error('Invalid position data:', position);
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800 rounded-lg p-6 text-center">
+        <p className="text-red-400 mb-4">Error al cargar los datos de la posición</p>
+        <button 
+          onClick={onClose}
+          className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+  const invested = position?.costoTotal || 0;
   const getColorClass = (value) => (value >= 0 ? 'text-emerald-400' : 'text-red-400');
 
   return (
@@ -222,49 +303,67 @@ export const PositionDetailModal = ({ open, onClose, position, trades }) => {
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                 {error}
               </div>
-            ) : chartData.length === 0 ? (
+            ) : (!chartData || chartData.length === 0) ? (
               <div className="flex justify-center items-center h-72">
                 <p className="text-slate-500">No hay datos históricos disponibles</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                    stroke="#475569"
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                    tickFormatter={(value) => `$${value.toFixed(0)}`}
-                    stroke="#475569"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                    formatter={(value) => [formatCurrency(value), 'Precio']}
-                    labelFormatter={(label, payload) => {
-                      if (payload && payload[0]) {
-                        return payload[0].payload.fullDate;
-                      }
-                      return label;
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12, fill: '#94a3b8' }}
+                      stroke="#475569"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#94a3b8' }}
+                      tickFormatter={(value) => {
+                        try {
+                          return `$${Number(value).toFixed(0)}`;
+                        } catch {
+                          return '$0';
+                        }
+                      }}
+                      stroke="#475569"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                      formatter={(value) => {
+                        try {
+                          return [formatCurrency(Number(value)), 'Precio'];
+                        } catch {
+                          return ['Error', 'Precio'];
+                        }
+                      }}
+                      labelFormatter={(label, payload) => {
+                        try {
+                          if (payload && payload[0] && payload[0].payload) {
+                            return payload[0].payload.fullDate || label;
+                          }
+                          return label;
+                        } catch {
+                          return label;
+                        }
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6, fill: '#10b981' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
 
@@ -322,6 +421,6 @@ export const PositionDetailModal = ({ open, onClose, position, trades }) => {
       </div>
     </div>
   );
-};
+}
 
-export default PositionDetailModal;
+
