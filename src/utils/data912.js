@@ -71,9 +71,14 @@ class Data912Helper {
           throw new Error('Rate limit excedido. Intenta en unos segundos.');
         }
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await fetch(`${BASE_URL}${endpoint}`, {
-          signal: AbortSignal.timeout(10000)
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);

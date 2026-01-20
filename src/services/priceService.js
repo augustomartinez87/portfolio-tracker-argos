@@ -1,6 +1,7 @@
 // src/services/priceService.js
 import { API_ENDPOINTS, CONSTANTS } from '../utils/constants';
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from '../hooks/useBondPrices';
+import { data912 } from '../utils/data912';
 
 export class PriceService {
   constructor() {
@@ -17,9 +18,14 @@ export class PriceService {
 
     try {
       // Fetch from MEP endpoint (bonds + cedears)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const mepResponse = await fetch(API_ENDPOINTS.MEP, {
-        signal: AbortSignal.timeout(10000)
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       if (!mepResponse.ok) throw new Error('Failed to fetch MEP data');
       const mepData = await mepResponse.json();
 
@@ -84,9 +90,14 @@ export class PriceService {
 
   async fetchStocks(priceMap, tickerList) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(API_ENDPOINTS.ARG_STOCKS, {
-        signal: AbortSignal.timeout(10000)
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error('Failed to fetch arg_stocks');
       const data = await response.json();
 
@@ -118,9 +129,14 @@ export class PriceService {
 
   async fetchCedears(priceMap) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(API_ENDPOINTS.ARG_CEDEARs, {
-        signal: AbortSignal.timeout(10000)
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error('Failed to fetch arg_cedears');
       const data = await response.json();
 
@@ -170,7 +186,5 @@ export class PriceService {
     }
   }
 }
-
-import { data912 } from '../utils/data912';
 
 export const priceService = new PriceService();

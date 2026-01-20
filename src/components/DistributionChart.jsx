@@ -2,11 +2,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'recharts';
 import { Activity, PieChartIcon, TrendingUp, TrendingDown } from 'lucide-react';
-import {
-  calculateAssetDistribution,
-  formatCurrency,
-  formatPercentage
-} from '../utils/portfolioHelpers';
+import { calculateAssetDistribution, ASSET_CLASS_COLORS, formatCurrency, formatPercentage } from '../utils/portfolioHelpers';
 
 export const DistributionChart = ({ positions }) => {
   const { distribution, totalValue } = useMemo(
@@ -27,7 +23,7 @@ export const DistributionChart = ({ positions }) => {
       return (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-2xl">
           <p className="text-white font-semibold text-sm mb-1">{data.name}</p>
-          <p className="text-slate-300 text-sm">{formatCurrency(data.value)}</p>
+          <p className="text-slate-300 text-sm">{formatARS(data.value)}</p>
           <p className="text-emerald-400 font-medium text-sm">{formatPercentage(data.percentage)}</p>
           <p className="text-slate-500 text-xs mt-1">{data.count} posiciones</p>
         </div>
@@ -74,7 +70,7 @@ export const DistributionChart = ({ positions }) => {
             <span className={`text-sm font-mono font-semibold ${
               portfolioChange >= 0 ? 'text-emerald-400' : 'text-red-400'
             }`}>
-              {portfolioChange >= 0 ? '+' : ''}{formatCurrency(portfolioChange)}
+              {portfolioChange >= 0 ? '+' : ''}              {formatARS(portfolioChange)}
             </span>
           </div>
         )}
@@ -105,7 +101,7 @@ export const DistributionChart = ({ positions }) => {
                 />
               ))}
               <Label
-                value={formatCurrency(totalValue)}
+                value={formatARS(totalValue)}
                 position="center"
                 className="fill-white"
                 style={{
@@ -150,13 +146,13 @@ export const DistributionChart = ({ positions }) => {
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-xs text-slate-500">{item.count} activo{item.count !== 1 ? 's' : ''}</span>
                   <span className="text-xs text-slate-600">•</span>
-                  <span className="text-xs font-mono text-slate-400">{formatPercentage(item.percentage)}</span>
+                  <span className="text-xs font-mono text-slate-400">{formatPercent(item.percentage)}</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
               <span className="text-sm font-semibold text-white font-mono block">
-                {formatCurrency(item.value)}
+                {formatARS(item.value)}
               </span>
               <span className="text-xs text-slate-500">
                 {((item.value / totalValue) * 100).toFixed(1)}% del total
