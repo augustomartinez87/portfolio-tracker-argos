@@ -644,16 +644,7 @@ const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
               }
             }
           }
-        });
-      } catch (e) {
-        console.warn('Could not fetch arg_stocks:', e);
-      }
-                    }));
-                  }
-                }
-              }
-            }
-        });
+});
       } catch (e) {
         console.warn('Could not fetch arg_stocks:', e);
       }
