@@ -96,7 +96,23 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           throw new Error('Datos históricos inválidos');
         }
 
-        setHistorical(validData);
+        // Sort by date (oldest first) for proper chart display
+        const sortedData = validData.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+
+        // Take only last 90 days if we have more data
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        const filteredData = sortedData.filter(item => {
+          const itemDate = new Date(item.date);
+          return itemDate >= ninetyDaysAgo;
+        });
+
+        setHistorical(filteredData);
       } catch (err) {
         console.error('Error fetching historical data:', err);
         setError(err instanceof Error ? err.message : 'Error cargando históricos');
@@ -274,7 +290,14 @@ if (!position.ticker) {
           {/* Historical Price Chart */}
           <div className="bg-slate-900/50 rounded-lg p-5 border border-slate-700/50 mb-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
-              <h3 className="text-lg font-bold text-white">Precio Histórico (90 días)</h3>
+              <div>
+                <h3 className="text-lg font-bold text-white">Precio Histórico (últimos 90 días)</h3>
+                {chartData.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Mostrando {chartData.length} días de datos
+                  </p>
+                )}
+              </div>
               {stats && (
                 <div className="flex gap-4 text-sm">
                   <div>
