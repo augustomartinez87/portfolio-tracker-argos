@@ -58,10 +58,16 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
   // Filter trades for this position
   const positionTrades = useMemo(() => {
-    if (!position) return [];
-    return trades
-      .filter(t => t.ticker === position.ticker)
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    try {
+      if (!position) return [];
+      if (!trades || !Array.isArray(trades)) return [];
+      return trades
+        .filter(t => t && t.ticker === position.ticker)
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    } catch (err) {
+      console.error('Error filtering trades:', err);
+      return [];
+    }
   }, [trades, position]);
 
   // Fetch historical data with retry
@@ -196,51 +202,60 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
   // Calculate individual trade results with current prices
   const tradesWithResults = useMemo(() => {
-    if (!position) return positionTrades;
-    
-    const currentPrice = position.precioActual || 0;
-    
-    return positionTrades.map(trade => {
-      const investedAmount = trade.cantidad * trade.precioCompra;
-      const currentValue = trade.cantidad * currentPrice;
-      const result = currentValue - investedAmount;
-      const resultPct = trade.precioCompra > 0 ? (result / investedAmount) * 100 : 0;
+    try {
+      if (!position) return positionTrades;
+      const currentPrice = position.precioActual || 0;
       
-      return {
-        ...trade,
-        investedAmount,
-        currentValue,
-        result,
-        resultPct
-      };
-    });
+      return positionTrades.map(trade => {
+        const investedAmount = (trade.cantidad || 0) * (trade.precioCompra || 0);
+        const currentValue = (trade.cantidad || 0) * currentPrice;
+        const result = currentValue - investedAmount;
+        const resultPct = trade.precioCompra > 0 ? (result / investedAmount) * 100 : 0;
+        
+        return {
+          ...trade,
+          investedAmount,
+          currentValue,
+          result,
+          resultPct
+        };
+      });
+    } catch (err) {
+      console.error('Error calculating trade results:', err);
+      return positionTrades;
+    }
   }, [position, positionTrades]);
 
-  if (!open || !position) return null;
+  if (!open) return null;
+  
+  if (!position) {
+    console.error('Position is null or undefined');
+    return null;
+  }
 
-// Add error boundary for component crashes
-if (!position.ticker) {
-  console.error('Invalid position data:', position);
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg p-6 text-center">
-        <p className="text-red-400 mb-4">Error al cargar los datos de la posición</p>
-        <button 
-          onClick={onClose}
-          className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
-        >
-          Cerrar
-        </button>
+  // Validate position has required fields
+  if (!position.ticker) {
+    console.error('Invalid position data:', position);
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-slate-800 rounded-lg p-6 text-center">
+          <p className="text-red-400 mb-4">Error al cargar los datos de la posición</p>
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   const invested = position?.costoTotal || 0;
   const getColorClass = (value) => (value >= 0 ? 'text-emerald-400' : 'text-red-400');
 
-  // Check if position ticker is available
-  const isPositionUnavailable = position && !data912.isTickerAvailable(position.ticker);
+  // Check if position has valid price data
+  const isPositionUnavailable = position && (!position.precioActual || position.precioActual === 0);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
