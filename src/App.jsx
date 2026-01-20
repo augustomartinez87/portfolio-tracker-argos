@@ -479,14 +479,14 @@ export default function PortfolioTracker() {
   const [importStatus, setImportStatus] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
   const [expandedPositions, setExpandedPositions] = useState({});
-  const [dataSource, setDataSource] = useState({ mep: 0, argStocks: 0, cedears: 0 });
+  const [dataSource, setDataSource] = useState({ mep: 0, argStocks: 0, cedears: 0, bonds: 0 });
 
   // Fetch prices from multiple data912 endpoints
   const fetchPrices = useCallback(async () => {
     setIsPricesLoading(true);
     const priceMap = {};
     const tickerList = [];
-    let sources = { mep: 0, argStocks: 0, cedears: 0 };
+    let sources = { mep: 0, argStocks: 0, cedears: 0, bonds: 0 };
 
     try {
       // Fetch from /live/mep (main source - has bonds + cedears with MEP calc)
@@ -529,6 +529,56 @@ export default function PortfolioTracker() {
 
       if (mepCount > 0) {
         setMepRate(avgMep / mepCount);
+      }
+
+      // Fetch from /live/arg_bonds (bonos en pesos)
+      try {
+        const bondsResponse = await fetch('https://data912.com/live/arg_bonds', {
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!bondsResponse.ok) throw new Error('Failed to fetch arg_bonds');
+        const bondsData = await bondsResponse.json();
+
+        bondsData.forEach(item => {
+          const ticker = item.symbol;
+          // Skip D (dollar) versions
+          if (ticker.endsWith('D')) return;
+
+          const assetClass = getAssetClass(ticker, 'bonds');
+
+          // Only add if not already in priceMap
+          if (!priceMap[ticker]) {
+            priceMap[ticker] = {
+              precio: item.c || item.px_ask || item.px_bid,
+              bid: item.px_bid,
+              ask: item.px_ask,
+              close: item.c,
+              panel: 'bonds',
+              assetClass,
+              source: 'arg_bonds',
+              pctChange: item.pct_change
+            };
+
+            tickerList.push({
+              ticker,
+              panel: 'bonds',
+              assetClass
+            });
+
+            sources.bonds++;
+          } else {
+            // Update with better price/pct_change if available
+            if (item.c && item.c > 0) {
+              priceMap[ticker].precio = item.c;
+              priceMap[ticker].close = item.c;
+            }
+            if (item.pct_change !== null && item.pct_change !== undefined) {
+              priceMap[ticker].pctChange = item.pct_change;
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Could not fetch arg_bonds:', e);
       }
 
       // Fetch from /live/arg_stocks (local Argentine stocks)
@@ -616,12 +666,13 @@ export default function PortfolioTracker() {
     } finally {
       setIsPricesLoading(false);
     }
-  }, [setPrices]);
+  }, []); // Remove setPrices dependency to prevent infinite loop
 
   // Initial fetch
   useEffect(() => {
     fetchPrices();
-  }, [fetchPrices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Download CSV template
   const downloadTemplate = () => {
@@ -902,7 +953,7 @@ export default function PortfolioTracker() {
                   </span>
                 )}
                 <span className="text-xs text-slate-600">
-                  • {dataSource.mep + dataSource.argStocks} tickers
+                  • {dataSource.mep + dataSource.argStocks + dataSource.bonds} tickers
                 </span>
               </div>
             </div>
