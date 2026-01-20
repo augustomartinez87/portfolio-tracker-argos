@@ -3,7 +3,9 @@ import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, 
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
-import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from './hooks/useBondPrices';
+import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from './hooks/useBondPrices';
+import { parseARSNumber, parseDateDMY } from './utils/parsers';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import DistributionChart from './components/DistributionChart';
 import SummaryCard from './components/common/SummaryCard';
 
@@ -25,45 +27,16 @@ const LoadingFallback = () => (
 // ============================================
 
 // ============================================
-// CUSTOM HOOKS
+// IMPORTED HOOKS
 // ============================================
-
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
-};
 
 // ============================================
 // PARSE UTILITIES
 // ============================================
 
-const parseARSNumber = (str) => {
-  if (!str) return 0;
-  const cleaned = str.toString()
-    .replace(/\$/g, '')
-    .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(/,/g, '.');
-  return parseFloat(cleaned) || 0;
-};
+// ============================================
+// IMPORTED FUNCTIONS FROM UTILS
+// ============================================
 
 const parseDateDMY = (str) => {
   if (!str) return null;
@@ -78,55 +51,8 @@ const parseDateDMY = (str) => {
 // ============================================
 // MAIN APP COMPONENT
 // ============================================
-// PARSE UTILITIES
+// IMPORTED UTILITIES
 // ============================================
-
-const parseARSNumber = (str) => {
-  if (!str) return 0;
-  const cleaned = str.toString()
-    .replace(/\$/g, '')
-    .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(/,/g, '.');
-  return parseFloat(cleaned) || 0;
-};
-
-const parseDateDMY = (str) => {
-  if (!str) return null;
-  const parts = str.split('/');
-  if (parts.length === 3) {
-    const [day, month, year] = parts;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return str;
-};
-
-// ============================================
-// CUSTOM HOOKS
-// ============================================
-
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
-};
 
 // ============================================
 // COMPONENTS
@@ -382,69 +308,9 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
   );
 };
 
-const formatPercent = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
-};
-
-const formatNumber = (value, decimals = 0) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('es-AR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  }).format(value);
-};
-
-const parseARSNumber = (str) => {
-  if (!str) return 0;
-  const cleaned = str.toString()
-    .replace(/\$/g, '')
-    .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(/,/g, '.');
-  return parseFloat(cleaned) || 0;
-};
-
-const parseDateDMY = (str) => {
-  if (!str) return null;
-  const parts = str.split('/');
-  if (parts.length === 3) {
-    const [day, month, year] = parts;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return str;
-};
-
 // ============================================
-// BOND DETECTION & PRICE ADJUSTMENT
+// ALL COMPONENTS IMPORTED/DEFINED ABOVE
 // ============================================
-
-// Detecta si es un bono en pesos (BONCER, BONTE, Letras, etc.)
-// Estos bonos en data912 vienen con precio por cada $1000 VN
-// pero en los brokers se compran por cada $1 VN
-const isBonoPesos = (ticker) => {
-  if (!ticker) return false;
-  const t = ticker.toUpperCase();
-
-  // Patrones de bonos en pesos argentinos:
-  // TX26, TX28 = BONCER
-  // T2X5, T3X4 = BONCER cortos
-  // T15E7, T2V5 = BONTE / Letras capitalizables
-  // TDJ24, TDL24 = Letras
-  // S31E5, S28F5 = Lecaps
-  // DICP, PARP, CUAP = Bonos CER viejos
-
-  // Patrón general: empieza con T o S seguido de números/letras
-  if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;  // TX26, T15E7, TDA24, etc.
-  if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;  // S31E5, S28F5
-  if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
-
-  // TTD26 también es bono en pesos (bono dual)
-  if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
-
-  return false;
-};
 
 // Detecta si es un bono hard dollar
 const isBonoHardDollar = (ticker) => {
