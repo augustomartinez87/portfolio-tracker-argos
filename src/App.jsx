@@ -503,12 +503,13 @@ const SummaryCard = ({ title, value, subValue, icon: Icon, trend, isLoading, hig
 
 export default function PortfolioTracker() {
   const [trades, setTrades] = useLocalStorage('portfolio-trades-v3', []);
-  const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
+const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
   const [tickers, setTickers] = useState([]);
   const [mepRate, setMepRate] = useState(1467);
   const [isLoading, setIsLoading] = useState(false);
   const [isPricesLoading, setIsPricesLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [lastUpdateFull, setLastUpdateFull] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
@@ -518,6 +519,7 @@ export default function PortfolioTracker() {
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [lastValidPrices, setLastValidPrices] = useState({});
 
 // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
@@ -547,9 +549,15 @@ export default function PortfolioTracker() {
         // ⚡ AJUSTE CRÍTICO: Bonos en pesos vienen por $1000 VN, convertir a precio por $1 VN
         const adjustedPrice = adjustBondPrice(ticker, rawPrice);
 
+// Price persistence: mantener último válido si el nuevo es 0 o null
+        const isValidPrice = adjustedPrice > 0;
+        const lastValid = lastValidPrices[ticker];
+        const finalPrice = isValidPrice ? adjustedPrice : (lastValid?.precio || adjustedPrice);
+        const finalRawPrice = isValidPrice ? rawPrice : (lastValid?.precioRaw || rawPrice);
+        
         priceMap[ticker] = {
-          precio: adjustedPrice,
-          precioRaw: rawPrice,
+          precio: finalPrice,
+          precioRaw: finalRawPrice,
           bid: item.ars_bid,
           ask: item.ars_ask,
           close: item.close,
@@ -557,7 +565,8 @@ export default function PortfolioTracker() {
           assetClass,
           pctChange: null,
           isBonoPesos: isBonoPesos(ticker),
-          isBonoHD: isBonoHardDollar(ticker)
+          isBonoHD: isBonoHardDollar(ticker),
+          isStale: !isValidPrice && lastValid // Marcar si el precio está desactualizado
         };
 
         tickerList.push({
@@ -610,9 +619,32 @@ export default function PortfolioTracker() {
               assetClass
             });
           } else {
-            // Update pct_change from this source
-            priceMap[ticker].pctChange = item.pct_change;
-          }
+// Update pct_change from this source
+            if (priceMap[ticker]) {
+              priceMap[ticker].pctChange = item.pct_change;
+              // Update price if newer and valid
+              if (item.c && item.c > 0) {
+                const lastValid = lastValidPrices[ticker];
+                const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
+                
+                if (shouldUpdate) {
+                  priceMap[ticker].precio = item.c;
+                  priceMap[ticker].close = item.c;
+                  
+                  // Actualizar último válido
+                  if (!lastValidPrices[ticker]) {
+                    setLastValidPrices(prev => ({
+                      ...prev,
+                      [ticker]: {
+                        precio: item.c,
+                        precioRaw: item.c,
+                        timestamp: Date.now()
+                      }
+                    }));
+                  }
+                }
+              }
+            }
         });
       } catch (e) {
         console.warn('Could not fetch arg_stocks:', e);
@@ -631,13 +663,30 @@ export default function PortfolioTracker() {
           // Skip D (dollar) and C (cable) versions
           if (ticker.endsWith('D') || ticker.endsWith('C')) return;
 
-          // Update pct_change for existing tickers
+// Update pct_change for existing tickers
           if (priceMap[ticker]) {
             priceMap[ticker].pctChange = item.pct_change;
-            // Update price if newer
+            // Update price if newer and valid
             if (item.c && item.c > 0) {
-              priceMap[ticker].precio = item.c;
-              priceMap[ticker].close = item.c;
+              const lastValid = lastValidPrices[ticker];
+              const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
+              
+              if (shouldUpdate) {
+                priceMap[ticker].precio = item.c;
+                priceMap[ticker].close = item.c;
+                
+                // Actualizar último válido
+                if (!lastValidPrices[ticker]) {
+                  setLastValidPrices(prev => ({
+                    ...prev,
+                    [ticker]: {
+                      precio: item.c,
+                      precioRaw: item.c,
+                      timestamp: Date.now()
+                    }
+                  }));
+                }
+              }
             }
           }
         });
@@ -645,13 +694,29 @@ export default function PortfolioTracker() {
         console.warn('Could not fetch arg_cedears:', e);
       }
 
+const now = new Date();
       setPrices(priceMap);
       setTickers(tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)));
-      setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+      setLastUpdate(now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+      setLastUpdateFull(now.toLocaleDateString('es-AR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }));
 
-    } catch (error) {
+} catch (error) {
       console.error('Error fetching prices:', error);
-      setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
+      const now = new Date();
+      setLastUpdate(now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
+      setLastUpdateFull(now.toLocaleDateString('es-AR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) + ' (error)');
     } finally {
       setIsPricesLoading(false);
     }
@@ -679,21 +744,44 @@ export default function PortfolioTracker() {
           data912.getBatchDailyReturns(uniqueTickers)
         ]);
 
-        // Update price map with data912 results
+// Update price map with data912 results with price persistence
         setPrices(prevPrices => {
           const updated = { ...prevPrices };
+          
           Object.keys(batchPrices).forEach(ticker => {
+            const newPrice = batchPrices[ticker];
+            
             if (updated[ticker]) {
-              const rawPrice = batchPrices[ticker];
-              const adjustedPrice = adjustBondPrice(ticker, rawPrice);
-              updated[ticker] = {
-                ...updated[ticker],
-                precio: adjustedPrice,
-                precioRaw: rawPrice,
-                pctChange: batchReturns[ticker] || updated[ticker].pctChange
-              };
+              const currentPrice = updated[ticker];
+              
+              // Persistencia: si el nuevo precio es válido (> 0), usar ese
+              // Si es 0 o inválido, mantener el anterior
+              if (newPrice > 0) {
+                const adjustedPrice = adjustBondPrice(ticker, newPrice);
+                
+                updated[ticker] = {
+                  ...currentPrice,
+                  precio: adjustedPrice,
+                  precioRaw: newPrice,
+                  pctChange: batchReturns[ticker] || currentPrice.pctChange,
+                  lastUpdate: Date.now()
+                };
+                
+                // Guardar en localStorage para persistencia
+                try {
+                  localStorage.setItem(`price_${ticker}`, JSON.stringify({
+                    precio: adjustedPrice,
+                    precioRaw: newPrice,
+                    timestamp: Date.now()
+                  }));
+                } catch (e) {
+                  // Ignorar errores de localStorage
+                }
+              }
+              // Si newPrice es 0, no actualizamos - mantenemos el precio anterior
             }
           });
+          
           return updated;
         });
       } catch (error) {
@@ -998,13 +1086,13 @@ export default function PortfolioTracker() {
                 <Zap className="w-6 h-6 text-emerald-400" />
                 Portfolio Tracker
               </h1>
-              <div className="flex items-center gap-3 mt-1">
+<div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                 <span className="text-sm text-slate-400">
                   MEP: <span className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</span>
                 </span>
                 {lastUpdate && (
                   <span className="text-xs text-slate-500">
-                    • {lastUpdate}
+                    Actualizado: {lastUpdateFull || lastUpdate}
                   </span>
                 )}
               </div>
@@ -1043,8 +1131,8 @@ export default function PortfolioTracker() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'dashboard' ? (
           <>
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+{/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               <SummaryCard
                 title="Invertido"
                 value={formatARS(totals.invertido)}
@@ -1067,22 +1155,6 @@ export default function PortfolioTracker() {
                 subValue={formatPercent(totals.resultadoPct)}
                 icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
                 trend={totals.resultado}
-                isLoading={isPricesLoading}
-              />
-              <SummaryCard
-                title="Resultado Diario $"
-                value={formatARS(totals.resultadoDiario)}
-                subValue={formatUSD(totals.resultadoDiarioUSD)}
-                icon={totals.resultadoDiario >= 0 ? TrendingUp : TrendingDown}
-                trend={totals.resultadoDiario}
-                isLoading={isPricesLoading}
-              />
-              <SummaryCard
-                title="Resultado Diario %"
-                value={formatPercent(totals.resultadoDiarioPct)}
-                subValue={formatARS(totals.resultadoDiario)}
-                icon={totals.resultadoDiarioPct >= 0 ? TrendingUp : TrendingDown}
-                trend={totals.resultadoDiarioPct}
                 isLoading={isPricesLoading}
               />
             </div>
@@ -1115,14 +1187,14 @@ export default function PortfolioTracker() {
               </div>
             </div>
 
-            {/* Positions Table */}
+{/* Positions Table */}
             <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
               <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white">Posiciones</h3>
                 <span className="text-sm text-slate-400">{positions.length} activos</span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                <table className="w-full min-w-[1200px]">
                   <thead>
                     <tr className="bg-slate-900/50">
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticker</th>
@@ -1133,6 +1205,7 @@ export default function PortfolioTracker() {
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valuación</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Result. Total</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Result. Diario</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">% Diario</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
@@ -1146,11 +1219,16 @@ export default function PortfolioTracker() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-white font-mono">{pos.ticker}</span>
-                                {pos.pctChange !== null && pos.pctChange !== undefined && (
+{pos.pctChange !== null && pos.pctChange !== undefined && (
                                   <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                                     pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                                   }`}>
                                     {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
+                                  </span>
+                                )}
+                                {prices[pos.ticker]?.isStale && (
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-1">
+                                    ⚠️
                                   </span>
                                 )}
                               </div>
@@ -1205,7 +1283,16 @@ export default function PortfolioTracker() {
                               <span className="block text-xs opacity-80">
                                 {formatPercent(pos.resultadoDiarioPct || 0)}
                               </span>
-                            </div>
+</div>
+                          </td>
+                          <td className="text-right px-4 py-3 hidden lg:table-cell">
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                              pos.resultadoDiarioPct >= 0 
+                                ? 'bg-emerald-500/20 text-emerald-400' 
+                                : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {formatPercent(pos.resultadoDiarioPct || 0)}
+                            </span>
                           </td>
                         </tr>
                       </React.Fragment>
@@ -1237,14 +1324,20 @@ export default function PortfolioTracker() {
                               {formatPercent(totals.resultadoPct)}
                             </span>
                           </div>
-                        </td>
+</td>
                         <td className="text-right px-4 py-4">
                           <div className={`font-mono font-bold text-base ${totals.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                             {formatARS(totals.resultadoDiario)}
-                            <span className="block text-xs opacity-90 font-semibold">
-                              {formatPercent(totals.resultadoDiarioPct)}
-                            </span>
                           </div>
+                        </td>
+                        <td className="text-right px-4 py-4 hidden lg:table-cell">
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${
+                            totals.resultadoDiarioPct >= 0 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {formatPercent(totals.resultadoDiarioPct)}
+                          </span>
                         </td>
                       </tr>
                     )}
