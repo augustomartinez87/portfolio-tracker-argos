@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap } from 'lucide-react';
 import { data912 } from './utils/data912';
 import DistributionChart from './components/DistributionChart';
+import PositionDetailModal from './components/PositionDetailModal';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -481,7 +482,8 @@ export default function PortfolioTracker() {
   const [deletingTrade, setDeletingTrade] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
-  const [expandedPositions, setExpandedPositions] = useState({});
+  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
@@ -940,11 +942,14 @@ export default function PortfolioTracker() {
     }
   };
 
-  const togglePosition = (ticker) => {
-    setExpandedPositions(prev => ({
-      ...prev,
-      [ticker]: !prev[ticker]
-    }));
+  const handleOpenPositionDetail = (position) => {
+    setSelectedPosition(position);
+    setDetailModalOpen(true);
+  };
+
+  const handleClosePositionDetail = () => {
+    setDetailModalOpen(false);
+    setSelectedPosition(null);
   };
 
   return (
@@ -1100,26 +1105,21 @@ export default function PortfolioTracker() {
                       <React.Fragment key={pos.ticker}>
                         <tr
                           className="hover:bg-slate-700/20 transition-colors cursor-pointer"
-                          onClick={() => togglePosition(pos.ticker)}
+                          onClick={() => handleOpenPositionDetail(pos)}
                         >
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`transition-transform ${expandedPositions[pos.ticker] ? 'rotate-180' : ''}`}>
-                                <ChevronDown className="w-4 h-4 text-slate-500" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white font-mono">{pos.ticker}</span>
+                                {pos.pctChange !== null && pos.pctChange !== undefined && (
+                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                    pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
+                                  </span>
+                                )}
                               </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-white font-mono">{pos.ticker}</span>
-                                  {pos.pctChange !== null && pos.pctChange !== undefined && (
-                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                                      pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                                    }`}>
-                                      {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-xs text-slate-500">{pos.assetClass}</span>
-                              </div>
+                              <span className="text-xs text-slate-500">{pos.assetClass}</span>
                             </div>
                           </td>
                           <td className="text-right px-4 py-3 text-slate-300 font-mono hidden sm:table-cell">
@@ -1154,26 +1154,6 @@ export default function PortfolioTracker() {
                             </div>
                           </td>
                         </tr>
-                        {expandedPositions[pos.ticker] && (
-                          <tr className="bg-slate-900/50">
-                            <td colSpan={8} className="px-4 py-3">
-                              <div className="text-sm pl-6">
-                                <p className="text-slate-400 mb-2 font-medium">Trades ({pos.trades.length})</p>
-                                <div className="space-y-1">
-                                  {pos.trades.map(trade => (
-                                    <div key={trade.id} className="flex justify-between items-center py-2 px-3 bg-slate-800/50 rounded-lg">
-                                      <span className="text-slate-400 text-xs">{new Date(trade.fecha).toLocaleDateString('es-AR')}</span>
-                                      <span className="text-white font-mono text-sm">
-                                        {formatNumber(trade.cantidad)} @ {pos.isBonoPesos ? `$${trade.precioCompra.toFixed(4)}` : formatARS(trade.precioCompra)}
-                                      </span>
-                                      <span className="text-slate-400 font-mono text-sm">{formatARS(trade.cantidad * trade.precioCompra)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </React.Fragment>
                     ))}
                     {positions.length > 0 && (
@@ -1441,6 +1421,13 @@ export default function PortfolioTracker() {
         }}
         onConfirm={handleDeleteTrade}
         tradeTicker={deletingTrade?.ticker}
+      />
+
+      <PositionDetailModal
+        open={detailModalOpen}
+        onClose={handleClosePositionDetail}
+        position={selectedPosition}
+        trades={trades}
       />
     </div>
   );
