@@ -91,16 +91,17 @@ class Data912Helper {
       const data = await this.fetchEndpoint(endpoint);
 
       // Buscar en diferentes estructuras de datos
-      let stockInfo = data[correctedTicker] || data[ticker];
+      let stockInfo = null;
       
-      // Si no encuentra el ticker directamente, buscar en el array
-      if (!stockInfo && Array.isArray(data)) {
+      // Para arg_bonds y arrays, buscar por symbol
+      if (Array.isArray(data)) {
         stockInfo = data.find(item => 
-          item.ticker === correctedTicker || 
-          item.symbol === correctedTicker ||
-          item.ticker === ticker ||
-          item.symbol === ticker
+          (item.symbol && (item.symbol === correctedTicker || item.symbol === ticker)) ||
+          (item.ticker && (item.ticker === correctedTicker || item.ticker === ticker))
         );
+      } else {
+        // Para objetos, buscar por clave
+        stockInfo = data[correctedTicker] || data[ticker];
       }
 
       if (!stockInfo) {
@@ -212,32 +213,28 @@ class Data912Helper {
     return tickerMap[upperTicker] || upperTicker;
   }
 
-  // Lista de tickers conocidos que no existen en data912
-  getUnavailableTickers() {
-    return {
-      'BONOS_PESOS': ['TTD26', 'T15E7', 'S31E5', 'S28F5'], // Ejemplos de bonos que pueden no estar
-      'OTROS': []
-    };
-  }
-
-  // Verificar si un ticker está disponible
-  isTickerAvailable(ticker) {
-    const unavailable = this.getUnavailableTickers();
-    const upperTicker = ticker.toUpperCase();
-    
-    for (const category of Object.values(unavailable)) {
-      if (category.includes(upperTicker)) {
-        return false;
-      }
-    }
-    
-    return true;
+  // Determinar si es un bono en pesos
+  isBonoPesos(ticker) {
+    if (!ticker) return false;
+    const t = ticker.toUpperCase();
+    // Patrones de bonos en pesos: TX26, T15E7, TTD26, S31E5, etc.
+    if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;
+    if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
+    if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
+    if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
+    return false;
   }
 
   // Determinar endpoint según ticker
   getEndpointForTicker(ticker) {
     const correctedTicker = this.getCorrectTicker(ticker);
     const cedears = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA'];
+    
+    // Bonos en pesos van a arg_bonds
+    if (this.isBonoPesos(correctedTicker)) {
+      return '/live/arg_bonds';
+    }
+    
     if (cedears.some(c => correctedTicker.startsWith(c)) || correctedTicker.endsWith('.BA')) {
       return '/live/arg_cedears';
     }
@@ -287,16 +284,17 @@ class Data912Helper {
           const correctedTicker = this.getCorrectTicker(ticker);
           
           // Buscar en diferentes estructuras de datos
-          let stockInfo = data[correctedTicker] || data[ticker];
+          let stockInfo = null;
           
-          // Si no encuentra el ticker directamente, buscar en el array
-          if (!stockInfo && Array.isArray(data)) {
+          if (Array.isArray(data)) {
+            // Para arg_bonds, arg_cedears, etc. que retornan arrays
             stockInfo = data.find(item => 
-              item.ticker === correctedTicker || 
-              item.symbol === correctedTicker ||
-              item.ticker === ticker ||
-              item.symbol === ticker
+              (item.symbol && (item.symbol === correctedTicker || item.symbol === ticker)) ||
+              (item.ticker && (item.ticker === correctedTicker || item.ticker === ticker))
             );
+          } else {
+            // Para objetos
+            stockInfo = data[correctedTicker] || data[ticker];
           }
 
           if (stockInfo) {
@@ -363,16 +361,17 @@ class Data912Helper {
           const correctedTicker = this.getCorrectTicker(ticker);
           
           // Buscar en diferentes estructuras de datos
-          let stockInfo = data[correctedTicker] || data[ticker];
+          let stockInfo = null;
           
-          // Si no encuentra el ticker directamente, buscar en el array
-          if (!stockInfo && Array.isArray(data)) {
+          if (Array.isArray(data)) {
+            // Para arg_bonds, arg_cedears, etc. que retornan arrays
             stockInfo = data.find(item => 
-              item.ticker === correctedTicker || 
-              item.symbol === correctedTicker ||
-              item.ticker === ticker ||
-              item.symbol === ticker
+              (item.symbol && (item.symbol === correctedTicker || item.symbol === ticker)) ||
+              (item.ticker && (item.ticker === correctedTicker || item.ticker === ticker))
             );
+          } else {
+            // Para objetos
+            stockInfo = data[correctedTicker] || data[ticker];
           }
 
           if (stockInfo) {
