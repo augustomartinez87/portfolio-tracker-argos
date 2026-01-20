@@ -885,7 +885,7 @@ export default function PortfolioTracker() {
     }
   };
 
-  // Calculate positions (grouped trades)
+  // Calculate positions (grouped trades) with daily P&L
   const positions = useMemo(() => {
     const grouped = {};
 
@@ -911,6 +911,11 @@ export default function PortfolioTracker() {
       const resultado = valuacionActual - pos.costoTotal;
       const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
 
+      // Daily P&L calculations
+      const dailyReturnPct = priceData?.pctChange || 0;
+      const resultadoDiario = (dailyReturnPct / 100) * valuacionActual;
+      const resultadoDiarioPct = dailyReturnPct;
+
       const assetClass = priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel);
 
       return {
@@ -920,6 +925,8 @@ export default function PortfolioTracker() {
         valuacionActual,
         resultado,
         resultadoPct,
+        resultadoDiario,
+        resultadoDiarioPct,
         assetClass,
         pctChange: priceData?.pctChange,
         isBonoPesos: priceData?.isBonoPesos || isBonoPesos(pos.ticker),
@@ -927,26 +934,32 @@ export default function PortfolioTracker() {
         // USD calculations
         costoUSD: pos.costoTotal / mepRate,
         valuacionUSD: valuacionActual / mepRate,
-        resultadoUSD: resultado / mepRate
+        resultadoUSD: resultado / mepRate,
+        resultadoDiarioUSD: resultadoDiario / mepRate
       };
     }).sort((a, b) => b.valuacionActual - a.valuacionActual);
   }, [trades, prices, mepRate]);
 
-  // Portfolio totals
+  // Portfolio totals with daily P&L
   const totals = useMemo(() => {
     const invertido = positions.reduce((sum, p) => sum + p.costoTotal, 0);
     const valuacion = positions.reduce((sum, p) => sum + p.valuacionActual, 0);
     const resultado = valuacion - invertido;
     const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
+    const resultadoDiario = positions.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
+    const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
 
     return {
       invertido,
       valuacion,
       resultado,
       resultadoPct,
+      resultadoDiario,
+      resultadoDiarioPct,
       invertidoUSD: invertido / mepRate,
       valuacionUSD: valuacion / mepRate,
-      resultadoUSD: resultado / mepRate
+      resultadoUSD: resultado / mepRate,
+      resultadoDiarioUSD: resultadoDiario / mepRate
     };
   }, [positions, mepRate]);
 
@@ -1057,7 +1070,7 @@ export default function PortfolioTracker() {
         {activeTab === 'dashboard' ? (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               <SummaryCard
                 title="Invertido"
                 value={formatARS(totals.invertido)}
@@ -1075,7 +1088,7 @@ export default function PortfolioTracker() {
                 highlight
               />
               <SummaryCard
-                title="Resultado ARS"
+                title="Resultado Total"
                 value={formatARS(totals.resultado)}
                 subValue={formatPercent(totals.resultadoPct)}
                 icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
@@ -1083,11 +1096,19 @@ export default function PortfolioTracker() {
                 isLoading={isPricesLoading}
               />
               <SummaryCard
-                title="Resultado USD"
-                value={formatUSD(totals.resultadoUSD)}
-                subValue={formatPercent(totals.resultadoPct)}
-                icon={totals.resultadoUSD >= 0 ? TrendingUp : TrendingDown}
-                trend={totals.resultadoUSD}
+                title="Resultado Diario $"
+                value={formatARS(totals.resultadoDiario)}
+                subValue={formatUSD(totals.resultadoDiarioUSD)}
+                icon={totals.resultadoDiario >= 0 ? TrendingUp : TrendingDown}
+                trend={totals.resultadoDiario}
+                isLoading={isPricesLoading}
+              />
+              <SummaryCard
+                title="Resultado Diario %"
+                value={formatPercent(totals.resultadoDiarioPct)}
+                subValue={formatARS(totals.resultadoDiario)}
+                icon={totals.resultadoDiarioPct >= 0 ? TrendingUp : TrendingDown}
+                trend={totals.resultadoDiarioPct}
                 isLoading={isPricesLoading}
               />
             </div>
@@ -1136,7 +1157,8 @@ export default function PortfolioTracker() {
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">P. Actual</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Invertido</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valuación</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Resultado</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Result. Total</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Result. Diario</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
@@ -1181,7 +1203,7 @@ export default function PortfolioTracker() {
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
                             {formatARS(pos.valuacionActual)}
                           </td>
-                          <td className="text-right px-4 py-3">
+                          <td className="text-right px-4 py-3 hidden xl:table-cell">
                             <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                               {formatARS(pos.resultado)}
                               <span className="block text-xs opacity-80">
@@ -1189,10 +1211,18 @@ export default function PortfolioTracker() {
                               </span>
                             </div>
                           </td>
+                          <td className="text-right px-4 py-3">
+                            <div className={`font-mono font-medium ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {formatARS(pos.resultadoDiario || 0)}
+                              <span className="block text-xs opacity-80">
+                                {formatPercent(pos.resultadoDiarioPct || 0)}
+                              </span>
+                            </div>
+                          </td>
                         </tr>
                         {expandedPositions[pos.ticker] && (
                           <tr className="bg-slate-900/50">
-                            <td colSpan={7} className="px-4 py-3">
+                            <td colSpan={8} className="px-4 py-3">
                               <div className="text-sm pl-6">
                                 <p className="text-slate-400 mb-2 font-medium">Trades ({pos.trades.length})</p>
                                 <div className="space-y-1">
@@ -1212,6 +1242,44 @@ export default function PortfolioTracker() {
                         )}
                       </React.Fragment>
                     ))}
+                    {positions.length > 0 && (
+                      <tr className="bg-slate-900/80 border-t-2 border-emerald-500/30">
+                        <td className="px-4 py-4 text-left">
+                          <span className="font-bold text-emerald-400 uppercase tracking-wide text-sm">TOTAL PORTFOLIO</span>
+                        </td>
+                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden sm:table-cell">
+                          -
+                        </td>
+                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden md:table-cell">
+                          -
+                        </td>
+                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm">
+                          -
+                        </td>
+                        <td className="text-right px-4 py-4 text-white font-mono font-bold text-base hidden lg:table-cell">
+                          {formatARS(totals.invertido)}
+                        </td>
+                        <td className="text-right px-4 py-4 text-white font-mono font-bold text-base">
+                          {formatARS(totals.valuacion)}
+                        </td>
+                        <td className="text-right px-4 py-4 hidden xl:table-cell">
+                          <div className={`font-mono font-bold text-base ${totals.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {formatARS(totals.resultado)}
+                            <span className="block text-xs opacity-90 font-semibold">
+                              {formatPercent(totals.resultadoPct)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-right px-4 py-4">
+                          <div className={`font-mono font-bold text-base ${totals.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {formatARS(totals.resultadoDiario)}
+                            <span className="block text-xs opacity-90 font-semibold">
+                              {formatPercent(totals.resultadoDiarioPct)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
                 {positions.length === 0 && (
