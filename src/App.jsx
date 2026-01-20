@@ -601,7 +601,7 @@ const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
 
           const assetClass = getAssetClass(ticker, null, true);
 
-          // Only add if not already in priceMap or update with pct_change
+// Only add if not already in priceMap or update with pct_change
           if (!priceMap[ticker]) {
             priceMap[ticker] = {
               precio: item.c || item.px_ask || item.px_bid,
@@ -619,27 +619,35 @@ const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
               assetClass
             });
           } else {
-// Update pct_change from this source
-            if (priceMap[ticker]) {
-              priceMap[ticker].pctChange = item.pct_change;
-              // Update price if newer and valid
-              if (item.c && item.c > 0) {
-                const lastValid = lastValidPrices[ticker];
-                const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
+            // Update pct_change from this source
+            priceMap[ticker].pctChange = item.pct_change;
+            // Update price if newer and valid
+            if (item.c && item.c > 0) {
+              const lastValid = lastValidPrices[ticker];
+              const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
+              
+              if (shouldUpdate) {
+                priceMap[ticker].precio = item.c;
+                priceMap[ticker].close = item.c;
                 
-                if (shouldUpdate) {
-                  priceMap[ticker].precio = item.c;
-                  priceMap[ticker].close = item.c;
-                  
-                  // Actualizar último válido
-                  if (!lastValidPrices[ticker]) {
-                    setLastValidPrices(prev => ({
-                      ...prev,
-                      [ticker]: {
-                        precio: item.c,
-                        precioRaw: item.c,
-                        timestamp: Date.now()
-                      }
+                // Actualizar último válido
+                if (!lastValidPrices[ticker]) {
+                  setLastValidPrices(prev => ({
+                    ...prev,
+                    [ticker]: {
+                      precio: item.c,
+                      precioRaw: item.c,
+                      timestamp: Date.now()
+                    }
+                  }));
+                }
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Could not fetch arg_stocks:', e);
+      }
                     }));
                   }
                 }
