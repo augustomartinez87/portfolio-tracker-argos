@@ -1,6 +1,6 @@
 // src/components/PositionDetailModal.jsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { X, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
 
@@ -35,6 +35,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [componentError, setComponentError] = useState(null);
+  const [selectedDays, setSelectedDays] = useState(90);
 
   // Error boundary for component crashes
   if (componentError) {
@@ -72,9 +73,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       setError(null);
 
       try {
-        // Last 90 days
+        // Fetch based on selected days
         const fromDate = new Date();
-        fromDate.setDate(fromDate.getDate() - 90);
+        fromDate.setDate(fromDate.getDate() - selectedDays);
         const dateStr = fromDate.toISOString().split('T')[0];
 
         const data = await data912.getHistorical(position.ticker, dateStr);
@@ -103,13 +104,13 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           return dateA.getTime() - dateB.getTime();
         });
 
-        // Take only last 90 days if we have more data
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        // Take only selected days if we have more data
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - selectedDays);
         
         const filteredData = sortedData.filter(item => {
           const itemDate = new Date(item.date);
-          return itemDate >= ninetyDaysAgo;
+          return itemDate >= daysAgo;
         });
 
         setHistorical(filteredData);
@@ -124,7 +125,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     };
 
     fetchHistorical();
-  }, [open, position]);
+  }, [open, position, selectedDays]);
 
   // Prepare chart data
   const chartData = useMemo(() => {
@@ -170,6 +171,28 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       return null;
     }
   }, [historical]);
+
+  // Calculate individual trade results with current prices
+  const tradesWithResults = useMemo(() => {
+    if (!position) return positionTrades;
+    
+    const currentPrice = position.precioActual || 0;
+    
+    return positionTrades.map(trade => {
+      const investedAmount = trade.cantidad * trade.precioCompra;
+      const currentValue = trade.cantidad * currentPrice;
+      const result = currentValue - investedAmount;
+      const resultPct = trade.precioCompra > 0 ? (result / investedAmount) * 100 : 0;
+      
+      return {
+        ...trade,
+        investedAmount,
+        currentValue,
+        result,
+        resultPct
+      };
+    });
+  }, [position, positionTrades]);
 
   if (!open || !position) return null;
 
@@ -289,14 +312,42 @@ if (!position.ticker) {
 
           {/* Historical Price Chart */}
           <div className="bg-slate-900/50 rounded-lg p-5 border border-slate-700/50 mb-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-white">Precio Histórico (últimos 90 días)</h3>
-                {chartData.length > 0 && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Mostrando {chartData.length} días de datos
-                  </p>
-                )}
+            <div className="mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-emerald-400" />
+                    Precio Histórico
+                  </h3>
+                  {chartData.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Mostrando {chartData.length} días de datos
+                    </p>
+                  )}
+                </div>
+
+                {/* Filtros de días */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Período:
+                  </span>
+                  <div className="flex gap-1">
+                    {[30, 60, 90, 120, 365].map(days => (
+                      <button
+                        key={days}
+                        onClick={() => setSelectedDays(days)}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
+                          selectedDays === days
+                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                            : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600 hover:text-white'
+                        }`}
+                      >
+                        {days === 365 ? '1A' : `${days}d`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               {stats && (
                 <div className="flex gap-4 text-sm">
@@ -409,11 +460,14 @@ if (!position.ticker) {
                       <th className="text-left px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Tipo</th>
                       <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Cantidad</th>
                       <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Precio</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Total</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Invertido</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Valor Actual</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Resultado</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">% Resultado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
-                    {positionTrades.map((trade) => (
+                    {tradesWithResults.map((trade) => (
                       <tr key={trade.id} className="hover:bg-slate-800/50 transition-colors">
                         <td className="px-3 py-3 text-slate-300 text-sm">
                           {new Date(trade.fecha).toLocaleDateString('es-AR')}
@@ -430,11 +484,61 @@ if (!position.ticker) {
                             : formatCurrency(trade.precioCompra)
                           }
                         </td>
-                        <td className="text-right px-3 py-3 text-white font-mono font-medium">
-                          {formatCurrency(trade.cantidad * trade.precioCompra)}
+                        <td className="text-right px-3 py-3 text-slate-400 font-mono text-sm">
+                          {formatCurrency(trade.investedAmount)}
+                        </td>
+                        <td className="text-right px-3 py-3 text-white font-mono">
+                          {formatCurrency(trade.currentValue)}
+                        </td>
+                        <td className="text-right px-3 py-3 font-mono">
+                          <div className={`font-medium ${trade.result >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {formatCurrency(trade.result)}
+                          </div>
+                        </td>
+                        <td className="text-right px-3 py-3 font-mono">
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                            trade.resultPct >= 0 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {formatPercentage(trade.resultPct)}
+                          </span>
                         </td>
                       </tr>
                     ))}
+                    
+                    {/* Fila de totales */}
+                    {tradesWithResults.length > 0 && (
+                      <tr className="bg-slate-900/80 border-t-2 border-emerald-500/30">
+                        <td colSpan={4} className="px-3 py-4 text-left">
+                          <span className="font-bold text-emerald-400 uppercase tracking-wide text-sm">TOTAL TRADES</span>
+                        </td>
+                        <td className="text-right px-3 py-4 text-white font-mono font-bold text-sm">
+                          {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0))}
+                        </td>
+                        <td className="text-right px-3 py-4 text-white font-mono font-bold text-sm">
+                          {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.currentValue, 0))}
+                        </td>
+                        <td className="text-right px-3 py-4 font-mono font-bold">
+                          <div className={`font-bold ${tradesWithResults.reduce((sum, t) => sum + t.result, 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.result, 0))}
+                          </div>
+                        </td>
+                        <td className="text-right px-3 py-4">
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                            tradesWithResults.reduce((sum, t) => sum + t.result, 0) >= 0 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {formatPercentage(
+                              tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0) > 0
+                                ? ((tradesWithResults.reduce((sum, t) => sum + t.result, 0) / tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0)) * 100)
+                                : 0
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
