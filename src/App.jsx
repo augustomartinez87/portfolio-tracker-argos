@@ -696,16 +696,18 @@ export default function PortfolioTracker() {
 
   // Auto-refresh prices for positions using data912 helper (every 30s)
   useEffect(() => {
-    if (positions.length === 0) return;
+    if (!trades || trades.length === 0) return;
 
     const refreshPositionPrices = async () => {
       try {
-        const tickers = positions.map(p => p.ticker);
+        // Get unique tickers from trades
+        const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
+        if (uniqueTickers.length === 0) return;
 
         // Batch fetch prices and daily returns
         const [batchPrices, batchReturns] = await Promise.all([
-          data912.getBatchPrices(tickers),
-          data912.getBatchDailyReturns(tickers)
+          data912.getBatchPrices(uniqueTickers),
+          data912.getBatchDailyReturns(uniqueTickers)
         ]);
 
         // Update price map with data912 results
@@ -736,7 +738,7 @@ export default function PortfolioTracker() {
     // Set up 30s interval
     const interval = setInterval(refreshPositionPrices, 30000);
     return () => clearInterval(interval);
-  }, [positions]);
+  }, [trades]);
 
   // Download CSV template
   const downloadTemplate = () => {
