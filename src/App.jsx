@@ -1,11 +1,28 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap, DollarSign, BarChart3 } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from './hooks/useBondPrices';
 import DistributionChart from './components/DistributionChart';
-import PositionDetailModal from './components/PositionDetailModal';
+import SummaryCard from './components/common/SummaryCard';
+
+// Lazy load PositionDetailModal (large component)
+const PositionDetailModal = lazy(() => import('./components/PositionDetailModal'));
+
+// Loading fallback for lazy components
+const LoadingFallback = () => (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+      <p className="text-slate-400">Cargando...</p>
+    </div>
+  </div>
+);
+
+// ============================================
+// PARSE UTILITIES
+// ============================================
 
 // ============================================
 // CUSTOM HOOKS
@@ -1613,8 +1630,17 @@ const now = new Date();
         open={detailModalOpen}
         onClose={handleClosePositionDetail}
         position={selectedPosition}
-        trades={trades}
+trades={trades}
       />
+
+      <Suspense fallback={<LoadingFallback />}>
+        <PositionDetailModal
+          open={detailModalOpen}
+          onClose={handleClosePositionDetail}
+          position={selectedPosition}
+          trades={trades}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }, [trades, position]);
 
-  // Fetch historical data
+  // Fetch historical data with retry
   useEffect(() => {
     if (!open || !position) return;
 
@@ -72,63 +72,78 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       setLoading(true);
       setError(null);
 
-      try {
-        // Fetch based on selected days
-        const fromDate = new Date();
-        fromDate.setDate(fromDate.getDate() - selectedDays);
-        const dateStr = fromDate.toISOString().split('T')[0];
+      let attempts = 0;
+      const maxAttempts = 3;
+      let lastError = null;
 
-        const data = await data912.getHistorical(position.ticker, dateStr);
-        
-        // Validate data structure
-        if (!Array.isArray(data) || data.length === 0) {
-          throw new Error('No hay datos históricos disponibles');
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
+          const fromDate = new Date();
+          fromDate.setDate(fromDate.getDate() - selectedDays);
+          const dateStr = fromDate.toISOString().split('T')[0];
+
+          const data = await data912.getHistorical(position.ticker, dateStr);
+          
+          // Validate data structure
+          if (!Array.isArray(data) || data.length === 0) {
+            throw new Error('No hay datos históricos disponibles');
+          }
+
+          // Filter out invalid entries
+          const validData = data.filter(item => 
+            item && 
+            item.date && 
+            typeof item.c === 'number' && 
+            item.c > 0
+          );
+
+          if (validData.length === 0) {
+            throw new Error('Datos históricos inválidos');
+          }
+
+          // Sort by date (oldest first) for proper chart display
+          const sortedData = validData.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateA.getTime() - dateB.getTime();
+          });
+
+          // Take only selected days if we have more data
+          const daysAgo = new Date();
+          daysAgo.setDate(daysAgo.getDate() - selectedDays);
+          
+          const filteredData = sortedData.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= daysAgo;
+          });
+
+          setHistorical(filteredData);
+          setLoading(false);
+          return;
+          
+        } catch (err) {
+          lastError = err;
+          // Check if it's a peso bond without historical data - don't retry
+          if (data912.isBonoPesos(position.ticker)) {
+            setError('Los bonos en pesos no tienen datos históricos disponibles');
+            setHistorical([]);
+            setLoading(false);
+            return;
+          }
+          
+          if (attempts < maxAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, attempts - 1), 10000);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
-
-        // Filter out invalid entries
-        const validData = data.filter(item => 
-          item && 
-          item.date && 
-          typeof item.c === 'number' && 
-          item.c > 0
-        );
-
-        if (validData.length === 0) {
-          throw new Error('Datos históricos inválidos');
-        }
-
-        // Sort by date (oldest first) for proper chart display
-        const sortedData = validData.sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA.getTime() - dateB.getTime();
-        });
-
-        // Take only selected days if we have more data
-        const daysAgo = new Date();
-        daysAgo.setDate(daysAgo.getDate() - selectedDays);
-        
-        const filteredData = sortedData.filter(item => {
-          const itemDate = new Date(item.date);
-          return itemDate >= daysAgo;
-        });
-
-        setHistorical(filteredData);
-      } catch (err) {
-        console.error('Error fetching historical data:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Error cargando históricos';
-        
-        // Check if it's a peso bond without historical data
-        if (data912.isBonoPesos(position.ticker)) {
-          setError('Los bonos en pesos no tienen datos históricos disponibles');
-        } else {
-          setError(errorMessage);
-        }
-        // Set empty array to prevent crashes
-        setHistorical([]);
-      } finally {
-        setLoading(false);
       }
+
+      // All retries exhausted
+      console.error('Error fetching historical data after retries:', lastError);
+      setError(lastError instanceof Error ? lastError.message : 'Error cargando históricos después de múltiples intentos');
+      setHistorical([]);
+      setLoading(false);
     };
 
     fetchHistorical();

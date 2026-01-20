@@ -1,9 +1,13 @@
 // src/utils/data912.js
 const BASE_URL = 'https://data912.com';
 const CACHE_PREFIX = 'data912_';
-const CACHE_TTL = 60000; // 1 minuto
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos (was 1 minute)
 const RATE_LIMIT = 120; // req/min
 const RATE_WINDOW = 60000; // 1 minuto
+
+// Retry constants
+const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY = 1000; // 1 second
 
 class Data912Helper {
   constructor() {
@@ -55,28 +59,44 @@ class Data912Helper {
     }
   }
 
-  // API calls
-  async fetchEndpoint(endpoint) {
-    if (!this.checkRateLimit()) {
-      throw new Error('Rate limit excedido. Intenta en unos segundos.');
-    }
+  // API calls with retry logic
+  async fetchEndpoint(endpoint, options = {}) {
+    const { retries = RETRY_MAX_ATTEMPTS, onRetry = () => {} } = options;
+    
+    let lastError;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        if (!this.checkRateLimit()) {
+          throw new Error('Rate limit excedido. Intenta en unos segundos.');
+        }
 
-    try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
-        signal: AbortSignal.timeout(10000)
-      });
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+          signal: AbortSignal.timeout(10000)
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+        
+        // Don't retry on 4xx errors (client errors)
+        if (error.status && error.status >= 400 && error.status < 500) {
+          throw error;
+        }
+        
+        if (attempt < retries) {
+          const delay = Math.min(RETRY_BASE_DELAY * Math.pow(2, attempt - 1), 10000);
+          onRetry(attempt, retries, delay, error);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-
-      return await response.json();
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Timeout: Request took too long');
-      }
-      throw new Error(`Error API: ${error.message}`);
     }
+    
+    throw lastError;
   }
 
   // Get current price
