@@ -26,35 +26,35 @@ const TICKERS_DATA = {
   'XOM': { assetClass: 'CEDEAR', industry: 'Energy', country: 'United States' },
 
   // Acciones Argentinas
-  'GGAL': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
-  'YPFD': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
-  'PAMP': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
-  'ALUA': { assetClass: 'ARGY', industry: 'Industrials', country: 'Argentina' },
-  'TXAR': { assetClass: 'ARGY', industry: 'Industrials', country: 'Argentina' },
-  'LOMA': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
-  'COME': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
-  'SUPV': { assetClass: 'ARGY', industry: 'Consumer Staples', country: 'Argentina' },
-  'TGSU2': { assetClass: 'ARGY', industry: 'Utilities', country: 'Argentina' },
-  'MIRG': { assetClass: 'ARGY', industry: 'Real Estate', country: 'Argentina' },
-  'CRES': { assetClass: 'ARGY', industry: 'Real Estate', country: 'Argentina' },
-  'BBAR': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
+  'GGAL': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
+  'YPFD': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
+  'PAMP': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
+  'ALUA': { assetClass: 'Acción Argentina', industry: 'Industrials', country: 'Argentina' },
+  'TXAR': { assetClass: 'Acción Argentina', industry: 'Industrials', country: 'Argentina' },
+  'LOMA': { assetClass: 'Acción Argentina', industry: 'Energy', country: 'Argentina' },
+  'COME': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
+  'SUPV': { assetClass: 'Acción Argentina', industry: 'Consumer Staples', country: 'Argentina' },
+  'TGSU2': { assetClass: 'Acción Argentina', industry: 'Utilities', country: 'Argentina' },
+  'MIRG': { assetClass: 'Acción Argentina', industry: 'Real Estate', country: 'Argentina' },
+  'CRES': { assetClass: 'Acción Argentina', industry: 'Real Estate', country: 'Argentina' },
+  'BBAR': { assetClass: 'Acción Argentina', industry: 'Financials', country: 'Argentina' },
 
   // Bonos Hard Dollar
-  'AE38': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'AL30': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'AL35': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'GD30': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'GD35': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'GD38': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'GD41': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
-  'GD46': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'AE38': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'AL30': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'AL35': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'GD30': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'GD35': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'GD38': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'GD41': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
+  'GD46': { assetClass: 'Bonos Hard Dollar', industry: 'Fixed Income', country: 'Argentina' },
 
   // Bonos en Pesos
-  'T15E7': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
-  'TTD26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
-  'S29E5': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
-  'TX26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
-  'TZX26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+  'T15E7': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
+  'TTD26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
+  'S29E5': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
+  'TX26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
+  'TZX26': { assetClass: 'Bonos en Pesos', industry: 'Fixed Income', country: 'Argentina' },
 };
 
 const PortfolioTracker = () => {
@@ -267,6 +267,34 @@ const PortfolioTracker = () => {
     }
   };
 
+  const parseCSVNumber = (value) => {
+    if (!value) return NaN;
+    // Eliminar puntos de miles y reemplazar coma decimal por punto
+    const cleaned = value.toString().replace(/\./g, '').replace(',', '.');
+    const number = parseFloat(cleaned);
+    return isNaN(number) ? NaN : number;
+  };
+
+  const parseCSVDate = (dateStr) => {
+    if (!dateStr) return new Date().toISOString().split('T')[0];
+
+    // Intentar diferentes formatos de fecha
+    // Formato DD/MM/YYYY
+    const ddmmyyyyMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (ddmmyyyyMatch) {
+      const [, day, month, year] = ddmmyyyyMatch;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    // Formato YYYY-MM-DD (ya está correcto)
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+
+    // Si no se puede parsear, usar fecha actual
+    return new Date().toISOString().split('T')[0];
+  };
+
   const importFromGoogleSheets = async () => {
     setIsImporting(true);
     try {
@@ -274,13 +302,32 @@ const PortfolioTracker = () => {
       const response = await fetch(url);
       const csvText = await response.text();
 
-      // Parsear CSV
+      // Parsear CSV - manejar comas dentro de comillas
       const lines = csvText.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
 
+      console.log('Headers encontrados:', headers);
+
       const importedTrades = [];
+      const errors = [];
+
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+        // Parsear línea respetando comillas
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let char of lines[i]) {
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
 
         const dateIdx = headers.findIndex(h => h.toLowerCase().includes('fecha'));
         const tickerIdx = headers.findIndex(h => h.toLowerCase().includes('ticker'));
@@ -288,7 +335,17 @@ const PortfolioTracker = () => {
         const priceIdx = headers.findIndex(h => h.toLowerCase().includes('precio'));
 
         if (values[tickerIdx] && values[quantityIdx] && values[priceIdx]) {
-          const ticker = values[tickerIdx].toUpperCase();
+          const ticker = values[tickerIdx].toUpperCase().trim();
+          const quantity = parseCSVNumber(values[quantityIdx]);
+          const buyPrice = parseCSVNumber(values[priceIdx]);
+          const date = parseCSVDate(values[dateIdx]);
+
+          // Validar que los números sean válidos
+          if (isNaN(quantity) || isNaN(buyPrice) || quantity <= 0 || buyPrice <= 0) {
+            errors.push(`Fila ${i + 1}: ${ticker} - cantidad o precio inválido`);
+            continue;
+          }
+
           const tickerData = TICKERS_DATA[ticker] || {
             assetClass: 'CEDEAR',
             industry: 'Unknown',
@@ -297,10 +354,10 @@ const PortfolioTracker = () => {
 
           importedTrades.push({
             id: Date.now() + i,
-            date: values[dateIdx] || new Date().toISOString().split('T')[0],
+            date: date,
             ticker: ticker,
-            quantity: parseFloat(values[quantityIdx]),
-            buyPrice: parseFloat(values[priceIdx]),
+            quantity: quantity,
+            buyPrice: buyPrice,
             assetClass: tickerData.assetClass,
             industry: tickerData.industry,
             country: tickerData.country
@@ -310,9 +367,14 @@ const PortfolioTracker = () => {
 
       if (importedTrades.length > 0) {
         saveTrades([...trades, ...importedTrades]);
-        alert(`${importedTrades.length} trades importados exitosamente!`);
+        let message = `${importedTrades.length} trades importados exitosamente!`;
+        if (errors.length > 0) {
+          message += `\n\nErrores encontrados (${errors.length}):\n${errors.slice(0, 5).join('\n')}`;
+          if (errors.length > 5) message += `\n... y ${errors.length - 5} más`;
+        }
+        alert(message);
       } else {
-        alert('No se encontraron trades para importar.');
+        alert('No se encontraron trades válidos para importar.\n\n' + (errors.length > 0 ? errors.join('\n') : ''));
       }
     } catch (error) {
       console.error('Error importando:', error);
@@ -359,6 +421,16 @@ const PortfolioTracker = () => {
   const deleteTrade = (id) => {
     if (window.confirm('¿Seguro que querés eliminar este trade?')) {
       saveTrades(trades.filter(t => t.id !== id));
+    }
+  };
+
+  const deleteAllTrades = () => {
+    if (window.confirm(`¿Seguro que querés eliminar TODOS los ${trades.length} trades? Esta acción no se puede deshacer.`)) {
+      if (window.confirm('Confirmá nuevamente: ¿Eliminar todos los trades?')) {
+        saveTrades([]);
+        saveCurrentPrices({});
+        alert('Todos los trades han sido eliminados.');
+      }
     }
   };
 
@@ -458,9 +530,9 @@ const PortfolioTracker = () => {
 
   const assetClassColors = {
     'CEDEAR': 'bg-blue-500',
-    'BONOS EN PESOS': 'bg-yellow-500',
-    'ARGY': 'bg-green-500',
-    'BONOS HARDOLLAR': 'bg-purple-500'
+    'Bonos en Pesos': 'bg-yellow-500',
+    'Acción Argentina': 'bg-green-500',
+    'Bonos Hard Dollar': 'bg-purple-500'
   };
 
   // Ordenar trades por fecha (más recientes primero)
@@ -632,9 +704,9 @@ const PortfolioTracker = () => {
                 >
                   <option value="all">Todas</option>
                   <option value="CEDEAR">CEDEARs</option>
-                  <option value="BONOS EN PESOS">Bonos en Pesos</option>
-                  <option value="ARGY">Acciones Argentinas</option>
-                  <option value="BONOS HARDOLLAR">Bonos Hard Dollar</option>
+                  <option value="Bonos en Pesos">Bonos en Pesos</option>
+                  <option value="Acción Argentina">Acciones Argentinas</option>
+                  <option value="Bonos Hard Dollar">Bonos Hard Dollar</option>
                 </select>
               </div>
               <div>
@@ -746,17 +818,27 @@ const PortfolioTracker = () => {
       {/* TRADES TAB */}
       {activeTab === 'trades' && (
         <div className="space-y-6">
-          {/* Header con botón importar */}
-          <div className="flex justify-between items-center">
+          {/* Header con botones */}
+          <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="text-2xl font-bold">Gestión de Trades</h2>
-            <button
-              onClick={importFromGoogleSheets}
-              disabled={isImporting}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
-            >
-              <Download className={isImporting ? 'animate-bounce' : ''} size={20} />
-              {isImporting ? 'Importando...' : 'Importar Google Sheets'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={deleteAllTrades}
+                disabled={trades.length === 0}
+                className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:opacity-50 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
+              >
+                <Trash2 size={20} />
+                Eliminar Todos ({trades.length})
+              </button>
+              <button
+                onClick={importFromGoogleSheets}
+                disabled={isImporting}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
+              >
+                <Download className={isImporting ? 'animate-bounce' : ''} size={20} />
+                {isImporting ? 'Importando...' : 'Importar Google Sheets'}
+              </button>
+            </div>
           </div>
 
           {/* Form */}
