@@ -1,5 +1,5 @@
 // src/utils/data912.js
-const BASE_URL = 'https://api.data912.com';
+const BASE_URL = 'https://data912.com';
 const CACHE_PREFIX = 'data912_';
 const CACHE_TTL = 60000; // 1 minuto
 const RATE_LIMIT = 120; // req/min
