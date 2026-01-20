@@ -610,7 +610,9 @@ export default function PortfolioTracker() {
 
     } catch (error) {
       console.error('Error fetching prices:', error);
-      alert('Error al actualizar precios. Por favor, intentá nuevamente.');
+      // No mostrar alerta molesta - puede ser que el mercado esté cerrado
+      // Solo actualizar el timestamp para indicar que se intentó
+      setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
     } finally {
       setIsPricesLoading(false);
     }
@@ -620,6 +622,93 @@ export default function PortfolioTracker() {
   useEffect(() => {
     fetchPrices();
   }, [fetchPrices]);
+
+  // Download CSV template
+  const downloadTemplate = () => {
+    const csvContent = `Fecha,Ticker,Cantidad,Precio
+23/12/2024,MELI,10,17220
+03/04/2025,MSFT,31,16075
+07/04/2025,SPY,15,33800`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'portfolio_trades_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Import from CSV file
+  const importFromCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    setImportStatus('Importando...');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n').slice(1); // Skip header
+        const newTrades = [];
+
+        lines.forEach((line) => {
+          if (!line.trim()) return;
+
+          const cols = line.split(',').map(col => col.trim());
+          const fecha = cols[0];
+          const ticker = cols[1];
+          const cantidad = cols[2];
+          const precio = cols[3];
+
+          if (!fecha || !ticker || ticker === 'Ticker') return;
+
+          const parsedDate = parseDateDMY(fecha);
+          const parsedCantidad = parseARSNumber(cantidad);
+          const parsedPrecio = parseARSNumber(precio);
+
+          if (parsedDate && ticker && parsedCantidad > 0) {
+            newTrades.push({
+              id: crypto.randomUUID(),
+              fecha: parsedDate,
+              ticker: ticker.trim().toUpperCase(),
+              cantidad: parsedCantidad,
+              precioCompra: parsedPrecio
+            });
+          }
+        });
+
+        if (newTrades.length > 0) {
+          setTrades(newTrades);
+          setImportStatus(`✓ ${newTrades.length} trades importados`);
+          setTimeout(() => setImportStatus(null), 3000);
+        } else {
+          setImportStatus('No se encontraron trades válidos');
+          setTimeout(() => setImportStatus(null), 3000);
+        }
+      } catch (error) {
+        console.error('Error importing CSV:', error);
+        setImportStatus('Error al importar archivo');
+        setTimeout(() => setImportStatus(null), 3000);
+      } finally {
+        setIsLoading(false);
+        event.target.value = null; // Reset input
+      }
+    };
+
+    reader.onerror = () => {
+      setImportStatus('Error al leer archivo');
+      setTimeout(() => setImportStatus(null), 3000);
+      setIsLoading(false);
+    };
+
+    reader.readAsText(file);
+  };
 
   // Import from Google Sheets
   const importFromGoogleSheets = async () => {
@@ -1019,29 +1108,53 @@ export default function PortfolioTracker() {
         ) : (
           <>
             {/* Trades Tab */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <button
-                onClick={() => {
-                  setEditingTrade(null);
-                  setModalOpen(true);
-                }}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
-              >
-                <Plus className="w-4 h-4" />
-                Nuevo Trade
-              </button>
-              <button
-                onClick={importFromGoogleSheets}
-                disabled={isLoading}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all font-semibold disabled:opacity-50 shadow-lg shadow-blue-600/25"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+            <div className="flex flex-col gap-3 mb-6">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setEditingTrade(null);
+                    setModalOpen(true);
+                  }}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nuevo Trade
+                </button>
+                <button
+                  onClick={downloadTemplate}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25"
+                >
                   <Download className="w-4 h-4" />
-                )}
-                Importar Google Sheets
-              </button>
+                  Descargar Template Excel
+                </button>
+                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all font-semibold shadow-lg shadow-blue-600/25 cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={importFromCSV}
+                    disabled={isLoading}
+                    className="hidden"
+                  />
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  Importar CSV/Excel
+                </label>
+                <button
+                  onClick={importFromGoogleSheets}
+                  disabled={isLoading}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-all font-semibold disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  Importar Google Sheets
+                </button>
+              </div>
               {importStatus && (
                 <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
                   importStatus.includes('✓') ? 'bg-emerald-500/20 text-emerald-400' :
@@ -1051,6 +1164,18 @@ export default function PortfolioTracker() {
                   {importStatus}
                 </span>
               )}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-sm">
+                <p className="text-blue-300 font-medium mb-2">📋 Formato del archivo CSV/Excel:</p>
+                <ul className="text-slate-300 space-y-1 ml-4">
+                  <li>• <strong>Fecha:</strong> DD/MM/YYYY (ejemplo: 23/12/2024)</li>
+                  <li>• <strong>Ticker:</strong> Símbolo del activo (ejemplo: MELI, AAPL, AL30)</li>
+                  <li>• <strong>Cantidad:</strong> Número de unidades (ejemplo: 10 o 1250.50)</li>
+                  <li>• <strong>Precio:</strong> Precio de compra en ARS (ejemplo: 17220 o 839.50)</li>
+                </ul>
+                <p className="text-slate-400 mt-2 text-xs">
+                  Tip: Descargá el template para ver un ejemplo completo y editalo en Excel
+                </p>
+              </div>
             </div>
 
             {/* Trades Table */}
