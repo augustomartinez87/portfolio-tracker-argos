@@ -296,7 +296,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
 
 export default function PortfolioTracker() {
   const [trades, setTrades] = useLocalStorage('portfolio-trades-v3', []);
-const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
+  const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
   const [tickers, setTickers] = useState([]);
   const [mepRate, setMepRate] = useState(CONSTANTS.MEP_DEFAULT);
   const [isLoading, setIsLoading] = useState(false);
@@ -878,7 +878,7 @@ const now = new Date();
                 <Zap className="w-6 h-6 text-emerald-400" />
                 Portfolio Tracker
               </h1>
-<div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                 <span className="text-sm text-slate-400">
                   MEP: <span className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</span>
                 </span>
@@ -1360,13 +1360,6 @@ const now = new Date();
         }}
         onConfirm={handleDeleteTrade}
         tradeTicker={deletingTrade?.ticker}
-      />
-
-      <PositionDetailModal
-        open={detailModalOpen}
-        onClose={handleClosePositionDetail}
-        position={selectedPosition}
-trades={trades}
       />
 
       <Suspense fallback={<LoadingFallback />}>
