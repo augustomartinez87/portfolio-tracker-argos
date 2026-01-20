@@ -1,6 +1,6 @@
 // src/components/PositionDetailModal.jsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { X, TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
 
@@ -217,6 +217,9 @@ if (!position.ticker) {
   const invested = position?.costoTotal || 0;
   const getColorClass = (value) => (value >= 0 ? 'text-emerald-400' : 'text-red-400');
 
+  // Check if position ticker is available
+  const isPositionUnavailable = position && !data912.isTickerAvailable(position.ticker);
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl w-full max-w-5xl border border-slate-700 shadow-2xl my-8 max-h-[90vh] flex flex-col">
@@ -310,6 +313,21 @@ if (!position.ticker) {
             </div>
           </div>
 
+          {isPositionUnavailable && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                <div>
+                  <p className="text-amber-400 font-medium text-sm">Datos no disponibles</p>
+                  <p className="text-amber-300 text-xs mt-1">
+                    El ticker <span className="font-mono font-semibold">{position.ticker}</span> no está disponible en data912.com. 
+                    Los valores mostrados se basan en el precio de compra.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Historical Price Chart */}
           <div className="bg-slate-900/50 rounded-lg p-5 border border-slate-700/50 mb-6">
             <div className="mb-4">
@@ -369,7 +387,15 @@ if (!position.ticker) {
               )}
             </div>
 
-            {loading ? (
+            {isPositionUnavailable ? (
+              <div className="flex justify-center items-center h-72">
+                <div className="text-center">
+                  <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+                  <p className="text-amber-300 font-medium">Gráfico no disponible</p>
+                  <p className="text-amber-400 text-sm mt-2">Datos históricos no encontrados para este ticker</p>
+                </div>
+              </div>
+            ) : loading ? (
               <div className="flex justify-center items-center h-72">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400"></div>
               </div>

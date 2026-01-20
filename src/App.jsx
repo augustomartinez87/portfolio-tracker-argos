@@ -146,6 +146,26 @@ const adjustBondPrice = (ticker, price) => {
   return price;
 };
 
+// Función para obtener precio de visualización correcto según tipo de activo
+const getDisplayPrice = (ticker, price, quantity = 1) => {
+  if (!price || price === 0) return 0;
+  
+  if (isBonoPesos(ticker)) {
+    // Para bonos en pesos, el precio es por cada $1 VN
+    // Si queremos mostrar el valor total, multiplicamos por cantidad
+    return quantity > 1 ? price * quantity : price;
+  }
+  
+  if (isBonoHardDollar(ticker)) {
+    // Para bonos HD, el precio es por cada 100 USD VN
+    // Para mostrar valor total con MEP: (precio/100) * cantidad * MEP
+    return quantity > 1 ? (price / 100) * quantity : price / 100;
+  }
+  
+  // Para acciones y CEDEARs, el precio es por unidad
+  return quantity > 1 ? price * quantity : price;
+};
+
 // ============================================
 // CUSTOM HOOKS
 // ============================================
@@ -499,11 +519,12 @@ export default function PortfolioTracker() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
-  // Fetch prices using data912 helper with auto-refresh
+// Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
     setIsPricesLoading(true);
     const priceMap = {};
     const tickerList = [];
+    const unavailableTickers = [];
 
     try {
       // Fetch from /live/mep (main source - has bonds + cedears with MEP calc)
@@ -1139,17 +1160,36 @@ export default function PortfolioTracker() {
                           <td className="text-right px-4 py-3 text-slate-300 font-mono hidden sm:table-cell">
                             {formatNumber(pos.cantidadTotal)}
                           </td>
-                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
-                            {pos.isBonoPesos ? `$${pos.precioPromedio.toFixed(4)}` : formatARS(pos.precioPromedio)}
+<td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
+                            {isBonoPesos(pos.ticker) 
+                              ? `$${pos.precioPromedio.toFixed(4)}` 
+                              : isBonoHardDollar(pos.ticker)
+                                ? `$${((pos.precioPromedio / 100) * mepRate).toFixed(2)}`
+                                : formatARS(pos.precioPromedio)
+                            }
+                          </td>
+                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                            {isBonoPesos(pos.ticker) 
+                              ? `$${pos.precioActual.toFixed(4)}` 
+                              : isBonoHardDollar(pos.ticker)
+                                ? `$${((pos.precioActual / 100) * mepRate).toFixed(2)}`
+                                : formatARS(pos.precioActual)
+                            }
                           </td>
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
                             {pos.isBonoPesos ? `$${pos.precioActual.toFixed(4)}` : formatARS(pos.precioActual)}
                           </td>
-                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
-                            {formatARS(pos.costoTotal)}
+<td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                            {pos.isBonoHD 
+                              ? formatUSD(pos.costoTotal)
+                              : formatARS(pos.costoTotal)
+                            }
                           </td>
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {formatARS(pos.valuacionActual)}
+                            {pos.isBonoHD 
+                              ? formatUSD(pos.valuacionActual)
+                              : formatARS(pos.valuacionActual)
+                            }
                           </td>
                           <td className="text-right px-4 py-3 hidden xl:table-cell">
                             <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>

@@ -81,7 +81,8 @@ class Data912Helper {
 
   // Get current price
   async getCurrentPrice(ticker) {
-    const cacheKey = `price_${ticker}`;
+    const correctedTicker = this.getCorrectTicker(ticker);
+    const cacheKey = `price_${correctedTicker}`;
     const cached = this.getCache(cacheKey);
     if (cached) return cached;
 
@@ -89,12 +90,41 @@ class Data912Helper {
       const endpoint = this.getEndpointForTicker(ticker);
       const data = await this.fetchEndpoint(endpoint);
 
-      const stockInfo = data[ticker];
+      // Buscar en diferentes estructuras de datos
+      let stockInfo = data[correctedTicker] || data[ticker];
+      
+      // Si no encuentra el ticker directamente, buscar en el array
+      if (!stockInfo && Array.isArray(data)) {
+        stockInfo = data.find(item => 
+          item.ticker === correctedTicker || 
+          item.symbol === correctedTicker ||
+          item.ticker === ticker ||
+          item.symbol === ticker
+        );
+      }
+
       if (!stockInfo) {
+        console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado en endpoint ${endpoint}`);
         throw new Error(`Ticker ${ticker} no encontrado`);
       }
 
-      const result = { price: parseFloat(stockInfo.price || stockInfo.last || stockInfo.value || 0) };
+      // Extraer precio de diferentes campos posibles
+      let price = 0;
+      if (stockInfo.c) price = stockInfo.c;
+      else if (stockInfo.price) price = stockInfo.price;
+      else if (stockInfo.last) price = stockInfo.last;
+      else if (stockInfo.value) price = stockInfo.value;
+      else if (stockInfo.ars_bid) price = stockInfo.ars_bid;
+      else if (stockInfo.px_ask) price = stockInfo.px_ask;
+      else if (stockInfo.px_bid) price = stockInfo.px_bid;
+      else if (stockInfo.mark) price = stockInfo.mark;
+      else if (stockInfo.close) price = stockInfo.close;
+
+      const result = { 
+        price: parseFloat(price) || 0,
+        ticker: correctedTicker,
+        source: endpoint
+      };
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
@@ -104,7 +134,8 @@ class Data912Helper {
 
   // Get daily return
   async getDailyReturn(ticker) {
-    const cacheKey = `dr_${ticker}`;
+    const correctedTicker = this.getCorrectTicker(ticker);
+    const cacheKey = `dr_${correctedTicker}`;
     const cached = this.getCache(cacheKey);
     if (cached) return cached;
 
@@ -112,12 +143,35 @@ class Data912Helper {
       const endpoint = this.getEndpointForTicker(ticker);
       const data = await this.fetchEndpoint(endpoint);
 
-      const stockInfo = data[ticker];
+      // Buscar en diferentes estructuras de datos
+      let stockInfo = data[correctedTicker] || data[ticker];
+      
+      // Si no encuentra el ticker directamente, buscar en el array
+      if (!stockInfo && Array.isArray(data)) {
+        stockInfo = data.find(item => 
+          item.ticker === correctedTicker || 
+          item.symbol === correctedTicker ||
+          item.ticker === ticker ||
+          item.symbol === ticker
+        );
+      }
+
       if (!stockInfo) {
+        console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado para DR en endpoint ${endpoint}`);
         throw new Error(`Ticker ${ticker} no encontrado`);
       }
 
-      const result = { dr: parseFloat(stockInfo.dr || stockInfo.change_pct || 0) };
+      // Extraer porcentaje de diferentes campos posibles
+      let dr = 0;
+      if (stockInfo.pct_change) dr = stockInfo.pct_change;
+      else if (stockInfo.dr) dr = stockInfo.dr;
+      else if (stockInfo.change_pct) dr = stockInfo.change_pct;
+
+      const result = { 
+        dr: parseFloat(dr) || 0,
+        ticker: correctedTicker,
+        source: endpoint
+      };
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
@@ -145,17 +199,53 @@ class Data912Helper {
     }
   }
 
+  // Mapeo de tickers comunes a los correctos
+  getCorrectTicker(ticker) {
+    const tickerMap = {
+      'GOOGLE': 'GOOGL',
+      'GOOG': 'GOOGL',
+      'ALPHABET': 'GOOGL',
+      // Agregar más mapeos si es necesario
+    };
+    
+    const upperTicker = ticker.toUpperCase();
+    return tickerMap[upperTicker] || upperTicker;
+  }
+
+  // Lista de tickers conocidos que no existen en data912
+  getUnavailableTickers() {
+    return {
+      'BONOS_PESOS': ['TTD26', 'T15E7', 'S31E5', 'S28F5'], // Ejemplos de bonos que pueden no estar
+      'OTROS': []
+    };
+  }
+
+  // Verificar si un ticker está disponible
+  isTickerAvailable(ticker) {
+    const unavailable = this.getUnavailableTickers();
+    const upperTicker = ticker.toUpperCase();
+    
+    for (const category of Object.values(unavailable)) {
+      if (category.includes(upperTicker)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
   // Determinar endpoint según ticker
   getEndpointForTicker(ticker) {
+    const correctedTicker = this.getCorrectTicker(ticker);
     const cedears = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA'];
-    if (cedears.some(c => ticker.startsWith(c)) || ticker.endsWith('.BA')) {
+    if (cedears.some(c => correctedTicker.startsWith(c)) || correctedTicker.endsWith('.BA')) {
       return '/live/arg_cedears';
     }
 
-    if (ticker.toUpperCase().includes('MEP') || ticker === 'AL30D') {
+    if (correctedTicker.toUpperCase().includes('MEP') || correctedTicker === 'AL30D') {
       return '/live/mep';
     }
-    if (ticker.toUpperCase().includes('CCL') || ticker === 'GD30') {
+    if (correctedTicker.toUpperCase().includes('CCL') || correctedTicker === 'GD30') {
       return '/live/ccl';
     }
 
@@ -169,7 +259,8 @@ class Data912Helper {
 
     // Intentar obtener de cache primero
     for (const ticker of tickers) {
-      const cached = this.getCache(`price_${ticker}`);
+      const correctedTicker = this.getCorrectTicker(ticker);
+      const cached = this.getCache(`price_${correctedTicker}`);
       if (cached) {
         results[ticker] = cached.price;
       } else {
@@ -191,16 +282,49 @@ class Data912Helper {
     for (const [endpoint, tickersGroup] of Object.entries(byEndpoint)) {
       try {
         const data = await this.fetchEndpoint(endpoint);
+        
         for (const ticker of tickersGroup) {
-          const stockInfo = data[ticker];
+          const correctedTicker = this.getCorrectTicker(ticker);
+          
+          // Buscar en diferentes estructuras de datos
+          let stockInfo = data[correctedTicker] || data[ticker];
+          
+          // Si no encuentra el ticker directamente, buscar en el array
+          if (!stockInfo && Array.isArray(data)) {
+            stockInfo = data.find(item => 
+              item.ticker === correctedTicker || 
+              item.symbol === correctedTicker ||
+              item.ticker === ticker ||
+              item.symbol === ticker
+            );
+          }
+
           if (stockInfo) {
-            const price = parseFloat(stockInfo.price || stockInfo.last || stockInfo.value || 0);
-            results[ticker] = price;
-            this.setCache(`price_${ticker}`, { price });
+            // Extraer precio de diferentes campos posibles
+            let price = 0;
+            if (stockInfo.c) price = stockInfo.c;
+            else if (stockInfo.price) price = stockInfo.price;
+            else if (stockInfo.last) price = stockInfo.last;
+            else if (stockInfo.value) price = stockInfo.value;
+            else if (stockInfo.ars_bid) price = stockInfo.ars_bid;
+            else if (stockInfo.px_ask) price = stockInfo.px_ask;
+            else if (stockInfo.px_bid) price = stockInfo.px_bid;
+            else if (stockInfo.mark) price = stockInfo.mark;
+            else if (stockInfo.close) price = stockInfo.close;
+
+            results[ticker] = parseFloat(price) || 0;
+            this.setCache(`price_${correctedTicker}`, { price: parseFloat(price) || 0 });
+          } else {
+            console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado en ${endpoint}`);
+            results[ticker] = 0; // Valor por defecto si no se encuentra
           }
         }
       } catch (error) {
         console.error(`Error fetching ${endpoint}:`, error);
+        // Asignar 0 a todos los tickers de este endpoint si hay error
+        tickersGroup.forEach(ticker => {
+          results[ticker] = 0;
+        });
       }
     }
 
@@ -213,7 +337,8 @@ class Data912Helper {
     const uncached = [];
 
     for (const ticker of tickers) {
-      const cached = this.getCache(`dr_${ticker}`);
+      const correctedTicker = this.getCorrectTicker(ticker);
+      const cached = this.getCache(`dr_${correctedTicker}`);
       if (cached) {
         results[ticker] = cached.dr;
       } else {
@@ -233,16 +358,43 @@ class Data912Helper {
     for (const [endpoint, tickersGroup] of Object.entries(byEndpoint)) {
       try {
         const data = await this.fetchEndpoint(endpoint);
+        
         for (const ticker of tickersGroup) {
-          const stockInfo = data[ticker];
+          const correctedTicker = this.getCorrectTicker(ticker);
+          
+          // Buscar en diferentes estructuras de datos
+          let stockInfo = data[correctedTicker] || data[ticker];
+          
+          // Si no encuentra el ticker directamente, buscar en el array
+          if (!stockInfo && Array.isArray(data)) {
+            stockInfo = data.find(item => 
+              item.ticker === correctedTicker || 
+              item.symbol === correctedTicker ||
+              item.ticker === ticker ||
+              item.symbol === ticker
+            );
+          }
+
           if (stockInfo) {
-            const dr = parseFloat(stockInfo.dr || stockInfo.change_pct || 0);
-            results[ticker] = dr;
-            this.setCache(`dr_${ticker}`, { dr });
+            // Extraer porcentaje de diferentes campos posibles
+            let dr = 0;
+            if (stockInfo.pct_change) dr = stockInfo.pct_change;
+            else if (stockInfo.dr) dr = stockInfo.dr;
+            else if (stockInfo.change_pct) dr = stockInfo.change_pct;
+
+            results[ticker] = parseFloat(dr) || 0;
+            this.setCache(`dr_${correctedTicker}`, { dr: parseFloat(dr) || 0 });
+          } else {
+            console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado para DR en ${endpoint}`);
+            results[ticker] = 0; // Valor por defecto si no se encuentra
           }
         }
       } catch (error) {
         console.error(`Error fetching DR from ${endpoint}:`, error);
+        // Asignar 0 a todos los tickers de este endpoint si hay error
+        tickersGroup.forEach(ticker => {
+          results[ticker] = 0;
+        });
       }
     }
 
