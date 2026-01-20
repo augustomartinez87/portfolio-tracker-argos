@@ -1,21 +1,61 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap, DollarSign, BarChart3 } from 'lucide-react';
 import { data912 } from './utils/data912';
+import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
+import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
+import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from './hooks/useBondPrices';
 import DistributionChart from './components/DistributionChart';
 import PositionDetailModal from './components/PositionDetailModal';
 
 // ============================================
-// UTILITY FUNCTIONS
+// CUSTOM HOOKS
 // ============================================
 
-const formatARS = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+const useLocalStorage = (key, initialValue) => {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return [storedValue, setValue];
+};
+
+// ============================================
+// PARSE UTILITIES
+// ============================================
+
+const parseARSNumber = (str) => {
+  if (!str) return 0;
+  const cleaned = str.toString()
+    .replace(/\$/g, '')
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(/,/g, '.');
+  return parseFloat(cleaned) || 0;
+};
+
+const parseDateDMY = (str) => {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return str;
 };
 
 const formatUSD = (value) => {
@@ -505,7 +545,7 @@ export default function PortfolioTracker() {
   const [trades, setTrades] = useLocalStorage('portfolio-trades-v3', []);
 const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
   const [tickers, setTickers] = useState([]);
-  const [mepRate, setMepRate] = useState(1467);
+  const [mepRate, setMepRate] = useState(CONSTANTS.MEP_DEFAULT);
   const [isLoading, setIsLoading] = useState(false);
   const [isPricesLoading, setIsPricesLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
