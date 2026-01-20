@@ -59,29 +59,88 @@ const parseDateDMY = (str) => {
   return str;
 };
 
-// Asset class mapping based on data912 panel + custom logic
-const getAssetClass = (ticker, panel, isArgStock = false) => {
-  // Bonos en pesos (letras, boncer, etc)
-  if (ticker.startsWith('T') && (ticker.includes('X') || ticker.includes('E'))) {
-    return 'BONOS PESOS';
-  }
+// ============================================
+// BOND DETECTION & PRICE ADJUSTMENT
+// ============================================
 
-  // Bonos hard dollar
-  if (panel === 'bonds' || ['AE38', 'AL29', 'AL30', 'AL35', 'AL41', 'GD29', 'GD30', 'GD35', 'GD38', 'GD41', 'GD46'].includes(ticker)) {
-    return 'BONOS HD';
-  }
+// Detecta si es un bono en pesos (BONCER, BONTE, Letras, etc.)
+// Estos bonos en data912 vienen con precio por cada $1000 VN
+// pero en los brokers se compran por cada $1 VN
+const isBonoPesos = (ticker) => {
+  if (!ticker) return false;
+  const t = ticker.toUpperCase();
+
+  // Patrones de bonos en pesos argentinos:
+  // TX26, TX28 = BONCER
+  // T2X5, T3X4 = BONCER cortos
+  // T15E7, T2V5 = BONTE / Letras capitalizables
+  // TDJ24, TDL24 = Letras
+  // S31E5, S28F5 = Lecaps
+  // DICP, PARP, CUAP = Bonos CER viejos
+
+  // Patrón general: empieza con T o S seguido de números/letras
+  if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;  // TX26, T15E7, TDA24, etc.
+  if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;  // S31E5, S28F5
+  if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
+
+  // TTD26 también es bono en pesos (bono dual)
+  if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
+
+  return false;
+};
+
+// Detecta si es un bono hard dollar
+const isBonoHardDollar = (ticker) => {
+  if (!ticker) return false;
+  const t = ticker.toUpperCase();
+
+  // AL29, AL30, AL35, AL41 = Bonares
+  // GD29, GD30, GD35, GD38, GD41, GD46 = Globales
+  // AE38 = Bonar 2038
+  // AN29, CO26, CO32 = Otros bonos
+
+  if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(t)) return true;
+
+  return false;
+};
+
+// Asset class mapping
+const getAssetClass = (ticker, panel, isArgStock = false) => {
+  if (!ticker) return 'OTROS';
+
+  // Primero chequeamos por ticker específico
+  if (isBonoPesos(ticker)) return 'BONOS PESOS';
+  if (isBonoHardDollar(ticker)) return 'BONOS HD';
+
+  // Luego por panel de data912
+  if (panel === 'bonds') return 'BONOS HD';
 
   // Acciones argentinas
-  if (isArgStock || ['GGAL', 'YPFD', 'VIST', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN', 'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA', 'METR'].includes(ticker)) {
-    return 'ARGY';
+  const argyTickers = ['GGAL', 'YPFD', 'VIST', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN',
+                       'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA',
+                       'METR', 'TECO2', 'TGNO4', 'HARG', 'CADO', 'MORI', 'SEMI', 'BOLT', 'GARO'];
+  if (isArgStock || argyTickers.includes(ticker.toUpperCase())) return 'ARGY';
+
+  // CEDEARs (default)
+  if (panel === 'cedear') return 'CEDEAR';
+
+  return 'CEDEAR'; // Default
+};
+
+// Ajusta el precio de data912 según el tipo de bono
+// data912 devuelve:
+// - Bonos HD: precio por cada 100 USD VN (correcto, no ajustar)
+// - Bonos Pesos: precio por cada $1000 VN (dividir por 1000 para obtener precio por $1 VN)
+const adjustBondPrice = (ticker, price) => {
+  if (!price || price === 0) return 0;
+
+  if (isBonoPesos(ticker)) {
+    // data912 da el precio por $1000 VN, lo convertimos a precio por $1 VN
+    return price / 1000;
   }
 
-  // CEDEARs (default for panel === 'cedear')
-  if (panel === 'cedear') {
-    return 'CEDEAR';
-  }
-
-  return 'OTROS';
+  // Bonos HD y otros: no ajustar
+  return price;
 };
 
 // ============================================
@@ -299,6 +358,17 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             </div>
           </div>
 
+          {/* Nota para bonos */}
+          {(isBonoPesos(formData.ticker) || isBonoHardDollar(formData.ticker)) && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-amber-400 text-xs">
+                {isBonoPesos(formData.ticker)
+                  ? '💡 Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
+                  : '💡 Bonos HD: ingresá el precio por cada lámina de 100 USD VN (ej: 1155)'}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -464,8 +534,8 @@ const AssetBreakdown = ({ positions, totalValue }) => {
 // ============================================
 
 export default function PortfolioTracker() {
-  const [trades, setTrades] = useLocalStorage('portfolio-trades-v2', []);
-  const [prices, setPrices] = useLocalStorage('portfolio-prices-v2', {});
+  const [trades, setTrades] = useLocalStorage('portfolio-trades-v3', []);
+  const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
   const [tickers, setTickers] = useState([]);
   const [mepRate, setMepRate] = useState(1467);
   const [isLoading, setIsLoading] = useState(false);
@@ -479,19 +549,17 @@ export default function PortfolioTracker() {
   const [importStatus, setImportStatus] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
   const [expandedPositions, setExpandedPositions] = useState({});
-  const [dataSource, setDataSource] = useState({ mep: 0, argStocks: 0, cedears: 0, bonds: 0 });
 
   // Fetch prices from multiple data912 endpoints
   const fetchPrices = useCallback(async () => {
     setIsPricesLoading(true);
     const priceMap = {};
     const tickerList = [];
-    let sources = { mep: 0, argStocks: 0, cedears: 0, bonds: 0 };
 
     try {
       // Fetch from /live/mep (main source - has bonds + cedears with MEP calc)
       const mepResponse = await fetch('https://data912.com/live/mep', {
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(10000)
       });
       if (!mepResponse.ok) throw new Error('Failed to fetch MEP data');
       const mepData = await mepResponse.json();
@@ -500,25 +568,33 @@ export default function PortfolioTracker() {
       let mepCount = 0;
 
       mepData.forEach(item => {
-        const assetClass = getAssetClass(item.ticker, item.panel);
-        priceMap[item.ticker] = {
-          precio: item.mark || item.close,
-          bid: item.bid,
-          ask: item.ask,
+        const ticker = item.ticker;
+        const assetClass = getAssetClass(ticker, item.panel);
+
+        // Precio base de data912
+        let rawPrice = item.ars_bid || item.mark || item.close || 0;
+
+        // ⚡ AJUSTE CRÍTICO: Bonos en pesos vienen por $1000 VN, convertir a precio por $1 VN
+        const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+
+        priceMap[ticker] = {
+          precio: adjustedPrice,
+          precioRaw: rawPrice,
+          bid: item.ars_bid,
+          ask: item.ars_ask,
           close: item.close,
           panel: item.panel,
           assetClass,
-          source: 'mep',
-          pctChange: null // MEP endpoint doesn't have pct_change
+          pctChange: null,
+          isBonoPesos: isBonoPesos(ticker),
+          isBonoHD: isBonoHardDollar(ticker)
         };
 
         tickerList.push({
-          ticker: item.ticker,
+          ticker,
           panel: item.panel,
           assetClass
         });
-
-        sources.mep++;
 
         // Calculate average MEP from liquid tickers
         if (item.mark > 1400 && item.mark < 1600 && item.panel === 'cedear') {
@@ -529,56 +605,6 @@ export default function PortfolioTracker() {
 
       if (mepCount > 0) {
         setMepRate(avgMep / mepCount);
-      }
-
-      // Fetch from /live/arg_bonds (bonos en pesos)
-      try {
-        const bondsResponse = await fetch('https://data912.com/live/arg_bonds', {
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!bondsResponse.ok) throw new Error('Failed to fetch arg_bonds');
-        const bondsData = await bondsResponse.json();
-
-        bondsData.forEach(item => {
-          const ticker = item.symbol;
-          // Skip D (dollar) versions
-          if (ticker.endsWith('D')) return;
-
-          const assetClass = getAssetClass(ticker, 'bonds');
-
-          // Only add if not already in priceMap
-          if (!priceMap[ticker]) {
-            priceMap[ticker] = {
-              precio: item.c || item.px_ask || item.px_bid,
-              bid: item.px_bid,
-              ask: item.px_ask,
-              close: item.c,
-              panel: 'bonds',
-              assetClass,
-              source: 'arg_bonds',
-              pctChange: item.pct_change
-            };
-
-            tickerList.push({
-              ticker,
-              panel: 'bonds',
-              assetClass
-            });
-
-            sources.bonds++;
-          } else {
-            // Update with better price/pct_change if available
-            if (item.c && item.c > 0) {
-              priceMap[ticker].precio = item.c;
-              priceMap[ticker].close = item.c;
-            }
-            if (item.pct_change !== null && item.pct_change !== undefined) {
-              priceMap[ticker].pctChange = item.pct_change;
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('Could not fetch arg_bonds:', e);
       }
 
       // Fetch from /live/arg_stocks (local Argentine stocks)
@@ -605,7 +631,6 @@ export default function PortfolioTracker() {
               close: item.c,
               panel: 'arg_stock',
               assetClass,
-              source: 'arg_stocks',
               pctChange: item.pct_change
             };
 
@@ -614,8 +639,6 @@ export default function PortfolioTracker() {
               panel: 'arg_stock',
               assetClass
             });
-
-            sources.argStocks++;
           } else {
             // Update pct_change from this source
             priceMap[ticker].pctChange = item.pct_change;
@@ -647,7 +670,6 @@ export default function PortfolioTracker() {
               priceMap[ticker].close = item.c;
             }
           }
-          sources.cedears++;
         });
       } catch (e) {
         console.warn('Could not fetch arg_cedears:', e);
@@ -655,13 +677,11 @@ export default function PortfolioTracker() {
 
       setPrices(priceMap);
       setTickers(tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)));
-      setDataSource(sources);
       setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
 
     } catch (error) {
       console.error('Error fetching prices:', error);
       // No mostrar alerta molesta - puede ser que el mercado esté cerrado
-      // Solo actualizar el timestamp para indicar que se intentó
       setLastUpdate(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
     } finally {
       setIsPricesLoading(false);
@@ -847,6 +867,8 @@ export default function PortfolioTracker() {
       const resultado = valuacionActual - pos.costoTotal;
       const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
 
+      const assetClass = priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel);
+
       return {
         ...pos,
         precioPromedio,
@@ -854,8 +876,10 @@ export default function PortfolioTracker() {
         valuacionActual,
         resultado,
         resultadoPct,
-        assetClass: priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel),
+        assetClass,
         pctChange: priceData?.pctChange,
+        isBonoPesos: priceData?.isBonoPesos || isBonoPesos(pos.ticker),
+        isBonoHD: priceData?.isBonoHD || isBonoHardDollar(pos.ticker),
         // USD calculations
         costoUSD: pos.costoTotal / mepRate,
         valuacionUSD: valuacionActual / mepRate,
@@ -952,9 +976,6 @@ export default function PortfolioTracker() {
                     • {lastUpdate}
                   </span>
                 )}
-                <span className="text-xs text-slate-600">
-                  • {dataSource.mep + dataSource.argStocks + dataSource.bonds} tickers
-                </span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1105,10 +1126,10 @@ export default function PortfolioTracker() {
                             {formatNumber(pos.cantidadTotal)}
                           </td>
                           <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
-                            {formatARS(pos.precioPromedio)}
+                            {pos.isBonoPesos ? `$${pos.precioPromedio.toFixed(4)}` : formatARS(pos.precioPromedio)}
                           </td>
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {formatARS(pos.precioActual)}
+                            {pos.isBonoPesos ? `$${pos.precioActual.toFixed(4)}` : formatARS(pos.precioActual)}
                           </td>
                           <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
                             {formatARS(pos.costoTotal)}
@@ -1134,7 +1155,9 @@ export default function PortfolioTracker() {
                                   {pos.trades.map(trade => (
                                     <div key={trade.id} className="flex justify-between items-center py-2 px-3 bg-slate-800/50 rounded-lg">
                                       <span className="text-slate-400 text-xs">{new Date(trade.fecha).toLocaleDateString('es-AR')}</span>
-                                      <span className="text-white font-mono text-sm">{formatNumber(trade.cantidad)} @ {formatARS(trade.precioCompra)}</span>
+                                      <span className="text-white font-mono text-sm">
+                                        {formatNumber(trade.cantidad)} @ {pos.isBonoPesos ? `$${trade.precioCompra.toFixed(4)}` : formatARS(trade.precioCompra)}
+                                      </span>
                                       <span className="text-slate-400 font-mono text-sm">{formatARS(trade.cantidad * trade.precioCompra)}</span>
                                     </div>
                                   ))}
@@ -1222,6 +1245,7 @@ export default function PortfolioTracker() {
                   <li>• <strong>Ticker:</strong> Símbolo del activo (ejemplo: MELI, AAPL, AL30)</li>
                   <li>• <strong>Cantidad:</strong> Número de unidades (ejemplo: 10 o 1250.50)</li>
                   <li>• <strong>Precio:</strong> Precio de compra en ARS (ejemplo: 17220 o 839.50)</li>
+                  <li>• <strong>Bonos en pesos:</strong> Precio por cada $1 de VN (ejemplo: 1.03)</li>
                 </ul>
                 <p className="text-slate-400 mt-2 text-xs">
                   Tip: Descargá el template para ver un ejemplo completo y editalo en Excel
@@ -1264,47 +1288,50 @@ export default function PortfolioTracker() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
-                    {sortedTrades.map((trade) => (
-                      <tr key={trade.id} className="hover:bg-slate-700/20 transition-colors">
-                        <td className="px-4 py-3 text-slate-300 text-sm">
-                          {new Date(trade.fecha).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-semibold text-white font-mono">{trade.ticker}</span>
-                        </td>
-                        <td className="text-right px-4 py-3 text-slate-300 font-mono">
-                          {formatNumber(trade.cantidad)}
-                        </td>
-                        <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                          {formatARS(trade.precioCompra)}
-                        </td>
-                        <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden sm:table-cell">
-                          {formatARS(trade.cantidad * trade.precioCompra)}
-                        </td>
-                        <td className="text-right px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            <button
-                              onClick={() => {
-                                setEditingTrade(trade);
-                                setModalOpen(true);
-                              }}
-                              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeletingTrade(trade);
-                                setDeleteModalOpen(true);
-                              }}
-                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {sortedTrades.map((trade) => {
+                      const isBono = isBonoPesos(trade.ticker);
+                      return (
+                        <tr key={trade.id} className="hover:bg-slate-700/20 transition-colors">
+                          <td className="px-4 py-3 text-slate-300 text-sm">
+                            {new Date(trade.fecha).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-semibold text-white font-mono">{trade.ticker}</span>
+                          </td>
+                          <td className="text-right px-4 py-3 text-slate-300 font-mono">
+                            {formatNumber(trade.cantidad)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                            {isBono ? `$${trade.precioCompra.toFixed(4)}` : formatARS(trade.precioCompra)}
+                          </td>
+                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden sm:table-cell">
+                            {formatARS(trade.cantidad * trade.precioCompra)}
+                          </td>
+                          <td className="text-right px-4 py-3">
+                            <div className="flex justify-end gap-1">
+                              <button
+                                onClick={() => {
+                                  setEditingTrade(trade);
+                                  setModalOpen(true);
+                                }}
+                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletingTrade(trade);
+                                  setDeleteModalOpen(true);
+                                }}
+                                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {trades.length === 0 && (
@@ -1344,7 +1371,7 @@ export default function PortfolioTracker() {
       <footer className="border-t border-slate-800/50 py-4 mt-8">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
           <span>Datos: data912.com</span>
-          <span>Portfolio Tracker v2.0</span>
+          <span>Portfolio Tracker v3.0 - Ajuste bonos ÷1000</span>
         </div>
       </footer>
 
