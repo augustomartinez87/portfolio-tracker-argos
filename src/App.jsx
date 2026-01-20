@@ -1,31 +1,86 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3, Filter, Trash2, Edit2, RefreshCw, AlertCircle } from 'lucide-react';
+import { PlusCircle, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3, Filter, Trash2, Edit2, RefreshCw, AlertCircle, Download } from 'lucide-react';
+
+// Base de datos de tickers con información automática
+const TICKERS_DATA = {
+  // CEDEARs
+  'AAPL': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'GOOGL': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'MSFT': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'MELI': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'Argentina' },
+  'META': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'NFLX': { assetClass: 'CEDEAR', industry: 'Communication', country: 'United States' },
+  'SPY': { assetClass: 'CEDEAR', industry: 'ETF', country: 'United States' },
+  'IBIT': { assetClass: 'CEDEAR', industry: 'ETF', country: 'United States' },
+  'VIST': { assetClass: 'CEDEAR', industry: 'Materials', country: 'United States' },
+  'VALE': { assetClass: 'CEDEAR', industry: 'Materials', country: 'Brazil' },
+  'NU': { assetClass: 'CEDEAR', industry: 'Financials', country: 'Brazil' },
+  'TSLA': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'United States' },
+  'NVDA': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'AMD': { assetClass: 'CEDEAR', industry: 'Technology', country: 'United States' },
+  'AMZN': { assetClass: 'CEDEAR', industry: 'Consumer Discretionary', country: 'United States' },
+  'DIS': { assetClass: 'CEDEAR', industry: 'Communication', country: 'United States' },
+  'KO': { assetClass: 'CEDEAR', industry: 'Consumer Staples', country: 'United States' },
+  'WMT': { assetClass: 'CEDEAR', industry: 'Consumer Staples', country: 'United States' },
+  'BA': { assetClass: 'CEDEAR', industry: 'Industrials', country: 'United States' },
+  'XOM': { assetClass: 'CEDEAR', industry: 'Energy', country: 'United States' },
+
+  // Acciones Argentinas
+  'GGAL': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
+  'YPFD': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
+  'PAMP': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
+  'ALUA': { assetClass: 'ARGY', industry: 'Industrials', country: 'Argentina' },
+  'TXAR': { assetClass: 'ARGY', industry: 'Industrials', country: 'Argentina' },
+  'LOMA': { assetClass: 'ARGY', industry: 'Energy', country: 'Argentina' },
+  'COME': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
+  'SUPV': { assetClass: 'ARGY', industry: 'Consumer Staples', country: 'Argentina' },
+  'TGSU2': { assetClass: 'ARGY', industry: 'Utilities', country: 'Argentina' },
+  'MIRG': { assetClass: 'ARGY', industry: 'Real Estate', country: 'Argentina' },
+  'CRES': { assetClass: 'ARGY', industry: 'Real Estate', country: 'Argentina' },
+  'BBAR': { assetClass: 'ARGY', industry: 'Financials', country: 'Argentina' },
+
+  // Bonos Hard Dollar
+  'AE38': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'AL30': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'AL35': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'GD30': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'GD35': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'GD38': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'GD41': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+  'GD46': { assetClass: 'BONOS HARDOLLAR', industry: 'Fixed Income', country: 'Argentina' },
+
+  // Bonos en Pesos
+  'T15E7': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+  'TTD26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+  'S29E5': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+  'TX26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+  'TZX26': { assetClass: 'BONOS EN PESOS', industry: 'Fixed Income', country: 'Argentina' },
+};
 
 const PortfolioTracker = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [positions, setPositions] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [currentPrices, setCurrentPrices] = useState({});
   const [filteredPositions, setFilteredPositions] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState(null);
-  
+
   // Filtros
   const [filterAssetClass, setFilterAssetClass] = useState('all');
   const [filterIndustry, setFilterIndustry] = useState('all');
-  
+
   // Cotizaciones
   const [usdMep, setUsdMep] = useState(1468.19);
   const [usdCcl, setUsdCcl] = useState(1511.56);
-  
-  // Form para nueva posición
-  const [newPosition, setNewPosition] = useState({
+
+  // Form para nuevo trade
+  const [newTrade, setNewTrade] = useState({
+    date: new Date().toISOString().split('T')[0],
     ticker: '',
-    assetClass: 'CEDEAR',
     quantity: '',
-    avgPrice: '',
-    currentPrice: '',
-    industry: '',
-    country: 'Argentina'
+    buyPrice: ''
   });
 
   // Formato peso argentino
@@ -38,33 +93,82 @@ const PortfolioTracker = () => {
     }).format(value);
   };
 
+  // Agrupar trades por ticker para el dashboard
+  const groupTradesByTicker = () => {
+    const grouped = {};
+
+    trades.forEach(trade => {
+      if (!grouped[trade.ticker]) {
+        grouped[trade.ticker] = {
+          ticker: trade.ticker,
+          assetClass: trade.assetClass,
+          industry: trade.industry,
+          country: trade.country,
+          totalQuantity: 0,
+          totalInvested: 0,
+          trades: []
+        };
+      }
+
+      grouped[trade.ticker].totalQuantity += trade.quantity;
+      grouped[trade.ticker].totalInvested += trade.quantity * trade.buyPrice;
+      grouped[trade.ticker].trades.push(trade);
+    });
+
+    // Calcular PPC y crear posiciones
+    return Object.values(grouped).map(group => ({
+      ticker: group.ticker,
+      assetClass: group.assetClass,
+      industry: group.industry,
+      country: group.country,
+      quantity: group.totalQuantity,
+      avgPrice: group.totalInvested / group.totalQuantity, // PPC ponderado
+      currentPrice: currentPrices[group.ticker] || group.totalInvested / group.totalQuantity,
+      trades: group.trades
+    }));
+  };
+
   useEffect(() => {
-    loadPositions();
+    loadTrades();
+    loadCurrentPrices();
     loadLastSnapshot();
   }, []);
 
   useEffect(() => {
+    const positions = groupTradesByTicker();
     let filtered = [...positions];
-    
+
     if (filterAssetClass !== 'all') {
       filtered = filtered.filter(p => p.assetClass === filterAssetClass);
     }
-    
+
     if (filterIndustry !== 'all') {
       filtered = filtered.filter(p => p.industry === filterIndustry);
     }
-    
-    setFilteredPositions(filtered);
-  }, [positions, filterAssetClass, filterIndustry]);
 
-  const loadPositions = () => {
+    setFilteredPositions(filtered);
+  }, [trades, currentPrices, filterAssetClass, filterIndustry]);
+
+  const loadTrades = () => {
     try {
-      const stored = localStorage.getItem('portfolio-positions');
+      const stored = localStorage.getItem('portfolio-trades');
       if (stored) {
-        setPositions(JSON.parse(stored));
+        const loadedTrades = JSON.parse(stored);
+        setTrades(loadedTrades);
       }
     } catch (error) {
-      console.log('No hay posiciones guardadas aún');
+      console.log('No hay trades guardados aún');
+    }
+  };
+
+  const loadCurrentPrices = () => {
+    try {
+      const stored = localStorage.getItem('portfolio-current-prices');
+      if (stored) {
+        setCurrentPrices(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.log('No hay precios guardados');
     }
   };
 
@@ -79,16 +183,26 @@ const PortfolioTracker = () => {
     }
   };
 
-  const savePositions = (updatedPositions) => {
+  const saveTrades = (updatedTrades) => {
     try {
-      localStorage.setItem('portfolio-positions', JSON.stringify(updatedPositions));
-      setPositions(updatedPositions);
+      localStorage.setItem('portfolio-trades', JSON.stringify(updatedTrades));
+      setTrades(updatedTrades);
     } catch (error) {
-      console.error('Error guardando posiciones:', error);
+      console.error('Error guardando trades:', error);
+    }
+  };
+
+  const saveCurrentPrices = (prices) => {
+    try {
+      localStorage.setItem('portfolio-current-prices', JSON.stringify(prices));
+      setCurrentPrices(prices);
+    } catch (error) {
+      console.error('Error guardando precios:', error);
     }
   };
 
   const saveSnapshot = () => {
+    const positions = groupTradesByTicker();
     const snapshot = {
       date: new Date().toISOString(),
       positions: positions.map(p => ({
@@ -97,7 +211,7 @@ const PortfolioTracker = () => {
         pnl: (p.quantity * p.currentPrice) - (p.quantity * p.avgPrice)
       }))
     };
-    
+
     try {
       localStorage.setItem('portfolio-snapshot-yesterday', JSON.stringify(snapshot));
       setLastPriceUpdate(snapshot);
@@ -108,47 +222,42 @@ const PortfolioTracker = () => {
 
   const updatePricesFromAPI = async () => {
     setIsUpdatingPrices(true);
-    
+
     try {
-      // Guardar snapshot actual como "ayer" antes de actualizar
       saveSnapshot();
-      
-      const updatedPositions = await Promise.all(
-        positions.map(async (pos) => {
-          try {
-            // Intentar diferentes endpoints de data912.com
-            const endpoints = [
-              `https://api.data912.com/quote/${pos.ticker}`,
-              `https://data912.com/api/quote/${pos.ticker}`,
-              `https://api.data912.com/tickers/${pos.ticker}`
-            ];
-            
-            for (const endpoint of endpoints) {
-              try {
-                const response = await fetch(endpoint);
-                if (response.ok) {
-                  const data = await response.json();
-                  // Intentar diferentes estructuras de respuesta
-                  const price = data.price || data.last || data.close || data.currentPrice || data.lastPrice;
-                  if (price) {
-                    return { ...pos, currentPrice: parseFloat(price) };
-                  }
+
+      const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
+      const newPrices = { ...currentPrices };
+
+      for (const ticker of uniqueTickers) {
+        try {
+          const endpoints = [
+            `https://api.data912.com/quote/${ticker}`,
+            `https://data912.com/api/quote/${ticker}`,
+            `https://api.data912.com/tickers/${ticker}`
+          ];
+
+          for (const endpoint of endpoints) {
+            try {
+              const response = await fetch(endpoint);
+              if (response.ok) {
+                const data = await response.json();
+                const price = data.price || data.last || data.close || data.currentPrice || data.lastPrice;
+                if (price) {
+                  newPrices[ticker] = parseFloat(price);
+                  break;
                 }
-              } catch (e) {
-                continue;
               }
+            } catch (e) {
+              continue;
             }
-            
-            // Si no se pudo actualizar, mantener precio actual
-            return pos;
-          } catch (error) {
-            console.error(`Error actualizando ${pos.ticker}:`, error);
-            return pos;
           }
-        })
-      );
-      
-      savePositions(updatedPositions);
+        } catch (error) {
+          console.error(`Error actualizando ${ticker}:`, error);
+        }
+      }
+
+      saveCurrentPrices(newPrices);
       alert('Precios actualizados! (Nota: algunos tickers pueden no haberse actualizado si la API no los reconoce)');
     } catch (error) {
       console.error('Error actualizando precios:', error);
@@ -158,55 +267,137 @@ const PortfolioTracker = () => {
     }
   };
 
-  const addPosition = () => {
-    if (!newPosition.ticker || !newPosition.quantity || !newPosition.avgPrice || !newPosition.currentPrice) {
+  const importFromGoogleSheets = async () => {
+    setIsImporting(true);
+    try {
+      const url = 'https://docs.google.com/spreadsheets/d/14kSIrwStgETRML-_1qCOl4F_F-tdXRHTKch5PdwUMLM/gviz/tq?tqx=out:csv&sheet=Trades';
+      const response = await fetch(url);
+      const csvText = await response.text();
+
+      // Parsear CSV
+      const lines = csvText.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+
+      const importedTrades = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+
+        const dateIdx = headers.findIndex(h => h.toLowerCase().includes('fecha'));
+        const tickerIdx = headers.findIndex(h => h.toLowerCase().includes('ticker'));
+        const quantityIdx = headers.findIndex(h => h.toLowerCase().includes('cantidad'));
+        const priceIdx = headers.findIndex(h => h.toLowerCase().includes('precio'));
+
+        if (values[tickerIdx] && values[quantityIdx] && values[priceIdx]) {
+          const ticker = values[tickerIdx].toUpperCase();
+          const tickerData = TICKERS_DATA[ticker] || {
+            assetClass: 'CEDEAR',
+            industry: 'Unknown',
+            country: 'Unknown'
+          };
+
+          importedTrades.push({
+            id: Date.now() + i,
+            date: values[dateIdx] || new Date().toISOString().split('T')[0],
+            ticker: ticker,
+            quantity: parseFloat(values[quantityIdx]),
+            buyPrice: parseFloat(values[priceIdx]),
+            assetClass: tickerData.assetClass,
+            industry: tickerData.industry,
+            country: tickerData.country
+          });
+        }
+      }
+
+      if (importedTrades.length > 0) {
+        saveTrades([...trades, ...importedTrades]);
+        alert(`${importedTrades.length} trades importados exitosamente!`);
+      } else {
+        alert('No se encontraron trades para importar.');
+      }
+    } catch (error) {
+      console.error('Error importando:', error);
+      alert('Error al importar desde Google Sheets. Verificá la URL y que la hoja sea pública.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const addTrade = () => {
+    if (!newTrade.ticker || !newTrade.quantity || !newTrade.buyPrice || !newTrade.date) {
       alert('Completá todos los campos obligatorios');
       return;
     }
 
-    const position = {
-      id: Date.now(),
-      ...newPosition,
-      quantity: parseFloat(newPosition.quantity),
-      avgPrice: parseFloat(newPosition.avgPrice),
-      currentPrice: parseFloat(newPosition.currentPrice)
+    const ticker = newTrade.ticker.toUpperCase();
+    const tickerData = TICKERS_DATA[ticker] || {
+      assetClass: 'CEDEAR',
+      industry: 'Unknown',
+      country: 'Unknown'
     };
 
-    savePositions([...positions, position]);
-    
-    setNewPosition({
+    const trade = {
+      id: Date.now(),
+      date: newTrade.date,
+      ticker: ticker,
+      quantity: parseFloat(newTrade.quantity),
+      buyPrice: parseFloat(newTrade.buyPrice),
+      assetClass: tickerData.assetClass,
+      industry: tickerData.industry,
+      country: tickerData.country
+    };
+
+    saveTrades([...trades, trade]);
+
+    setNewTrade({
+      date: new Date().toISOString().split('T')[0],
       ticker: '',
-      assetClass: 'CEDEAR',
       quantity: '',
-      avgPrice: '',
-      currentPrice: '',
-      industry: '',
-      country: 'Argentina'
+      buyPrice: ''
     });
   };
 
-  const deletePosition = (id) => {
-    if (window.confirm('¿Seguro que querés eliminar esta posición?')) {
-      savePositions(positions.filter(p => p.id !== id));
+  const deleteTrade = (id) => {
+    if (window.confirm('¿Seguro que querés eliminar este trade?')) {
+      saveTrades(trades.filter(t => t.id !== id));
     }
   };
 
-  const startEdit = (position) => {
-    setEditingId(position.id);
-    setNewPosition(position);
+  const startEdit = (trade) => {
+    setEditingId(trade.id);
+    setNewTrade({
+      date: trade.date,
+      ticker: trade.ticker,
+      quantity: trade.quantity.toString(),
+      buyPrice: trade.buyPrice.toString()
+    });
   };
 
-  const updatePosition = () => {
-    savePositions(positions.map(p => p.id === editingId ? { ...newPosition, id: editingId } : p));
-    setEditingId(null);
-    setNewPosition({
-      ticker: '',
+  const updateTrade = () => {
+    const ticker = newTrade.ticker.toUpperCase();
+    const tickerData = TICKERS_DATA[ticker] || {
       assetClass: 'CEDEAR',
+      industry: 'Unknown',
+      country: 'Unknown'
+    };
+
+    const updatedTrade = {
+      id: editingId,
+      date: newTrade.date,
+      ticker: ticker,
+      quantity: parseFloat(newTrade.quantity),
+      buyPrice: parseFloat(newTrade.buyPrice),
+      assetClass: tickerData.assetClass,
+      industry: tickerData.industry,
+      country: tickerData.country
+    };
+
+    saveTrades(trades.map(t => t.id === editingId ? updatedTrade : t));
+    setEditingId(null);
+    setNewTrade({
+      date: new Date().toISOString().split('T')[0],
+      ticker: '',
       quantity: '',
-      avgPrice: '',
-      currentPrice: '',
-      industry: '',
-      country: 'Argentina'
+      buyPrice: ''
     });
   };
 
@@ -215,11 +406,10 @@ const PortfolioTracker = () => {
     const marketValue = position.quantity * position.currentPrice;
     const pnlArs = marketValue - invested;
     const pnlPct = (pnlArs / invested) * 100;
-    
-    // Comparación con snapshot anterior
+
     let yesterdayValue = null;
     let changeVsYesterday = null;
-    
+
     if (lastPriceUpdate && lastPriceUpdate.positions) {
       const yesterdayPos = lastPriceUpdate.positions.find(p => p.ticker === position.ticker);
       if (yesterdayPos) {
@@ -227,7 +417,7 @@ const PortfolioTracker = () => {
         changeVsYesterday = marketValue - yesterdayValue;
       }
     }
-    
+
     return { invested, marketValue, pnlArs, pnlPct, yesterdayValue, changeVsYesterday };
   };
 
@@ -243,6 +433,7 @@ const PortfolioTracker = () => {
     }, { invested: 0, marketValue: 0, pnlArs: 0, changeVsYesterday: 0 });
   };
 
+  const positions = groupTradesByTicker();
   const totals = calculateTotals(filteredPositions);
   const totalPnlPct = totals.invested > 0 ? (totals.pnlArs / totals.invested) * 100 : 0;
 
@@ -260,7 +451,7 @@ const PortfolioTracker = () => {
     name: key,
     value: assetClassBreakdown[key].marketValue,
     pnl: assetClassBreakdown[key].pnl,
-    percentage: (assetClassBreakdown[key].marketValue / totals.marketValue) * 100
+    percentage: totals.marketValue > 0 ? (assetClassBreakdown[key].marketValue / totals.marketValue) * 100 : 0
   })).sort((a, b) => b.value - a.value);
 
   const industries = [...new Set(positions.map(p => p.industry).filter(Boolean))];
@@ -271,6 +462,9 @@ const PortfolioTracker = () => {
     'ARGY': 'bg-green-500',
     'BONOS HARDOLLAR': 'bg-purple-500'
   };
+
+  // Ordenar trades por fecha (más recientes primero)
+  const sortedTrades = [...trades].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -322,15 +516,15 @@ const PortfolioTracker = () => {
             )}
           </button>
           <button
-            onClick={() => setActiveTab('positions')}
+            onClick={() => setActiveTab('trades')}
             className={`px-6 py-3 font-semibold transition-all relative ${
-              activeTab === 'positions'
+              activeTab === 'trades'
                 ? 'text-emerald-400 bg-slate-900'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            Cargar Operaciones
-            {activeTab === 'positions' && (
+            Trades
+            {activeTab === 'trades' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"></div>
             )}
           </button>
@@ -356,7 +550,7 @@ const PortfolioTracker = () => {
           </div>
 
           {/* Alert si no hay snapshot */}
-          {!lastPriceUpdate && positions.length > 0 && (
+          {!lastPriceUpdate && trades.length > 0 && (
             <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-l-4 border-yellow-500 p-5 rounded-lg flex items-start gap-4 shadow-lg">
               <AlertCircle className="text-yellow-400 flex-shrink-0 mt-1" size={24} />
               <div>
@@ -493,14 +687,14 @@ const PortfolioTracker = () => {
             </div>
           )}
 
-          {/* Posiciones Table */}
+          {/* Posiciones Table - AGRUPADAS */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg overflow-x-auto">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
               <BarChart3 className="text-emerald-400" size={24} />
-              Posiciones
+              Posiciones Consolidadas
             </h3>
             {filteredPositions.length === 0 ? (
-              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas. Andá a "Cargar Operaciones" para agregar.</p>
+              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas. Andá a "Trades" para agregar.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -520,7 +714,7 @@ const PortfolioTracker = () => {
                     {filteredPositions.map((pos) => {
                       const metrics = calculatePositionMetrics(pos);
                       return (
-                        <tr key={pos.id} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
+                        <tr key={pos.ticker} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
                           <td className="py-4 font-bold text-white">{pos.ticker}</td>
                           <td className="py-4 text-slate-400 hidden md:table-cell">
                             <span className="px-2 py-1 bg-slate-700 rounded text-xs">{pos.assetClass}</span>
@@ -549,48 +743,68 @@ const PortfolioTracker = () => {
         </div>
       )}
 
-      {/* POSITIONS TAB */}
-      {activeTab === 'positions' && (
+      {/* TRADES TAB */}
+      {activeTab === 'trades' && (
         <div className="space-y-6">
+          {/* Header con botón importar */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Gestión de Trades</h2>
+            <button
+              onClick={importFromGoogleSheets}
+              disabled={isImporting}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
+            >
+              <Download className={isImporting ? 'animate-bounce' : ''} size={20} />
+              {isImporting ? 'Importando...' : 'Importar Google Sheets'}
+            </button>
+          </div>
+
           {/* Form */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 md:p-8 rounded-xl border border-slate-700 shadow-lg">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
               <PlusCircle className="text-emerald-400" size={28} />
-              {editingId ? 'Editar Posición' : 'Nueva Posición'}
+              {editingId ? 'Editar Trade' : 'Nuevo Trade'}
             </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Ticker *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Fecha *</label>
                 <input
-                  type="text"
-                  value={newPosition.ticker}
-                  onChange={(e) => setNewPosition({...newPosition, ticker: e.target.value.toUpperCase()})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white uppercase focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="GGAL"
+                  type="date"
+                  value={newTrade.date}
+                  onChange={(e) => setNewTrade({...newTrade, date: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Asset Class *</label>
-                <select
-                  value={newPosition.assetClass}
-                  onChange={(e) => setNewPosition({...newPosition, assetClass: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                >
-                  <option value="CEDEAR">CEDEAR</option>
-                  <option value="BONOS EN PESOS">Bonos en Pesos</option>
-                  <option value="ARGY">Acciones Argentinas</option>
-                  <option value="BONOS HARDOLLAR">Bonos Hard Dollar</option>
-                </select>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Ticker *</label>
+                <input
+                  type="text"
+                  value={newTrade.ticker}
+                  onChange={(e) => setNewTrade({...newTrade, ticker: e.target.value.toUpperCase()})}
+                  list="tickers-list"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white uppercase focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  placeholder="AAPL"
+                />
+                <datalist id="tickers-list">
+                  {Object.keys(TICKERS_DATA).map(ticker => (
+                    <option key={ticker} value={ticker} />
+                  ))}
+                </datalist>
+                {newTrade.ticker && TICKERS_DATA[newTrade.ticker] && (
+                  <p className="text-xs text-emerald-400 mt-1">
+                    {TICKERS_DATA[newTrade.ticker].assetClass} - {TICKERS_DATA[newTrade.ticker].industry}
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="text-sm text-slate-300 font-semibold block mb-2">Cantidad *</label>
                 <input
                   type="number"
-                  value={newPosition.quantity}
-                  onChange={(e) => setNewPosition({...newPosition, quantity: e.target.value})}
+                  value={newTrade.quantity}
+                  onChange={(e) => setNewTrade({...newTrade, quantity: e.target.value})}
                   className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="100"
                   step="0.01"
@@ -598,72 +812,34 @@ const PortfolioTracker = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio Promedio Compra (ARS) *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio de Compra (ARS) *</label>
                 <input
                   type="number"
-                  value={newPosition.avgPrice}
-                  onChange={(e) => setNewPosition({...newPosition, avgPrice: e.target.value})}
+                  value={newTrade.buyPrice}
+                  onChange={(e) => setNewTrade({...newTrade, buyPrice: e.target.value})}
                   className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="5000.00"
                   step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio Actual (ARS) *</label>
-                <input
-                  type="number"
-                  value={newPosition.currentPrice}
-                  onChange={(e) => setNewPosition({...newPosition, currentPrice: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="6000.00"
-                  step="0.01"
-                />
-                <p className="text-xs text-slate-400 mt-2">Podés usar "Actualizar Precios" en el Dashboard para traer automáticamente</p>
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">Industria</label>
-                <input
-                  type="text"
-                  value={newPosition.industry}
-                  onChange={(e) => setNewPosition({...newPosition, industry: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="Financials"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 font-semibold block mb-2">País</label>
-                <input
-                  type="text"
-                  value={newPosition.country}
-                  onChange={(e) => setNewPosition({...newPosition, country: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  placeholder="Argentina"
                 />
               </div>
             </div>
 
             <div className="mt-6 flex gap-3">
               <button
-                onClick={editingId ? updatePosition : addPosition}
+                onClick={editingId ? updateTrade : addTrade}
                 className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg"
               >
-                {editingId ? 'Actualizar' : 'Agregar Posición'}
+                {editingId ? 'Actualizar' : 'Agregar Trade'}
               </button>
               {editingId && (
                 <button
                   onClick={() => {
                     setEditingId(null);
-                    setNewPosition({
+                    setNewTrade({
+                      date: new Date().toISOString().split('T')[0],
                       ticker: '',
-                      assetClass: 'CEDEAR',
                       quantity: '',
-                      avgPrice: '',
-                      currentPrice: '',
-                      industry: '',
-                      country: 'Argentina'
+                      buyPrice: ''
                     });
                   }}
                   className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-all hover:scale-105"
@@ -674,44 +850,69 @@ const PortfolioTracker = () => {
             </div>
           </div>
 
-          {/* Lista de posiciones para editar/eliminar */}
+          {/* Tabla de Trades */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-            <h3 className="text-xl font-bold mb-6">Posiciones Cargadas ({positions.length})</h3>
-            {positions.length === 0 ? (
-              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas aún.</p>
+            <h3 className="text-xl font-bold mb-6">Todos los Trades ({trades.length})</h3>
+            {trades.length === 0 ? (
+              <p className="text-slate-400 text-center py-12 text-lg">No hay trades cargados aún.</p>
             ) : (
-              <div className="space-y-3">
-                {positions.map((pos) => {
-                  const metrics = calculatePositionMetrics(pos);
-                  return (
-                    <div key={pos.id} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-lg hover:bg-slate-700/60 transition-all border border-slate-700/50">
-                      <div className="flex-1">
-                        <div className="font-bold text-lg text-white">{pos.ticker}</div>
-                        <div className="text-sm text-slate-400 mt-1">
-                          <span className="px-2 py-0.5 bg-slate-700 rounded text-xs mr-2">{pos.assetClass}</span>
-                          {pos.quantity} @ {formatARS(pos.currentPrice)} ·
-                          <span className={`ml-2 font-semibold ${metrics.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            P&L: {metrics.pnlPct >= 0 ? '+' : ''}{metrics.pnlPct.toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEdit(pos)}
-                          className="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all hover:scale-110"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => deletePosition(pos.id)}
-                          className="p-3 bg-red-600 hover:bg-red-700 rounded-lg transition-all hover:scale-110"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-400 border-b-2 border-slate-700">
+                      <th className="pb-4 font-semibold">Fecha</th>
+                      <th className="pb-4 font-semibold">Ticker</th>
+                      <th className="pb-4 font-semibold hidden md:table-cell">Clase</th>
+                      <th className="pb-4 text-right font-semibold">Cantidad</th>
+                      <th className="pb-4 text-right font-semibold">Precio Compra</th>
+                      <th className="pb-4 text-right font-semibold">Precio Actual</th>
+                      <th className="pb-4 text-right font-semibold">P&L Trade</th>
+                      <th className="pb-4 text-center font-semibold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedTrades.map((trade) => {
+                      const currentPrice = currentPrices[trade.ticker] || trade.buyPrice;
+                      const pnl = (currentPrice - trade.buyPrice) * trade.quantity;
+                      const pnlPct = ((currentPrice - trade.buyPrice) / trade.buyPrice) * 100;
+
+                      return (
+                        <tr key={trade.id} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
+                          <td className="py-4 text-slate-300">{new Date(trade.date).toLocaleDateString('es-AR')}</td>
+                          <td className="py-4 font-bold text-white">{trade.ticker}</td>
+                          <td className="py-4 text-slate-400 hidden md:table-cell">
+                            <span className="px-2 py-1 bg-slate-700 rounded text-xs">{trade.assetClass}</span>
+                          </td>
+                          <td className="py-4 text-right text-slate-300">{trade.quantity}</td>
+                          <td className="py-4 text-right text-slate-400">{formatARS(trade.buyPrice)}</td>
+                          <td className="py-4 text-right text-slate-300 font-semibold">{formatARS(currentPrice)}</td>
+                          <td className={`py-4 text-right font-bold ${pnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+                            <div className="text-xs font-normal">
+                              {formatARS(pnl)}
+                            </div>
+                          </td>
+                          <td className="py-4">
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={() => startEdit(trade)}
+                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all hover:scale-110"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => deleteTrade(trade.id)}
+                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all hover:scale-110"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -723,4 +924,3 @@ const PortfolioTracker = () => {
 };
 
 export default PortfolioTracker;
-
