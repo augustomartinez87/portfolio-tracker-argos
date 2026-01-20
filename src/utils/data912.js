@@ -182,19 +182,41 @@ class Data912Helper {
 
   // Get historical data
   async getHistorical(ticker, fromDate) {
-    const cacheKey = `hist_${ticker}_${fromDate || 'all'}`;
+    const correctedTicker = this.getCorrectTicker(ticker);
+    const cacheKey = `hist_${correctedTicker}_${fromDate || 'all'}`;
     const cached = this.getCache(cacheKey);
     if (cached) return cached;
 
+    // Verificar si es un bono en pesos (no tiene históricos)
+    if (this.isBonoPesos(correctedTicker)) {
+      throw new Error('Los bonos en pesos no tienen datos históricos disponibles');
+    }
+
     try {
-      let endpoint = `/historical/stocks/${ticker}`;
+      const endpoint = this.getHistoricalEndpoint(correctedTicker);
+      if (!endpoint) {
+        throw new Error('No hay endpoint de históricos disponible para este ticker');
+      }
+
       if (fromDate) {
         endpoint += `?from=${fromDate}`;
       }
 
       const data = await this.fetchEndpoint(endpoint);
-      this.setCache(cacheKey, data);
-      return data;
+      
+      // Normalizar estructura de datos si es necesario
+      let normalizedData = data;
+      
+      // Los endpoints históricos retornan un array de objetos con:
+      // date, o, h, l, c, v, dr, sa
+      // Verificar que tenemos la estructura correcta
+      if (Array.isArray(data) && data.length > 0) {
+        // Los datos ya vienen en el formato correcto
+        normalizedData = data;
+      }
+      
+      this.setCache(cacheKey, normalizedData);
+      return normalizedData;
     } catch (error) {
       throw new Error(`Error obteniendo históricos de ${ticker}: ${error.message}`);
     }
@@ -213,7 +235,7 @@ class Data912Helper {
     return tickerMap[upperTicker] || upperTicker;
   }
 
-  // Determinar si es un bono en pesos
+  // Determinar si es un bono en pesos (sin históricos)
   isBonoPesos(ticker) {
     if (!ticker) return false;
     const t = ticker.toUpperCase();
@@ -223,6 +245,34 @@ class Data912Helper {
     if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
     if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
     return false;
+  }
+
+  // Determinar si es un bono hard dollar (con históricos)
+  isBonoHardDollar(ticker) {
+    if (!ticker) return false;
+    const t = ticker.toUpperCase();
+    // Bonos hard dollar conocidos: AL30, GD30, AL29, GD29, etc.
+    // Patrón: AL o GD seguido de 2 dígitos
+    if (/^(AL|GD|AY24|DICA|DICY|DIED|CO26|AA26|AA25|AB26|AC26|AY26|BP26|BU24|Buenos|Buenos Aires)/.test(t)) return true;
+    return false;
+  }
+
+  // Determinar el endpoint de históricos según el tipo de ticker
+  getHistoricalEndpoint(ticker) {
+    const correctedTicker = this.getCorrectTicker(ticker);
+    
+    // Bonos en pesos no tienen endpoint de históricos
+    if (this.isBonoPesos(correctedTicker)) {
+      return null;
+    }
+    
+    // Bonos hard dollar van a historical/bonds
+    if (this.isBonoHardDollar(correctedTicker)) {
+      return `/historical/bonds/${correctedTicker}`;
+    }
+    
+    // Acciones y CEDEARs van a historical/stocks
+    return `/historical/stocks/${correctedTicker}`;
   }
 
   // Determinar endpoint según ticker

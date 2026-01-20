@@ -116,7 +116,14 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         setHistorical(filteredData);
       } catch (err) {
         console.error('Error fetching historical data:', err);
-        setError(err instanceof Error ? err.message : 'Error cargando históricos');
+        const errorMessage = err instanceof Error ? err.message : 'Error cargando históricos';
+        
+        // Check if it's a peso bond without historical data
+        if (data912.isBonoPesos(position.ticker)) {
+          setError('Los bonos en pesos no tienen datos históricos disponibles');
+        } else {
+          setError(errorMessage);
+        }
         // Set empty array to prevent crashes
         setHistorical([]);
       } finally {
