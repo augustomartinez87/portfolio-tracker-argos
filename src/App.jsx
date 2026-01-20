@@ -985,7 +985,7 @@ const now = new Date();
                 <h3 className="text-lg font-semibold text-white">Posiciones</h3>
                 <span className="text-sm text-slate-400">{positions.length} activos</span>
               </div>
-              <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+              <div className="overflow-x-auto">
                 <table className="w-full min-w-[1200px]">
                   <thead>
                     <tr className="bg-slate-900/50">
@@ -997,7 +997,6 @@ const now = new Date();
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valuación</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Result. Total</th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Result. Diario</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">% Diario</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
@@ -1046,20 +1045,11 @@ const now = new Date();
                                 : formatARS(pos.precioActual)
                             }
                           </td>
-                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {pos.isBonoPesos ? `$${pos.precioActual.toFixed(4)}` : formatARS(pos.precioActual)}
-                          </td>
-<td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
-                            {pos.isBonoHD 
-                              ? formatUSD(pos.costoTotal)
-                              : formatARS(pos.costoTotal)
-                            }
+                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                            {formatARS(pos.costoTotal)}
                           </td>
                           <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {pos.isBonoHD 
-                              ? formatUSD(pos.valuacionActual)
-                              : formatARS(pos.valuacionActual)
-                            }
+                            {formatARS(pos.valuacionActual)}
                           </td>
                           <td className="text-right px-4 py-3 hidden xl:table-cell">
                             <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -1075,16 +1065,7 @@ const now = new Date();
                               <span className="block text-xs opacity-80">
                                 {formatPercent(pos.resultadoDiarioPct || 0)}
                               </span>
-</div>
-                          </td>
-                          <td className="text-right px-4 py-3 hidden lg:table-cell">
-                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                              pos.resultadoDiarioPct >= 0 
-                                ? 'bg-emerald-500/20 text-emerald-400' 
-                                : 'bg-red-500/20 text-red-400'
-                            }`}>
-                              {formatPercent(pos.resultadoDiarioPct || 0)}
-                            </span>
+                            </div>
                           </td>
                         </tr>
                       </React.Fragment>
@@ -1120,16 +1101,10 @@ const now = new Date();
                         <td className="text-right px-4 py-4">
                           <div className={`font-mono font-bold text-base ${totals.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                             {formatARS(totals.resultadoDiario)}
+                            <span className="block text-xs opacity-90 font-semibold">
+                              {formatPercent(totals.resultadoDiarioPct)}
+                            </span>
                           </div>
-                        </td>
-                        <td className="text-right px-4 py-4 hidden lg:table-cell">
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${
-                            totals.resultadoDiarioPct >= 0 
-                              ? 'bg-emerald-500/20 text-emerald-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {formatPercent(totals.resultadoDiarioPct)}
-                          </span>
                         </td>
                       </tr>
                     )}
