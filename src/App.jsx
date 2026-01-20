@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap } from 'lucide-react';
 import { data912 } from './utils/data912';
+import DistributionChart from './components/DistributionChart';
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -1117,7 +1118,10 @@ export default function PortfolioTracker() {
 
             {/* Asset Breakdown + Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-1">
+                <DistributionChart positions={positions} />
+              </div>
+              <div className="lg:col-span-1">
                 <AssetBreakdown positions={positions} totalValue={totals.valuacion} />
               </div>
               <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
