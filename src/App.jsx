@@ -273,51 +273,72 @@ const PortfolioTracker = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-lg min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 flex items-center gap-2">
-          <BarChart3 className="text-emerald-400" />
-          Portfolio Tracker
-        </h1>
-        <div className="flex flex-wrap gap-2 text-xs md:text-sm text-slate-300">
-          <span>MEP: {formatARS(usdMep)}</span>
-          <span>·</span>
-          <span>CCL: {formatARS(usdCcl)}</span>
-          {lastPriceUpdate && (
-            <>
-              <span>·</span>
-              <span className="text-slate-400">
-                Último snapshot: {new Date(lastPriceUpdate.date).toLocaleDateString('es-AR')}
-              </span>
-            </>
-          )}
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Top Header Bar */}
+      <div className="bg-slate-900 border-b border-slate-800 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="text-emerald-400" size={32} />
+            <div>
+              <h1 className="text-2xl font-bold">Portfolio Tracker</h1>
+              <p className="text-xs text-slate-400">Gestión Profesional de Inversiones</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="text-right">
+              <div className="text-slate-400 text-xs">USD MEP</div>
+              <div className="font-semibold text-emerald-400">{formatARS(usdMep)}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-slate-400 text-xs">USD CCL</div>
+              <div className="font-semibold text-blue-400">{formatARS(usdCcl)}</div>
+            </div>
+            {lastPriceUpdate && (
+              <div className="text-right">
+                <div className="text-slate-400 text-xs">Último Update</div>
+                <div className="font-semibold text-slate-300">
+                  {new Date(lastPriceUpdate.date).toLocaleDateString('es-AR')}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-slate-700 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2 font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'dashboard' 
-              ? 'text-emerald-400 border-b-2 border-emerald-400' 
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveTab('positions')}
-          className={`px-4 py-2 font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'positions' 
-              ? 'text-emerald-400 border-b-2 border-emerald-400' 
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Cargar Operaciones
-        </button>
+      {/* Navigation Tabs */}
+      <div className="bg-slate-900/50 border-b border-slate-800">
+        <div className="px-6 flex gap-1">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-6 py-3 font-semibold transition-all relative ${
+              activeTab === 'dashboard'
+                ? 'text-emerald-400 bg-slate-900'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            Dashboard
+            {activeTab === 'dashboard' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('positions')}
+            className={`px-6 py-3 font-semibold transition-all relative ${
+              activeTab === 'positions'
+                ? 'text-emerald-400 bg-slate-900'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            Cargar Operaciones
+            {activeTab === 'positions' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"></div>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div className="p-6">
 
       {/* DASHBOARD TAB */}
       {activeTab === 'dashboard' && (
@@ -327,80 +348,93 @@ const PortfolioTracker = () => {
             <button
               onClick={updatePricesFromAPI}
               disabled={isUpdatingPrices}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 rounded font-semibold transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg disabled:hover:scale-100"
             >
-              <RefreshCw className={isUpdatingPrices ? 'animate-spin' : ''} size={18} />
+              <RefreshCw className={isUpdatingPrices ? 'animate-spin' : ''} size={20} />
               {isUpdatingPrices ? 'Actualizando...' : 'Actualizar Precios'}
             </button>
           </div>
 
           {/* Alert si no hay snapshot */}
           {!lastPriceUpdate && positions.length > 0 && (
-            <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded-lg flex items-start gap-3">
-              <AlertCircle className="text-yellow-400 flex-shrink-0 mt-0.5" size={20} />
-              <div className="text-sm">
-                <strong>Primera vez usando el tracker:</strong> No hay datos del día anterior. 
-                Clickeá "Actualizar Precios" para crear el primer snapshot y empezar a comparar variaciones diarias.
+            <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-l-4 border-yellow-500 p-5 rounded-lg flex items-start gap-4 shadow-lg">
+              <AlertCircle className="text-yellow-400 flex-shrink-0 mt-1" size={24} />
+              <div>
+                <strong className="text-yellow-300 text-base block mb-1">Primera vez usando el tracker</strong>
+                <p className="text-slate-300 text-sm">
+                  No hay datos del día anterior. Clickeá "Actualizar Precios" para crear el primer snapshot y empezar a comparar variaciones diarias.
+                </p>
               </div>
             </div>
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-              <div className="text-sm text-slate-400 mb-1">Market Value</div>
-              <div className="text-xl md:text-2xl font-bold">{formatARS(totals.marketValue)}</div>
-              <div className="text-xs text-slate-400 mt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-slate-400 font-semibold">Market Value</div>
+                <DollarSign className="text-blue-400" size={20} />
+              </div>
+              <div className="text-2xl md:text-3xl font-bold mb-2">{formatARS(totals.marketValue)}</div>
+              <div className="text-xs text-slate-400">
                 USD: {formatARS(totals.marketValue / usdMep)} MEP
               </div>
               {lastPriceUpdate && totals.changeVsYesterday !== 0 && (
-                <div className={`text-xs mt-1 flex items-center gap-1 ${totals.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {totals.changeVsYesterday >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <div className={`text-sm mt-3 flex items-center gap-1 font-semibold ${totals.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {totals.changeVsYesterday >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                   {formatARS(Math.abs(totals.changeVsYesterday))} vs ayer
                 </div>
               )}
             </div>
-            
-            <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-              <div className="text-sm text-slate-400 mb-1">Invertido</div>
-              <div className="text-xl md:text-2xl font-bold">{formatARS(totals.invested)}</div>
-              <div className="text-xs text-slate-400 mt-1">
+
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-slate-400 font-semibold">Invertido</div>
+                <DollarSign className="text-slate-400" size={20} />
+              </div>
+              <div className="text-2xl md:text-3xl font-bold mb-2">{formatARS(totals.invested)}</div>
+              <div className="text-xs text-slate-400">
                 USD: {formatARS(totals.invested / usdMep)} MEP
               </div>
             </div>
 
-            <div className={`p-4 rounded-lg border-2 ${totals.pnlArs >= 0 ? 'bg-emerald-900/30 border-emerald-600' : 'bg-red-900/30 border-red-600'}`}>
-              <div className="text-sm text-slate-400 mb-1">P&L Total</div>
-              <div className={`text-xl md:text-2xl font-bold ${totals.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className={`p-6 rounded-xl border-2 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] ${totals.pnlArs >= 0 ? 'bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500' : 'bg-gradient-to-br from-red-900/40 to-red-950/40 border-red-500'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-slate-300 font-semibold">P&L Total</div>
+                {totals.pnlArs >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />}
+              </div>
+              <div className={`text-2xl md:text-3xl font-bold mb-2 ${totals.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {formatARS(totals.pnlArs)}
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs text-slate-400">
                 USD: {formatARS(totals.pnlArs / usdMep)} MEP
               </div>
             </div>
 
-            <div className={`p-4 rounded-lg border-2 ${totalPnlPct >= 0 ? 'bg-emerald-900/30 border-emerald-600' : 'bg-red-900/30 border-red-600'}`}>
-              <div className="text-sm text-slate-400 mb-1">Retorno %</div>
-              <div className={`text-xl md:text-2xl font-bold flex items-center gap-2 ${totalPnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {totalPnlPct >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
+            <div className={`p-6 rounded-xl border-2 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] ${totalPnlPct >= 0 ? 'bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500' : 'bg-gradient-to-br from-red-900/40 to-red-950/40 border-red-500'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-slate-300 font-semibold">Retorno %</div>
+              </div>
+              <div className={`text-3xl md:text-4xl font-bold flex items-center gap-2 ${totalPnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {totalPnlPct >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
                 {totalPnlPct.toFixed(2)}%
               </div>
             </div>
           </div>
 
           {/* Filtros */}
-          <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter size={20} className="text-slate-400" />
-              <span className="font-semibold">Filtros</span>
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter size={22} className="text-emerald-400" />
+              <span className="font-bold text-lg">Filtros</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Asset Class</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Asset Class</label>
                 <select
                   value={filterAssetClass}
                   onChange={(e) => setFilterAssetClass(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="all">Todas</option>
                   <option value="CEDEAR">CEDEARs</option>
@@ -410,11 +444,11 @@ const PortfolioTracker = () => {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Industria</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Industria</label>
                 <select
                   value={filterIndustry}
                   onChange={(e) => setFilterIndustry(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="all">Todas</option>
                   {industries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
@@ -425,9 +459,9 @@ const PortfolioTracker = () => {
 
           {/* Asset Class Breakdown */}
           {assetClasses.length > 0 && (
-            <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <PieChart className="text-emerald-400" />
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <PieChart className="text-emerald-400" size={24} />
                 Breakdown por Asset Class
               </h3>
               <div className="space-y-3">
@@ -460,49 +494,56 @@ const PortfolioTracker = () => {
           )}
 
           {/* Posiciones Table */}
-          <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 overflow-x-auto">
-            <h3 className="text-lg font-semibold mb-4">Posiciones</h3>
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg overflow-x-auto">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <BarChart3 className="text-emerald-400" size={24} />
+              Posiciones
+            </h3>
             {filteredPositions.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No hay posiciones cargadas. Andá a "Cargar Operaciones" para agregar.</p>
+              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas. Andá a "Cargar Operaciones" para agregar.</p>
             ) : (
-              <table className="w-full text-xs md:text-sm">
-                <thead className="border-b border-slate-700">
-                  <tr className="text-left text-slate-400">
-                    <th className="pb-2">Ticker</th>
-                    <th className="pb-2 hidden md:table-cell">Clase</th>
-                    <th className="pb-2 text-right">Cant.</th>
-                    <th className="pb-2 text-right hidden lg:table-cell">PPC</th>
-                    <th className="pb-2 text-right">Precio</th>
-                    <th className="pb-2 text-right">Market Value</th>
-                    <th className="pb-2 text-right">P&L</th>
-                    <th className="pb-2 text-right hidden md:table-cell">vs Ayer</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPositions.map((pos) => {
-                    const metrics = calculatePositionMetrics(pos);
-                    return (
-                      <tr key={pos.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                        <td className="py-2 font-semibold">{pos.ticker}</td>
-                        <td className="py-2 text-slate-400 text-xs hidden md:table-cell">{pos.assetClass}</td>
-                        <td className="py-2 text-right">{pos.quantity}</td>
-                        <td className="py-2 text-right text-slate-400 hidden lg:table-cell">{formatARS(pos.avgPrice)}</td>
-                        <td className="py-2 text-right">{formatARS(pos.currentPrice)}</td>
-                        <td className="py-2 text-right font-semibold">{formatARS(metrics.marketValue)}</td>
-                        <td className={`py-2 text-right font-semibold ${metrics.pnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {metrics.pnlPct.toFixed(2)}%
-                        </td>
-                        <td className={`py-2 text-right text-xs hidden md:table-cell ${
-                          !metrics.changeVsYesterday ? 'text-slate-500' :
-                          metrics.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'
-                        }`}>
-                          {metrics.changeVsYesterday ? formatARS(metrics.changeVsYesterday) : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-400 border-b-2 border-slate-700">
+                      <th className="pb-4 font-semibold">Ticker</th>
+                      <th className="pb-4 font-semibold hidden md:table-cell">Clase</th>
+                      <th className="pb-4 text-right font-semibold">Cant.</th>
+                      <th className="pb-4 text-right font-semibold hidden lg:table-cell">PPC</th>
+                      <th className="pb-4 text-right font-semibold">Precio</th>
+                      <th className="pb-4 text-right font-semibold">Market Value</th>
+                      <th className="pb-4 text-right font-semibold">P&L</th>
+                      <th className="pb-4 text-right font-semibold hidden md:table-cell">vs Ayer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPositions.map((pos) => {
+                      const metrics = calculatePositionMetrics(pos);
+                      return (
+                        <tr key={pos.id} className="border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors">
+                          <td className="py-4 font-bold text-white">{pos.ticker}</td>
+                          <td className="py-4 text-slate-400 hidden md:table-cell">
+                            <span className="px-2 py-1 bg-slate-700 rounded text-xs">{pos.assetClass}</span>
+                          </td>
+                          <td className="py-4 text-right text-slate-300">{pos.quantity}</td>
+                          <td className="py-4 text-right text-slate-400 hidden lg:table-cell">{formatARS(pos.avgPrice)}</td>
+                          <td className="py-4 text-right text-slate-300 font-semibold">{formatARS(pos.currentPrice)}</td>
+                          <td className="py-4 text-right font-bold text-white">{formatARS(metrics.marketValue)}</td>
+                          <td className={`py-4 text-right font-bold text-lg ${metrics.pnlPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {metrics.pnlPct >= 0 ? '+' : ''}{metrics.pnlPct.toFixed(2)}%
+                          </td>
+                          <td className={`py-4 text-right font-semibold hidden md:table-cell ${
+                            !metrics.changeVsYesterday ? 'text-slate-500' :
+                            metrics.changeVsYesterday >= 0 ? 'text-emerald-400' : 'text-red-400'
+                          }`}>
+                            {metrics.changeVsYesterday ? (metrics.changeVsYesterday >= 0 ? '+' : '') + formatARS(metrics.changeVsYesterday) : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -512,30 +553,30 @@ const PortfolioTracker = () => {
       {activeTab === 'positions' && (
         <div className="space-y-6">
           {/* Form */}
-          <div className="bg-slate-800 p-4 md:p-6 rounded-lg border border-slate-700">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <PlusCircle className="text-emerald-400" />
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 md:p-8 rounded-xl border border-slate-700 shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+              <PlusCircle className="text-emerald-400" size={28} />
               {editingId ? 'Editar Posición' : 'Nueva Posición'}
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Ticker *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Ticker *</label>
                 <input
                   type="text"
                   value={newPosition.ticker}
                   onChange={(e) => setNewPosition({...newPosition, ticker: e.target.value.toUpperCase()})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white uppercase"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white uppercase focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="GGAL"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Asset Class *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Asset Class *</label>
                 <select
                   value={newPosition.assetClass}
                   onChange={(e) => setNewPosition({...newPosition, assetClass: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="CEDEAR">CEDEAR</option>
                   <option value="BONOS EN PESOS">Bonos en Pesos</option>
@@ -545,69 +586,69 @@ const PortfolioTracker = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Cantidad *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Cantidad *</label>
                 <input
                   type="number"
                   value={newPosition.quantity}
                   onChange={(e) => setNewPosition({...newPosition, quantity: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="100"
                   step="0.01"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Precio Promedio Compra (ARS) *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio Promedio Compra (ARS) *</label>
                 <input
                   type="number"
                   value={newPosition.avgPrice}
                   onChange={(e) => setNewPosition({...newPosition, avgPrice: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="5000.00"
                   step="0.01"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Precio Actual (ARS) *</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Precio Actual (ARS) *</label>
                 <input
                   type="number"
                   value={newPosition.currentPrice}
                   onChange={(e) => setNewPosition({...newPosition, currentPrice: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="6000.00"
                   step="0.01"
                 />
-                <p className="text-xs text-slate-400 mt-1">Podés usar "Actualizar Precios" en el Dashboard para traer automáticamente</p>
+                <p className="text-xs text-slate-400 mt-2">Podés usar "Actualizar Precios" en el Dashboard para traer automáticamente</p>
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Industria</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">Industria</label>
                 <input
                   type="text"
                   value={newPosition.industry}
                   onChange={(e) => setNewPosition({...newPosition, industry: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="Financials"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-slate-300 block mb-2">País</label>
+                <label className="text-sm text-slate-300 font-semibold block mb-2">País</label>
                 <input
                   type="text"
                   value={newPosition.country}
                   onChange={(e) => setNewPosition({...newPosition, country: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   placeholder="Argentina"
                 />
               </div>
             </div>
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={editingId ? updatePosition : addPosition}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded font-semibold transition-colors"
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all hover:scale-105 shadow-lg"
               >
                 {editingId ? 'Actualizar' : 'Agregar Posición'}
               </button>
@@ -625,7 +666,7 @@ const PortfolioTracker = () => {
                       country: 'Argentina'
                     });
                   }}
-                  className="px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded font-semibold transition-colors"
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-all hover:scale-105"
                 >
                   Cancelar
                 </button>
@@ -634,37 +675,38 @@ const PortfolioTracker = () => {
           </div>
 
           {/* Lista de posiciones para editar/eliminar */}
-          <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-            <h3 className="text-lg font-semibold mb-4">Posiciones Cargadas ({positions.length})</h3>
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
+            <h3 className="text-xl font-bold mb-6">Posiciones Cargadas ({positions.length})</h3>
             {positions.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No hay posiciones cargadas aún.</p>
+              <p className="text-slate-400 text-center py-12 text-lg">No hay posiciones cargadas aún.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {positions.map((pos) => {
                   const metrics = calculatePositionMetrics(pos);
                   return (
-                    <div key={pos.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded hover:bg-slate-700">
+                    <div key={pos.id} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-lg hover:bg-slate-700/60 transition-all border border-slate-700/50">
                       <div className="flex-1">
-                        <div className="font-semibold">{pos.ticker}</div>
-                        <div className="text-xs text-slate-400">
-                          {pos.assetClass} · {pos.quantity} @ {formatARS(pos.currentPrice)} ·
-                          <span className={metrics.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                            {' '}P&L: {metrics.pnlPct.toFixed(2)}%
+                        <div className="font-bold text-lg text-white">{pos.ticker}</div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          <span className="px-2 py-0.5 bg-slate-700 rounded text-xs mr-2">{pos.assetClass}</span>
+                          {pos.quantity} @ {formatARS(pos.currentPrice)} ·
+                          <span className={`ml-2 font-semibold ${metrics.pnlArs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            P&L: {metrics.pnlPct >= 0 ? '+' : ''}{metrics.pnlPct.toFixed(2)}%
                           </span>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => startEdit(pos)}
-                          className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                          className="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all hover:scale-110"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => deletePosition(pos.id)}
-                          className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+                          className="p-3 bg-red-600 hover:bg-red-700 rounded-lg transition-all hover:scale-110"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -675,6 +717,7 @@ const PortfolioTracker = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
