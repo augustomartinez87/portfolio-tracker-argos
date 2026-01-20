@@ -198,7 +198,7 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
 };
 
 // Trade Form Modal
-const TradeModal = ({ isOpen, onClose, onSave, trade, tickers, isLoading }) => {
+const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
   const [formData, setFormData] = useState({
     fecha: '',
     ticker: '',
@@ -267,7 +267,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers, isLoading }) => {
               value={formData.ticker}
               onChange={(ticker) => setFormData({...formData, ticker})}
               tickers={tickers}
-              disabled={isLoading}
+              disabled={false}
             />
           </div>
 
@@ -490,7 +490,10 @@ export default function PortfolioTracker() {
 
     try {
       // Fetch from /live/mep (main source - has bonds + cedears with MEP calc)
-      const mepResponse = await fetch('https://data912.com/live/mep');
+      const mepResponse = await fetch('https://data912.com/live/mep', {
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+      if (!mepResponse.ok) throw new Error('Failed to fetch MEP data');
       const mepData = await mepResponse.json();
 
       let avgMep = 0;
@@ -530,7 +533,10 @@ export default function PortfolioTracker() {
 
       // Fetch from /live/arg_stocks (local Argentine stocks)
       try {
-        const argStocksResponse = await fetch('https://data912.com/live/arg_stocks');
+        const argStocksResponse = await fetch('https://data912.com/live/arg_stocks', {
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!argStocksResponse.ok) throw new Error('Failed to fetch arg_stocks');
         const argStocksData = await argStocksResponse.json();
 
         argStocksData.forEach(item => {
@@ -571,7 +577,10 @@ export default function PortfolioTracker() {
 
       // Fetch from /live/arg_cedears (has pct_change)
       try {
-        const cedearsResponse = await fetch('https://data912.com/live/arg_cedears');
+        const cedearsResponse = await fetch('https://data912.com/live/arg_cedears', {
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!cedearsResponse.ok) throw new Error('Failed to fetch arg_cedears');
         const cedearsData = await cedearsResponse.json();
 
         cedearsData.forEach(item => {
@@ -601,6 +610,7 @@ export default function PortfolioTracker() {
 
     } catch (error) {
       console.error('Error fetching prices:', error);
+      alert('Error al actualizar precios. Por favor, intentá nuevamente.');
     } finally {
       setIsPricesLoading(false);
     }
@@ -1172,7 +1182,6 @@ export default function PortfolioTracker() {
         onSave={handleSaveTrade}
         trade={editingTrade}
         tickers={tickers}
-        isLoading={isPricesLoading}
       />
 
       <DeleteModal
