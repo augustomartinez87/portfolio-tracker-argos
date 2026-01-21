@@ -735,66 +735,6 @@ const now = new Date();
     reader.readAsText(file);
   };
 
-  // Import from Google Sheets
-  const importFromGoogleSheets = async () => {
-    setIsLoading(true);
-    setImportStatus('Importando...');
-    try {
-      const response = await fetch(
-        'https://docs.google.com/spreadsheets/d/14kSIrwStgETRML-_1qCOl4F_F-tdXRHTKch5PdwUMLM/gviz/tq?tqx=out:csv&sheet=Trades'
-      );
-      const csvText = await response.text();
-
-      const lines = csvText.split('\n').slice(1);
-      const newTrades = [];
-
-      lines.forEach((line) => {
-        if (!line.trim()) return;
-
-        const matches = line.match(/("([^"]*)"|[^,]*)(,|$)/g);
-        if (!matches) return;
-
-        const cols = matches.map(m => m.replace(/^"|"$|,$/g, '').trim());
-
-        const fecha = cols[1];
-        const ticker = cols[2];
-        const cantidad = cols[3];
-        const precio = cols[4];
-
-        if (!fecha || !ticker || ticker === 'Ticker') return;
-
-        const parsedDate = parseDateDMY(fecha);
-        const parsedCantidad = parseARSNumber(cantidad);
-        const parsedPrecio = parseARSNumber(precio);
-
-        if (parsedDate && ticker && parsedCantidad > 0) {
-          newTrades.push({
-            id: crypto.randomUUID(),
-            fecha: parsedDate,
-            ticker: ticker.trim().toUpperCase(),
-            cantidad: parsedCantidad,
-            precioCompra: parsedPrecio
-          });
-        }
-      });
-
-      if (newTrades.length > 0) {
-        setTrades(newTrades);
-        setImportStatus(`✓ ${newTrades.length} trades importados`);
-        setTimeout(() => setImportStatus(null), 3000);
-      } else {
-        setImportStatus('No se encontraron trades');
-        setTimeout(() => setImportStatus(null), 3000);
-      }
-    } catch (error) {
-      console.error('Error importing:', error);
-      setImportStatus('Error al importar');
-      setTimeout(() => setImportStatus(null), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Calculate positions (grouped trades) with daily P&L
   const positions = useMemo(() => {
     const grouped = {};
@@ -1085,20 +1025,8 @@ const now = new Date();
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
-                  Importar CSV/Excel
+                   Importar CSV/Excel
                 </label>
-                <button
-                  onClick={importFromGoogleSheets}
-                  disabled={isLoading}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-all font-semibold disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  Importar Google Sheets
-                </button>
               </div>
               {importStatus && (
                 <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
@@ -1211,7 +1139,7 @@ const now = new Date();
                       <Plus className="w-8 h-8 text-slate-600" />
                     </div>
                     <p className="text-slate-400 mb-2 font-medium">No hay trades registrados</p>
-                    <p className="text-slate-500 text-sm mb-4">Empezá importando desde Google Sheets o agregando manualmente</p>
+                    <p className="text-slate-500 text-sm mb-4">Empezá importando un archivo CSV o agregando manualmente</p>
                     <div className="flex justify-center gap-3">
                       <button
                         onClick={() => {

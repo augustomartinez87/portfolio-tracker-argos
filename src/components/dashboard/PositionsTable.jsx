@@ -97,14 +97,15 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   )}
                 </div>
               </th>
-              <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
+               <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="P. Prom." sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Invertido" sortKey="costoTotal" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="Result. Total" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="Result. Diario" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="% Diario" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L Diario $" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L Diario %" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
@@ -159,25 +160,21 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   <td className="text-right px-4 py-3 text-white font-mono font-medium">
                     {formatARS(pos.valuacionActual)}
                   </td>
-                  <td className="text-right px-4 py-3 hidden xl:table-cell">
-                    <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {formatARS(pos.resultado)}
-                      <span className="block text-xs opacity-80">
-                        {formatPercent(pos.resultadoPct)}
-                      </span>
-                    </div>
+                  <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                    {formatARS(pos.resultado)}
+                  </td>
+                  <td className="text-right px-4 py-3 hidden sm:table-cell">
+                    <span className={`text-sm font-medium ${pos.resultadoPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {formatPercent(pos.resultadoPct)}
+                    </span>
                   </td>
                   <td className="text-right px-4 py-3">
-                    <div className={`font-mono font-medium ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-mono font-medium ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
-                    </div>
+                    </span>
                   </td>
-                  <td className="text-right px-4 py-3 hidden md:table-cell">
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                      pos.resultadoDiarioPct >= 0 
-                        ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-red-500/20 text-red-400'
-                    }`}>
+                  <td className="text-right px-4 py-3 hidden sm:table-cell">
+                    <span className={`text-sm font-medium ${pos.resultadoDiarioPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatPercent(pos.resultadoDiarioPct || 0)}
                     </span>
                   </td>
@@ -198,42 +195,31 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 <td className="text-right px-4 py-4 text-white font-mono font-bold text-base">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4 hidden xl:table-cell">
+                <td className="text-right px-4 py-4 text-emerald-400 font-mono font-bold text-base">
+                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.resultadoUSD, 0))}
+                </td>
+                <td className="text-right px-4 py-4 hidden sm:table-cell">
                   {(() => {
                     const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultadoUSD, 0);
                     const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoUSD, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
                     return (
-                      <div className={`font-mono font-bold text-base ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {formatUSD(totalResult)}
-                        <span className="block text-xs opacity-90 font-semibold">
-                          {formatPercent(totalResultPct)}
-                        </span>
-                      </div>
+                      <span className={`font-bold text-sm ${totalResultPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {formatPercent(totalResultPct)}
+                      </span>
                     );
                   })()}
                 </td>
-                <td className="text-right px-4 py-4">
-                  {(() => {
-                    const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0);
-                    return (
-                      <div className={`font-mono font-bold text-base ${totalDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {formatUSD(totalDiario)}
-                      </div>
-                    );
-                  })()}
+                <td className="text-right px-4 py-4 text-emerald-400 font-mono font-bold">
+                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4 hidden md:table-cell">
+                <td className="text-right px-4 py-4 hidden sm:table-cell">
                   {(() => {
                     const totalValuation = sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0);
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0);
                     const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
                     return (
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        totalDiarioPct >= 0 
-                          ? 'bg-emerald-500/20 text-emerald-400' 
-                          : 'bg-red-500/20 text-red-400'
-                      }`}>
+                      <span className={`font-bold text-sm ${totalDiarioPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {formatPercent(totalDiarioPct)}
                       </span>
                     );
