@@ -1163,7 +1163,7 @@ const now = new Date();
                 <TopPerformers positions={positions} prices={prices} maxItems={3} />
               </div>
               <div className="lg:col-span-1">
-                <RecentActivity trades={trades} maxItems={5} />
+                <RecentActivity trades={trades} maxItems={3} />
               </div>
             </div>
 

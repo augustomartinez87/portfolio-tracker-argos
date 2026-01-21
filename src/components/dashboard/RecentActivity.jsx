@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card } from '../ui/Card';
 import { ArrowUpCircle, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
 import { formatNumber } from '../../utils/formatters';
 import { formatARS } from '../../utils/formatters';
 
-export function RecentActivity({ trades, maxItems = 5 }) {
-  const sortedTrades = Array.isArray(trades)
-    ? [...trades]
-        .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
-        .slice(0, maxItems)
-    : [];
+export function RecentActivity({ trades, maxItems = 3 }) {
+  const sortedTrades = useMemo(() => {
+    if (!Array.isArray(trades) return [];
+
+    // Filtrar trades de los últimos 3 meses
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const recentTrades = trades.filter(trade => {
+      const tradeDate = new Date(trade.fecha);
+      return tradeDate >= threeMonthsAgo;
+    });
+
+    // Ordenar por fecha (más reciente primero)
+    return [...recentTrades].sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+  }, [trades]);
 
   return (
     <Card noPadding className="overflow-hidden !max-h-[380px]">
@@ -22,7 +32,7 @@ export function RecentActivity({ trades, maxItems = 5 }) {
 
         <div className="space-y-1.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
           {sortedTrades.length === 0 ? (
-            <p className="text-slate-500 text-xs text-center py-2">Sin operaciones</p>
+            <p className="text-slate-500 text-xs text-center py-2">Sin operaciones (últ. 3 meses)</p>
           ) : (
             sortedTrades.map((trade) => (
               <TradeItem key={trade.id} trade={trade} />
