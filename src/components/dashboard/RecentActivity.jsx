@@ -7,7 +7,7 @@ import { formatARS } from '../../utils/formatters';
 
 export function RecentActivity({ trades, maxItems = 3 }) {
   const sortedTrades = useMemo(() => {
-    if (!Array.isArray(trades) return [];
+    if (!Array.isArray(trades)) return [];
 
     // Filtrar trades de los últimos 3 meses
     const threeMonthsAgo = new Date();
