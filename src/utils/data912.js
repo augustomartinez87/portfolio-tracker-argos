@@ -10,6 +10,21 @@ const RETRY_BASE_DELAY = 1000;
 
 const KNOWN_CEDEARS = ['AAPL','GOOGL','MSFT','TSLA','AMZN','META','NVDA','KO','DIS','INTC','CSCO','IBM','QCOM','AMD','PYPL','V','JPM','UNH','MA','PG','HD','NFLX','ADBE','CRM','ABNB','COST'];
 
+function isCedear(ticker) {
+  const upper = ticker.toUpperCase();
+  
+  if (upper.endsWith('.BA')) {
+    return true;
+  }
+  
+  const tickerBase = upper.replace('.BA', '');
+  if (KNOWN_CEDEARS.includes(tickerBase)) {
+    return true;
+  }
+  
+  return false;
+}
+
 function isBonoPesos(ticker) {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
@@ -164,9 +179,17 @@ class Data912Helper {
 
   getHistoricalEndpoint(ticker) {
     const upper = ticker.toUpperCase();
-    if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(upper)) {
-      return `/historical/bonds/${ticker}`;
+    
+    if (isCedear(upper)) {
+      const cleanTicker = upper.replace('.BA', '');
+      return `/historical/cedears/${cleanTicker}`;
     }
+    
+    if (isBonoHardDollar(upper) || isBonoPesos(upper)) {
+      const cleanTicker = upper.replace('D', '');
+      return `/historical/bonds/${cleanTicker}`;
+    }
+    
     return `/historical/stocks/${ticker}`;
   }
 

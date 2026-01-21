@@ -132,8 +132,8 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         } catch (err) {
           lastError = err;
           // Check if it's a peso bond without historical data - don't retry
-          if (data912.isBonoPesos(position.ticker)) {
-            setError('Los bonos en pesos no tienen datos históricos disponibles');
+          if (isBonoPesos(position.ticker)) {
+            setError('data912 no tiene almacenado este precio histórico :(');
             setHistorical([]);
             setLoading(false);
             return;
