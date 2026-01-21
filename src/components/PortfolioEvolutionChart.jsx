@@ -110,7 +110,7 @@ export default function PortfolioEvolutionChart({ trades }) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - selectedDays);
         
-        const url = `https://data912.com/historical/stocks/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
+        const url = `https://data912.com/historical/cedears/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
         console.log('Fetching SPY:', url);
         
         const response = await fetch(url);
