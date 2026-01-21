@@ -92,7 +92,7 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
 
   if (!trades || trades.length === 0) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-custom p-5 border border-slate-700/50 mb-6">
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-custom p-5 border border-slate-700/50">
         <p className="text-slate-400 text-center">Agregá trades para ver la evolución de tu cartera</p>
       </div>
     );
@@ -153,42 +153,8 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-900/50 rounded-custom p-3 border border-slate-700/50">
-              <p className="text-slate-500 text-xs">Inicio</p>
-              <p className="text-white font-mono font-semibold">
-                {currency === 'USD' ? formatCurrencyUSD(stats?.startValue) : formatCurrencyARS(stats?.startValue)}
-              </p>
-            </div>
-            <div className="bg-slate-900/50 rounded-custom p-3 border border-slate-700/50">
-              <p className="text-slate-500 text-xs">Actual</p>
-              <p className="text-white font-mono font-semibold">
-                {currency === 'USD' ? formatCurrencyUSD(stats?.endValue) : formatCurrencyARS(stats?.endValue)}
-              </p>
-            </div>
-            <div className="bg-slate-900/50 rounded-custom p-3 border border-slate-700/50">
-              <p className="text-slate-500 text-xs">Máximo</p>
-              <p className="text-emerald-400 font-mono font-semibold">
-                {currency === 'USD' ? formatCurrencyUSD(stats?.high) : formatCurrencyARS(stats?.high)}
-              </p>
-            </div>
-            <div className="bg-slate-900/50 rounded-custom p-3 border border-slate-700/50">
-              <p className="text-slate-500 text-xs">Variación</p>
-              <div className="flex items-center gap-1.5">
-                {stats?.change >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-400" />
-                )}
-                <p className={`font-mono font-semibold ${stats?.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {stats?.change >= 0 ? '+' : ''}{stats?.change?.toFixed(2)}%
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <ResponsiveContainer width="100%" height={320}>
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
@@ -244,6 +210,40 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
                 />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+              <p className="text-slate-500 text-xs">Inicio</p>
+              <p className="text-white font-mono font-semibold">
+                {currency === 'USD' ? formatCurrencyUSD(stats?.startValue) : formatCurrencyARS(stats?.startValue)}
+              </p>
+            </div>
+            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+              <p className="text-slate-500 text-xs">Actual</p>
+              <p className="text-white font-mono font-semibold">
+                {currency === 'USD' ? formatCurrencyUSD(stats?.endValue) : formatCurrencyARS(stats?.endValue)}
+              </p>
+            </div>
+            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+              <p className="text-slate-500 text-xs">Máximo</p>
+              <p className="text-emerald-400 font-mono font-semibold">
+                {currency === 'USD' ? formatCurrencyUSD(stats?.high) : formatCurrencyARS(stats?.high)}
+              </p>
+            </div>
+            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+              <p className="text-slate-500 text-xs">Variación</p>
+              <div className="flex items-center gap-1.5">
+                {stats?.change >= 0 ? (
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-red-400" />
+                )}
+                <p className={`font-mono font-semibold ${stats?.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {stats?.change >= 0 ? '+' : ''}{stats?.change?.toFixed(2)}%
+                </p>
+              </div>
+            </div>
           </div>
         </>
       )}
