@@ -165,38 +165,45 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
 // Trade Form Modal
 const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
   const [formData, setFormData] = useState({
+    tipo: 'compra',
     fecha: '',
     ticker: '',
     cantidad: '',
-    precioCompra: ''
+    precio: ''
   });
 
   useEffect(() => {
     if (trade) {
       setFormData({
+        tipo: trade.tipo || 'compra',
         fecha: trade.fecha || '',
         ticker: trade.ticker || '',
-        cantidad: trade.cantidad?.toString() || '',
-        precioCompra: trade.precioCompra?.toString() || ''
+        cantidad: Math.abs(trade.cantidad)?.toString() || '',
+        precio: trade.precioCompra?.toString() || ''
       });
     } else {
       setFormData({
+        tipo: 'compra',
         fecha: new Date().toISOString().split('T')[0],
         ticker: '',
         cantidad: '',
-        precioCompra: ''
+        precio: ''
       });
     }
   }, [trade, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cantidad = parseFloat(formData.cantidad) || 0;
+    const isVenta = formData.tipo === 'venta';
+    
     onSave({
       id: trade?.id || crypto.randomUUID(),
       fecha: formData.fecha,
       ticker: formData.ticker.toUpperCase(),
-      cantidad: parseFloat(formData.cantidad) || 0,
-      precioCompra: parseFloat(formData.precioCompra) || 0
+      cantidad: isVenta ? -cantidad : cantidad,
+      precioCompra: parseFloat(formData.precio) || 0,
+      tipo: formData.tipo
     });
   };
 
@@ -215,6 +222,34 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, tipo: 'compra'})}
+                className={`py-2.5 px-4 rounded-custom font-medium text-sm transition-all ${
+                  formData.tipo === 'compra'
+                    ? 'bg-emerald-600 text-white border-2 border-emerald-500'
+                    : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                Compra
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, tipo: 'venta'})}
+                className={`py-2.5 px-4 rounded-custom font-medium text-sm transition-all ${
+                  formData.tipo === 'venta'
+                    ? 'bg-red-600 text-white border-2 border-red-500'
+                    : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                Venta
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Fecha</label>
             <input
@@ -242,6 +277,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               <input
                 type="number"
                 step="any"
+                min="0"
                 value={formData.cantidad}
                 onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
                 className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
@@ -255,8 +291,9 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               <input
                 type="number"
                 step="any"
-                value={formData.precioCompra}
-                onChange={(e) => setFormData({...formData, precioCompra: e.target.value})}
+                min="0"
+                value={formData.precio}
+                onChange={(e) => setFormData({...formData, precio: e.target.value})}
                 className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
                 placeholder="0.00"
                 required
@@ -278,15 +315,19 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium"
+              className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-colors font-semibold"
+              className={`flex-1 px-4 py-3 font-semibold rounded-custom transition-colors ${
+                formData.tipo === 'venta'
+                  ? 'bg-red-600 text-white hover:bg-red-500'
+                  : 'bg-primary text-white hover:bg-primary-light'
+              }`}
             >
-              {trade ? 'Guardar' : 'Agregar'}
+              {trade ? 'Guardar' : (formData.tipo === 'venta' ? 'Registrar Venta' : 'Agregar')}
             </button>
           </div>
         </form>
@@ -804,8 +845,15 @@ const now = new Date();
         };
       }
       grouped[trade.ticker].trades.push(trade);
-      grouped[trade.ticker].cantidadTotal += trade.cantidad;
-      grouped[trade.ticker].costoTotal += trade.cantidad * trade.precioCompra;
+      
+      const cantidad = trade.cantidad || 0;
+      grouped[trade.ticker].cantidadTotal += cantidad;
+      
+      // Solo sumar al costo en compras (cantidad positiva)
+      // Las ventas no afectan el costo base (método FIFO simple)
+      if (cantidad > 0) {
+        grouped[trade.ticker].costoTotal += cantidad * trade.precioCompra;
+      }
     });
 
     return Object.values(grouped).map(pos => {
@@ -925,8 +973,25 @@ const now = new Date();
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="Argos Capital" className="w-7 h-7" />
+            <h1 className="text-lg font-bold text-white">Argos Capital</h1>
+          </div>
+          <button
+            onClick={fetchPrices}
+            disabled={isPricesLoading}
+            className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
+          >
+            <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col">
         <div className="p-4 border-b border-slate-800/50">
           <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
             <img src={logo} alt="Argos Capital" className="w-8 h-8" />
@@ -968,13 +1033,6 @@ const now = new Date();
             <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
-          <button
-            onClick={() => {}}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-slate-800 text-slate-400 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Log Out
-          </button>
           {lastUpdate && (
             <p className="text-xs text-slate-500 mt-3 text-center">
               Actualizado: {lastUpdateFull || lastUpdate}
@@ -983,8 +1041,36 @@ const now = new Date();
         </div>
       </aside>
 
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50 px-4 py-2">
+        <nav className="flex justify-around">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              activeTab === 'dashboard'
+                ? 'text-emerald-400 bg-emerald-500/10'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-xs font-medium">Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('trades')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              activeTab === 'trades'
+                ? 'text-emerald-400 bg-emerald-500/10'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            <span className="text-xs font-medium">Trades</span>
+          </button>
+        </nav>
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-6 pb-24">
+      <main className="flex-1 lg:ml-64 p-4 lg:p-6 pb-24 lg:pb-24 mt-14 lg:mt-0">
         {activeTab === 'dashboard' ? (
           <>
 {/* Summary Cards */}
@@ -1075,34 +1161,36 @@ const now = new Date();
               />
             </div>
 
-            {/* Footer */}
-            <div className="fixed bottom-0 left-64 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6">
+             {/* Footer - Desktop Only */}
+            <div className="hidden lg:block fixed bottom-0 left-64 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6">
               <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
             </div>
           </>
         ) : (
         <>
             {/* Trades Tab */}
-            <div className="flex flex-col gap-3 mb-6">
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                 <button
                   onClick={() => {
                     setEditingTrade(null);
                     setModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25"
+                  className="flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 text-sm sm:text-base"
                 >
-                  <Plus className="w-4 h-4" />
-                  Nuevo Trade
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Nuevo Trade</span>
+                  <span className="sm:hidden">Nuevo</span>
                 </button>
                 <button
                   onClick={downloadTemplate}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25"
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25 text-sm sm:text-base"
                 >
-                  <Download className="w-4 h-4" />
-                  Descargar Template Excel
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Descargar Template Excel</span>
+                  <span className="sm:hidden">Template</span>
                 </button>
-                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer">
+                <label className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer text-sm sm:text-base">
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -1111,23 +1199,24 @@ const now = new Date();
                     className="hidden"
                   />
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4" />
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
-                  Importar CSV/Excel
+                  <span className="hidden sm:inline">Importar CSV/Excel</span>
+                  <span className="sm:hidden">Importar</span>
                 </label>
                 <div className="relative">
                   <button
                     onClick={() => setShowFormatHelp(!showFormatHelp)}
-                    className="flex items-center justify-center w-9 h-9 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
+                    className="flex items-center justify-center w-11 h-11 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
                   >
-                    <HelpCircle className="w-4 h-4" />
+                    <HelpCircle className="w-5 h-5" />
                   </button>
                   {showFormatHelp && (
-                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-custom p-4 border border-slate-700 shadow-xl">
+                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-custom p-4 border border-slate-700 shadow-xl">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-blue-300 font-medium">📋 Formato del archivo CSV/Excel:</p>
+                        <p className="text-blue-300 font-medium text-sm sm:text-base">📋 Formato CSV/Excel:</p>
                         <button 
                           onClick={() => setShowFormatHelp(false)}
                           className="text-slate-400 hover:text-white"
@@ -1135,7 +1224,7 @@ const now = new Date();
                           <X className="w-4 h-4" />
                         </button>
                       </div>
-                      <ul className="text-slate-300 space-y-1 text-sm ml-4">
+                      <ul className="text-slate-300 space-y-1 text-xs sm:text-sm ml-4">
                         <li>• <strong>Fecha:</strong> DD/MM/YYYY (ej: 23/12/2024)</li>
                         <li>• <strong>Ticker:</strong> Símbolo del activo (ej: MELI, AAPL, AL30)</li>
                         <li>• <strong>Cantidad:</strong> Número de unidades (ej: 10 o 1250.50)</li>

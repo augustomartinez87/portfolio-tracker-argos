@@ -72,8 +72,14 @@ export default function PortfolioEvolutionChart({ trades }) {
         if (!portfolioByDate[tradeDate]) {
           portfolioByDate[tradeDate] = { cantidad: 0, costoTotal: 0 };
         }
-        portfolioByDate[tradeDate].cantidad += Number(trade.cantidad) || 0;
-        portfolioByDate[tradeDate].costoTotal += (Number(trade.cantidad) || 0) * (Number(trade.precioCompra) || 0);
+        const cantidad = Number(trade.cantidad) || 0;
+        portfolioByDate[tradeDate].cantidad += cantidad;
+        
+        // Solo sumar al costo en compras (cantidad > 0)
+        // Las ventas no afectan el costo base
+        if (cantidad > 0) {
+          portfolioByDate[tradeDate].costoTotal += cantidad * (Number(trade.precioCompra) || 0);
+        }
       });
 
       let totalCantidad = 0;
