@@ -10,6 +10,9 @@ import DistributionChart from './components/DistributionChart';
 import PortfolioEvolutionChart from './components/PortfolioEvolutionChart';
 import SummaryCard from './components/common/SummaryCard';
 import PositionsTable from './components/dashboard/PositionsTable';
+import { TopPerformers } from './components/dashboard/TopPerformers';
+import { RecentActivity } from './components/dashboard/RecentActivity';
+import { TradingMetrics } from './components/dashboard/TradingMetrics';
 import logo from './assets/logo.png';
 
 // Lazy load PositionDetailModal (large component)
@@ -1008,6 +1011,20 @@ const now = new Date();
                 <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
                   <PortfolioEvolutionChart trades={trades} />
                 </div>
+              </div>
+            </div>
+
+            {/* New Dashboard Components */}
+            <div className="mb-8">
+              <TopPerformers positions={positions} prices={prices} maxItems={5} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="lg:col-span-2">
+                <TradingMetrics trades={trades} />
+              </div>
+              <div className="lg:col-span-1">
+                <RecentActivity trades={trades} maxItems={8} />
               </div>
             </div>
 
