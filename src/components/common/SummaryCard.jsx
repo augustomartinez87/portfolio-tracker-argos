@@ -28,13 +28,6 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
                   {subValue}
                 </p>
               )}
-              {dailyChange !== undefined && dailyChange !== 0 && (
-                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold ${
-                  dailyChange >= 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'
-                }`}>
-                  {dailyChange >= 0 ? '+' : ''}{dailyChange.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </div>
-              )}
             </>
           )}
         </div>
@@ -50,6 +43,17 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
           }`} />
         </div>
       </div>
+      
+      {dailyChange !== undefined && dailyChange !== 0 && (
+        <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-end">
+          <span className="text-xs text-slate-500">P&L del día:</span>
+          <span className={`text-sm font-mono font-semibold ${
+            dailyChange >= 0 ? 'text-success' : 'text-danger'
+          }`}>
+            {dailyChange >= 0 ? '+' : ''}{dailyChange.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </span>
+        </div>
+      )}
     </div>
   );
 });
