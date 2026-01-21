@@ -36,7 +36,7 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
   }, [positions, prices, maxItems]);
 
   return (
-    <Card noPadding className="overflow-hidden" style={{ height: '380px' }}>
+    <Card noPadding className="overflow-hidden !max-h-[380px]">
       <div className="grid grid-cols-2 divide-x divide-slate-700 h-full">
         <div className="p-3 flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-shrink-0">

@@ -13,7 +13,7 @@ export function RecentActivity({ trades, maxItems = 5 }) {
     : [];
 
   return (
-    <Card noPadding className="overflow-hidden" style={{ height: '380px' }}>
+    <Card noPadding className="overflow-hidden !max-h-[380px]">
       <div className="p-3 h-full flex flex-col">
         <div className="flex items-center justify-between mb-3 flex-shrink-0">
           <h3 className="text-sm font-bold text-white">Actividad</h3>
