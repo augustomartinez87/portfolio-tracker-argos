@@ -1,13 +1,36 @@
 // src/utils/data912.js
 const BASE_URL = 'https://data912.com';
 const CACHE_PREFIX = 'data912_';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos (was 1 minute)
-const RATE_LIMIT = 120; // req/min
-const RATE_WINDOW = 60000; // 1 minuto
+const CACHE_TTL = 5 * 60 * 1000;
+const RATE_LIMIT = 120;
+const RATE_WINDOW = 60000;
 
-// Retry constants
 const RETRY_MAX_ATTEMPTS = 3;
-const RETRY_BASE_DELAY = 1000; // 1 second
+const RETRY_BASE_DELAY = 1000;
+
+const KNOWN_CEDEARS = ['AAPL','GOOGL','MSFT','TSLA','AMZN','META','NVDA','KO','DIS','INTC','CSCO','IBM','QCOM','AMD','PYPL','V','JPM','UNH','MA','PG','HD','NFLX','ADBE','CRM','ABNB','COST'];
+
+function getEndpointForTicker(ticker, assetTag) {
+  const upper = ticker.toUpperCase();
+  
+  if (assetTag) {
+    if (assetTag.includes('CEDEAR')) return '/live/arg_cedears';
+    if (assetTag.includes('BONOS EN PESOS')) return '/live/arg_bonds';
+    if (assetTag.includes('BONOS HD') || assetTag.includes('CORP')) return '/live/arg_corp';
+    if (assetTag.includes('ARGY') || assetTag.includes('ACCIONES')) return '/live/arg_stocks';
+  }
+  
+  if (upper.endsWith('.BA')) return '/live/arg_cedears';
+  if (KNOWN_CEDEARS.includes(upper)) return '/live/arg_cedears';
+  if (upper.includes('MEP')) return '/live/mep';
+  if (upper.includes('CCL')) return '/live/ccl';
+  if (upper.endsWith('D') && (upper.startsWith('AL') || upper.startsWith('GD'))) return '/live/mep';
+  if (/^[A-Z]{2,4}\d{2}[A-Z]?D?$/.test(upper)) return '/live/arg_bonds';
+  if (/^T[A-Z0-9]{2,5}$/.test(upper)) return '/live/arg_bonds';
+  if (upper.startsWith('TTD') || upper.startsWith('TTS')) return '/live/arg_bonds';
+  
+  return '/live/arg_stocks';
+}
 
 class Data912Helper {
   constructor() {
@@ -105,14 +128,14 @@ class Data912Helper {
   }
 
   // Get current price
-  async getCurrentPrice(ticker) {
+  async getCurrentPrice(ticker, assetTag) {
     const correctedTicker = this.getCorrectTicker(ticker);
     const cacheKey = `price_${correctedTicker}`;
     const cached = this.getCache(cacheKey);
     if (cached) return cached;
 
     try {
-      const endpoint = this.getEndpointForTicker(ticker);
+      const endpoint = getEndpointForTicker(ticker, assetTag);
       const data = await this.fetchEndpoint(endpoint);
 
       // Buscar en diferentes estructuras de datos
@@ -159,14 +182,14 @@ class Data912Helper {
   }
 
   // Get daily return
-  async getDailyReturn(ticker) {
+  async getDailyReturn(ticker, assetTag) {
     const correctedTicker = this.getCorrectTicker(ticker);
     const cacheKey = `dr_${correctedTicker}`;
     const cached = this.getCache(cacheKey);
     if (cached) return cached;
 
     try {
-      const endpoint = this.getEndpointForTicker(ticker);
+      const endpoint = getEndpointForTicker(ticker, assetTag);
       const data = await this.fetchEndpoint(endpoint);
 
       // Buscar en diferentes estructuras de datos
@@ -276,9 +299,11 @@ class Data912Helper {
   isBonoHardDollar(ticker) {
     if (!ticker) return false;
     const t = ticker.toUpperCase();
-    // Bonos hard dollar conocidos: AL30, GD30, AL29, GD29, etc.
-    // Patrón: AL o GD seguido de 2 dígitos
-    if (/^(AL|GD|AY24|DICA|DICY|DIED|CO26|AA26|AA25|AB26|AC26|AY26|BP26|BU24|Buenos|Buenos Aires)/.test(t)) return true;
+    // Patrones de bonos hard dollar: AL30, GD30, AE38, AN26, CO26, etc.
+    // También incluye variantes con D o C al final (versión dólar/cable)
+    if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]?$/.test(t)) return true;
+    // Bonos específicos conocidos
+    if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
     return false;
   }
 
@@ -300,34 +325,20 @@ class Data912Helper {
     return `/historical/stocks/${correctedTicker}`;
   }
 
-  // Determinar endpoint según ticker
-  getEndpointForTicker(ticker) {
-    const correctedTicker = this.getCorrectTicker(ticker);
-    const cedears = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA'];
-    
-    // Bonos en pesos van a arg_bonds
-    if (this.isBonoPesos(correctedTicker)) {
-      return '/live/arg_bonds';
-    }
-    
-    if (cedears.some(c => correctedTicker.startsWith(c)) || correctedTicker.endsWith('.BA')) {
-      return '/live/arg_cedears';
-    }
-
-    if (correctedTicker.toUpperCase().includes('MEP') || correctedTicker === 'AL30D') {
-      return '/live/mep';
-    }
-    if (correctedTicker.toUpperCase().includes('CCL') || correctedTicker === 'GD30') {
-      return '/live/ccl';
-    }
-
-    return '/live/arg_stocks';
-  }
-
   // Batch fetch múltiples tickers (optimizado)
-  async getBatchPrices(tickers) {
+  async getBatchPrices(tickersWithTags) {
     const results = {};
     const uncached = [];
+
+    // Normalizar input: puede ser array de strings o array de objetos {ticker, assetClass}
+    const tickers = tickersWithTags.map(item => 
+      typeof item === 'string' ? item : item.ticker
+    );
+    const tagsMap = new Map(
+      tickersWithTags.map(item => 
+        typeof item === 'string' ? [item, null] : [item.ticker, item.assetClass]
+      )
+    );
 
     // Intentar obtener de cache primero
     for (const ticker of tickers) {
@@ -345,7 +356,8 @@ class Data912Helper {
     // Agrupar por endpoint para minimizar requests
     const byEndpoint = {};
     for (const ticker of uncached) {
-      const endpoint = this.getEndpointForTicker(ticker);
+      const assetTag = tagsMap.get(ticker);
+      const endpoint = getEndpointForTicker(ticker, assetTag);
       if (!byEndpoint[endpoint]) byEndpoint[endpoint] = [];
       byEndpoint[endpoint].push(ticker);
     }
@@ -389,12 +401,11 @@ class Data912Helper {
             this.setCache(`price_${correctedTicker}`, { price: parseFloat(price) || 0 });
           } else {
             console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado en ${endpoint}`);
-            results[ticker] = 0; // Valor por defecto si no se encuentra
+            results[ticker] = 0;
           }
         }
       } catch (error) {
         console.error(`Error fetching ${endpoint}:`, error);
-        // Asignar 0 a todos los tickers de este endpoint si hay error
         tickersGroup.forEach(ticker => {
           results[ticker] = 0;
         });
@@ -405,9 +416,19 @@ class Data912Helper {
   }
 
   // Batch fetch daily returns
-  async getBatchDailyReturns(tickers) {
+  async getBatchDailyReturns(tickersWithTags) {
     const results = {};
     const uncached = [];
+
+    // Normalizar input
+    const tickers = tickersWithTags.map(item => 
+      typeof item === 'string' ? item : item.ticker
+    );
+    const tagsMap = new Map(
+      tickersWithTags.map(item => 
+        typeof item === 'string' ? [item, null] : [item.ticker, item.assetClass]
+      )
+    );
 
     for (const ticker of tickers) {
       const correctedTicker = this.getCorrectTicker(ticker);
@@ -423,7 +444,8 @@ class Data912Helper {
 
     const byEndpoint = {};
     for (const ticker of uncached) {
-      const endpoint = this.getEndpointForTicker(ticker);
+      const assetTag = tagsMap.get(ticker);
+      const endpoint = getEndpointForTicker(ticker, assetTag);
       if (!byEndpoint[endpoint]) byEndpoint[endpoint] = [];
       byEndpoint[endpoint].push(ticker);
     }
@@ -435,22 +457,18 @@ class Data912Helper {
         for (const ticker of tickersGroup) {
           const correctedTicker = this.getCorrectTicker(ticker);
           
-          // Buscar en diferentes estructuras de datos
           let stockInfo = null;
           
           if (Array.isArray(data)) {
-            // Para arg_bonds, arg_cedears, etc. que retornan arrays
             stockInfo = data.find(item => 
               (item.symbol && (item.symbol === correctedTicker || item.symbol === ticker)) ||
               (item.ticker && (item.ticker === correctedTicker || item.ticker === ticker))
             );
           } else {
-            // Para objetos
             stockInfo = data[correctedTicker] || data[ticker];
           }
 
           if (stockInfo) {
-            // Extraer porcentaje de diferentes campos posibles
             let dr = 0;
             if (stockInfo.pct_change) dr = stockInfo.pct_change;
             else if (stockInfo.dr) dr = stockInfo.dr;
@@ -459,13 +477,11 @@ class Data912Helper {
             results[ticker] = parseFloat(dr) || 0;
             this.setCache(`dr_${correctedTicker}`, { dr: parseFloat(dr) || 0 });
           } else {
-            console.warn(`Ticker ${ticker} (corrected: ${correctedTicker}) no encontrado para DR en ${endpoint}`);
-            results[ticker] = 0; // Valor por defecto si no se encuentra
+            results[ticker] = 0;
           }
         }
       } catch (error) {
         console.error(`Error fetching DR from ${endpoint}:`, error);
-        // Asignar 0 a todos los tickers de este endpoint si hay error
         tickersGroup.forEach(ticker => {
           results[ticker] = 0;
         });

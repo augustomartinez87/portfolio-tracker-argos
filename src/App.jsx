@@ -339,7 +339,9 @@ export default function PortfolioTracker() {
         // Precio base de data912
         let rawPrice = item.ars_bid || item.mark || item.close || 0;
 
-        // ⚡ AJUSTE CRÍTICO: Bonos en pesos vienen por $1000 VN, convertir a precio por $1 VN
+        // ⚡ AJUSTE CRÍTICO para bonos:
+        // - Bonos pesos: vienen por $1000 VN, dividir por 1000
+        // - Bonos HD: vienen por $100 USD VN, dividir por 100
         const adjustedPrice = adjustBondPrice(ticker, rawPrice);
 
 // Price persistence: mantener último válido si el nuevo es 0 o null
@@ -389,21 +391,36 @@ export default function PortfolioTracker() {
 
         argStocksData.forEach(item => {
           const ticker = item.symbol;
-          // Skip D versions (dollar) for now
-          if (ticker.endsWith('D')) return;
+          if (!ticker) return;
+          
+          // Skip dollar versions (pattern: XXXD where XXX is a known ticker)
+          // Examples: ALUAD, GGALD, PAMPD - but NOT YPFD (which is the main ticker)
+          const knownDollarSuffixes = ['ALUAD', 'GGALD', 'PAMPD', 'CEPAD', 'SUPVD', 'TXARD', 'BBARD', 'BYMAD', 
+            'COMED', 'CRESD', 'EDND', 'IRSAD', 'LOMAD', 'METRD', 'TECOD', 'TGSUD', 'TRAND', 'VALOD', 'CEPUD',
+            'ECOGD', 'TGN4D', 'YPFDD']; // YPFDD is dollar version, YPFD is main
+          if (knownDollarSuffixes.includes(ticker)) return;
+          
+          // Also skip any ticker ending in .D
+          if (ticker.endsWith('.D')) return;
 
           const assetClass = getAssetClass(ticker, null, true);
 
 // Only add if not already in priceMap or update with pct_change
           if (!priceMap[ticker]) {
+            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+            const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+            
             priceMap[ticker] = {
-              precio: item.c || item.px_ask || item.px_bid,
+              precio: adjustedPrice,
+              precioRaw: rawPrice,
               bid: item.px_bid,
               ask: item.px_ask,
               close: item.c,
               panel: 'arg_stock',
               assetClass,
-              pctChange: item.pct_change
+              pctChange: item.pct_change,
+              isBonoPesos: isBonoPesos(ticker),
+              isBonoHD: isBonoHardDollar(ticker)
             };
 
             tickerList.push({
@@ -414,30 +431,8 @@ export default function PortfolioTracker() {
           } else {
             // Update pct_change from this source
             priceMap[ticker].pctChange = item.pct_change;
-            // Update price if newer and valid
-            if (item.c && item.c > 0) {
-              const lastValid = lastValidPrices[ticker];
-              const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
-              
-              if (shouldUpdate) {
-                priceMap[ticker].precio = item.c;
-                priceMap[ticker].close = item.c;
-                
-                // Actualizar último válido
-                if (!lastValidPrices[ticker]) {
-                  setLastValidPrices(prev => ({
-                    ...prev,
-                    [ticker]: {
-                      precio: item.c,
-                      precioRaw: item.c,
-                      timestamp: Date.now()
-                    }
-                  }));
-                }
-              }
-            }
           }
-});
+        });
       } catch (e) {
         console.warn('Could not fetch arg_stocks:', e);
       }
@@ -452,34 +447,45 @@ export default function PortfolioTracker() {
 
         cedearsData.forEach(item => {
           const ticker = item.symbol;
-          // Skip D (dollar) and C (cable) versions
-          if (ticker.endsWith('D') || ticker.endsWith('C')) return;
+          if (!ticker) return;
+          
+          // Skip dollar (D) and cable (C) versions
+          // These have pattern: BASEC or BASED where BASE is 3+ chars ending in letter
+          // Examples to skip: AAPLC, AAPLD, GOOGLD, MSFTC
+          // Examples to keep: GOOGL, AMD, KO, C (Citigroup)
+          const isDollarOrCable = ticker.length > 3 && 
+            (ticker.endsWith('D') || ticker.endsWith('C')) && 
+            /[A-Z]$/.test(ticker.slice(-2, -1)); // second-to-last is a letter
+          
+          if (isDollarOrCable) return;
 
-// Update pct_change for existing tickers
-          if (priceMap[ticker]) {
+// Add or update from arg_cedears
+          if (!priceMap[ticker]) {
+            // Add new CEDEAR if not already in priceMap
+            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+            const assetClass = 'CEDEAR';
+            
+            priceMap[ticker] = {
+              precio: rawPrice,
+              precioRaw: rawPrice,
+              bid: item.px_bid,
+              ask: item.px_ask,
+              close: item.c,
+              panel: 'cedear',
+              assetClass,
+              pctChange: item.pct_change,
+              isBonoPesos: false,
+              isBonoHD: false
+            };
+
+            tickerList.push({
+              ticker,
+              panel: 'cedear',
+              assetClass
+            });
+          } else {
+            // Update pct_change for existing tickers
             priceMap[ticker].pctChange = item.pct_change;
-            // Update price if newer and valid
-            if (item.c && item.c > 0) {
-              const lastValid = lastValidPrices[ticker];
-              const shouldUpdate = !lastValid || (Date.now() - lastValid.timestamp > 300000); // 5 minutos
-              
-              if (shouldUpdate) {
-                priceMap[ticker].precio = item.c;
-                priceMap[ticker].close = item.c;
-                
-                // Actualizar último válido
-                if (!lastValidPrices[ticker]) {
-                  setLastValidPrices(prev => ({
-                    ...prev,
-                    [ticker]: {
-                      precio: item.c,
-                      precioRaw: item.c,
-                      timestamp: Date.now()
-                    }
-                  }));
-                }
-              }
-            }
           }
         });
       } catch (e) {
@@ -496,9 +502,20 @@ export default function PortfolioTracker() {
 
         bondsData.forEach(item => {
           const ticker = item.symbol;
+          if (!ticker) return;
           
-          // Skip D and C versions
-          if (ticker.endsWith('D') || ticker.endsWith('C')) return;
+          // Skip dollar (D) and cable (C) versions
+          // Pattern: XXXX with D or C suffix where base is a bond ticker
+          // Examples to skip: AL30D, AL30C, AE38D, TTD26D (if exists)
+          // Examples to keep: AL30, AE38, TTD26, T15E7
+          const len = ticker.length;
+          if (len > 3 && (ticker.endsWith('D') || ticker.endsWith('C'))) {
+            // Check if it's a bond version suffix (previous char is digit for bonds like AL30D)
+            const prevChar = ticker.charAt(len - 2);
+            if (/[0-9]/.test(prevChar)) {
+              return; // Skip versions like AL30D, AE38C
+            }
+          }
 
           // Only process if not already in priceMap
           if (!priceMap[ticker]) {
@@ -575,14 +592,18 @@ const now = new Date();
 
     const refreshPositionPrices = async () => {
       try {
-        // Get unique tickers from trades
-        const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
-        if (uniqueTickers.length === 0) return;
+        // Get unique tickers with their assetClass from prices state
+        const tickerData = Object.entries(prices || {}).map(([ticker, data]) => ({
+          ticker,
+          assetClass: data?.assetClass || getAssetClass(ticker, null)
+        }));
+        
+        if (tickerData.length === 0) return;
 
         // Batch fetch prices and daily returns
         const [batchPrices, batchReturns] = await Promise.all([
-          data912.getBatchPrices(uniqueTickers),
-          data912.getBatchDailyReturns(uniqueTickers)
+          data912.getBatchPrices(tickerData),
+          data912.getBatchDailyReturns(tickerData)
         ]);
 
 // Update price map with data912 results with price persistence

@@ -14,7 +14,11 @@ export const isBonoPesos = (ticker) => {
 export const isBonoHardDollar = (ticker) => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
-  if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(t)) return true;
+  // Patrones de bonos hard dollar: AL30, GD30, AE38, AN26, CO26, etc.
+  // También incluye variantes con D o C al final (versión dólar/cable)
+  if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]?$/.test(t)) return true;
+  // Bonos específicos conocidos
+  if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
   return false;
 };
 
