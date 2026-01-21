@@ -1178,8 +1178,6 @@ const now = new Date();
         )}
       </main>
 
-      </Suspense>
-
       {/* Modals */}
       <TradeModal
         isOpen={modalOpen}

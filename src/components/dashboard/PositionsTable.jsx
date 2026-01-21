@@ -98,7 +98,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 </div>
               </th>
                <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="P. Prom." sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="PPC" sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Invertido" sortKey="costoTotal" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
@@ -154,14 +154,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                         : formatARS(pos.precioActual)
                     }
                   </td>
-                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell whitespace-nowrap">
                     {formatARS(pos.costoTotal)}
                   </td>
-                  <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                  <td className="text-right px-4 py-3 text-white font-mono whitespace-nowrap overflow-visible">
                     {formatARS(pos.valuacionActual)}
                   </td>
-                  <td className="text-right px-4 py-3">
-                    <span className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className="text-right px-4 py-3 whitespace-nowrap">
+                    <span className={`font-mono ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultado)}
                     </span>
                   </td>
@@ -174,8 +174,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                       {formatPercent(pos.resultadoPct)}
                     </span>
                   </td>
-                  <td className="text-right px-4 py-3">
-                    <span className={`font-mono font-medium ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className="text-right px-4 py-3 whitespace-nowrap">
+                    <span className={`font-mono ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
                     </span>
                   </td>
@@ -199,17 +199,17 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden sm:table-cell">-</td>
                 <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden md:table-cell">-</td>
                 <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm">-</td>
-                <td className="text-right px-4 py-4 text-white font-mono font-bold text-base hidden lg:table-cell">
+                <td className="text-right px-4 py-4 text-white font-mono font-bold text-xs hidden lg:table-cell whitespace-nowrap">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.costoUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4 text-white font-mono font-bold text-base">
+                <td className="text-right px-4 py-4 text-white font-mono font-bold text-xs whitespace-nowrap">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4">
+                <td className="text-right px-4 py-4 whitespace-nowrap">
                   {(() => {
                     const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
                     return (
-                      <span className={`font-mono font-bold text-base ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-mono font-bold ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {formatARS(totalResult)}
                       </span>
                     );
@@ -231,7 +231,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     );
                   })()}
                 </td>
-                <td className="text-right px-4 py-4">
+                <td className="text-right px-4 py-4 whitespace-nowrap">
                   {(() => {
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
                     return (
