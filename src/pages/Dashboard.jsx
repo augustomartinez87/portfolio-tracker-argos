@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu } from 'lucide-react';
 import { data912 } from '../utils/data912';
-import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
-import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
-import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from './hooks/useBondPrices';
-import { parseARSNumber, parseDateDMY } from './utils/parsers';
+import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
+import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
+import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from '../hooks/useBondPrices';
+import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from './components/DistributionChart';
 import PortfolioEvolutionChart from './components/PortfolioEvolutionChart';
 import SummaryCard from './components/common/SummaryCard';
@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
 import { tradeService } from '../services/tradeService';
-import logo from './assets/logo.png';
+import logo from '../assets/logo.png';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
