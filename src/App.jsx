@@ -137,7 +137,7 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
         onFocus={() => setIsOpen(true)}
         disabled={disabled}
         placeholder="Buscar ticker..."
-        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-custom text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+        className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-custom text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
       />
       {isOpen && filteredTickers.length > 0 && (
         <div
@@ -148,7 +148,7 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
             <button
               key={ticker.ticker}
               onClick={() => handleSelect(ticker)}
-              className="w-full px-3 py-2.5 text-left hover:bg-slate-700 transition-colors flex justify-between items-center border-b border-slate-700/50 last:border-0"
+              className="w-full px-4 py-3 h-12 text-left hover:bg-slate-700 active:bg-slate-600 transition-colors flex justify-between items-center border-b border-slate-700/50 last:border-0"
             >
               <span className="text-white font-mono font-medium">{ticker.ticker}</span>
               <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-slate-400'}`}>
@@ -216,8 +216,8 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
           <h2 className="text-xl font-bold text-white">
             {trade ? 'Editar Trade' : 'Nuevo Trade'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700 active:scale-95">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -228,7 +228,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               <button
                 type="button"
                 onClick={() => setFormData({...formData, tipo: 'compra'})}
-                className={`py-2.5 px-4 rounded-custom font-medium text-sm transition-all ${
+                className={`py-3 px-4 h-12 rounded-custom font-medium text-sm transition-all active:scale-95 ${
                   formData.tipo === 'compra'
                     ? 'bg-emerald-600 text-white border-2 border-emerald-500'
                     : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
@@ -239,7 +239,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               <button
                 type="button"
                 onClick={() => setFormData({...formData, tipo: 'venta'})}
-                className={`py-2.5 px-4 rounded-custom font-medium text-sm transition-all ${
+                className={`py-3 px-4 h-12 rounded-custom font-medium text-sm transition-all active:scale-95 ${
                   formData.tipo === 'venta'
                     ? 'bg-red-600 text-white border-2 border-red-500'
                     : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
@@ -251,18 +251,18 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Fecha</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
             <input
               type="date"
               value={formData.fecha}
               onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-custom text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-custom text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Ticker</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Ticker</label>
             <TickerAutocomplete
               value={formData.ticker}
               onChange={(ticker) => setFormData({...formData, ticker})}
@@ -273,28 +273,30 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Cantidad</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Cantidad</label>
               <input
                 type="number"
                 step="any"
                 min="0"
+                inputMode="decimal"
                 value={formData.cantidad}
                 onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
-                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
                 placeholder="0"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Precio (ARS)</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Precio (ARS)</label>
               <input
                 type="number"
                 step="any"
                 min="0"
+                inputMode="decimal"
                 value={formData.precio}
                 onChange={(e) => setFormData({...formData, precio: e.target.value})}
-                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
                 placeholder="0.00"
                 required
               />
@@ -315,13 +317,13 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium"
+              className="flex-1 px-4 py-3 h-12 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium active:scale-95"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className={`flex-1 px-4 py-3 font-semibold rounded-custom transition-colors ${
+              className={`flex-1 px-4 py-3 h-12 font-semibold rounded-custom transition-all active:scale-95 ${
                 formData.tipo === 'venta'
                   ? 'bg-red-600 text-white hover:bg-red-500'
                   : 'bg-primary text-white hover:bg-primary-light'
@@ -978,15 +980,16 @@ const now = new Date();
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="Argos Capital" className="w-7 h-7" />
+            <img src={logo} alt="Argos Capital" className="w-8 h-8" />
             <h1 className="text-lg font-bold text-white">Argos Capital</h1>
           </div>
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
+            className="p-3 h-12 w-12 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-all border border-slate-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            title="Actualizar"
           >
-            <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -1001,16 +1004,17 @@ const now = new Date();
           <img src={logo} alt="Argos Capital" className={`w-8 h-8 flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`} />
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all active:scale-95"
+            title="Menú"
           >
-            {sidebarOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            <Menu className="w-5 h-5 flex-shrink-0" />
           </button>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3'} ${
+            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
               activeTab === 'dashboard'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -1022,7 +1026,7 @@ const now = new Date();
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3'} ${
+            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
               activeTab === 'trades'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -1034,15 +1038,23 @@ const now = new Date();
           </button>
         </nav>
 
-        <div className="p-4 border-t border-slate-800/50">
+        <div className="p-4 border-t border-slate-800/50 space-y-2">
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium`}
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-3 h-12 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
             title="Actualizar"
           >
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
+          </button>
+          <button
+            onClick={() => {}}
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-3 h-12 bg-slate-800/50 text-slate-400 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50 text-sm font-medium active:scale-95`}
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
           </button>
           {lastUpdate && sidebarOpen && (
             <p className="text-xs text-slate-500 mt-3 text-center transition-all duration-300">
@@ -1053,29 +1065,29 @@ const now = new Date();
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50 px-4 py-2">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50 px-2 py-2 safe-area-inset-bottom">
         <nav className="flex justify-around">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-6 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[80px] ${
               activeTab === 'dashboard'
-                ? 'text-emerald-400 bg-emerald-500/10'
-                : 'text-slate-400 hover:text-white'
+                ? 'text-emerald-400 bg-emerald-500/15'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-xs font-medium">Dashboard</span>
+            <LayoutDashboard className="w-6 h-6" />
+            <span className="text-xs font-medium mt-0.5">Dashboard</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-6 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[80px] ${
               activeTab === 'trades'
-                ? 'text-emerald-400 bg-emerald-500/10'
-                : 'text-slate-400 hover:text-white'
+                ? 'text-emerald-400 bg-emerald-500/15'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <FileText className="w-5 h-5" />
-            <span className="text-xs font-medium">Trades</span>
+            <FileText className="w-6 h-6" />
+            <span className="text-xs font-medium mt-0.5">Trades</span>
           </button>
         </nav>
       </div>
@@ -1187,21 +1199,21 @@ const now = new Date();
                     setEditingTrade(null);
                     setModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 text-sm sm:text-base"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 h-12 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 text-sm sm:text-base active:scale-95"
                 >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">Nuevo Trade</span>
                   <span className="sm:hidden">Nuevo</span>
                 </button>
                 <button
                   onClick={downloadTemplate}
-                  className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25 text-sm sm:text-base"
+                  className="flex items-center justify-center gap-2 px-4 py-3.5 h-12 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25 text-sm sm:text-base active:scale-95"
                 >
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Download className="w-5 h-5" />
                   <span className="hidden sm:inline">Descargar Template Excel</span>
                   <span className="sm:hidden">Template</span>
                 </button>
-                <label className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer text-sm sm:text-base">
+                <label className="flex items-center justify-center gap-2 px-4 py-3.5 h-12 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer text-sm sm:text-base active:scale-95 disabled:opacity-50">
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -1210,9 +1222,9 @@ const now = new Date();
                     className="hidden"
                   />
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Download className="w-5 h-5" />
                   )}
                   <span className="hidden sm:inline">Importar CSV/Excel</span>
                   <span className="sm:hidden">Importar</span>
@@ -1220,7 +1232,8 @@ const now = new Date();
                 <div className="relative">
                   <button
                     onClick={() => setShowFormatHelp(!showFormatHelp)}
-                    className="flex items-center justify-center w-11 h-11 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
+                    className="flex items-center justify-center w-12 h-12 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600 active:scale-95"
+                    title="Ayuda formato"
                   >
                     <HelpCircle className="w-5 h-5" />
                   </button>
@@ -1230,9 +1243,9 @@ const now = new Date();
                         <p className="text-blue-300 font-medium text-sm sm:text-base">📋 Formato CSV/Excel:</p>
                         <button 
                           onClick={() => setShowFormatHelp(false)}
-                          className="text-slate-400 hover:text-white"
+                          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 active:scale-95 transition-all"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
                       <ul className="text-slate-300 space-y-1 text-xs sm:text-sm ml-4">
