@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'recharts';
-import { PieChartIcon, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChartIcon, X } from 'lucide-react';
 import { calculateAssetDistribution, formatCurrency, formatPercentage } from '../utils/portfolioHelpers';
 
 export const DistributionChart = ({ positions }) => {
@@ -11,12 +11,6 @@ export const DistributionChart = ({ positions }) => {
     () => calculateAssetDistribution(positions),
     [positions]
   );
-
-  const portfolioChange = useMemo(() => {
-    if (!positions || positions.length === 0) return 0;
-    const totalResult = positions.reduce((sum, pos) => sum + (pos.resultadoDiario || 0), 0);
-    return totalResult;
-  }, [positions]);
 
   const categoryAssets = useMemo(() => {
     if (!selectedCategory) return [];
@@ -33,11 +27,10 @@ export const DistributionChart = ({ positions }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl">
-          <p className="text-white font-semibold text-sm mb-1">{data.name}</p>
-          <p className="text-slate-300 text-sm">{formatCurrency(data.value)}</p>
-          <p className="text-success font-medium text-sm">{formatPercentage(data.percentage)}</p>
-          <p className="text-slate-500 text-xs mt-1">{data.count} posiciones</p>
+        <div className="bg-slate-900 border border-slate-700 rounded-lg p-2 shadow-xl">
+          <p className="text-white font-semibold text-xs mb-1">{data.name}</p>
+          <p className="text-slate-300 text-xs">{formatCurrency(data.value)}</p>
+          <p className="text-success text-xs">{formatPercentage(data.percentage)}</p>
         </div>
       );
     }
@@ -49,46 +42,23 @@ export const DistributionChart = ({ positions }) => {
   }
 
   return (
-    <div className="h-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-primary/20 rounded">
-            <PieChartIcon className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white">Distribución</h3>
-          </div>
+    <div className="relative h-full">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1 bg-primary/20 rounded">
+          <PieChartIcon className="w-4 h-4 text-emerald-400" />
         </div>
-        
-        {portfolioChange !== 0 && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded border ${
-            portfolioChange >= 0 
-              ? 'bg-success/10 border-success/30' 
-              : 'bg-danger/10 border-danger/30'
-          }`}>
-            {portfolioChange >= 0 ? (
-              <TrendingUp className="w-3 h-3 text-success" />
-            ) : (
-              <TrendingDown className="w-3 h-3 text-danger" />
-            )}
-            <span className={`text-xs font-mono font-semibold ${
-              portfolioChange >= 0 ? 'text-success' : 'text-danger'
-            }`}>
-              {portfolioChange >= 0 ? '+' : ''}{formatCurrency(portfolioChange)}
-            </span>
-          </div>
-        )}
+        <h3 className="text-sm font-bold text-white">Distribución</h3>
       </div>
 
-      <div className="flex items-center justify-center py-2">
-        <ResponsiveContainer width="100%" height={160}>
+      <div className="flex items-center justify-center py-2 relative">
+        <ResponsiveContainer width="100%" height={140}>
           <PieChart>
             <Pie
               data={distribution}
               cx="50%"
               cy="50%"
-              innerRadius={45}
-              outerRadius={70}
+              innerRadius={40}
+              outerRadius={60}
               paddingAngle={2}
               dataKey="value"
               onMouseEnter={(_, index) => setHoveredIndex(index)}
@@ -101,32 +71,29 @@ export const DistributionChart = ({ positions }) => {
                   key={`cell-${index}`} 
                   fill={entry.color}
                   stroke={entry.color}
-                  strokeWidth={hoveredIndex === index ? 3 : 1}
-                  strokeOpacity={0.5}
+                  strokeWidth={hoveredIndex === index ? 2 : 0}
                   style={{
-                    transform: hoveredIndex === index ? 'scale(1.05)' : 'scale(1)',
+                    transform: hoveredIndex === index ? 'scale(1.08)' : 'scale(1)',
                     transformOrigin: 'center',
-                    transition: 'transform 0.2s ease-out, stroke-width 0.2s ease-out',
-                    filter: hoveredIndex === index ? `drop-shadow(0 0 6px ${entry.color}80)` : 'none'
+                    transition: 'transform 0.2s ease-out',
+                    filter: hoveredIndex === index ? `drop-shadow(0 0 8px ${entry.color}60)` : 'none'
                   }}
                 />
               ))}
-              <Label
-                value={formatCurrency(totalValue)}
-                position="center"
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  fill: '#ffffff',
-                }}
-              />
             </Pie>
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
+
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <p className="text-xs text-slate-400">Total</p>
+            <p className="text-xs font-bold text-white font-mono">{formatCurrency(totalValue).replace('ARS', '')}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-1 mt-2">
+      <div className="space-y-1">
         {distribution.map((item, index) => (
           <button
             key={index}
@@ -143,7 +110,6 @@ export const DistributionChart = ({ positions }) => {
                 style={{ backgroundColor: item.color }}
               />
               <span className="text-xs text-white font-medium">{item.name}</span>
-              <span className="text-xs text-slate-500">({item.count})</span>
             </div>
             <span className="text-xs text-success font-mono font-semibold">
               {formatPercentage(item.percentage)}
@@ -153,7 +119,7 @@ export const DistributionChart = ({ positions }) => {
       </div>
 
       {selectedCategory && categoryAssets.length > 0 && (
-        <div className="mt-3 pt-2 border-t border-slate-700/50">
+        <div className="absolute inset-x-0 bottom-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-3 z-10">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-white">
               {selectedCategory} <span className="text-slate-400 font-normal">({categoryAssets.length})</span>
@@ -169,7 +135,7 @@ export const DistributionChart = ({ positions }) => {
             {categoryAssets.map((asset, idx) => (
               <div
                 key={idx}
-                className="flex justify-between items-center py-1 px-1.5 rounded bg-slate-800/20"
+                className="flex justify-between items-center py-1 px-1.5 rounded bg-slate-700/20"
               >
                 <span className="text-xs font-mono text-white">{asset.ticker}</span>
                 <span className="text-xs text-primary font-mono">{formatPercentage(asset.percentage)}</span>

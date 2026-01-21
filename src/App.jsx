@@ -964,6 +964,7 @@ const now = new Date();
                 subValue={formatUSD(totals.valuacionUSD)}
                 icon={TrendingUp}
                 trend={totals.resultado}
+                dailyChange={totals.resultadoDiario}
                 isLoading={isPricesLoading}
                 highlight
               />
@@ -1003,7 +1004,7 @@ const now = new Date();
 
             {/* Distribution + Evolution Chart side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[320px]">
                 <DistributionChart positions={positions} />
               </div>
               <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
