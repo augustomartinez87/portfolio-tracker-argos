@@ -106,6 +106,15 @@ const calculatePortfolioReturn = (trades, prices) => {
 
     const portfolioReturn = totalWeight > 0 ? weightedReturn / totalWeight : 0;
 
+    console.log('Portfolio return calculation:', {
+      portfolioReturn,
+      totalInvested,
+      totalValue,
+      totalWeight,
+      startDate,
+      positionsCount: Object.keys(positions).length
+    });
+
     return {
       returnPct: portfolioReturn,
       startDate,
@@ -126,7 +135,9 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [spyError, setSpyError] = useState(null);
 
   const portfolioReturn = useMemo(() => {
-    return calculatePortfolioReturn(trades, prices);
+    const result = calculatePortfolioReturn(trades, prices);
+    console.log('PortfolioReturn memo:', result);
+    return result;
   }, [trades, prices]);
 
   useEffect(() => {
@@ -143,7 +154,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - selectedDays);
         
-        const url = `https://data912.com/historical/stocks/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
+        const url = `https://data912.com/historical/cedears/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
         console.log('Fetching SPY:', url);
         
         const response = await fetch(url);
@@ -214,6 +225,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       if (filteredDates.length === 0) return [];
 
       const firstSpyPrice = spyData[filteredDates[0]];
+      const portfolioReturnVal = portfolioReturn.returnPct || 0;
 
       return filteredDates.map(date => {
         const spyPrice = spyData[date];
@@ -225,6 +237,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             month: 'short',
             day: 'numeric'
           }),
+          portfolioChange: portfolioReturnVal,
           spyChange
         };
       });
@@ -232,7 +245,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       console.error('Error building chart data:', e);
       return [];
     }
-  }, [spyData, selectedDays]);
+  }, [spyData, selectedDays, portfolioReturn]);
 
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
@@ -374,6 +387,15 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
                 <Legend 
                   wrapperStyle={{ paddingTop: 10 }}
                   formatter={(value) => <span className="text-xs text-slate-400">{value}</span>}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="portfolioChange"
+                  name="Cartera"
+                  stroke="#10B981"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#10B981', stroke: '#fff', strokeWidth: 2 }}
                 />
                 {showSpy && chartData.some(d => d.spyChange !== null) && (
                   <Line
