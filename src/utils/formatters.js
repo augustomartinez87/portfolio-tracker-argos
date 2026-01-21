@@ -1,22 +1,20 @@
 // src/utils/formatters.js
 export const formatARS = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
+  const formatted = new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
+  return `$ ${formatted}`;
 };
 
 export const formatUSD = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
+  return `US$ ${formatted}`;
 };
 
 export const formatPercent = (value) => {
