@@ -160,11 +160,17 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   <td className="text-right px-4 py-3 text-white font-mono font-medium">
                     {formatARS(pos.valuacionActual)}
                   </td>
-                  <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                    {formatARS(pos.resultado)}
+                  <td className="text-right px-4 py-3">
+                    <span className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {formatARS(pos.resultado)}
+                    </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
-                    <span className={`text-sm font-medium ${pos.resultadoPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${
+                      pos.resultadoPct >= 0 
+                        ? 'bg-emerald-500/20 text-emerald-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
                       {formatPercent(pos.resultadoPct)}
                     </span>
                   </td>
@@ -174,7 +180,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
-                    <span className={`text-sm font-medium ${pos.resultadoDiarioPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${
+                      pos.resultadoDiarioPct >= 0 
+                        ? 'bg-emerald-500/20 text-emerald-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
                       {formatPercent(pos.resultadoDiarioPct || 0)}
                     </span>
                   </td>
@@ -195,31 +205,53 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 <td className="text-right px-4 py-4 text-white font-mono font-bold text-base">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4 text-emerald-400 font-mono font-bold text-base">
-                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.resultadoUSD, 0))}
+                <td className="text-right px-4 py-4">
+                  {(() => {
+                    const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
+                    return (
+                      <span className={`font-mono font-bold text-base ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {formatARS(totalResult)}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="text-right px-4 py-4 hidden sm:table-cell">
                   {(() => {
-                    const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultadoUSD, 0);
-                    const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoUSD, 0);
+                    const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
+                    const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoTotal, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
                     return (
-                      <span className={`font-bold text-sm ${totalResultPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                        totalResultPct >= 0 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
                         {formatPercent(totalResultPct)}
                       </span>
                     );
                   })()}
                 </td>
-                <td className="text-right px-4 py-4 text-emerald-400 font-mono font-bold">
-                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0))}
+                <td className="text-right px-4 py-4">
+                  {(() => {
+                    const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
+                    return (
+                      <span className={`font-mono font-bold ${totalDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {formatARS(totalDiario)}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="text-right px-4 py-4 hidden sm:table-cell">
                   {(() => {
-                    const totalValuation = sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0);
-                    const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0);
+                    const totalValuation = sortedPositions.reduce((sum, p) => sum + p.valuacionActual, 0);
+                    const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
                     const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
                     return (
-                      <span className={`font-bold text-sm ${totalDiarioPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                        totalDiarioPct >= 0 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
                         {formatPercent(totalDiarioPct)}
                       </span>
                     );
