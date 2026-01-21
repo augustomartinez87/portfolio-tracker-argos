@@ -962,29 +962,34 @@ const now = new Date();
               />
             </div>
 
-            {/* Distribution Chart + Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-1">
-                <DistributionChart positions={positions} />
-              </div>
-              <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
-                <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-slate-700/50">
-                    <span className="text-slate-400">Posiciones</span>
-                    <span className="text-white font-semibold font-mono">{positions.length}</span>
+            {/* Distribution + Summary */}
+            <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 border-r border-slate-700/50 lg:pr-6">
+                  <DistributionChart positions={positions} />
+                </div>
+                <div className="lg:col-span-2">
+                  <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                      <p className="text-slate-400 text-xs mb-1">Posiciones</p>
+                      <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                      <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
+                      <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                      <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
+                      <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                      <p className="text-slate-400 text-xs mb-1">Data Sources</p>
+                      <p className="text-slate-300 font-mono text-sm">data912.com</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-700/50">
-                    <span className="text-slate-400">Trades Totales</span>
-                    <span className="text-white font-semibold font-mono">{trades.length}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-slate-700/50">
-                    <span className="text-slate-400">Tipo Cambio MEP</span>
-                    <span className="text-emerald-400 font-semibold font-mono">{formatARS(mepRate)}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-slate-400">Data Sources</span>
-                    <span className="text-slate-300 text-sm">data912.com</span>
+                  <div className="mt-4 pt-4 border-t border-slate-700/50">
+                    <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
                   </div>
                 </div>
               </div>
