@@ -978,24 +978,23 @@ const now = new Date();
             </div>
 
             {/* Resumen - 4 cards */}
-            <div className="mb-8">
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+            <div className="mb-6">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
                     <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                    <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
+                    <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
-                    <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Trades</p>
+                    <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
-                    <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">MEP</p>
+                    <p className="text-emerald-400 font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Data Sources</p>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Data</p>
                     <p className="text-slate-300 font-mono text-sm">data912.com</p>
                   </div>
                 </div>
@@ -1003,20 +1002,18 @@ const now = new Date();
             </div>
 
             {/* Distribution + Evolution Chart side by side */}
-            <div className="mb-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                  <DistributionChart positions={positions} />
-                </div>
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                  <PortfolioEvolutionChart trades={trades} />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <DistributionChart positions={positions} />
+              </div>
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <PortfolioEvolutionChart trades={trades} />
               </div>
             </div>
 
             {/* New Dashboard Components */}
-            <div className="mb-8">
-              <TopPerformers positions={positions} prices={prices} maxItems={5} />
+            <div className="mb-6">
+              <TopPerformers positions={positions} prices={prices} maxItems={3} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -1024,7 +1021,7 @@ const now = new Date();
                 <TradingMetrics trades={trades} />
               </div>
               <div className="lg:col-span-1">
-                <RecentActivity trades={trades} maxItems={8} />
+                <RecentActivity trades={trades} maxItems={5} />
               </div>
             </div>
 

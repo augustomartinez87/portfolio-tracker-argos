@@ -36,20 +36,15 @@ export function TopPerformers({ positions, prices, maxItems = 5 }) {
   }, [positions, prices, maxItems]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <Card>
-        <CardHeader
-          title="Top Gainers"
-          subtitle="Mejores performers"
-          action={
-            <div className="p-2 bg-success/10 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-success" />
-            </div>
-          }
-        />
-        <div className="space-y-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-white">Top Gainers</h3>
+          <TrendingUp className="w-4 h-4 text-success" />
+        </div>
+        <div className="space-y-2">
           {gainers.length === 0 ? (
-            <p className="text-slate-500 text-sm text-center py-4">Sin ganancias aún</p>
+            <p className="text-slate-500 text-xs text-center py-2">Sin ganancias</p>
           ) : (
             gainers.map((gainer, index) => (
               <PerformerItem
@@ -64,18 +59,13 @@ export function TopPerformers({ positions, prices, maxItems = 5 }) {
       </Card>
 
       <Card>
-        <CardHeader
-          title="Top Laggards"
-          subtitle="Peores performers"
-          action={
-            <div className="p-2 bg-danger/10 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-danger" />
-            </div>
-          }
-        />
-        <div className="space-y-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-white">Top Laggards</h3>
+          <TrendingDown className="w-4 h-4 text-danger" />
+        </div>
+        <div className="space-y-2">
           {losers.length === 0 ? (
-            <p className="text-slate-500 text-sm text-center py-4">Sin pérdidas aún</p>
+            <p className="text-slate-500 text-xs text-center py-2">Sin pérdidas</p>
           ) : (
             losers.map((loser, index) => (
               <PerformerItem
@@ -113,32 +103,29 @@ function PerformerItem({
   }, [price, performance]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-all group">
+    <div className="flex items-center gap-2 p-2 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all group">
       <div className={clsx(
-        'flex items-center justify-center w-8 h-8 rounded-lg font-mono font-bold text-sm',
+        'flex items-center justify-center w-6 h-6 rounded font-mono font-bold text-xs',
         isGainer ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
       )}>
         {rank}
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-mono font-semibold text-white">
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-sm text-white font-medium">
             {ticker}
-          </span>
-          <span className="text-xs text-slate-500">
-            {category}
           </span>
         </div>
         <div className={clsx(
-          'text-sm font-mono font-semibold mt-0.5',
+          'text-xs font-mono font-semibold',
           isGainer ? 'text-success' : 'text-danger'
         )}>
           {isGainer ? '+' : ''}{performance.toFixed(2)}%
         </div>
       </div>
 
-      <div className="w-16 h-8">
+      <div className="w-12 h-6">
         <Sparkline
           data={sparklineData}
           color={isGainer ? '#10B981' : '#EF4444'}

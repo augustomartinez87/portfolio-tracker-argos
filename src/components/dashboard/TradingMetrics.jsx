@@ -45,37 +45,37 @@ export function TradingMetrics({ trades }) {
 
   const metricsData = [
     {
-      label: 'Total Trades',
+      label: 'Trades',
       value: metrics.totalTrades.toString(),
       icon: Activity,
       iconColor: 'text-primary',
     },
     {
-      label: 'Invertido Total',
+      label: 'Invertido',
       value: formatCurrency(metrics.totalInvertido),
       icon: DollarSign,
       iconColor: 'text-warning',
     },
     {
-      label: 'Avg Trade Size',
+      label: 'Avg Trade',
       value: formatCurrency(metrics.avgTradeSize),
       icon: BarChart3,
       iconColor: 'text-purple-400',
     },
     {
-      label: 'Mayor Trade',
+      label: 'Mayor',
       value: formatCurrency(metrics.bestTrade),
       icon: TrendingUp,
       iconColor: 'text-success',
     },
     {
-      label: 'Menor Trade',
+      label: 'Menor',
       value: formatCurrency(metrics.worstTrade),
       icon: TrendingDown,
       iconColor: 'text-danger',
     },
     {
-      label: 'Promedio Trade',
+      label: 'Promedio',
       value: formatCurrency(metrics.avgTrade),
       icon: Target,
       iconColor: 'text-blue-400',
@@ -84,12 +84,11 @@ export function TradingMetrics({ trades }) {
 
   return (
     <Card>
-      <CardHeader
-        title="Métricas de Trading"
-        subtitle="Estadísticas de tu actividad"
-      />
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-white">Métricas</h3>
+      </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2">
         {metricsData.map((metric) => (
           <MetricItem key={metric.label} {...metric} />
         ))}
@@ -100,15 +99,13 @@ export function TradingMetrics({ trades }) {
 
 function MetricItem({ label, value, icon: Icon, iconColor }) {
   return (
-    <div className="p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-all border border-transparent hover:border-slate-600 group">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-sm text-slate-400">{label}</span>
-        <div className={clsx('p-1.5 rounded-md bg-slate-800', iconColor)}>
-          <Icon className="w-4 h-4" />
-        </div>
+    <div className="p-2 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-slate-400">{label}</span>
+        <Icon className={clsx('w-3 h-3', iconColor)} />
       </div>
       
-      <div className="font-mono text-xl font-bold text-white mb-1">
+      <div className="font-mono text-base font-bold text-white">
         {value}
       </div>
     </div>
