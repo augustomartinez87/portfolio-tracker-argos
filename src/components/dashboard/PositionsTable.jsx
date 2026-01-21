@@ -80,7 +80,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
         <h3 className="text-lg font-semibold text-white">Posiciones</h3>
         <span className="text-sm text-slate-400">{positions.length} activos</span>
       </div>
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[1200px]">
           <thead>
             <tr className="bg-slate-900/50">
