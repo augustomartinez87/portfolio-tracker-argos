@@ -35,8 +35,8 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
   }, [positions, prices, maxItems]);
 
   return (
-    <Card noPadding className="overflow-hidden">
-      <div className="grid grid-cols-2 divide-x divide-slate-700">
+    <Card noPadding className="overflow-hidden h-full">
+      <div className="grid grid-cols-2 divide-x divide-slate-700 h-full">
         <div className="p-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-semibold text-white">Top Gainers</h3>
@@ -88,9 +88,13 @@ function PerformerItem({
   category, 
   performance, 
   variant,
-  rank
+  rank,
+  price,
+  quantity
 }) {
   const isGainer = variant === 'gainer';
+  const valuacion = price * quantity;
+  const dailyChange = 0; // Placeholder para pct_change diario
 
   return (
     <div className="flex items-center gap-1.5 p-1.5 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all group">
@@ -112,6 +116,9 @@ function PerformerItem({
           isGainer ? 'text-success' : 'text-danger'
         )}>
           {isGainer ? '+' : ''}{performance.toFixed(2)}%
+        </div>
+        <div className="text-[9px] text-slate-500 font-mono flex items-center gap-1">
+          {formatARS(valuacion)}
         </div>
       </div>
     </div>

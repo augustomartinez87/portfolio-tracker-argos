@@ -1159,10 +1159,10 @@ const now = new Date();
 
             {/* Top Performers + Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 h-full">
                 <TopPerformers positions={positions} prices={prices} maxItems={3} />
               </div>
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 h-full">
                 <RecentActivity trades={trades} maxItems={5} />
               </div>
             </div>
