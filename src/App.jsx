@@ -997,7 +997,7 @@ const now = new Date();
 
             <PortfolioEvolutionChart trades={trades} />
 
-{/* Positions Table */}
+            {/* Positions Table */}
             <PositionsTable 
               positions={positions} 
               onRowClick={handleOpenPositionDetail}
