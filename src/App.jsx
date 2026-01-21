@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
@@ -402,6 +402,7 @@ export default function ArgosCapital() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [lastValidPrices, setLastValidPrices] = useState({});
   const [showFormatHelp, setShowFormatHelp] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
 // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
@@ -991,36 +992,45 @@ const now = new Date();
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col">
-        <div className="p-4 border-b border-slate-800/50">
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
-            <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+      <aside className={`hidden lg:flex bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+        <div className="p-4 border-b border-slate-800/50 flex items-center justify-between">
+          <h1 className={`text-xl font-bold text-white tracking-tight flex items-center gap-3 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+            <img src={logo} alt="Argos Capital" className="w-8 h-8 flex-shrink-0" />
             Argos Capital
           </h1>
+          <img src={logo} alt="Argos Capital" className={`w-8 h-8 flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`} />
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+          >
+            {sidebarOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
+            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3'} ${
               activeTab === 'dashboard'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
+            title="Dashboard"
           >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
+            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Dashboard</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
+            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3'} ${
               activeTab === 'trades'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
+            title="Trades"
           >
-            <FileText className="w-5 h-5" />
-            Trades
+            <FileText className="w-5 h-5 flex-shrink-0" />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Trades</span>
           </button>
         </nav>
 
@@ -1028,13 +1038,14 @@ const now = new Date();
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium`}
+            title="Actualizar"
           >
-            <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
           </button>
-          {lastUpdate && (
-            <p className="text-xs text-slate-500 mt-3 text-center">
+          {lastUpdate && sidebarOpen && (
+            <p className="text-xs text-slate-500 mt-3 text-center transition-all duration-300">
               Actualizado: {lastUpdateFull || lastUpdate}
             </p>
           )}
@@ -1070,7 +1081,7 @@ const now = new Date();
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 p-4 lg:p-6 pb-24 lg:pb-24 mt-14 lg:mt-0">
+      <main className={`flex-1 p-4 lg:p-6 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {activeTab === 'dashboard' ? (
           <>
 {/* Summary Cards */}
@@ -1162,7 +1173,7 @@ const now = new Date();
             </div>
 
              {/* Footer - Desktop Only */}
-            <div className="hidden lg:block fixed bottom-0 left-64 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6">
+            <div className={`hidden lg:block fixed bottom-0 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
               <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
             </div>
           </>
