@@ -44,11 +44,14 @@ export const getAssetClass = (ticker, panel, isArgStock = false) => {
 export const adjustBondPrice = (ticker, price) => {
   if (!price || price === 0) return 0;
   
-  // Verificar si es un bono (pesos o HD)
   const isPesos = isBonoPesos(ticker);
   const isHD = isBonoHardDollar(ticker);
   
-  if (isPesos || isHD) {
+  if (isPesos) {
+    return price / 1000;
+  }
+  
+  if (isHD) {
     return price / 100;
   }
   
@@ -61,8 +64,11 @@ export const useBondPrices = () => {
   const getDisplayPrice = useCallback((ticker, price, mepRate = 0) => {
     if (!price || price === 0) return 0;
     
-    // Todos los bonos se dividen por 100
-    if (isBonoPesos(ticker) || isBonoHardDollar(ticker)) {
+    if (isBonoPesos(ticker)) {
+      return price / 1000;
+    }
+    
+    if (isBonoHardDollar(ticker)) {
       return price / 100;
     }
     

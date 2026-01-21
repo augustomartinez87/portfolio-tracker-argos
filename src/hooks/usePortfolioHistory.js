@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { data912 } from '../utils/data912';
-import { isBonoPesos } from './useBondPrices';
+import { isBonoPesos, isBonoHardDollar, adjustBondPrice } from './useBondPrices';
 
 export function usePortfolioHistory(trades, days = 90) {
   const [historicalData, setHistoricalData] = useState({});
@@ -111,10 +111,10 @@ export function usePortfolioHistory(trades, days = 90) {
 
         const dayData = tickerData.find(d => d.date === date);
         if (dayData && dayData.c > 0) {
-          const price = dayData.c;
+          const price = adjustBondPrice(ticker, dayData.c);
           totalValueARS += quantity * price;
 
-          if (isBonoPesos(ticker)) {
+          if (isBonoPesos(ticker) || isBonoHardDollar(ticker)) {
             totalValueUSD += quantity * price;
           }
         }
