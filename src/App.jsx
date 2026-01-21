@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap, DollarSign, BarChart3, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
@@ -10,6 +10,7 @@ import DistributionChart from './components/DistributionChart';
 import PortfolioEvolutionChart from './components/PortfolioEvolutionChart';
 import SummaryCard from './components/common/SummaryCard';
 import PositionsTable from './components/dashboard/PositionsTable';
+import logo from './assets/logo.png';
 
 // Lazy load PositionDetailModal (large component)
 const PositionDetailModal = lazy(() => import('./components/PositionDetailModal'));
@@ -932,8 +933,8 @@ const now = new Date();
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <Zap className="w-6 h-6 text-emerald-400" />
+              <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
                 Argos Capital
               </h1>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
