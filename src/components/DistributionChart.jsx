@@ -3,14 +3,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'rechar
 import { PieChartIcon, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { calculateAssetDistribution, formatCurrency, formatPercentage } from '../utils/portfolioHelpers';
 
-const ASSET_CLASS_COLORS = {
-  'CEDEAR': '#10B981',
-  'ARGY': '#3B82F6',
-  'BONOS HD': '#F59E0B',
-  'BONOS PESOS': '#8B5CF6',
-  'OTROS': '#6B7280'
-};
-
 export const DistributionChart = ({ positions }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
@@ -38,8 +30,29 @@ export const DistributionChart = ({ positions }) => {
 
   const handlePieClick = (data) => {
     if (data && data.name) {
-      setSelectedCategory(data.name);
+      setSelectedCategory(selectedCategory === data.name ? null : data.name);
     }
+  };
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+    if (percent < 0.05) return null;
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 15;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="text-xs font-medium"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
   };
 
   const CustomTooltip = ({ active, payload }) => {
@@ -65,7 +78,7 @@ export const DistributionChart = ({ positions }) => {
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/20 rounded-custom border border-primary/30">
+          <div className="p-2 bg-primary/20 rounded-lg">
             <PieChartIcon className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
@@ -77,7 +90,7 @@ export const DistributionChart = ({ positions }) => {
         </div>
         
         {portfolioChange !== 0 && (
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-custom border ${
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${
             portfolioChange >= 0 
               ? 'bg-success/10 border-success/30' 
               : 'bg-danger/10 border-danger/30'
@@ -109,7 +122,15 @@ export const DistributionChart = ({ positions }) => {
               dataKey="value"
               cornerRadius={6}
               onClick={handlePieClick}
-              cursor={selectedCategory === null ? 'pointer' : 'default'}
+              cursor="pointer"
+              activeIndex={distribution.findIndex(d => d.name === selectedCategory)}
+              activeShape={{
+                outerRadius: 100,
+                stroke: '#fff',
+                strokeWidth: 3,
+                fill: distribution.find(d => d.name === selectedCategory)?.color,
+                filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))'
+              }}
             >
               {distribution.map((entry, index) => (
                 <Cell 
@@ -118,7 +139,7 @@ export const DistributionChart = ({ positions }) => {
                   stroke={entry.color}
                   strokeWidth={2}
                   strokeOpacity={0.3}
-                  className={selectedCategory === null ? 'hover:opacity-80 transition-opacity' : ''}
+                  className="transition-all duration-300"
                 />
               ))}
               <Label
@@ -150,16 +171,19 @@ export const DistributionChart = ({ positions }) => {
           <button
             key={index}
             onClick={() => setSelectedCategory(selectedCategory === item.name ? null : item.name)}
-            className={`w-full flex justify-between items-center py-2 px-3 rounded-custom border transition-all ${
+            className={`w-full flex justify-between items-center py-2 px-3 rounded-lg border transition-all duration-300 ${
               selectedCategory === item.name 
-                ? 'bg-slate-700/50 border-primary/50' 
+                ? 'bg-slate-700/50 border-primary/50 shadow-lg' 
                 : 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-800/50'
             }`}
           >
             <div className="flex items-center gap-2">
               <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color }}
+                className="w-3 h-3 rounded-full transition-transform duration-300"
+                style={{ 
+                  backgroundColor: item.color,
+                  transform: selectedCategory === item.name ? 'scale(1.2)' : 'scale(1)'
+                }}
               />
               <span className="text-sm text-white font-medium">{item.name}</span>
               <span className="text-xs text-slate-500">({item.count})</span>
@@ -177,7 +201,7 @@ export const DistributionChart = ({ positions }) => {
       </div>
 
       {selectedCategory && categoryAssets.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700/50">
+        <div className="mt-4 pt-4 border-t border-slate-700/50 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-white">
               {selectedCategory} <span className="text-slate-400 font-normal">({categoryAssets.length} activos)</span>
@@ -189,7 +213,7 @@ export const DistributionChart = ({ positions }) => {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
+          <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
             {categoryAssets.map((asset, idx) => (
               <div
                 key={idx}
