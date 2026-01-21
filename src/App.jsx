@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
@@ -317,6 +317,7 @@ export default function ArgosCapital() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [lastValidPrices, setLastValidPrices] = useState({});
+  const [showFormatHelp, setShowFormatHelp] = useState(false);
 
 // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
@@ -735,6 +736,17 @@ const now = new Date();
     reader.readAsText(file);
   };
 
+  // Close format help tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFormatHelp && !event.target.closest('.format-help-tooltip')) {
+        setShowFormatHelp(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFormatHelp]);
+
   // Calculate positions (grouped trades) with daily P&L
   const positions = useMemo(() => {
     const grouped = {};
@@ -995,23 +1007,27 @@ const now = new Date();
               </div>
             </div>
 
-            <PortfolioEvolutionChart trades={trades} />
+            <div className="mb-8">
+              <PortfolioEvolutionChart trades={trades} />
+            </div>
 
             {/* Positions Table */}
-            <PositionsTable 
-              positions={positions} 
-              onRowClick={handleOpenPositionDetail}
-              prices={prices}
-              mepRate={mepRate}
-              sortConfig={positionsSort}
-              onSortChange={setPositionsSort}
-            />
+            <div className="mb-8">
+              <PositionsTable 
+                positions={positions} 
+                onRowClick={handleOpenPositionDetail}
+                prices={prices}
+                mepRate={mepRate}
+                sortConfig={positionsSort}
+                onSortChange={setPositionsSort}
+              />
+            </div>
           </>
         ) : (
-          <>
+        <>
             {/* Trades Tab */}
             <div className="flex flex-col gap-3 mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                 <button
                   onClick={() => {
                     setEditingTrade(null);
@@ -1042,8 +1058,40 @@ const now = new Date();
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
-                   Importar CSV/Excel
+                  Importar CSV/Excel
                 </label>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFormatHelp(!showFormatHelp)}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 text-slate-300 rounded-custom hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Formato</span>
+                  </button>
+                  {showFormatHelp && (
+                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-custom p-4 border border-slate-700 shadow-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-blue-300 font-medium">📋 Formato del archivo CSV/Excel:</p>
+                        <button 
+                          onClick={() => setShowFormatHelp(false)}
+                          className="text-slate-400 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <ul className="text-slate-300 space-y-1 text-sm ml-4">
+                        <li>• <strong>Fecha:</strong> DD/MM/YYYY (ej: 23/12/2024)</li>
+                        <li>• <strong>Ticker:</strong> Símbolo del activo (ej: MELI, AAPL, AL30)</li>
+                        <li>• <strong>Cantidad:</strong> Número de unidades (ej: 10 o 1250.50)</li>
+                        <li>• <strong>Precio:</strong> Precio de compra en ARS (ej: 17220 o 839.50)</li>
+                        <li>• <strong>Bonos pesos:</strong> Precio por $1 VN (ej: 1.03)</li>
+                      </ul>
+                      <p className="text-slate-400 mt-2 text-xs">
+                        Tip: Descargá el template para ver un ejemplo completo
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
                {importStatus && (
                 <span className={`flex items-center px-4 py-2 rounded-custom text-sm font-medium ${
@@ -1054,19 +1102,6 @@ const now = new Date();
                   {importStatus}
                 </span>
               )}
-              <div className="bg-primary/10 border border-primary/30 rounded-custom p-4 text-sm">
-                <p className="text-blue-300 font-medium mb-2">📋 Formato del archivo CSV/Excel:</p>
-                <ul className="text-slate-300 space-y-1 ml-4">
-                  <li>• <strong>Fecha:</strong> DD/MM/YYYY (ejemplo: 23/12/2024)</li>
-                  <li>• <strong>Ticker:</strong> Símbolo del activo (ejemplo: MELI, AAPL, AL30)</li>
-                  <li>• <strong>Cantidad:</strong> Número de unidades (ejemplo: 10 o 1250.50)</li>
-                  <li>• <strong>Precio:</strong> Precio de compra en ARS (ejemplo: 17220 o 839.50)</li>
-                  <li>• <strong>Bonos en pesos:</strong> Precio por cada $1 de VN (ejemplo: 1.03)</li>
-                </ul>
-                <p className="text-slate-400 mt-2 text-xs">
-                  Tip: Descargá el template para ver un ejemplo completo y editalo en Excel
-                </p>
-              </div>
             </div>
 
             {/* Trades Table */}
