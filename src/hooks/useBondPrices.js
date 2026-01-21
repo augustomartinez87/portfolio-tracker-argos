@@ -44,13 +44,11 @@ export const getAssetClass = (ticker, panel, isArgStock = false) => {
 export const adjustBondPrice = (ticker, price) => {
   if (!price || price === 0) return 0;
   
-  // Bonos en pesos: data912 da precio por $1000 VN, convertir a precio por $1 VN
-  if (isBonoPesos(ticker)) {
-    return price / 1000;
-  }
+  // Verificar si es un bono (pesos o HD)
+  const isPesos = isBonoPesos(ticker);
+  const isHD = isBonoHardDollar(ticker);
   
-  // Bonos HD: data912 da precio por $100 USD VN, convertir a precio por $1 USD VN
-  if (isBonoHardDollar(ticker)) {
+  if (isPesos || isHD) {
     return price / 100;
   }
   
@@ -63,12 +61,9 @@ export const useBondPrices = () => {
   const getDisplayPrice = useCallback((ticker, price, mepRate = 0) => {
     if (!price || price === 0) return 0;
     
-    if (isBonoPesos(ticker)) {
-      return price;
-    }
-    
-    if (isBonoHardDollar(ticker)) {
-      return mepRate > 0 ? (price / 100) * mepRate : price;
+    // Todos los bonos se dividen por 100
+    if (isBonoPesos(ticker) || isBonoHardDollar(ticker)) {
+      return price / 100;
     }
     
     return price;

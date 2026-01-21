@@ -583,8 +583,7 @@ const now = new Date();
   // Initial fetch
   useEffect(() => {
     fetchPrices();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [fetchPrices]); // Run when fetchPrices changes or component mounts
 
   // Auto-refresh prices for positions using data912 helper (every 30s)
   useEffect(() => {
@@ -592,10 +591,14 @@ const now = new Date();
 
     const refreshPositionPrices = async () => {
       try {
-        // Get unique tickers with their assetClass from prices state
-        const tickerData = Object.entries(prices || {}).map(([ticker, data]) => ({
+        // Limpiar cache de bonos para forzar fetch nuevo
+        data912.clearBondCache?.();
+
+        // Get unique tickers from trades (more reliable than prices state)
+        const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
+        const tickerData = uniqueTickers.map(ticker => ({
           ticker,
-          assetClass: data?.assetClass || getAssetClass(ticker, null)
+          assetClass: getAssetClass(ticker, null)
         }));
         
         if (tickerData.length === 0) return;
@@ -605,43 +608,25 @@ const now = new Date();
           data912.getBatchPrices(tickerData),
           data912.getBatchDailyReturns(tickerData)
         ]);
-
-// Update price map with data912 results with price persistence
+        
+        // Update price map with adjusted prices
         setPrices(prevPrices => {
           const updated = { ...prevPrices };
           
           Object.keys(batchPrices).forEach(ticker => {
             const newPrice = batchPrices[ticker];
+            const adjustedPrice = adjustBondPrice(ticker, newPrice);
             
-            if (updated[ticker]) {
-              const currentPrice = updated[ticker];
-              
-              // Persistencia: si el nuevo precio es válido (> 0), usar ese
-              // Si es 0 o inválido, mantener el anterior
-              if (newPrice > 0) {
-                const adjustedPrice = adjustBondPrice(ticker, newPrice);
-                
-                updated[ticker] = {
-                  ...currentPrice,
-                  precio: adjustedPrice,
-                  precioRaw: newPrice,
-                  pctChange: batchReturns[ticker] || currentPrice.pctChange,
-                  lastUpdate: Date.now()
-                };
-                
-                // Guardar en localStorage para persistencia
-                try {
-                  localStorage.setItem(`price_${ticker}`, JSON.stringify({
-                    precio: adjustedPrice,
-                    precioRaw: newPrice,
-                    timestamp: Date.now()
-                  }));
-                } catch (e) {
-                  // Ignorar errores de localStorage
-                }
-              }
-              // Si newPrice es 0, no actualizamos - mantenemos el precio anterior
-            }
+            updated[ticker] = {
+              ...updated[ticker],
+              precio: adjustedPrice,
+              precioRaw: newPrice,
+              pctChange: batchReturns[ticker] ?? updated[ticker]?.pctChange,
+              lastUpdate: Date.now(),
+              assetClass: updated[ticker]?.assetClass || getAssetClass(ticker, null),
+              isBonoPesos: isBonoPesos(ticker),
+              isBonoHD: isBonoHardDollar(ticker)
+            };
           });
           
           return updated;
