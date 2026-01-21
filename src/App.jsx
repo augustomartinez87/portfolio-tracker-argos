@@ -15,6 +15,46 @@ import { RecentActivity } from './components/dashboard/RecentActivity';
 import { TradingMetrics } from './components/dashboard/TradingMetrics';
 import logo from './assets/logo.png';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 max-w-md text-center">
+            <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Error inesperado</h2>
+            <p className="text-slate-400 mb-4">Hubo un problema al cargar la página.</p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors"
+            >
+              Recargar página
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Lazy load PositionDetailModal (large component)
 const PositionDetailModal = lazy(() => import('./components/PositionDetailModal'));
 
@@ -882,7 +922,8 @@ const now = new Date();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col">
         <div className="p-4 border-b border-slate-800/50">
@@ -1267,5 +1308,6 @@ const now = new Date();
         />
       </Suspense>
     </div>
+    </ErrorBoundary>
   );
 }
