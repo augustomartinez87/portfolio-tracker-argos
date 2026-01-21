@@ -1,15 +1,6 @@
 // src/utils/formatters.js
 export const formatARS = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  
-  if (Math.abs(value) >= 1000000) {
-    const formatted = new Intl.NumberFormat('es-AR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value / 1000000);
-    return `$ ${formatted}M`;
-  }
-  
   const formatted = new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -19,15 +10,6 @@ export const formatARS = (value) => {
 
 export const formatUSD = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  
-  if (Math.abs(value) >= 1000000) {
-    const formatted = new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value / 1000000);
-    return `US$ ${formatted}M`;
-  }
-  
   const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2

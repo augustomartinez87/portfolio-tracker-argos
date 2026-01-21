@@ -92,14 +92,14 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
 
   if (!trades || trades.length === 0) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50">
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-5 border border-slate-700/50 mb-6">
         <p className="text-slate-400 text-center">Agregá trades para ver la evolución de tu cartera</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm mb-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg border border-blue-500/30">

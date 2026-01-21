@@ -154,14 +154,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                         : formatARS(pos.precioActual)
                     }
                   </td>
-                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell whitespace-nowrap">
+                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-xs hidden lg:table-cell whitespace-nowrap">
                     {formatARS(pos.costoTotal)}
                   </td>
-                  <td className="text-right px-4 py-3 text-white font-mono whitespace-nowrap overflow-visible">
+                  <td className="text-right px-4 py-3 text-white font-mono text-sm whitespace-nowrap">
                     {formatARS(pos.valuacionActual)}
                   </td>
                   <td className="text-right px-4 py-3 whitespace-nowrap">
-                    <span className={`font-mono ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-mono text-sm ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultado)}
                     </span>
                   </td>
@@ -175,7 +175,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 whitespace-nowrap">
-                    <span className={`font-mono ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-mono text-sm ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
                     </span>
                   </td>
