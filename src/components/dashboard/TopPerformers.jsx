@@ -12,22 +12,23 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
 
     const performanceData = positions.map(pos => {
       const currentPrice = prices[pos.ticker]?.precio || pos.precioActual;
-      const performance = pos.precioPromedio > 0 
-        ? ((currentPrice - pos.precioPromedio) / pos.precioPromedio) * 100 
+      const performance = pos.precioPromedio > 0
+        ? ((currentPrice - pos.precioPromedio) / pos.precioPromedio) * 100
         : 0;
-      
+
       return {
         ticker: pos.ticker,
         category: pos.assetClass,
         performance,
         price: currentPrice,
         quantity: pos.cantidadTotal,
-        valuacion: pos.valuacionActual
+        valuacion: pos.valuacionActual,
+        avgPrice: pos.precioPromedio
       };
     });
 
     const sorted = [...performanceData].sort((a, b) => b.performance - a.performance);
-    
+
     return {
       gainers: sorted.filter(p => p.performance > 0).slice(0, maxItems),
       losers: sorted.filter(p => p.performance < 0).reverse().slice(0, maxItems)
@@ -90,10 +91,13 @@ function PerformerItem({
   variant,
   rank,
   price,
-  quantity
+  quantity,
+  avgPrice
 }) {
   const isGainer = variant === 'gainer';
   const valuacion = price * quantity;
+  const costo = avgPrice * quantity;
+  const pnl = valuacion - costo;
 
   return (
     <div className="flex items-center gap-2 p-2 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all group">
@@ -119,8 +123,11 @@ function PerformerItem({
         )}>
           {isGainer ? '+' : ''}{performance.toFixed(2)}%
         </div>
-        <div className="text-xs text-success font-mono font-semibold">
-          {formatARS(valuacion)}
+        <div className={clsx(
+          'text-xs font-mono font-semibold',
+          isGainer ? 'text-success' : 'text-danger'
+        )}>
+          {isGainer ? '+' : ''}{formatARS(pnl)}
         </div>
       </div>
     </div>
