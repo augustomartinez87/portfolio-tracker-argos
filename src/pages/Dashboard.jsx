@@ -58,7 +58,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Lazy load PositionDetailModal (large component)
-const PositionDetailModal = lazy(() => import('./components/PositionDetailModal'));
+const PositionDetailModal = lazy(() => import('../components/PositionDetailModal'));
 
 // Loading fallback for lazy components
 const LoadingFallback = () => (
