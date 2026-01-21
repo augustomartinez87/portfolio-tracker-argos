@@ -104,9 +104,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
               <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Result. Total" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Result. Diario" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">
-                % Diario
-              </th>
+              <SortHeader label="% Diario" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
@@ -180,7 +178,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                       {formatARS(pos.resultadoDiario || 0)}
                     </div>
                   </td>
-                  <td className="text-right px-4 py-3 hidden lg:table-cell">
+                  <td className="text-right px-4 py-3 hidden md:table-cell">
                     <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                       pos.resultadoDiarioPct >= 0 
                         ? 'bg-emerald-500/20 text-emerald-400' 
@@ -231,7 +229,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     );
                   })()}
                 </td>
-                <td className="text-right px-4 py-4 hidden lg:table-cell">
+                <td className="text-right px-4 py-4 hidden md:table-cell">
                   {(() => {
                     const totalValuation = sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0);
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiarioUSD, 0);
