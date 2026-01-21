@@ -486,6 +486,55 @@ export default function PortfolioTracker() {
         console.warn('Could not fetch arg_cedears:', e);
       }
 
+      // Fetch from /live/arg_bonds (peso bonds like TTD26, T15E7, etc.)
+      try {
+        const bondsResponse = await fetch('https://data912.com/live/arg_bonds', {
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!bondsResponse.ok) throw new Error('Failed to fetch arg_bonds');
+        const bondsData = await bondsResponse.json();
+
+        bondsData.forEach(item => {
+          const ticker = item.symbol;
+          
+          // Skip D and C versions
+          if (ticker.endsWith('D') || ticker.endsWith('C')) return;
+
+          // Only process if not already in priceMap
+          if (!priceMap[ticker]) {
+            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+            const assetClass = getAssetClass(ticker, 'bonds');
+            const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+
+            priceMap[ticker] = {
+              precio: adjustedPrice,
+              precioRaw: rawPrice,
+              bid: item.px_bid,
+              ask: item.px_ask,
+              close: item.c,
+              panel: 'bonds',
+              assetClass,
+              pctChange: item.pct_change,
+              isBonoPesos: isBonoPesos(ticker),
+              isBonoHD: isBonoHardDollar(ticker)
+            };
+
+            tickerList.push({
+              ticker,
+              panel: 'bonds',
+              assetClass
+            });
+          } else {
+            // Update pct_change if available
+            if (item.pct_change !== null && item.pct_change !== undefined) {
+              priceMap[ticker].pctChange = item.pct_change;
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Could not fetch arg_bonds:', e);
+      }
+
 const now = new Date();
       setPrices(priceMap);
       setTickers(tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)));
