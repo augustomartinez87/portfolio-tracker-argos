@@ -8,7 +8,7 @@ const RATE_WINDOW = 60000;
 const RETRY_MAX_ATTEMPTS = 3;
 const RETRY_BASE_DELAY = 1000;
 
-const KNOWN_CEDEARS = ['AAPL','GOOGL','MSFT','TSLA','AMZN','META','NVDA','KO','DIS','INTC','CSCO','IBM','QCOM','AMD','PYPL','V','JPM','UNH','MA','PG','HD','NFLX','ADBE','CRM','ABNB','COST'];
+const KNOWN_CEDEARS = ['AAPL','GOOGL','MSFT','TSLA','AMZN','META','NVDA','KO','DIS','INTC','CSCO','IBM','QCOM','AMD','PYPL','V','JPM','UNH','MA','PG','HD','NFLX','ADBE','CRM','ABNB','COST','MELI'];
 
 function isCedear(ticker) {
   const upper = ticker.toUpperCase();
