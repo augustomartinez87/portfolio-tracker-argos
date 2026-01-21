@@ -19,7 +19,7 @@ export const DistributionChart = ({ positions }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-2xl">
+        <div className="bg-slate-800 border border-slate-700 rounded-custom p-3 shadow-2xl">
           <p className="text-white font-semibold text-sm mb-1">{data.name}</p>
           <p className="text-slate-300 text-sm">{formatCurrency(data.value)}</p>
           <p className="text-emerald-400 font-medium text-sm">{formatPercentage(data.percentage)}</p>
@@ -38,7 +38,7 @@ export const DistributionChart = ({ positions }) => {
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-lg border border-emerald-500/30">
+          <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-custom border border-emerald-500/30">
             <PieChartIcon className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
@@ -50,7 +50,7 @@ export const DistributionChart = ({ positions }) => {
         </div>
         
         {portfolioChange !== 0 && (
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-custom border ${
             portfolioChange >= 0 
               ? 'bg-emerald-500/10 border-emerald-500/30' 
               : 'bg-red-500/10 border-red-500/30'
@@ -120,7 +120,7 @@ export const DistributionChart = ({ positions }) => {
         {distribution.map((item, index) => (
           <div
             key={index}
-            className="flex justify-between items-center py-1.5 px-3 rounded-lg bg-slate-800/50 border border-slate-700/30"
+            className="flex justify-between items-center py-1.5 px-3 rounded-custom bg-slate-800/50 border border-slate-700/30"
           >
             <div className="flex items-center gap-2">
               <div
