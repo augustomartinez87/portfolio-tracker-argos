@@ -89,7 +89,10 @@ export const useBondPrices = () => {
           timestamp: Date.now()
         }));
       } catch (e) {
-        // Ignorar errores de localStorage
+        if (e.name === 'QuotaExceededError') {
+          console.warn('LocalStorage full, clearing old prices...');
+          this.clearOldPrices?.();
+        }
       }
     }
   }, []);

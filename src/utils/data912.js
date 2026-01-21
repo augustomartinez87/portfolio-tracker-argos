@@ -104,6 +104,27 @@ class Data912Helper {
     }
   }
 
+  // Safe setItem con manejo de quota excedida
+  safeSetItem(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
+        this.handleQuotaExceeded();
+      }
+      return false;
+    }
+  }
+
+  // Limpiar cache cuando se excede quota
+  handleQuotaExceeded() {
+    console.warn('LocalStorage quota exceeded, clearing cached prices...');
+    Object.keys(localStorage)
+      .filter(key => key.startsWith(CACHE_PREFIX) || key.startsWith('price_'))
+      .forEach(key => localStorage.removeItem(key));
+  }
+
   // Clear cache for bonds only
   clearBondCache() {
     Object.keys(localStorage)
