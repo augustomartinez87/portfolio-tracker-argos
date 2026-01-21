@@ -1153,7 +1153,7 @@ const now = new Date();
                 <DistributionChart positions={positions} />
               </div>
               <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <PortfolioEvolutionChart trades={trades} />
+                <PortfolioEvolutionChart trades={trades} prices={prices} />
               </div>
             </div>
 
