@@ -94,12 +94,12 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
         onFocus={() => setIsOpen(true)}
         disabled={disabled}
         placeholder="Buscar ticker..."
-        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-custom text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
       />
       {isOpen && filteredTickers.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-slate-800 border border-slate-600 rounded-lg shadow-2xl"
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-slate-800 border border-slate-600 rounded-custom shadow-2xl"
         >
           {filteredTickers.map((ticker) => (
             <button
@@ -178,7 +178,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               type="date"
               value={formData.fecha}
               onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-custom text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
               required
             />
           </div>
@@ -222,7 +222,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
           </div>
 
           {(isBonoPesos(formData.ticker) || isBonoHardDollar(formData.ticker)) && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-custom p-3">
               <p className="text-amber-400 text-xs">
                 {isBonoPesos(formData.ticker)
                   ? '💡 Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
@@ -235,13 +235,13 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors font-semibold"
+              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-custom hover:bg-emerald-500 transition-colors font-semibold"
             >
               {trade ? 'Guardar' : 'Agregar'}
             </button>
@@ -880,7 +880,7 @@ const now = new Date();
         <nav className="flex-1 p-4 space-y-2">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
               activeTab === 'dashboard'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -891,7 +891,7 @@ const now = new Date();
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
               activeTab === 'trades'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -910,14 +910,14 @@ const now = new Date();
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
           <button
             onClick={() => {}}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-slate-800 text-slate-400 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
           >
             <LogOut className="w-4 h-4" />
             Log Out
