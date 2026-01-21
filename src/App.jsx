@@ -295,7 +295,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
 // MAIN APP COMPONENT
 // ============================================
 
-export default function PortfolioTracker() {
+export default function ArgosCapital() {
   const [trades, setTrades] = useLocalStorage('portfolio-trades-v3', []);
   const [prices, setPrices] = useLocalStorage('portfolio-prices-v3', {});
   const [tickers, setTickers] = useState([]);
@@ -933,7 +933,7 @@ const now = new Date();
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                 <Zap className="w-6 h-6 text-emerald-400" />
-                Portfolio Tracker
+                Argos Capital
               </h1>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                 <span className="text-sm text-slate-400">
@@ -1238,7 +1238,7 @@ const now = new Date();
       <footer className="border-t border-slate-800/50 py-4 mt-8">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
           <span>Datos: data912.com</span>
-          <span>Portfolio Tracker v3.0 - Ajuste bonos ÷1000</span>
+          <span>Argos Capital v3.0 - Ajuste bonos ÷100</span>
         </div>
       </footer>
 
