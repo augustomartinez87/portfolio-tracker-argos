@@ -27,15 +27,7 @@ const isBonoPesos = (ticker) => {
   if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
   if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
   if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
-  return false;
-};
-
-const isBonoHardDollar = (ticker) => {
-  if (!ticker) return false;
-  const t = ticker.toUpperCase();
-  if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(t)) return true;
-  if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]$/.test(t)) return true;
-  if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
+  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
   return false;
 };
 
@@ -298,9 +290,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               <p className="text-white font-mono text-lg font-semibold">
                 {isBonoPesos(position.ticker)
                   ? `$${position.precioPromedio.toFixed(4)}`
-                  : isBonoHardDollar(position.ticker)
-                    ? `$${(position.precioPromedio / 100).toFixed(2)}`
-                    : formatCurrency(position.precioPromedio)
+                  : formatCurrency(position.precioPromedio)
                 }
               </p>
             </div>
@@ -310,9 +300,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               <p className="text-white font-mono text-lg font-bold">
                 {isBonoPesos(position.ticker)
                   ? `$${position.precioActual.toFixed(4)}`
-                  : isBonoHardDollar(position.ticker)
-                    ? `$${(position.precioActual / 100).toFixed(2)}`
-                    : formatCurrency(position.precioActual)
+                  : formatCurrency(position.precioActual)
                 }
               </p>
             </div>

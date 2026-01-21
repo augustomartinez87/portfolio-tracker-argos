@@ -141,7 +141,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     {isBonoPesos(pos.ticker) 
                       ? `$${pos.precioPromedio.toFixed(4)}` 
                       : isBonoHardDollar(pos.ticker)
-                        ? `$${(pos.precioPromedio / 100).toFixed(2)}`
+                        ? `$${((pos.precioPromedio / 100) * mepRate).toFixed(2)}`
                         : formatARS(pos.precioPromedio)
                     }
                   </td>
@@ -149,11 +149,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     {isBonoPesos(pos.ticker) 
                       ? `$${pos.precioActual.toFixed(4)}` 
                       : isBonoHardDollar(pos.ticker)
-                        ? `$${(pos.precioActual / 100).toFixed(2)}`
+                        ? `$${((pos.precioActual / 100) * mepRate).toFixed(2)}`
                         : formatARS(pos.precioActual)
                     }
                   </td>
-                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                   <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
                     {pos.isBonoHD 
                       ? formatUSD(pos.costoTotal)
                       : formatARS(pos.costoTotal)
