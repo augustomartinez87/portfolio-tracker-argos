@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap, DollarSign, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, Zap, DollarSign, BarChart3, ArrowUp, ArrowDown } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
@@ -8,6 +8,7 @@ import { parseARSNumber, parseDateDMY } from './utils/parsers';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import DistributionChart from './components/DistributionChart';
 import SummaryCard from './components/common/SummaryCard';
+import PositionsTable from './components/dashboard/PositionsTable';
 
 // Lazy load PositionDetailModal (large component)
 const PositionDetailModal = lazy(() => import('./components/PositionDetailModal'));
@@ -310,6 +311,7 @@ export default function PortfolioTracker() {
   const [deletingTrade, setDeletingTrade] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
+  const [positionsSort, setPositionsSort] = useState({ key: 'valuacionActual', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [lastValidPrices, setLastValidPrices] = useState({});
@@ -1035,140 +1037,14 @@ const now = new Date();
             </div>
 
 {/* Positions Table */}
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
-              <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white">Posiciones</h3>
-                <span className="text-sm text-slate-400">{positions.length} activos</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1200px]">
-                  <thead>
-                    <tr className="bg-slate-900/50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticker</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Cant.</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">P. Prom.</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">P. Actual</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Invertido</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Valuación</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Result. Total</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Result. Diario</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/30">
-                    {positions.map((pos) => (
-                      <React.Fragment key={pos.ticker}>
-                        <tr
-                          className="hover:bg-slate-700/20 transition-colors cursor-pointer"
-                          onClick={() => handleOpenPositionDetail(pos)}
-                        >
-                          <td className="px-4 py-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-white font-mono">{pos.ticker}</span>
-{pos.pctChange !== null && pos.pctChange !== undefined && (
-                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                                    pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                                  }`}>
-                                    {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
-                                  </span>
-                                )}
-                                {prices[pos.ticker]?.isStale && (
-                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-1">
-                                    ⚠️
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-xs text-slate-500">{pos.assetClass}</span>
-                            </div>
-                          </td>
-                          <td className="text-right px-4 py-3 text-slate-300 font-mono hidden sm:table-cell">
-                            {formatNumber(pos.cantidadTotal)}
-                          </td>
-                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
-                            {isBonoPesos(pos.ticker) 
-                              ? `$${pos.precioPromedio.toFixed(4)}` 
-                              : formatARS(pos.precioPromedio)
-                            }
-                          </td>
-                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {isBonoPesos(pos.ticker) 
-                              ? `$${pos.precioActual.toFixed(4)}` 
-                              : formatARS(pos.precioActual)
-                            }
-                          </td>
-                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
-                            {formatARS(pos.costoTotal)}
-                          </td>
-                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                            {formatARS(pos.valuacionActual)}
-                          </td>
-                          <td className="text-right px-4 py-3 hidden xl:table-cell">
-                            <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {formatARS(pos.resultado)}
-                              <span className="block text-xs opacity-80">
-                                {formatPercent(pos.resultadoPct)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="text-right px-4 py-3">
-                            <div className={`font-mono font-medium ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {formatARS(pos.resultadoDiario || 0)}
-                              <span className="block text-xs opacity-80">
-                                {formatPercent(pos.resultadoDiarioPct || 0)}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                    {positions.length > 0 && (
-                      <tr className="bg-slate-900/80 border-t-2 border-emerald-500/30">
-                        <td className="px-4 py-4 text-left">
-                          <span className="font-bold text-emerald-400 uppercase tracking-wide text-sm">TOTAL PORTFOLIO</span>
-                        </td>
-                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden sm:table-cell">
-                          -
-                        </td>
-                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden md:table-cell">
-                          -
-                        </td>
-                        <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm">
-                          -
-                        </td>
-                        <td className="text-right px-4 py-4 text-white font-mono font-bold text-base hidden lg:table-cell">
-                          {formatARS(totals.invertido)}
-                        </td>
-                        <td className="text-right px-4 py-4 text-white font-mono font-bold text-base">
-                          {formatARS(totals.valuacion)}
-                        </td>
-                        <td className="text-right px-4 py-4 hidden xl:table-cell">
-                          <div className={`font-mono font-bold text-base ${totals.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {formatARS(totals.resultado)}
-                            <span className="block text-xs opacity-90 font-semibold">
-                              {formatPercent(totals.resultadoPct)}
-                            </span>
-                          </div>
-</td>
-                        <td className="text-right px-4 py-4">
-                          <div className={`font-mono font-bold text-base ${totals.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {formatARS(totals.resultadoDiario)}
-                            <span className="block text-xs opacity-90 font-semibold">
-                              {formatPercent(totals.resultadoDiarioPct)}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                {positions.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-slate-400 mb-2">No hay posiciones</p>
-                    <p className="text-slate-500 text-sm">Importá tus trades desde Google Sheets o agregalos manualmente</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <PositionsTable 
+              positions={positions} 
+              onRowClick={handleOpenPositionDetail}
+              prices={prices}
+              mepRate={mepRate}
+              sortConfig={positionsSort}
+              onSortChange={setPositionsSort}
+            />
           </>
         ) : (
           <>
