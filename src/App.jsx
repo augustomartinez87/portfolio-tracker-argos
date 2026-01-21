@@ -1120,10 +1120,9 @@ const now = new Date();
                 <div className="relative">
                   <button
                     onClick={() => setShowFormatHelp(!showFormatHelp)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 text-slate-300 rounded-custom hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
+                    className="flex items-center justify-center w-9 h-9 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600"
                   >
                     <HelpCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Formato</span>
                   </button>
                   {showFormatHelp && (
                     <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-custom p-4 border border-slate-700 shadow-xl">
