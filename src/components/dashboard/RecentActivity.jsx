@@ -22,19 +22,22 @@ export function RecentActivity({ trades, maxItems = 3 }) {
     return [...recentTrades].sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
   }, [trades]);
 
+  // Mostrar todos los trades filtrados (el scroll del container los limita visualmente)
+  const displayTrades = sortedTrades;
+
   return (
-    <Card noPadding className="overflow-hidden !max-h-[380px]">
-      <div className="p-3 h-full flex flex-col">
+    <Card noPadding className="overflow-hidden" style={{ maxHeight: '280px' }}>
+      <div className="p-3 flex flex-col" style={{ height: '280px' }}>
         <div className="flex items-center justify-between mb-3 flex-shrink-0">
           <h3 className="text-sm font-bold text-white">Actividad</h3>
           <Clock className="w-4 h-4 text-slate-400" />
         </div>
 
         <div className="space-y-1.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-          {sortedTrades.length === 0 ? (
+          {displayTrades.length === 0 ? (
             <p className="text-slate-500 text-xs text-center py-2">Sin operaciones (últ. 3 meses)</p>
           ) : (
-            sortedTrades.map((trade) => (
+            displayTrades.map((trade) => (
               <TradeItem key={trade.id} trade={trade} />
             ))
           )}
