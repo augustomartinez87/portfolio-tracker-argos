@@ -870,13 +870,14 @@ const now = new Date();
 
   // Sorted trades for the trades tab
   const sortedTrades = useMemo(() => {
+    if (!Array.isArray(trades) || trades.length === 0) return [];
     const sorted = [...trades].sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
       if (sortConfig.key === 'fecha') {
-        aVal = new Date(aVal);
-        bVal = new Date(bVal);
+        aVal = aVal ? new Date(aVal) : new Date();
+        bVal = bVal ? new Date(bVal) : new Date();
       }
 
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -996,15 +997,14 @@ const now = new Date();
                 isLoading={isPricesLoading}
               />
               <SummaryCard
-                title="Valuación Actual"
-                value={formatARS(totals.valuacion)}
-                subValue={formatUSD(totals.valuacionUSD)}
-                icon={TrendingUp}
-                trend={totals.resultado}
-                dailyChange={totals.resultadoDiario}
-                isLoading={isPricesLoading}
-                highlight
-              />
+                  title="Valuación Actual"
+                  value={formatARS(totals.valuacion)}
+                  subValue={formatUSD(totals.valuacionUSD)}
+                  icon={TrendingUp}
+                  trend={totals.resultado}
+                  isLoading={isPricesLoading}
+                  highlight
+                />
               <SummaryCard
                 title="Resultado Total"
                 value={formatARS(totals.resultado)}

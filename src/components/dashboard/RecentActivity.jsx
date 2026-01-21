@@ -6,9 +6,11 @@ import { clsx } from 'clsx';
 import { formatNumber } from '../../utils/formatters';
 
 export function RecentActivity({ trades, maxItems = 5 }) {
-  const sortedTrades = [...trades]
-    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-    .slice(0, maxItems);
+  const sortedTrades = Array.isArray(trades)
+    ? [...trades]
+        .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
+        .slice(0, maxItems)
+    : [];
 
   return (
     <Card>
