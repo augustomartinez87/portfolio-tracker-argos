@@ -139,31 +139,25 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </td>
                   <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
                     {isBonoPesos(pos.ticker) 
-                      ? `$${pos.precioPromedio.toFixed(4)}` 
+                      ? `$${pos.precioPromedio.toFixed(2)}` 
                       : isBonoHardDollar(pos.ticker)
-                        ? `$${((pos.precioPromedio / 100) * mepRate).toFixed(2)}`
+                        ? `$${(pos.precioPromedio / 100).toFixed(2)}`
                         : formatARS(pos.precioPromedio)
                     }
                   </td>
                   <td className="text-right px-4 py-3 text-white font-mono font-medium">
                     {isBonoPesos(pos.ticker) 
-                      ? `$${pos.precioActual.toFixed(4)}` 
+                      ? `$${pos.precioActual.toFixed(2)}` 
                       : isBonoHardDollar(pos.ticker)
-                        ? `$${((pos.precioActual / 100) * mepRate).toFixed(2)}`
+                        ? `$${(pos.precioActual / 100).toFixed(2)}`
                         : formatARS(pos.precioActual)
                     }
                   </td>
-                   <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
-                    {pos.isBonoHD 
-                      ? formatUSD(pos.costoTotal)
-                      : formatARS(pos.costoTotal)
-                    }
+                  <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden lg:table-cell">
+                    {formatARS(pos.costoTotal)}
                   </td>
                   <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                    {pos.isBonoHD 
-                      ? formatUSD(pos.valuacionActual)
-                      : formatARS(pos.valuacionActual)
-                    }
+                    {formatARS(pos.valuacionActual)}
                   </td>
                   <td className="text-right px-4 py-3 hidden xl:table-cell">
                     <div className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
