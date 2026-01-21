@@ -38,13 +38,13 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
     <Card noPadding className="overflow-hidden h-full">
       <div className="grid grid-cols-2 divide-x divide-slate-700 h-full">
         <div className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-white">Top Gainers</h3>
-            <TrendingUp className="w-3 h-3 text-success" />
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">Top Gainers</h3>
+            <TrendingUp className="w-4 h-4 text-success" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {gainers.length === 0 ? (
-              <p className="text-slate-500 text-[10px] text-center py-1">Sin ganancias</p>
+              <p className="text-slate-500 text-xs text-center py-2">Sin ganancias</p>
             ) : (
               gainers.map((gainer, index) => (
                 <PerformerItem
@@ -59,13 +59,13 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
         </div>
 
         <div className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-white">Top Laggards</h3>
-            <TrendingDown className="w-3 h-3 text-danger" />
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">Top Laggards</h3>
+            <TrendingDown className="w-4 h-4 text-danger" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {losers.length === 0 ? (
-              <p className="text-slate-500 text-[10px] text-center py-1">Sin pérdidas</p>
+              <p className="text-slate-500 text-xs text-center py-2">Sin pérdidas</p>
             ) : (
               losers.map((loser, index) => (
                 <PerformerItem
@@ -94,12 +94,11 @@ function PerformerItem({
 }) {
   const isGainer = variant === 'gainer';
   const valuacion = price * quantity;
-  const dailyChange = 0; // Placeholder para pct_change diario
 
   return (
-    <div className="flex items-center gap-1.5 p-1.5 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all group">
+    <div className="flex items-center gap-2 p-2 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all group">
       <div className={clsx(
-        'flex items-center justify-center w-5 h-5 rounded font-mono font-bold text-[10px]',
+        'flex items-center justify-center w-6 h-6 rounded font-mono font-bold text-xs flex-shrink-0',
         isGainer ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
       )}>
         {rank}
@@ -107,17 +106,20 @@ function PerformerItem({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
-          <span className="font-mono text-xs text-white font-medium truncate">
+          <span className="font-mono text-sm text-white font-semibold truncate">
             {ticker}
           </span>
         </div>
+      </div>
+
+      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
         <div className={clsx(
-          'text-[10px] font-mono font-semibold',
+          'text-sm font-mono font-bold',
           isGainer ? 'text-success' : 'text-danger'
         )}>
           {isGainer ? '+' : ''}{performance.toFixed(2)}%
         </div>
-        <div className="text-[9px] text-slate-500 font-mono flex items-center gap-1">
+        <div className="text-xs text-success font-mono font-semibold">
           {formatARS(valuacion)}
         </div>
       </div>
