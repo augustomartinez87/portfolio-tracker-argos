@@ -4,20 +4,25 @@ import { useState, useCallback } from 'react';
 export const isBonoPesos = (ticker) => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
+  // Patrones T: T15E7, TTD26, TX26, T30J7, etc.
   if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;
+  // Patrones S: S31E5, S24DD, etc.
   if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
+  // Bonos pesos específicos: DICP, PARP, CUAP, TO26, etc.
   if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
+  // TTD/TTS son siempre pesos
   if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
+  // AL35, AE38, AN29, CO26, GD35, GD38, GD41, GD46 son BONOS PESOS (sin sufijo D/C)
+  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
   return false;
 };
 
 export const isBonoHardDollar = (ticker) => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
-  // Patrones de bonos hard dollar: AL30, GD30, AE38, AN26, CO26, etc.
-  // También incluye variantes con D o C al final (versión dólar/cable)
-  if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]?$/.test(t)) return true;
-  // Bonos específicos conocidos
+  // Bonos hard dollar: AL30, GD30, AE38D, AN29D, CO26D, etc. (CON sufijo D o C)
+  if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]$/.test(t)) return true;
+  // Bonos específicos hard dollar conocidos
   if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
   return false;
 };
