@@ -10,8 +10,8 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
     <div className={`bg-slate-800/95 rounded-custom p-5 border transition-all duration-300 hover:shadow-lg ${
       highlight ? 'border-primary/50 shadow-primary/20 ring-1 ring-primary/30' : 'border-slate-700/50 hover:border-slate-600'
     }`}>
-      <div className="flex flex-col items-center text-center">
-        <p className="text-slate-400 text-sm font-medium mb-2">{title}</p>
+      <div className="flex flex-col items-center justify-center h-full text-center min-h-[120px]">
+        <p className="text-slate-400 text-sm font-medium mb-3">{title}</p>
         {isLoading ? (
           <div className="space-y-2 w-full">
             <div className="h-8 bg-slate-700 animate-pulse rounded w-3/4 mx-auto"></div>
@@ -32,7 +32,7 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
       </div>
       
       {dailyChange !== undefined && dailyChange !== 0 && (
-        <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-end">
+        <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-end absolute bottom-4 left-4 right-4">
           <span className="text-xs text-slate-500">P&L del día:</span>
           <span className={`text-sm font-mono font-semibold ${
             dailyChange >= 0 ? 'text-success' : 'text-danger'
