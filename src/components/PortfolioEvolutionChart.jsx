@@ -110,32 +110,54 @@ export default function PortfolioEvolutionChart({ trades }) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - selectedDays);
         
-        console.log('Fetching SPY from', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
+        const url = `https://data912.com/historical/stocks/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
+        console.log('Fetching SPY:', url);
         
-        const response = await fetch(
-          `https://data912.com/historical/stocks/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`
-        );
-        
+        const response = await fetch(url);
         console.log('SPY response status:', response.status);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('SPY data received:', data.length, 'records');
-          
-          const spyPrices = {};
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const text = await response.text();
+        console.log('SPY response text (first 500 chars):', text.substring(0, 500));
+        
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error('Invalid JSON response');
+        }
+        
+        console.log('SPY parsed data type:', typeof data, Array.isArray(data) ? '(array)' : '');
+        console.log('SPY data length:', data?.length);
+        
+        const spyPrices = {};
+        
+        if (Array.isArray(data)) {
           data.forEach(item => {
-            if (item.date) {
-              spyPrices[item.date] = item.close || item.c || item.price;
+            if (item && item.date) {
+              spyPrices[item.date] = item.close || item.c || item.price || item.px || 0;
             }
           });
-          console.log('SPY prices mapped:', Object.keys(spyPrices).length);
-          setSpyData(spyPrices);
-        } else {
-          setSpyError('No se pudo cargar SPY');
+        } else if (data && typeof data === 'object') {
+          Object.entries(data).forEach(([date, value]) => {
+            if (date && value) {
+              spyPrices[date] = Number(value) || 0;
+            }
+          });
         }
+        
+        console.log('SPY prices mapped:', Object.keys(spyPrices).length);
+        if (Object.keys(spyPrices).length > 0) {
+          console.log('First SPY price date:', Object.keys(spyPrices)[0]);
+        }
+        
+        setSpyData(spyPrices);
       } catch (e) {
         console.warn('Could not fetch SPY data:', e);
-        setSpyError(e.message);
+        setSpyError(e.message || 'Error desconocido');
       } finally {
         setLoading(false);
       }
@@ -204,18 +226,18 @@ export default function PortfolioEvolutionChart({ trades }) {
     
     const { diff, lastChange, lastSpyChange } = stats;
     
-    if (lastSpyChange === 0) return null;
+    if (lastSpyChange === 0 && diff === 0) return null;
     
     if (diff > 0) {
       return {
-        text: `Estás ganando al SPY por ${formatPercentValue(diff)}`,
+        text: `Estás beating al SPY por ${formatPercentValue(diff)}`,
         icon: TrendingUp,
         color: 'text-success',
         bg: 'bg-success/10 border-success/30'
       };
     } else {
       return {
-        text: `Estás perdiendo contra SPY por ${formatPercentValue(Math.abs(diff))}`,
+        text: `Estás under contra SPY por ${formatPercentValue(Math.abs(diff))}`,
         icon: TrendingDown,
         color: 'text-danger',
         bg: 'bg-danger/10 border-danger/30'
@@ -239,7 +261,7 @@ export default function PortfolioEvolutionChart({ trades }) {
             <BarChart2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Evolución vs SPY</h3>
+            <h3 className="text-sm font-bold text-white">Mi Cartera vs SPY</h3>
             <p className="text-xs text-slate-500">Retorno porcentual</p>
           </div>
         </div>
@@ -323,7 +345,7 @@ export default function PortfolioEvolutionChart({ trades }) {
                 <Line
                   type="monotone"
                   dataKey="portfolioChange"
-                  name="Portfolio"
+                  name="Cartera"
                   stroke="#10B981"
                   strokeWidth={2}
                   dot={false}
@@ -350,7 +372,7 @@ export default function PortfolioEvolutionChart({ trades }) {
             <div className="space-y-3 mt-3 pt-3 border-t border-slate-700/50 flex-shrink-0">
               <div className="flex items-center justify-center gap-6">
                 <div className="text-center">
-                  <p className="text-xs text-slate-500">Portfolio</p>
+                  <p className="text-xs text-slate-500">Cartera</p>
                   <p className={`text-sm font-mono font-semibold ${stats.lastChange >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatPercentValue(stats.lastChange)}
                   </p>
