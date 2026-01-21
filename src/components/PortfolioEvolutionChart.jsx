@@ -134,6 +134,12 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [loading, setLoading] = useState(false);
   const [spyError, setSpyError] = useState(null);
 
+  console.log('PortfolioEvolutionChart props:', { 
+    tradesCount: trades?.length, 
+    pricesKeys: Object.keys(prices || {}).length,
+    samplePrices: Object.keys(prices || {}).slice(0, 5)
+  });
+
   const portfolioReturn = useMemo(() => {
     const result = calculatePortfolioReturn(trades, prices);
     console.log('PortfolioReturn memo:', result);
@@ -181,7 +187,8 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
           data.forEach(item => {
             if (item && item.date) {
               const cleanDate = item.date.split('T')[0];
-              spyPrices[cleanDate] = item.close || item.c || item.price || item.px || 0;
+              // El API devuelve: o, h, l, c, v, dr, sa (c es el cierre)
+              spyPrices[cleanDate] = item.c || item.close || 0;
             }
           });
         } else if (data && typeof data === 'object') {
