@@ -12,15 +12,18 @@ export const isBonoPesos = (ticker) => {
   if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
   // TTD/TTS son siempre pesos
   if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
-  // AL35, AE38, AN29, CO26, GD35, GD38, GD41, GD46 son BONOS PESOS (sin sufijo D/C)
-  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
+  // NOTA: AL30, AE38, GD30, etc. son BONOS HD (hard dollar), NO bonos pesos
+  // Los bonos pesos son los que tienen valor nominal en pesos argentinos
   return false;
 };
 
 export const isBonoHardDollar = (ticker) => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
-  // Bonos hard dollar: AL30, GD30, AE38D, AN29D, CO26D, etc. (CON sufijo D o C)
+  // Bonos hard dollar: AL30, GD30, AE38, AN29, CO26, etc. (CON o SIN sufijo D/C)
+  // Estos tienen valor nominal en dólares estadounidenses
+  if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(t)) return true;
+  // Bonos hard dollar con sufijo: AL30D, GD30D, AE38D, etc.
   if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]$/.test(t)) return true;
   // Bonos específicos hard dollar conocidos
   if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
