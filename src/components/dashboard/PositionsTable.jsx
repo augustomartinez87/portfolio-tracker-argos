@@ -75,7 +75,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-custom border border-slate-700/50 overflow-hidden">
       <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Posiciones</h3>
         <span className="text-sm text-slate-400">{positions.length} activos</span>
@@ -120,14 +120,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-white font-mono">{pos.ticker}</span>
                         {pos.pctChange !== null && pos.pctChange !== undefined && (
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded-custom ${
                             pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                           }`}>
                             {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
                           </span>
                         )}
                         {prices[pos.ticker]?.isStale && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-1">
+                          <span className="text-xs font-medium px-1.5 py-0.5 rounded-custom bg-amber-500/20 text-amber-400 ml-1">
                             ⚠️
                           </span>
                         )}
@@ -166,7 +166,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
-                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${
+                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded-custom ${
                       pos.resultadoPct >= 0 
                         ? 'bg-emerald-500/20 text-emerald-400' 
                         : 'bg-red-500/20 text-red-400'
@@ -180,7 +180,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
-                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${
+                    <span className={`text-sm font-medium px-1.5 py-0.5 rounded-custom ${
                       pos.resultadoDiarioPct >= 0 
                         ? 'bg-emerald-500/20 text-emerald-400' 
                         : 'bg-red-500/20 text-red-400'
@@ -220,8 +220,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
                     const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoTotal, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
-                    return (
-                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                     return (
+                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
                         totalResultPct >= 0 
                           ? 'bg-emerald-500/20 text-emerald-400' 
                           : 'bg-red-500/20 text-red-400'
@@ -247,7 +247,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
                     const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
                     return (
-                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded ${
+                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
                         totalDiarioPct >= 0 
                           ? 'bg-emerald-500/20 text-emerald-400' 
                           : 'bg-red-500/20 text-red-400'
