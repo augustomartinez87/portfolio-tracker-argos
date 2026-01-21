@@ -178,9 +178,12 @@ export default function PortfolioEvolutionChart({ trades }) {
       
       if (filteredHistory.length === 0) return [];
 
-      const firstPrice = filteredHistory[0].avgPrice || 1;
-      const spyKeys = Object.keys(spyData);
-      const firstSpyPrice = spyKeys.length > 0 ? spyData[spyKeys[0]] : null;
+      // Usar el precio de la PRIMERA FECHA del período seleccionado para ambos
+      const firstDayOfPeriod = filteredHistory[0];
+      const firstPrice = firstDayOfPeriod.avgPrice || 1;
+      
+      // Para SPY, usar el precio de la MISMA fecha que la primera compra del período
+      const firstSpyPrice = spyData[firstDayOfPeriod.date];
 
       return filteredHistory.map(day => {
         const spyPrice = spyData[day.date];
