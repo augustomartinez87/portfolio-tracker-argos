@@ -987,55 +987,53 @@ const now = new Date();
         {activeTab === 'dashboard' ? (
           <>
 {/* Summary Cards */}
-            <div className="max-w-5xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <SummaryCard
-                  title="Invertido"
-                  value={formatARS(totals.invertido)}
-                  subValue={formatUSD(totals.invertidoUSD)}
-                  icon={Activity}
-                  isLoading={isPricesLoading}
-                />
-                <SummaryCard
-                  title="Valuación Actual"
-                  value={formatARS(totals.valuacion)}
-                  subValue={formatUSD(totals.valuacionUSD)}
-                  icon={TrendingUp}
-                  trend={totals.resultado}
-                  dailyChange={totals.resultadoDiario}
-                  isLoading={isPricesLoading}
-                  highlight
-                />
-                <SummaryCard
-                  title="Resultado Total"
-                  value={formatARS(totals.resultado)}
-                  subValue={formatPercent(totals.resultadoPct)}
-                  icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
-                  trend={totals.resultado}
-                  isLoading={isPricesLoading}
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <SummaryCard
+                title="Invertido"
+                value={formatARS(totals.invertido)}
+                subValue={formatUSD(totals.invertidoUSD)}
+                icon={Activity}
+                isLoading={isPricesLoading}
+              />
+              <SummaryCard
+                title="Valuación Actual"
+                value={formatARS(totals.valuacion)}
+                subValue={formatUSD(totals.valuacionUSD)}
+                icon={TrendingUp}
+                trend={totals.resultado}
+                dailyChange={totals.resultadoDiario}
+                isLoading={isPricesLoading}
+                highlight
+              />
+              <SummaryCard
+                title="Resultado Total"
+                value={formatARS(totals.resultado)}
+                subValue={formatPercent(totals.resultadoPct)}
+                icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
+                trend={totals.resultado}
+                isLoading={isPricesLoading}
+              />
+            </div>
 
-              {/* Resumen - 4 cards */}
-              <div className="mb-6">
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                      <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Trades</p>
-                      <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
-                      <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Data</p>
-                      <p className="text-slate-300 font-mono text-sm">data912.com</p>
-                    </div>
+            {/* Resumen - 4 cards */}
+            <div className="mb-6">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs mb-1">Posiciones</p>
+                    <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs mb-1">Trades</p>
+                    <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
+                    <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs mb-1">Data</p>
+                    <p className="text-slate-300 font-mono text-sm">data912.com</p>
                   </div>
                 </div>
               </div>

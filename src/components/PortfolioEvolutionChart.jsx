@@ -8,11 +8,15 @@ const formatPercentValue = (value) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
+  if (active && payload && payload.length && label) {
+    const dateObj = new Date(label);
+    if (isNaN(dateObj.getTime())) {
+      return null;
+    }
     return (
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl">
         <p className="text-white font-semibold text-sm mb-2">
-          {new Date(label).toLocaleDateString('es-AR', {
+          {dateObj.toLocaleDateString('es-AR', {
             weekday: 'short',
             year: 'numeric',
             month: 'short',
@@ -121,7 +125,6 @@ export default function PortfolioEvolutionChart({ trades }) {
         }
         
         const text = await response.text();
-        console.log('SPY response text (first 500 chars):', text.substring(0, 500));
         
         let data;
         try {
@@ -130,28 +133,30 @@ export default function PortfolioEvolutionChart({ trades }) {
           throw new Error('Invalid JSON response');
         }
         
-        console.log('SPY parsed data type:', typeof data, Array.isArray(data) ? '(array)' : '');
-        console.log('SPY data length:', data?.length);
+        console.log('SPY data type:', typeof data, Array.isArray(data) ? '(array)' : '(object)');
         
         const spyPrices = {};
         
         if (Array.isArray(data)) {
           data.forEach(item => {
             if (item && item.date) {
-              spyPrices[item.date] = item.close || item.c || item.price || item.px || 0;
+              const cleanDate = item.date.split('T')[0];
+              spyPrices[cleanDate] = item.close || item.c || item.price || item.px || 0;
             }
           });
         } else if (data && typeof data === 'object') {
           Object.entries(data).forEach(([date, value]) => {
-            if (date && value) {
-              spyPrices[date] = Number(value) || 0;
+            if (date && value !== undefined && value !== null) {
+              const cleanDate = date.split('T')[0];
+              spyPrices[cleanDate] = Number(value) || 0;
             }
           });
         }
         
         console.log('SPY prices mapped:', Object.keys(spyPrices).length);
         if (Object.keys(spyPrices).length > 0) {
-          console.log('First SPY price date:', Object.keys(spyPrices)[0]);
+          const dates = Object.keys(spyPrices).sort();
+          console.log('SPY date range:', dates[0], 'to', dates[dates.length - 1]);
         }
         
         setSpyData(spyPrices);
@@ -178,19 +183,18 @@ export default function PortfolioEvolutionChart({ trades }) {
       
       if (filteredHistory.length === 0) return [];
 
-      // Usar el precio de la PRIMERA FECHA del período seleccionado para ambos
       const firstDayOfPeriod = filteredHistory[0];
       const firstPrice = firstDayOfPeriod.avgPrice || 1;
-      
-      // Para SPY, usar el precio de la MISMA fecha que la primera compra del período
       const firstSpyPrice = spyData[firstDayOfPeriod.date];
 
       return filteredHistory.map(day => {
+        if (!day.date) return null;
+        
         const spyPrice = spyData[day.date];
         const spyChange = spyPrice && firstSpyPrice ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100 : null;
         
         return {
-          ...day,
+          date: day.date,
           displayDate: new Date(day.date).toLocaleDateString('es-AR', {
             month: 'short',
             day: 'numeric'
@@ -198,7 +202,7 @@ export default function PortfolioEvolutionChart({ trades }) {
           portfolioChange: firstPrice > 0 ? ((day.avgPrice - firstPrice) / firstPrice) * 100 : 0,
           spyChange
         };
-      });
+      }).filter(Boolean);
     } catch (e) {
       console.error('Error building chart data:', e);
       return [];
@@ -227,20 +231,20 @@ export default function PortfolioEvolutionChart({ trades }) {
   const comparisonMessage = useMemo(() => {
     if (!stats || !showSpy || Object.keys(spyData).length === 0) return null;
     
-    const { diff, lastChange, lastSpyChange } = stats;
+    const { diff } = stats;
     
-    if (lastSpyChange === 0 && diff === 0) return null;
+    if (Math.abs(diff) < 0.01) return null;
     
     if (diff > 0) {
       return {
-        text: `Estás beating al SPY por ${formatPercentValue(diff)}`,
+        text: `Estás beat al SPY por ${formatPercentValue(diff)}`,
         icon: TrendingUp,
         color: 'text-success',
         bg: 'bg-success/10 border-success/30'
       };
     } else {
       return {
-        text: `Estás under contra SPY por ${formatPercentValue(Math.abs(diff))}`,
+        text: `Estás under al SPY por ${formatPercentValue(Math.abs(diff))}`,
         icon: TrendingDown,
         color: 'text-danger',
         bg: 'bg-danger/10 border-danger/30'
