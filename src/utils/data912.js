@@ -46,14 +46,14 @@ function isBonoHardDollar(ticker) {
 
 function getEndpointForTicker(ticker, assetTag) {
   const upper = ticker.toUpperCase();
-  
+
   if (assetTag) {
     if (assetTag.includes('CEDEAR')) return '/live/arg_cedears';
     if (assetTag.includes('BONOS EN PESOS')) return '/live/arg_bonds';
-    if (assetTag.includes('BONOS HD') || assetTag.includes('CORP')) return '/live/arg_corp';
+    if (assetTag.includes('BONO HARD DOLLAR') || assetTag.includes('CORP')) return '/live/arg_corp';
     if (assetTag.includes('ARGY') || assetTag.includes('ACCIONES')) return '/live/arg_stocks';
   }
-  
+
   if (upper.endsWith('.BA')) return '/live/arg_cedears';
   if (KNOWN_CEDEARS.includes(upper)) return '/live/arg_cedears';
   if (upper.includes('MEP')) return '/live/mep';

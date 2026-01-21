@@ -28,12 +28,12 @@ export const isBonoHardDollar = (ticker) => {
 export const getAssetClass = (ticker, panel, isArgStock = false) => {
   if (!ticker) return 'OTROS';
   if (isBonoPesos(ticker)) return 'BONOS PESOS';
-  if (isBonoHardDollar(ticker)) return 'BONOS HD';
-  if (panel === 'bonds') return 'BONOS HD';
-  
+  if (isBonoHardDollar(ticker)) return 'BONO HARD DOLLAR';
+  if (panel === 'bonds') return 'BONO HARD DOLLAR';
+
   const argyTickers = ['GGAL', 'YPFD', 'VIST', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN',
-                       'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA',
-                       'METR', 'TECO2', 'TGNO4', 'HARG', 'CADO', 'MORI', 'SEMI', 'BOLT', 'GARO'];
+                        'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA',
+                        'METR', 'TECO2', 'TGNO4', 'HARG', 'CADO', 'MORI', 'SEMI', 'BOLT', 'GARO'];
   if (isArgStock || argyTickers.includes(ticker.toUpperCase())) return 'ARGY';
   if (panel === 'cedear') return 'CEDEAR';
   return 'CEDEAR';

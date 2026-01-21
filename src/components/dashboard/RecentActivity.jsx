@@ -78,7 +78,7 @@ function TradeItem({ trade }) {
 }
 
 function getAssetClass(ticker) {
-  if (/^(AL30|GD30|AE38|AL29|GD29)$/.test(ticker)) return 'BONOS HD';
+  if (/^(AL30|GD30|AE38|AL29|GD29)$/.test(ticker)) return 'BONO HARD DOLLAR';
   if (/^(TTD26|T15E7|TX26|TX28|S31E5)$/.test(ticker)) return 'BONOS PESOS';
   if (/^[A-Z]{1,5}$/.test(ticker) && ticker.length <= 4) return 'ARGY';
   return 'CEDEAR';

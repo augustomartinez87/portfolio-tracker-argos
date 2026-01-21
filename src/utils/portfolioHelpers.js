@@ -4,7 +4,7 @@
 export const ASSET_CLASS_COLORS = {
   'CEDEAR': '#10b981',      // emerald-500
   'ARGY': '#3b82f6',        // blue-500
-  'BONOS HD': '#f97316',    // orange-500
+  'BONO HARD DOLLAR': '#f97316',    // orange-500
   'BONOS PESOS': '#8b5cf6', // violet-500
   'OTROS': '#6b7280'        // gray-500
 };

@@ -118,7 +118,7 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
   const assetClassColors = {
     'CEDEAR': 'text-emerald-400',
     'ARGY': 'text-blue-400',
-    'BONOS HD': 'text-amber-400',
+    'BONO HARD DOLLAR': 'text-amber-400',
     'BONOS PESOS': 'text-purple-400',
     'OTROS': 'text-slate-400'
   };
