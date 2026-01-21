@@ -218,9 +218,12 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
               </React.Fragment>
             ))}
             {sortedPositions.length > 0 && (
-              <tr className="bg-slate-900/80 border-t-2 border-emerald-500/30">
+              <tr className="bg-gradient-to-r from-primary/10 via-slate-800/90 to-primary/10 border-t-2 border-primary/40">
                 <td className="px-4 py-4 text-left">
-                  <span className="font-bold text-emerald-400 uppercase tracking-wide text-sm">TOTAL PORTFOLIO</span>
+                  <span className="font-bold text-primary uppercase tracking-wider text-sm flex items-center gap-2">
+                    <span className="w-2 h-2 bg-primary rounded-full"></span>
+                    TOTAL PORTFOLIO
+                  </span>
                 </td>
                 <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden sm:table-cell">-</td>
                 <td className="text-right px-4 py-4 text-slate-400 font-mono text-sm hidden md:table-cell">-</td>
@@ -228,7 +231,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 <td className="text-right px-4 py-4 text-white font-mono font-bold text-xs hidden lg:table-cell whitespace-nowrap">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.costoUSD, 0))}
                 </td>
-                <td className="text-right px-4 py-4 text-white font-mono font-bold text-xs whitespace-nowrap">
+                <td className="text-right px-4 py-4 text-white font-mono font-bold text-sm whitespace-nowrap">
                   {formatUSD(sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
                 <td className="text-right px-4 py-4 whitespace-nowrap">
@@ -247,10 +250,10 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoTotal, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
                     return (
-                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
+                      <span className={`font-bold text-sm px-2 py-0.5 rounded-lg ${
                         totalResultPct >= 0 
-                          ? 'bg-success/20 text-success' 
-                          : 'bg-danger/20 text-danger'
+                          ? 'bg-success/20 text-success border border-success/30' 
+                          : 'bg-danger/20 text-danger border border-danger/30'
                       }`}>
                         {formatPercent(totalResultPct)}
                       </span>
@@ -273,10 +276,10 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
                     const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
                     return (
-                      <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
+                      <span className={`font-bold text-sm px-2 py-0.5 rounded-lg ${
                         totalDiarioPct >= 0 
-                          ? 'bg-success/20 text-success' 
-                          : 'bg-danger/20 text-danger'
+                          ? 'bg-success/20 text-success border border-success/30' 
+                          : 'bg-danger/20 text-danger border border-danger/30'
                       }`}>
                         {formatPercent(totalDiarioPct)}
                       </span>

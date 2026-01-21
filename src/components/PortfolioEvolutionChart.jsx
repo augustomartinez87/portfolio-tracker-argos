@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, Calendar, Loader2, BarChart2 } from 'lucide-react';
-import { formatPercent } from '../utils/formatters';
+import { Calendar, Loader2, BarChart2 } from 'lucide-react';
 
 const formatPercentValue = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
@@ -44,49 +43,56 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function PortfolioEvolutionChart({ trades }) {
   const [selectedDays, setSelectedDays] = useState(90);
-  const [spyData, setSpyData] = useState([]);
+  const [spyData, setSpyData] = useState({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const portfolioHistory = useMemo(() => {
-    if (!trades || trades.length === 0) return [];
+    if (!trades || !Array.isArray(trades) || trades.length === 0) return [];
 
-    const sortedTrades = [...trades].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    const firstDate = new Date(sortedTrades[0].fecha);
-    const today = new Date();
-    
-    const days = [];
-    for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
-      days.push(new Date(d).toISOString().split('T')[0]);
+    try {
+      const sortedTrades = [...trades].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      const firstDate = new Date(sortedTrades[0].fecha);
+      const today = new Date();
+      
+      const days = [];
+      for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d).toISOString().split('T')[0]);
+      }
+
+      const portfolioByDate = {};
+      sortedTrades.forEach(trade => {
+        if (!trade || !trade.fecha) return;
+        const tradeDate = trade.fecha;
+        if (!portfolioByDate[tradeDate]) {
+          portfolioByDate[tradeDate] = { cantidad: 0, costoTotal: 0 };
+        }
+        portfolioByDate[tradeDate].cantidad += Number(trade.cantidad) || 0;
+        portfolioByDate[tradeDate].costoTotal += (Number(trade.cantidad) || 0) * (Number(trade.precioCompra) || 0);
+      });
+
+      let totalCantidad = 0;
+      let totalCosto = 0;
+
+      return days.map(date => {
+        if (portfolioByDate[date]) {
+          totalCantidad += portfolioByDate[date].cantidad;
+          totalCosto += portfolioByDate[date].costoTotal;
+        }
+        
+        const avgPrice = totalCantidad > 0 ? totalCosto / totalCantidad : 0;
+        
+        return {
+          date,
+          avgPrice,
+          totalCantidad,
+          totalCosto
+        };
+      });
+    } catch (e) {
+      console.error('Error calculating portfolio history:', e);
+      return [];
     }
-
-    const portfolioByDate = {};
-    sortedTrades.forEach(trade => {
-      const tradeDate = trade.fecha;
-      if (!portfolioByDate[tradeDate]) {
-        portfolioByDate[tradeDate] = { cantidad: 0, costoTotal: 0 };
-      }
-      portfolioByDate[tradeDate].cantidad += trade.cantidad;
-      portfolioByDate[tradeDate].costoTotal += trade.cantidad * trade.precioCompra;
-    });
-
-    let totalCantidad = 0;
-    let totalCosto = 0;
-
-    return days.map(date => {
-      if (portfolioByDate[date]) {
-        totalCantidad += portfolioByDate[date].cantidad;
-        totalCosto += portfolioByDate[date].costoTotal;
-      }
-      
-      const avgPrice = totalCantidad > 0 ? totalCosto / totalCantidad : 0;
-      
-      return {
-        date,
-        avgPrice,
-        totalCantidad,
-        totalCosto
-      };
-    });
   }, [trades]);
 
   useEffect(() => {
@@ -94,6 +100,7 @@ export default function PortfolioEvolutionChart({ trades }) {
 
     async function fetchSpyData() {
       setLoading(true);
+      setError(null);
       try {
         const endDate = new Date();
         const startDate = new Date();
@@ -107,12 +114,15 @@ export default function PortfolioEvolutionChart({ trades }) {
           const data = await response.json();
           const spyPrices = {};
           data.forEach(item => {
-            spyPrices[item.date] = item.close || item.c || item.price;
+            if (item.date) {
+              spyPrices[item.date] = item.close || item.c || item.price;
+            }
           });
           setSpyData(spyPrices);
         }
       } catch (e) {
         console.warn('Could not fetch SPY data:', e);
+        setError(e.message);
       } finally {
         setLoading(false);
       }
@@ -124,42 +134,52 @@ export default function PortfolioEvolutionChart({ trades }) {
   const chartData = useMemo(() => {
     if (!portfolioHistory.length) return [];
 
-    const now = new Date();
-    const cutoffDate = new Date(now);
-    cutoffDate.setDate(cutoffDate.getDate() - selectedDays);
+    try {
+      const now = new Date();
+      const cutoffDate = new Date(now);
+      cutoffDate.setDate(cutoffDate.getDate() - selectedDays);
 
-    const filteredHistory = portfolioHistory.filter(d => new Date(d.date) >= cutoffDate);
-    
-    if (filteredHistory.length === 0) return [];
-
-    const firstPrice = filteredHistory[0].avgPrice || 1;
-
-    return filteredHistory.map(day => {
-      const spyPrice = spyData[day.date];
-      const firstSpyPrice = spyData[Object.keys(spyData)[0]];
-      const spyChange = spyPrice && firstSpyPrice ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100 : null;
+      const filteredHistory = portfolioHistory.filter(d => new Date(d.date) >= cutoffDate);
       
-      return {
-        ...day,
-        displayDate: new Date(day.date).toLocaleDateString('es-AR', {
-          month: 'short',
-          day: 'numeric'
-        }),
-        portfolioChange: firstPrice > 0 ? ((day.avgPrice - firstPrice) / firstPrice) * 100 : 0,
-        spyChange
-      };
-    });
+      if (filteredHistory.length === 0) return [];
+
+      const firstPrice = filteredHistory[0].avgPrice || 1;
+      const spyKeys = Object.keys(spyData);
+      const firstSpyPrice = spyKeys.length > 0 ? spyData[spyKeys[0]] : null;
+
+      return filteredHistory.map(day => {
+        const spyPrice = spyData[day.date];
+        const spyChange = spyPrice && firstSpyPrice ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100 : null;
+        
+        return {
+          ...day,
+          displayDate: new Date(day.date).toLocaleDateString('es-AR', {
+            month: 'short',
+            day: 'numeric'
+          }),
+          portfolioChange: firstPrice > 0 ? ((day.avgPrice - firstPrice) / firstPrice) * 100 : 0,
+          spyChange
+        };
+      });
+    } catch (e) {
+      console.error('Error building chart data:', e);
+      return [];
+    }
   }, [portfolioHistory, selectedDays, spyData]);
 
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
     
-    const lastChange = chartData[chartData.length - 1]?.portfolioChange || 0;
-    
-    return {
-      lastChange,
-      days: chartData.length
-    };
+    try {
+      const lastChange = chartData[chartData.length - 1]?.portfolioChange || 0;
+      
+      return {
+        lastChange,
+        days: chartData.length
+      };
+    } catch (e) {
+      return null;
+    }
   }, [chartData]);
 
   if (!trades || trades.length === 0) {
@@ -209,6 +229,10 @@ export default function PortfolioEvolutionChart({ trades }) {
             <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
             <p className="text-slate-400 text-xs">Cargando benchmark...</p>
           </div>
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-slate-500 text-sm">No hay datos de benchmark</p>
         </div>
       ) : chartData.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
