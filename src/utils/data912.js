@@ -218,7 +218,7 @@ class Data912Helper {
     }
 
     try {
-      const endpoint = this.getHistoricalEndpoint(correctedTicker);
+      let endpoint = this.getHistoricalEndpoint(correctedTicker);
       if (!endpoint) {
         throw new Error('No hay endpoint de históricos disponible para este ticker');
       }
