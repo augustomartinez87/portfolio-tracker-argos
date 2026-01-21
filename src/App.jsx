@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText } from 'lucide-react';
 import { data912 } from './utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from './utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from './utils/formatters';
@@ -867,59 +867,71 @@ const now = new Date();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-slate-800/50 bg-slate-900/90 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
-                Argos Capital
-              </h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
-                <span className="text-sm text-slate-400">
-                  MEP: <span className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</span>
-                </span>
-                {lastUpdate && (
-                  <span className="text-xs text-slate-500">
-                    Actualizado: {lastUpdateFull || lastUpdate}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchPrices}
-                disabled={isPricesLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
-              >
-                <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualizar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-1 mt-4">
-            {['dashboard', 'trades'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2 rounded-lg font-medium text-sm transition-all ${
-                  activeTab === tab
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                {tab === 'dashboard' ? 'Dashboard' : 'Trades'}
-              </button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col">
+        <div className="p-4 border-b border-slate-800/50">
+          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
+            <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+            Argos Capital
+          </h1>
         </div>
-      </header>
+        
+        <nav className="flex-1 p-4 space-y-2">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+              activeTab === 'dashboard'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('trades')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+              activeTab === 'trades'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            Trades
+          </button>
+        </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className="p-4 border-t border-slate-800/50">
+          <div className="mb-4 px-2">
+            <span className="text-xs text-slate-500">MEP</span>
+            <p className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</p>
+          </div>
+          <button
+            onClick={fetchPrices}
+            disabled={isPricesLoading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
+          >
+            <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </button>
+          <button
+            onClick={() => {}}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium"
+          >
+            <LogOut className="w-4 h-4" />
+            Log Out
+          </button>
+          {lastUpdate && (
+            <p className="text-xs text-slate-500 mt-3 text-center">
+              Actualizado: {lastUpdateFull || lastUpdate}
+            </p>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64 p-6">
         {activeTab === 'dashboard' ? (
           <>
 {/* Summary Cards */}
@@ -1166,13 +1178,7 @@ const now = new Date();
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-4 mt-8">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center text-xs text-slate-500">
-          <span>Datos: data912.com</span>
-          <span>Argos Capital v3.0 - Ajuste bonos ÷100</span>
-        </div>
-      </footer>
+      </Suspense>
 
       {/* Modals */}
       <TradeModal
