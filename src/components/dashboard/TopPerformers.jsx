@@ -36,14 +36,14 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
   }, [positions, prices, maxItems]);
 
   return (
-    <Card noPadding className="overflow-hidden h-full">
+    <Card noPadding className="overflow-hidden" style={{ height: '400px' }}>
       <div className="grid grid-cols-2 divide-x divide-slate-700 h-full">
-        <div className="p-3">
-          <div className="flex items-center justify-between mb-3">
+        <div className="p-3 flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h3 className="text-sm font-bold text-white">Top Gainers</h3>
             <TrendingUp className="w-4 h-4 text-success" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
             {gainers.length === 0 ? (
               <p className="text-slate-500 text-xs text-center py-2">Sin ganancias</p>
             ) : (
@@ -59,12 +59,12 @@ export function TopPerformers({ positions, prices, maxItems = 3 }) {
           </div>
         </div>
 
-        <div className="p-3">
-          <div className="flex items-center justify-between mb-3">
+        <div className="p-3 flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h3 className="text-sm font-bold text-white">Top Laggards</h3>
             <TrendingDown className="w-4 h-4 text-danger" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
             {losers.length === 0 ? (
               <p className="text-slate-500 text-xs text-center py-2">Sin pérdidas</p>
             ) : (

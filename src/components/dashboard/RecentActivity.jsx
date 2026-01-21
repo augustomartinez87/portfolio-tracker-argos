@@ -13,14 +13,14 @@ export function RecentActivity({ trades, maxItems = 5 }) {
     : [];
 
   return (
-    <Card noPadding className="overflow-hidden h-full">
+    <Card noPadding className="overflow-hidden" style={{ height: '400px' }}>
       <div className="p-3 h-full flex flex-col">
         <div className="flex items-center justify-between mb-3 flex-shrink-0">
           <h3 className="text-sm font-bold text-white">Actividad</h3>
           <Clock className="w-4 h-4 text-slate-400" />
         </div>
 
-        <div className="space-y-1.5 flex-1">
+        <div className="space-y-1.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
           {sortedTrades.length === 0 ? (
             <p className="text-slate-500 text-xs text-center py-2">Sin operaciones</p>
           ) : (
