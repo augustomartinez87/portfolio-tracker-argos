@@ -918,10 +918,6 @@ const now = new Date();
         </nav>
 
         <div className="p-4 border-t border-slate-800/50">
-          <div className="mb-4 px-2">
-            <span className="text-xs text-slate-500">MEP</span>
-            <p className="text-emerald-400 font-mono font-medium">{formatARS(mepRate)}</p>
-          </div>
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
@@ -991,8 +987,8 @@ const now = new Date();
                     <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
                   </div>
                   <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">MEP</p>
-                    <p className="text-emerald-400 font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
+                    <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
+                    <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
                   </div>
                   <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
                     <p className="text-slate-400 text-xs mb-1">Data</p>
