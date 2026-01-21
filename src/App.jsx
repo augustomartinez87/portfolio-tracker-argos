@@ -1249,7 +1249,7 @@ const now = new Date();
                     </div>
                     <p className="text-slate-400 mb-2 font-medium">No hay trades registrados</p>
                     <p className="text-slate-500 text-sm mb-4">Empezá importando un archivo CSV o agregando manualmente</p>
-                    <div className="flex justify-center gap-3">
+                      <div className="flex justify-center gap-3">
                       <button
                         onClick={() => {
                           setEditingTrade(null);
@@ -1258,13 +1258,6 @@ const now = new Date();
                         className="text-emerald-400 hover:text-emerald-300 font-medium text-sm"
                       >
                         Agregar trade
-                      </button>
-                      <span className="text-slate-600">|</span>
-                      <button
-                        onClick={importFromGoogleSheets}
-                        className="text-blue-400 hover:text-blue-300 font-medium text-sm"
-                      >
-                        Importar desde Sheets
                       </button>
                     </div>
                   </div>
