@@ -136,7 +136,8 @@ export default function PortfolioEvolutionChart({ trades }) {
 
     return filteredHistory.map(day => {
       const spyPrice = spyData[day.date];
-      const spyChange = spyPrice ? ((spyPrice - spyData[Object.keys(spyData)[0]]) / spyData[Object.keys(spyData)[0]]) * 100 : null;
+      const firstSpyPrice = spyData[Object.keys(spyData)[0]];
+      const spyChange = spyPrice && firstSpyPrice ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100 : null;
       
       return {
         ...day,
@@ -153,31 +154,25 @@ export default function PortfolioEvolutionChart({ trades }) {
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
     
-    const firstChange = chartData[0]?.portfolioChange || 0;
     const lastChange = chartData[chartData.length - 1]?.portfolioChange || 0;
-    const maxChange = Math.max(...chartData.map(d => d.portfolioChange));
-    const minChange = Math.min(...chartData.map(d => d.portfolioChange));
     
     return {
-      firstChange,
       lastChange,
-      maxChange,
-      minChange,
       days: chartData.length
     };
   }, [chartData]);
 
   if (!trades || trades.length === 0) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50">
-        <p className="text-slate-400 text-center">Agregá trades para ver la evolución</p>
+      <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom border border-slate-700/50">
+        <p className="text-slate-400 text-sm">Agregá trades para ver la evolución</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+    <div className="flex flex-col h-full bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-primary/20 rounded">
             <BarChart2 className="w-4 h-4 text-emerald-400" />
@@ -209,19 +204,19 @@ export default function PortfolioEvolutionChart({ trades }) {
       </div>
 
       {loading && chartData.length === 0 ? (
-        <div className="flex justify-center items-center h-48">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
             <p className="text-slate-400 text-xs">Cargando benchmark...</p>
           </div>
         </div>
       ) : chartData.length === 0 ? (
-        <div className="flex justify-center items-center h-48">
+        <div className="flex-1 flex items-center justify-center">
           <p className="text-slate-500 text-sm">No hay datos disponibles</p>
         </div>
       ) : (
         <>
-          <div className="h-56">
+          <div className="flex-1 min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -275,7 +270,7 @@ export default function PortfolioEvolutionChart({ trades }) {
           </div>
 
           {stats && (
-            <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-slate-700/50">
+            <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-slate-700/50 flex-shrink-0">
               <div className="text-center">
                 <p className="text-xs text-slate-500">Portfolio</p>
                 <p className={`text-sm font-mono font-semibold ${stats.lastChange >= 0 ? 'text-success' : 'text-danger'}`}>
