@@ -963,7 +963,7 @@ const now = new Date();
             </div>
 
             {/* Distribution + Summary */}
-            <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 border-r border-slate-700/50 lg:pr-6">
                   <DistributionChart positions={positions} />
@@ -971,19 +971,19 @@ const now = new Date();
                 <div className="lg:col-span-2">
                   <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
                       <p className="text-slate-400 text-xs mb-1">Posiciones</p>
                       <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
                       <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
                       <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
                       <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
                       <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
                       <p className="text-slate-400 text-xs mb-1">Data Sources</p>
                       <p className="text-slate-300 font-mono text-sm">data912.com</p>
                     </div>
@@ -1017,19 +1017,19 @@ const now = new Date();
                     setEditingTrade(null);
                     setModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-custom hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
                 >
                   <Plus className="w-4 h-4" />
                   Nuevo Trade
                 </button>
                 <button
                   onClick={downloadTemplate}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25"
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25"
                 >
                   <Download className="w-4 h-4" />
                   Descargar Template Excel
                 </button>
-                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all font-semibold shadow-lg shadow-blue-600/25 cursor-pointer">
+                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-custom hover:bg-blue-500 transition-all font-semibold shadow-lg shadow-blue-600/25 cursor-pointer">
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -1045,8 +1045,8 @@ const now = new Date();
                    Importar CSV/Excel
                 </label>
               </div>
-              {importStatus && (
-                <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+               {importStatus && (
+                <span className={`flex items-center px-4 py-2 rounded-custom text-sm font-medium ${
                   importStatus.includes('✓') ? 'bg-emerald-500/20 text-emerald-400' :
                   importStatus.includes('Error') ? 'bg-red-500/20 text-red-400' :
                   'bg-slate-700 text-slate-300'
@@ -1054,7 +1054,7 @@ const now = new Date();
                   {importStatus}
                 </span>
               )}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-sm">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-custom p-4 text-sm">
                 <p className="text-blue-300 font-medium mb-2">📋 Formato del archivo CSV/Excel:</p>
                 <ul className="text-slate-300 space-y-1 ml-4">
                   <li>• <strong>Fecha:</strong> DD/MM/YYYY (ejemplo: 23/12/2024)</li>
