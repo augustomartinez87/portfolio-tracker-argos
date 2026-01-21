@@ -241,7 +241,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-custom hover:bg-emerald-500 transition-colors font-semibold"
+              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-colors font-semibold"
             >
               {trade ? 'Guardar' : 'Agregar'}
             </button>
@@ -882,7 +882,7 @@ const now = new Date();
             onClick={() => setActiveTab('dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
               activeTab === 'dashboard'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -893,7 +893,7 @@ const now = new Date();
             onClick={() => setActiveTab('trades')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-custom font-medium text-sm transition-all ${
               activeTab === 'trades'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                ? 'bg-primary text-white shadow-lg shadow-primary/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -1017,7 +1017,7 @@ const now = new Date();
                     setEditingTrade(null);
                     setModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-custom hover:bg-emerald-500 transition-all font-semibold shadow-lg shadow-emerald-600/25"
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25"
                 >
                   <Plus className="w-4 h-4" />
                   Nuevo Trade
@@ -1029,7 +1029,7 @@ const now = new Date();
                   <Download className="w-4 h-4" />
                   Descargar Template Excel
                 </button>
-                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-custom hover:bg-blue-500 transition-all font-semibold shadow-lg shadow-blue-600/25 cursor-pointer">
+                <label className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer">
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -1047,14 +1047,14 @@ const now = new Date();
               </div>
                {importStatus && (
                 <span className={`flex items-center px-4 py-2 rounded-custom text-sm font-medium ${
-                  importStatus.includes('✓') ? 'bg-emerald-500/20 text-emerald-400' :
-                  importStatus.includes('Error') ? 'bg-red-500/20 text-red-400' :
+                  importStatus.includes('✓') ? 'bg-success/20 text-success' :
+                  importStatus.includes('Error') ? 'bg-danger/20 text-danger' :
                   'bg-slate-700 text-slate-300'
                 }`}>
                   {importStatus}
                 </span>
               )}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-custom p-4 text-sm">
+              <div className="bg-primary/10 border border-primary/30 rounded-custom p-4 text-sm">
                 <p className="text-blue-300 font-medium mb-2">📋 Formato del archivo CSV/Excel:</p>
                 <ul className="text-slate-300 space-y-1 ml-4">
                   <li>• <strong>Fecha:</strong> DD/MM/YYYY (ejemplo: 23/12/2024)</li>

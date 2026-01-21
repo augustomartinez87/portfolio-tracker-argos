@@ -27,7 +27,7 @@ const CustomTooltip = ({ active, payload, label, currency }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-slate-800 border border-slate-700 rounded-custom p-3 shadow-2xl">
+      <div className="bg-background-dark border border-slate-700 rounded-custom p-3 shadow-2xl">
         <p className="text-white font-semibold text-sm mb-2">
           {new Date(label).toLocaleDateString('es-AR', {
             weekday: 'short',
@@ -36,11 +36,11 @@ const CustomTooltip = ({ active, payload, label, currency }) => {
             day: 'numeric'
           })}
         </p>
-        <p className="text-emerald-400 font-semibold text-lg">
+        <p className="text-success font-semibold text-lg">
           {currency === 'USD' ? formatCurrencyUSD(data.value) : formatCurrencyARS(data.value)}
         </p>
         {data.change !== undefined && (
-          <p className={`text-sm font-medium mt-1 ${data.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <p className={`text-sm font-medium mt-1 ${data.change >= 0 ? 'text-success' : 'text-danger'}`}>
             {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}% vs primer día
           </p>
         )}
@@ -102,8 +102,8 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
     <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm mb-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-custom border border-blue-500/30">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-custom border border-primary/30">
+            <TrendingUp className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">Evolución de la Cartera</h3>
@@ -125,7 +125,7 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
                 onClick={() => setSelectedDays(days)}
                 className={`px-3 py-1 text-xs font-medium rounded-custom transition-all ${
                   selectedDays === days
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
                     : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600 hover:text-white'
                 }`}
               >
@@ -144,7 +144,7 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
           </div>
         </div>
       ) : error ? (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-custom p-4 text-red-400 text-center">
+        <div className="bg-danger/10 border border-danger/30 rounded-custom p-4 text-danger text-center">
           Error al cargar datos: {error}
         </div>
       ) : chartData.length === 0 ? (
@@ -158,8 +158,8 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -225,21 +225,21 @@ export default function PortfolioEvolutionChart({ trades, currency = 'ARS' }) {
                 {currency === 'USD' ? formatCurrencyUSD(stats?.endValue) : formatCurrencyARS(stats?.endValue)}
               </p>
             </div>
-            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+            <div className="bg-background-dark/50 rounded-custom p-4 border border-slate-700/50">
               <p className="text-slate-500 text-xs">Máximo</p>
-              <p className="text-emerald-400 font-mono font-semibold">
+              <p className="text-success font-mono font-semibold">
                 {currency === 'USD' ? formatCurrencyUSD(stats?.high) : formatCurrencyARS(stats?.high)}
               </p>
             </div>
-            <div className="bg-slate-900/50 rounded-custom p-4 border border-slate-700/50">
+            <div className="bg-background-dark/50 rounded-custom p-4 border border-slate-700/50">
               <p className="text-slate-500 text-xs">Variación</p>
               <div className="flex items-center gap-1.5">
                 {stats?.change >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  <TrendingUp className="w-4 h-4 text-success" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-400" />
+                  <TrendingDown className="w-4 h-4 text-danger" />
                 )}
-                <p className={`font-mono font-semibold ${stats?.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <p className={`font-mono font-semibold ${stats?.change >= 0 ? 'text-success' : 'text-danger'}`}>
                   {stats?.change >= 0 ? '+' : ''}{stats?.change?.toFixed(2)}%
                 </p>
               </div>

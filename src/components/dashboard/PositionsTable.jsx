@@ -147,7 +147,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                         <span className="font-semibold text-white font-mono">{pos.ticker}</span>
                         {pos.pctChange !== null && pos.pctChange !== undefined && (
                           <span className={`text-xs font-medium px-1.5 py-0.5 rounded-custom ${
-                            pos.pctChange >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                            pos.pctChange >= 0 ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'
                           }`}>
                             {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
                           </span>
@@ -187,29 +187,29 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     {formatARS(pos.valuacionActual)}
                   </td>
                   <td className="text-right px-4 py-3 whitespace-nowrap">
-                    <span className={`font-mono text-sm ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-mono text-sm ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(pos.resultado)}
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
                     <span className={`text-sm font-medium px-1.5 py-0.5 rounded-custom ${
                       pos.resultadoPct >= 0 
-                        ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-red-500/20 text-red-400'
+                        ? 'bg-success/20 text-success' 
+                        : 'bg-danger/20 text-danger'
                     }`}>
                       {formatPercent(pos.resultadoPct)}
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 whitespace-nowrap">
-                    <span className={`font-mono text-sm ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`font-mono text-sm ${pos.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
                     </span>
                   </td>
                   <td className="text-right px-4 py-3 hidden sm:table-cell">
                     <span className={`text-sm font-medium px-1.5 py-0.5 rounded-custom ${
                       pos.resultadoDiarioPct >= 0 
-                        ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-red-500/20 text-red-400'
+                        ? 'bg-success/20 text-success' 
+                        : 'bg-danger/20 text-danger'
                     }`}>
                       {formatPercent(pos.resultadoDiarioPct || 0)}
                     </span>
@@ -235,7 +235,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   {(() => {
                     const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
                     return (
-                      <span className={`font-mono font-bold ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-mono font-bold ${totalResult >= 0 ? 'text-success' : 'text-danger'}`}>
                         {formatARS(totalResult)}
                       </span>
                     );
@@ -246,11 +246,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
                     const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoTotal, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
-                     return (
+                    return (
                       <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
                         totalResultPct >= 0 
-                          ? 'bg-emerald-500/20 text-emerald-400' 
-                          : 'bg-red-500/20 text-red-400'
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-danger/20 text-danger'
                       }`}>
                         {formatPercent(totalResultPct)}
                       </span>
@@ -261,7 +261,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   {(() => {
                     const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
                     return (
-                      <span className={`font-mono font-bold ${totalDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`font-mono font-bold ${totalDiario >= 0 ? 'text-success' : 'text-danger'}`}>
                         {formatARS(totalDiario)}
                       </span>
                     );
@@ -275,8 +275,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     return (
                       <span className={`font-bold text-sm px-1.5 py-0.5 rounded-custom ${
                         totalDiarioPct >= 0 
-                          ? 'bg-emerald-500/20 text-emerald-400' 
-                          : 'bg-red-500/20 text-red-400'
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-danger/20 text-danger'
                       }`}>
                         {formatPercent(totalDiarioPct)}
                       </span>

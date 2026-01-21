@@ -4,12 +4,12 @@ import React, { memo } from 'react';
 const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, isLoading, highlight }) => {
   const getTrendColor = (value) => {
     if (value === undefined || value === null || value === 0) return 'text-slate-400';
-    return value >= 0 ? 'text-emerald-400' : 'text-red-400';
+    return value >= 0 ? 'text-success' : 'text-danger';
   };
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-custom p-6 border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 ${
-      highlight ? 'border-emerald-500/50 shadow-emerald-500/20 ring-1 ring-emerald-500/30' : 'border-slate-700/50 hover:border-slate-600'
+    <div className={`bg-background-dark/95 rounded-custom p-6 border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 ${
+      highlight ? 'border-primary/50 shadow-primary/20 ring-1 ring-primary/30' : 'border-slate-700/50 hover:border-slate-600'
     }`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -33,13 +33,13 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, isLoading
           )}
         </div>
         <div className={`p-3 rounded-custom flex-shrink-0 ${
-          trend > 0 ? 'bg-emerald-500/15 ring-1 ring-emerald-500/30' :
-          trend < 0 ? 'bg-red-500/15 ring-1 ring-red-500/30' :
+          trend > 0 ? 'bg-success/15 ring-1 ring-success/30' :
+          trend < 0 ? 'bg-danger/15 ring-1 ring-danger/30' :
           'bg-slate-700/50'
         }`}>
           <Icon className={`w-6 h-6 ${
-            trend > 0 ? 'text-emerald-400' :
-            trend < 0 ? 'text-red-400' :
+            trend > 0 ? 'text-success' :
+            trend < 0 ? 'text-danger' :
             'text-slate-400'
           }`} />
         </div>

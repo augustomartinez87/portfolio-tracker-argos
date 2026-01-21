@@ -19,10 +19,10 @@ export const DistributionChart = ({ positions }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-800 border border-slate-700 rounded-custom p-3 shadow-2xl">
+        <div className="bg-background-dark border border-slate-700 rounded-custom p-3 shadow-2xl">
           <p className="text-white font-semibold text-sm mb-1">{data.name}</p>
           <p className="text-slate-300 text-sm">{formatCurrency(data.value)}</p>
-          <p className="text-emerald-400 font-medium text-sm">{formatPercentage(data.percentage)}</p>
+          <p className="text-success font-medium text-sm">{formatPercentage(data.percentage)}</p>
           <p className="text-slate-500 text-xs mt-1">{data.count} posiciones</p>
         </div>
       );
@@ -38,7 +38,7 @@ export const DistributionChart = ({ positions }) => {
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-custom border border-emerald-500/30">
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-custom border border-primary/30">
             <PieChartIcon className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
@@ -52,16 +52,16 @@ export const DistributionChart = ({ positions }) => {
         {portfolioChange !== 0 && (
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-custom border ${
             portfolioChange >= 0 
-              ? 'bg-emerald-500/10 border-emerald-500/30' 
-              : 'bg-red-500/10 border-red-500/30'
+              ? 'bg-success/10 border-success/30' 
+              : 'bg-danger/10 border-danger/30'
           }`}>
             {portfolioChange >= 0 ? (
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <TrendingUp className="w-4 h-4 text-success" />
             ) : (
-              <TrendingDown className="w-4 h-4 text-red-400" />
+              <TrendingDown className="w-4 h-4 text-danger" />
             )}
             <span className={`text-sm font-mono font-semibold ${
-              portfolioChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+              portfolioChange >= 0 ? 'text-success' : 'text-danger'
             }`}>
               {portfolioChange >= 0 ? '+' : ''}{formatCurrency(portfolioChange)}
             </span>
@@ -131,7 +131,7 @@ export const DistributionChart = ({ positions }) => {
               <span className="text-xs text-slate-500">({item.count})</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-emerald-400 font-mono font-semibold">
+              <span className="text-sm text-success font-mono font-semibold">
                 {formatPercentage(item.percentage)}
               </span>
               <span className="text-xs text-slate-500 font-mono">
