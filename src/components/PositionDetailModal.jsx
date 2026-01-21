@@ -117,12 +117,11 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           });
 
           // Take only selected days if we have more data
-          const daysAgo = new Date();
-          daysAgo.setDate(daysAgo.getDate() - selectedDays);
+          const cutoffTime = Date.now() - (selectedDays * 24 * 60 * 60 * 1000);
           
           const filteredData = sortedData.filter(item => {
-            const itemDate = new Date(item.date);
-            return itemDate >= daysAgo;
+            const itemTime = new Date(item.date).getTime();
+            return itemTime >= cutoffTime;
           });
 
           setHistorical(filteredData);
