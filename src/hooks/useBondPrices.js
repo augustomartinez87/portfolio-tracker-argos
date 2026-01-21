@@ -46,7 +46,7 @@ export const adjustBondPrice = (ticker, price) => {
   const isHD = isBonoHardDollar(ticker);
   
   if (isPesos) {
-    return price / 1000;
+    return price / 100;
   }
   
   if (isHD) {

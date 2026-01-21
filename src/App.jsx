@@ -343,9 +343,9 @@ export default function ArgosCapital() {
         // Precio base de data912
         let rawPrice = item.ars_bid || item.mark || item.close || 0;
 
-        // ⚡ AJUSTE CRÍTICO para bonos:
-        // - Bonos pesos: vienen por $1000 VN, dividir por 1000
-        // - Bonos HD: vienen por $100 USD VN, dividir por 100
+        // AJUSTE CRÍTICO para bonos:
+        // - Bonos pesos (T15E7, TTD26): dividir por 100
+        // - Bonos HD (AE38, AL30): dividir por 100
         const adjustedPrice = adjustBondPrice(ticker, rawPrice);
 
 // Price persistence: mantener último válido si el nuevo es 0 o null
