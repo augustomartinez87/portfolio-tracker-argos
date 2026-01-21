@@ -7,6 +7,7 @@ import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondP
 import { parseARSNumber, parseDateDMY } from './utils/parsers';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import DistributionChart from './components/DistributionChart';
+import PortfolioEvolutionChart from './components/PortfolioEvolutionChart';
 import SummaryCard from './components/common/SummaryCard';
 import PositionsTable from './components/dashboard/PositionsTable';
 
@@ -1035,6 +1036,8 @@ const now = new Date();
                 </div>
               </div>
             </div>
+
+            <PortfolioEvolutionChart trades={trades} />
 
 {/* Positions Table */}
             <PositionsTable 

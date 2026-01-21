@@ -120,6 +120,89 @@ class Data912Helper {
         .forEach(key => localStorage.removeItem(key));
     }
   }
+
+  async getHistorical(ticker, fromDate) {
+    const cacheKey = CACHE_PREFIX + 'hist_' + ticker + '_' + fromDate;
+    const cached = this.getCache('hist_' + ticker + '_' + fromDate);
+    if (cached) return cached;
+
+    if (!this.checkRateLimit()) {
+      throw new Error('Rate limit alcanzado');
+    }
+
+    const endpoint = this.getHistoricalEndpoint(ticker);
+    const url = `${BASE_URL}${endpoint}?from=${fromDate}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Cache the result
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.warn('Could not cache historical data:', e);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+      throw error;
+    }
+  }
+
+  getHistoricalEndpoint(ticker) {
+    const upper = ticker.toUpperCase();
+    if (/^(AL|GD|AE|AN|CO)[0-9]{2}$/.test(upper)) {
+      return `/historical/bonds/${ticker}`;
+    }
+    return `/historical/stocks/${ticker}`;
+  }
+
+  async getBatchHistorical(tickers, fromDate) {
+    const results = {};
+    const errors = {};
+
+    const batchSize = 10;
+    for (let i = 0; i < tickers.length; i += batchSize) {
+      const batch = tickers.slice(i, i + batchSize);
+      const promises = batch.map(async ({ ticker }) => {
+        try {
+          const data = await this.getHistorical(ticker, fromDate);
+          return { ticker, data, success: true };
+        } catch (error) {
+          return { ticker, data: [], success: false, error: error.message };
+        }
+      });
+
+      const batchResults = await Promise.all(promises);
+      batchResults.forEach(result => {
+        if (result.success) {
+          results[result.ticker] = result.data;
+        } else {
+          errors[result.ticker] = result.error;
+        }
+      });
+
+      // Rate limit delay between batches
+      if (i + batchSize < tickers.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    return { data: results, errors };
+  }
 }
 
 export const data912 = new Data912Helper();
