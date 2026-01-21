@@ -2,7 +2,7 @@
 import React, { memo, useState, useMemo } from 'react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },
@@ -40,11 +40,21 @@ const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
 };
 
 const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfig, onSortChange }) => {
+  const [searchTerm, setSearchTerm] = useState('');
   const defaultSort = { key: 'valuacionActual', direction: 'desc' };
   const currentSort = sortConfig || defaultSort;
 
+  const filteredPositions = useMemo(() => {
+    if (!searchTerm.trim()) return positions;
+    const term = searchTerm.toLowerCase();
+    return positions.filter(pos =>
+      pos.ticker.toLowerCase().includes(term) ||
+      pos.assetClass.toLowerCase().includes(term)
+    );
+  }, [positions, searchTerm]);
+
   const sortedPositions = useMemo(() => {
-    return [...positions].sort((a, b) => {
+    return [...filteredPositions].sort((a, b) => {
       let aVal = a[currentSort.key];
       let bVal = b[currentSort.key];
 
@@ -76,10 +86,26 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
 
   return (
     <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-custom border border-slate-700/50 overflow-hidden">
-      <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
+      <div className="p-4 border-b border-slate-700/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h3 className="text-lg font-semibold text-white">Posiciones</h3>
-        <span className="text-sm text-slate-400">{positions.length} activos</span>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Buscar ticker o categoría..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-custom text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm"
+          />
+        </div>
       </div>
+      {searchTerm && (
+        <div className="px-4 py-2 bg-slate-800/50 border-b border-slate-700/50">
+          <span className="text-sm text-slate-400">
+            {filteredPositions.length} de {positions.length} resultados
+          </span>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1200px]">
           <thead>
