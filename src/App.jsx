@@ -979,34 +979,33 @@ const now = new Date();
               <PortfolioEvolutionChart trades={trades} />
             </div>
 
-            {/* Distribution Chart */}
+            {/* Distribution + Resumen */}
             <div className="mb-8">
               <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <h3 className="text-lg font-semibold text-white mb-4">Distribución de Activos</h3>
-                <DistributionChart positions={positions} />
-              </div>
-            </div>
-
-            {/* Resumen */}
-            <div className="mb-8">
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                    <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-1">
+                    <DistributionChart positions={positions} />
                   </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
-                    <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
-                    <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                    <p className="text-slate-400 text-xs mb-1">Data Sources</p>
-                    <p className="text-slate-300 font-mono text-sm">data912.com</p>
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                        <p className="text-slate-400 text-xs mb-1">Posiciones</p>
+                        <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                        <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
+                        <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                        <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
+                        <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                        <p className="text-slate-400 text-xs mb-1">Data Sources</p>
+                        <p className="text-slate-300 font-mono text-sm">data912.com</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
