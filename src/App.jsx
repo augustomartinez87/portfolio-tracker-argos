@@ -943,7 +943,7 @@ const now = new Date();
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-6">
+      <main className="flex-1 ml-64 p-6 pb-24">
         {activeTab === 'dashboard' ? (
           <>
 {/* Summary Cards */}
@@ -974,45 +974,46 @@ const now = new Date();
               />
             </div>
 
-            {/* Distribution + Summary */}
-            <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 border-r border-slate-700/50 lg:pr-6">
-                  <DistributionChart positions={positions} />
-                </div>
-                <div className="lg:col-span-2">
-                  <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                      <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
-                      <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
-                      <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
-                      <p className="text-slate-400 text-xs mb-1">Data Sources</p>
-                      <p className="text-slate-300 font-mono text-sm">data912.com</p>
-                    </div>
+            {/* Portfolio Evolution Chart */}
+            <div className="mb-8">
+              <PortfolioEvolutionChart trades={trades} />
+            </div>
+
+            {/* Distribution Chart */}
+            <div className="mb-8">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <h3 className="text-lg font-semibold text-white mb-4">Distribución de Activos</h3>
+                <DistributionChart positions={positions} />
+              </div>
+            </div>
+
+            {/* Resumen */}
+            <div className="mb-8">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-6 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <h3 className="text-lg font-semibold text-white mb-4">Resumen</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Posiciones</p>
+                    <p className="text-white font-mono text-xl font-semibold">{positions.length}</p>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-slate-700/50">
-                    <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
+                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Trades Totales</p>
+                    <p className="text-white font-mono text-xl font-semibold">{trades.length}</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Tipo Cambio MEP</p>
+                    <p className="text-emerald-400 font-mono text-xl font-semibold">{formatARS(mepRate)}</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-custom p-4 border border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-1">Data Sources</p>
+                    <p className="text-slate-300 font-mono text-sm">data912.com</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mb-8">
-              <PortfolioEvolutionChart trades={trades} />
-            </div>
-
             {/* Positions Table */}
-            <div className="mb-8">
+            <div className="mb-20">
               <PositionsTable 
                 positions={positions} 
                 onRowClick={handleOpenPositionDetail}
@@ -1021,6 +1022,11 @@ const now = new Date();
                 sortConfig={positionsSort}
                 onSortChange={setPositionsSort}
               />
+            </div>
+
+            {/* Footer */}
+            <div className="fixed bottom-0 left-64 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6">
+              <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
             </div>
           </>
         ) : (
