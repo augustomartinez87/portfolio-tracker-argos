@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardHeader } from '../ui/Card';
-import { cn, formatCurrency, formatPercentage } from '../../utils/cn';
+import { formatCurrency } from '../../utils/cn';
+import { clsx } from 'clsx';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -102,7 +103,7 @@ function MetricItem({ label, value, icon: Icon, iconColor }) {
     <div className="p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-all border border-transparent hover:border-slate-600 group">
       <div className="flex items-start justify-between mb-3">
         <span className="text-sm text-slate-400">{label}</span>
-        <div className={cn('p-1.5 rounded-md bg-slate-800', iconColor)}>
+        <div className={clsx('p-1.5 rounded-md bg-slate-800', iconColor)}>
           <Icon className="w-4 h-4" />
         </div>
       </div>

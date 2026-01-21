@@ -1,10 +1,10 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
+import { clsx } from 'clsx';
 
 export function Badge({ children, variant = 'default', className }) {
   return (
     <span
-      className={cn(
+      className={clsx(
         'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold',
         {
           'bg-success/10 text-success border border-success/20': variant === 'success',

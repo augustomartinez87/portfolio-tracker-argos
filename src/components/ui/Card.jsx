@@ -1,10 +1,10 @@
 import React from 'react';
-import { cn } from '../utils/cn';
+import { clsx } from 'clsx';
 
 export function Card({ children, className, glass = false, noPadding = false }) {
   return (
     <div
-      className={cn(
+      className={clsx(
         'rounded-custom border transition-all duration-200',
         glass
           ? 'bg-slate-800/80 backdrop-blur-xl border-slate-700/50 shadow-xl'
@@ -20,7 +20,7 @@ export function Card({ children, className, glass = false, noPadding = false }) 
 
 export function CardHeader({ title, subtitle, action, className }) {
   return (
-    <div className={cn('flex items-start justify-between mb-6', className)}>
+    <div className={clsx('flex items-start justify-between mb-6', className)}>
       <div>
         <h3 className="text-xl font-semibold text-white">{title}</h3>
         {subtitle && (

@@ -3,7 +3,7 @@ import { Card, CardHeader } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { formatCurrency, formatRelativeDate } from '../../utils/cn';
 import { ArrowDownCircle, ArrowUpCircle, Clock } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { clsx } from 'clsx';
 import { formatNumber } from '../../utils/formatters';
 
 export function RecentActivity({ trades, maxItems = 10 }) {
@@ -42,7 +42,7 @@ function TradeItem({ trade }) {
   
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-all group border border-transparent hover:border-slate-600">
-      <div className={cn(
+      <div className={clsx(
         'flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0',
         isBuy ? 'bg-success/10' : 'bg-danger/10'
       )}>
@@ -51,7 +51,7 @@ function TradeItem({ trade }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className={cn(
+          <span className={clsx(
             'text-sm font-semibold',
             isBuy ? 'text-success' : 'text-danger'
           )}>

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardHeader } from '../ui/Card';
 import { Sparkline } from '../charts/Sparkline';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { clsx } from 'clsx';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
 
 export function TopPerformers({ positions, prices, maxItems = 5 }) {
@@ -114,7 +114,7 @@ function PerformerItem({
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-all group">
-      <div className={cn(
+      <div className={clsx(
         'flex items-center justify-center w-8 h-8 rounded-lg font-mono font-bold text-sm',
         isGainer ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
       )}>
@@ -130,7 +130,7 @@ function PerformerItem({
             {category}
           </span>
         </div>
-        <div className={cn(
+        <div className={clsx(
           'text-sm font-mono font-semibold mt-0.5',
           isGainer ? 'text-success' : 'text-danger'
         )}>

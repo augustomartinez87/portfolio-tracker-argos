@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
+import { clsx } from 'clsx';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export function MetricCard({ 
@@ -12,7 +12,7 @@ export function MetricCard({
   highlight = false
 }) {
   return (
-    <div className={cn(
+    <div className={clsx(
       'group relative overflow-hidden rounded-custom border transition-all duration-300',
       highlight 
         ? 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30 shadow-lg shadow-primary/10' 
@@ -33,11 +33,11 @@ export function MetricCard({
             )}
           </div>
           {Icon && (
-            <div className={cn(
+            <div className={clsx(
               'p-3 rounded-lg transition-all duration-300',
               highlight ? 'bg-primary/20' : 'bg-slate-700/50 group-hover:bg-primary/20'
             )}>
-              <Icon className={cn(
+              <Icon className={clsx(
                 'w-6 h-6 transition-colors',
                 highlight ? 'text-primary' : 'text-slate-400 group-hover:text-primary'
               )} />
@@ -47,7 +47,7 @@ export function MetricCard({
         {trend !== undefined && trend !== 0 && (
           <div className="flex items-center gap-2">
             <span
-              className={cn(
+              className={clsx(
                 'text-sm font-mono font-semibold flex items-center gap-1',
                 trend >= 0 ? 'text-success' : 'text-danger'
               )}
