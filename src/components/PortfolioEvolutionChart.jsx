@@ -45,85 +45,86 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Calcular retorno ponderado de la cartera desde su fecha de inicio
-const calculatePortfolioReturn = (trades, prices) => {
-  if (!trades || !prices || trades.length === 0) return { returnPct: 0, startDate: null, totalInvested: 0 };
-  
+// Calcular valuación histórica de la cartera
+const calculatePortfolioHistory = (trades, prices) => {
+  if (!trades || !prices || trades.length === 0) return [];
+
   try {
-    // Agrupar trades por ticker
-    const positions = {};
-    let totalInvested = 0;
-    let totalValue = 0;
-    let startDate = null;
+    const sortedTrades = [...trades].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    const firstDate = new Date(sortedTrades[0].fecha);
+    const today = new Date();
 
-    trades.forEach(trade => {
-      if (!positions[trade.ticker]) {
-        positions[trade.ticker] = {
-          cantidad: 0,
-          costoTotal: 0,
-          primerTrade: trade.fecha
-        };
+    // Agrupar trades por fecha
+    const tradesByDate = {};
+    sortedTrades.forEach(trade => {
+      if (!trade || !trade.fecha) return;
+      const tradeDate = trade.fecha;
+      if (!tradesByDate[tradeDate]) {
+        tradesByDate[tradeDate] = {};
       }
-      const cantidad = trade.cantidad || 0;
-      positions[trade.ticker].cantidad += cantidad;
-      
-      if (cantidad > 0) {
-        positions[trade.ticker].costoTotal += cantidad * (trade.precioCompra || 0);
+      if (!tradesByDate[tradeDate][trade.ticker]) {
+        tradesByDate[tradeDate][trade.ticker] = 0;
       }
+      tradesByDate[tradeDate][trade.ticker] += trade.cantidad || 0;
     });
 
-    // Encontrar fecha más antigua
-    Object.values(positions).forEach(pos => {
-      if (!startDate || pos.primerTrade < startDate) {
-        startDate = pos.primerTrade;
+    // Calcular posiciones acumuladas por día
+    const positionsByTicker = {};
+    const history = [];
+
+    for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const date = d.toISOString().split('T')[0];
+
+      // Aplicar trades de esta fecha
+      if (tradesByDate[date]) {
+        Object.entries(tradesByDate[date]).forEach(([ticker, cantidad]) => {
+          if (!positionsByTicker[ticker]) {
+            positionsByTicker[ticker] = 0;
+          }
+          positionsByTicker[ticker] += cantidad;
+        });
       }
+
+      // Calcular valuación usando precios actuales y pct_change diario
+      let valuacion = 0;
+      let flujoCapital = 0;
+
+      Object.entries(positionsByTicker).forEach(([ticker, cantidad]) => {
+        if (cantidad === 0) return;
+
+        const priceData = prices[ticker];
+        if (!priceData) return;
+
+        // Usar precio actual como base
+        const currentPrice = priceData.precio || 0;
+        const pctChange = priceData.pctChange || 0;
+
+        // Aproximación: precio en ese día usando pct_change
+        // NOTA: Esta es una aproximación, no es perfecta
+        // En producción se deberían usar precios históricos reales
+        const priceInDay = currentPrice / (1 + pctChange / 100);
+
+        const value = cantidad * priceInDay;
+        valuacion += value;
+      });
+
+      history.push({
+        date,
+        valuacion
+      });
+    }
+
+    console.log('Portfolio history:', {
+      totalDays: history.length,
+      firstDate: history[0]?.date,
+      lastDate: history[history.length - 1]?.date,
+      lastValue: history[history.length - 1]?.valuacion
     });
 
-    // Calcular retorno ponderado
-    let weightedReturn = 0;
-    let totalWeight = 0;
-
-    Object.entries(positions).forEach(([ticker, pos]) => {
-      if (pos.cantidad <= 0) return;
-      
-      const priceData = prices[ticker];
-      if (!priceData) return;
-
-      const currentPrice = priceData.precio || 0;
-      const avgPrice = pos.costoTotal / pos.cantidad;
-      
-      if (avgPrice > 0) {
-        const positionReturn = ((currentPrice - avgPrice) / avgPrice) * 100;
-        const positionValue = pos.cantidad * currentPrice;
-        
-        weightedReturn += positionReturn * positionValue;
-        totalWeight += positionValue;
-        
-        totalInvested += pos.costoTotal;
-        totalValue += positionValue;
-      }
-    });
-
-    const portfolioReturn = totalWeight > 0 ? weightedReturn / totalWeight : 0;
-
-    console.log('Portfolio return calculation:', {
-      portfolioReturn,
-      totalInvested,
-      totalValue,
-      totalWeight,
-      startDate,
-      positionsCount: Object.keys(positions).length
-    });
-
-    return {
-      returnPct: portfolioReturn,
-      startDate,
-      totalInvested,
-      totalValue
-    };
+    return history;
   } catch (e) {
-    console.error('Error calculating portfolio return:', e);
-    return { returnPct: 0, startDate: null, totalInvested: 0 };
+    console.error('Error calculating portfolio history:', e);
+    return [];
   }
 };
 
@@ -134,16 +135,20 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [loading, setLoading] = useState(false);
   const [spyError, setSpyError] = useState(null);
 
-  console.log('PortfolioEvolutionChart props:', { 
-    tradesCount: trades?.length, 
+  console.log('PortfolioEvolutionChart props:', {
+    tradesCount: trades?.length,
     pricesKeys: Object.keys(prices || {}).length,
     samplePrices: Object.keys(prices || {}).slice(0, 5)
   });
 
-  const portfolioReturn = useMemo(() => {
-    const result = calculatePortfolioReturn(trades, prices);
-    console.log('PortfolioReturn memo:', result);
-    return result;
+  const portfolioHistory = useMemo(() => {
+    const history = calculatePortfolioHistory(trades, prices);
+    console.log('PortfolioHistory memo:', {
+      length: history.length,
+      first: history[0],
+      last: history[history.length - 1]
+    });
+    return history;
   }, [trades, prices]);
 
   useEffect(() => {
@@ -219,32 +224,40 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   }, [selectedDays, showSpy]);
 
   const chartData = useMemo(() => {
-    if (Object.keys(spyData).length === 0) return [];
+    if (portfolioHistory.length === 0) return [];
 
     try {
       const now = new Date();
       const cutoffDate = new Date(now);
       cutoffDate.setDate(cutoffDate.getDate() - selectedDays);
 
-      const spyDates = Object.keys(spyData).sort();
-      const filteredDates = spyDates.filter(d => new Date(d) >= cutoffDate);
-      
-      if (filteredDates.length === 0) return [];
+      // Filtrar historial por fechas seleccionadas
+      const filteredHistory = portfolioHistory.filter(d => new Date(d.date) >= cutoffDate);
 
-      const firstSpyPrice = spyData[filteredDates[0]];
-      const portfolioReturnVal = portfolioReturn.returnPct || 0;
+      if (filteredHistory.length === 0) return [];
 
-      return filteredDates.map(date => {
-        const spyPrice = spyData[date];
-        const spyChange = spyPrice && firstSpyPrice ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100 : 0;
-        
+      const firstDayValue = filteredHistory[0]?.valuacion || 0;
+      const firstSpyPrice = Object.keys(spyData).length > 0
+        ? spyData[Object.keys(spyData).sort()[0]]
+        : null;
+
+      return filteredHistory.map(day => {
+        const portfolioChange = firstDayValue > 0
+          ? ((day.valuacion - firstDayValue) / firstDayValue) * 100
+          : 0;
+
+        const spyPrice = spyData[day.date];
+        const spyChange = spyPrice && firstSpyPrice
+          ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100
+          : null;
+
         return {
-          date,
-          displayDate: new Date(date).toLocaleDateString('es-AR', {
+          date: day.date,
+          displayDate: new Date(day.date).toLocaleDateString('es-AR', {
             month: 'short',
             day: 'numeric'
           }),
-          portfolioChange: portfolioReturnVal,
+          portfolioChange,
           spyChange
         };
       });
@@ -252,27 +265,34 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       console.error('Error building chart data:', e);
       return [];
     }
-  }, [spyData, selectedDays, portfolioReturn]);
+  }, [portfolioHistory, spyData, selectedDays]);
 
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
-    
+
     try {
-      const lastSpyChange = chartData[chartData.length - 1]?.spyChange || 0;
-      const portfolioReturnVal = portfolioReturn.returnPct || 0;
+      const lastChange = chartData[chartData.length - 1];
+      const portfolioReturnVal = lastChange?.portfolioChange || 0;
+      const lastSpyChange = lastChange?.spyChange || 0;
       const diff = portfolioReturnVal - lastSpyChange;
-      
-      return {
+
+      console.log('Stats calculated:', {
         portfolioReturn: portfolioReturnVal,
         spyReturn: lastSpyChange,
         diff,
-        startDate: portfolioReturn.startDate,
-        totalInvested: portfolioReturn.totalInvested
+        chartDataLength: chartData.length
+      });
+
+      return {
+        portfolioReturn: portfolioReturnVal,
+        spyReturn: lastSpyChange,
+        diff
       };
     } catch (e) {
+      console.error('Error calculating stats:', e);
       return null;
     }
-  }, [chartData, portfolioReturn]);
+  }, [chartData]);
 
   const comparisonMessage = useMemo(() => {
     if (!stats || !showSpy || Object.keys(spyData).length === 0) return null;
@@ -351,18 +371,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
         </div>
       </div>
 
-      {loading && showSpy ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
-            <p className="text-slate-400 text-xs">Cargando SPY...</p>
-          </div>
-        </div>
-      ) : spyError && showSpy ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-slate-500 text-sm">Error cargando SPY: {spyError}</p>
-        </div>
-      ) : chartData.length === 0 ? (
+      {chartData.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-slate-500 text-sm">No hay datos disponibles</p>
         </div>
