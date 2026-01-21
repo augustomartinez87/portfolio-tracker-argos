@@ -1,9 +1,9 @@
 import React from 'react';
 import { Card } from '../ui/Card';
-import { formatCurrency, formatRelativeDate } from '../../utils/cn';
 import { ArrowUpCircle, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
 import { formatNumber } from '../../utils/formatters';
+import { formatARS } from '../../utils/formatters';
 
 export function RecentActivity({ trades, maxItems = 5 }) {
   const sortedTrades = Array.isArray(trades)
@@ -13,20 +13,22 @@ export function RecentActivity({ trades, maxItems = 5 }) {
     : [];
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-white">Actividad</h3>
-        <Clock className="w-3 h-3 text-slate-400" />
-      </div>
-      
-      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-        {sortedTrades.length === 0 ? (
-          <p className="text-slate-500 text-xs text-center py-2">Sin operaciones</p>
-        ) : (
-          sortedTrades.map((trade) => (
-            <TradeItem key={trade.id} trade={trade} />
-          ))
-        )}
+    <Card noPadding className="overflow-hidden">
+      <div className="p-2">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-white">Actividad</h3>
+          <Clock className="w-3 h-3 text-slate-400" />
+        </div>
+        
+        <div className="space-y-1">
+          {sortedTrades.length === 0 ? (
+            <p className="text-slate-500 text-[10px] text-center py-1">Sin operaciones</p>
+          ) : (
+            sortedTrades.map((trade) => (
+              <TradeItem key={trade.id} trade={trade} />
+            ))
+          )}
+        </div>
       </div>
     </Card>
   );
@@ -34,31 +36,31 @@ export function RecentActivity({ trades, maxItems = 5 }) {
 
 function TradeItem({ trade }) {
   return (
-    <div className="flex items-center gap-2 p-2 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all">
-      <div className="flex items-center justify-center w-8 h-8 rounded bg-success/10 flex-shrink-0">
-        <ArrowUpCircle className="w-4 h-4 text-success" />
+    <div className="flex items-center gap-2 p-1.5 rounded bg-slate-700/20 hover:bg-slate-700/40 transition-all">
+      <div className="flex items-center justify-center w-6 h-6 rounded bg-success/10 flex-shrink-0">
+        <ArrowUpCircle className="w-3 h-3 text-success" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-sm text-white font-semibold">
+        <div className="flex items-center gap-1">
+          <span className="font-mono text-xs text-white font-semibold truncate">
             {trade.ticker}
           </span>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-[10px] text-slate-500 font-mono">
             {formatNumber(trade.cantidad)}
           </span>
         </div>
-        <div className="text-xs text-slate-400 font-mono">
-          {formatCurrency(trade.precioCompra)}
+        <div className="text-[10px] text-slate-400 font-mono">
+          {formatARS(trade.precioCompra)}
         </div>
       </div>
 
       <div className="text-right flex-shrink-0">
-        <div className="font-mono text-xs text-white">
-          {formatCurrency(trade.cantidad * trade.precioCompra)}
+        <div className="font-mono text-[10px] text-white">
+          {formatARS(trade.cantidad * trade.precioCompra)}
         </div>
-        <div className="text-[10px] text-slate-500 font-mono">
-          {formatRelativeDate(trade.fecha)}
+        <div className="text-[9px] text-slate-500 font-mono">
+          {new Date(trade.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
         </div>
       </div>
     </div>

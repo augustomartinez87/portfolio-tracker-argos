@@ -12,7 +12,6 @@ import SummaryCard from './components/common/SummaryCard';
 import PositionsTable from './components/dashboard/PositionsTable';
 import { TopPerformers } from './components/dashboard/TopPerformers';
 import { RecentActivity } from './components/dashboard/RecentActivity';
-import { TradingMetrics } from './components/dashboard/TradingMetrics';
 import logo from './assets/logo.png';
 
 // Error Boundary Component
@@ -1093,11 +1092,11 @@ const now = new Date();
       </div>
 
       {/* Main Content */}
-      <main className={`flex-1 p-4 lg:p-6 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {activeTab === 'dashboard' ? (
           <>
-{/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
               <SummaryCard
                 title="Invertido"
                 value={formatARS(totals.invertido)}
@@ -1125,32 +1124,32 @@ const now = new Date();
             </div>
 
             {/* Resumen - 4 cards */}
-            <div className="mb-6">
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                    <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
+            <div className="mb-4">
+              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-3 border border-slate-700/50 shadow-xl backdrop-blur-sm">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-[10px] mb-0.5">Posiciones</p>
+                    <p className="text-white font-mono text-base font-semibold">{positions.length}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-xs mb-1">Trades</p>
-                    <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
+                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-[10px] mb-0.5">Trades</p>
+                    <p className="text-white font-mono text-base font-semibold">{trades.length}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
-                    <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
+                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-[10px] mb-0.5">Dólar MEP</p>
+                    <p className="text-white font-mono text-base font-semibold">{formatARS(mepRate)}</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-xs mb-1">Data</p>
-                    <p className="text-slate-300 font-mono text-sm">data912.com</p>
+                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-[10px] mb-0.5">Data</p>
+                    <p className="text-slate-300 font-mono text-xs">data912.com</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Distribution + Evolution Chart side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-5 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[420px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
                 <DistributionChart positions={positions} />
               </div>
               <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom border border-slate-700/50 shadow-xl backdrop-blur-sm">
@@ -1158,14 +1157,10 @@ const now = new Date();
               </div>
             </div>
 
-            {/* New Dashboard Components */}
-            <div className="mb-6">
-              <TopPerformers positions={positions} prices={prices} maxItems={3} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Top Performers + Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
               <div className="lg:col-span-2">
-                <TradingMetrics trades={trades} />
+                <TopPerformers positions={positions} prices={prices} maxItems={3} />
               </div>
               <div className="lg:col-span-1">
                 <RecentActivity trades={trades} maxItems={5} />
