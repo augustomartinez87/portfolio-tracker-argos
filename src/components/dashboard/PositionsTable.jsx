@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo, useEffect } from 'react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
-import { ArrowUp, ArrowDown, Search, Settings2, Eye, EyeOff, Columns, Minimize2, Maximize2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, Columns, Minimize2, Maximize2 } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },
@@ -21,7 +21,7 @@ const COLUMN_DEFAULTS = {
   showInvertido: true,
   showDiario: true,
   showDiarioPct: true,
-  density: 'comfortable'
+  density: 'compact'
 };
 
 const loadColumnSettings = () => {
@@ -44,24 +44,22 @@ const saveColumnSettings = (settings) => {
   }
 };
 
-const SortHeader = ({ label, sortKey, currentSort, onSort, compact }) => {
+const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
   const isActive = currentSort.key === sortKey;
   const isAsc = isActive && currentSort.direction === 'asc';
   const isDesc = isActive && currentSort.direction === 'desc';
 
   return (
     <th
-      className={`text-right px-3 py-2 text-xs font-medium tracking-wide cursor-pointer select-none transition-colors ${
-        isActive ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'
-      }`}
+      className={`text-right px-3 py-2 text-[10px] font-medium text-slate-400 cursor-pointer select-none hover:text-slate-200 transition-colors`}
       onClick={() => onSort(sortKey)}
     >
-      <div className="flex items-center justify-end gap-1.5">
+      <div className="flex items-center justify-end gap-1">
         <span>{label}</span>
         {isActive ? (
           isAsc ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
         ) : (
-          <span className="opacity-30 text-xs">↕</span>
+          <span className="opacity-25">↓</span>
         )}
       </div>
     </th>
@@ -154,6 +152,44 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
   );
 };
 
+const TickerCell = ({ ticker, pctChange, assetClass, isStale }) => {
+  const assetClassColors = {
+    'CEDEAR': 'text-emerald-400',
+    'ARGY': 'text-blue-400',
+    'BONO HARD DOLLAR': 'text-amber-400',
+    'BONOS PESOS': 'text-purple-400'
+  };
+  const colorClass = assetClassColors[assetClass] || 'text-slate-400';
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-bold text-white font-mono text-base">{ticker}</span>
+      {pctChange !== null && pctChange !== undefined && (
+        <span className={`text-[10px] font-medium px-1 py-0.5 rounded ${
+          pctChange >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+        }`}>
+          {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
+        </span>
+      )}
+      {isStale && (
+        <span className="text-[10px] text-amber-500" title="Precio desactualizado">!</span>
+      )}
+      <span className={`text-[10px] ${colorClass} opacity-60`}>{assetClass}</span>
+    </div>
+  );
+};
+
+const getAssetClassOrder = (assetClass) => {
+  const order = {
+    'BONOS PESOS': 1,
+    'BONO HARD DOLLAR': 2,
+    'CEDEAR': 3,
+    'ARGY': 4,
+    'OTROS': 5
+  };
+  return order[assetClass] || 5;
+};
+
 const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfig, onSortChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [columnSettings, setColumnSettings] = useState(loadColumnSettings);
@@ -193,6 +229,15 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
     });
   }, [filteredPositions, currentSort]);
 
+  const positionsWithGroup = useMemo(() => {
+    const sorted = [...sortedPositions];
+    return sorted.map((pos, index) => ({
+      ...pos,
+      groupOrder: getAssetClassOrder(pos.assetClass),
+      isFirstInGroup: index === 0 || getAssetClassOrder(sorted[index - 1].assetClass) !== getAssetClassOrder(pos.assetClass)
+    }));
+  }, [sortedPositions]);
+
   const handleSort = (key) => {
     if (onSortChange) {
       if (currentSort.key === key) {
@@ -207,24 +252,23 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
     }
   };
 
-  const paddingY = columnSettings.density === 'compact' ? 'py-2' : 'py-3';
-  const paddingX = columnSettings.density === 'compact' ? 'px-3' : 'px-4';
+  const paddingY = columnSettings.density === 'compact' ? 'py-2' : 'py-2.5';
+  const paddingX = 'px-3';
   const fontSize = columnSettings.density === 'compact' ? 'text-xs' : 'text-sm';
-  const headerPaddingY = columnSettings.density === 'compact' ? 'py-2' : 'py-3';
 
   return (
     <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 overflow-hidden">
       <div className={`${paddingY} ${paddingX} border-b border-slate-700/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3`}>
-        <h3 className="text-base font-semibold text-white">Posiciones</h3>
+        <h3 className="text-sm font-semibold text-white">Posiciones</h3>
         <div className="flex items-center gap-3">
-          <div className="relative w-full sm:w-56">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <div className="relative w-full sm:w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
             <input
               type="text"
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-9 pr-3 ${columnSettings.density === 'compact' ? 'py-1.5' : 'py-2'} bg-slate-900/50 border border-slate-600 rounded-md text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm`}
+              className={`w-full pl-9 pr-3 py-1.5 bg-slate-900/50 border border-slate-600 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-xs`}
             />
           </div>
           <ColumnSelector settings={columnSettings} onSettingsChange={handleSettingsChange} />
@@ -242,82 +286,74 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           <thead>
             <tr className="bg-slate-900/50 border-b border-slate-700/50">
               <th
-                className={`text-left ${paddingX} ${headerPaddingY} text-xs font-medium tracking-wide text-slate-400 cursor-pointer select-none hover:text-white transition-colors`}
+                className={`text-left ${paddingX} py-2 text-[10px] font-medium text-slate-400 cursor-pointer select-none hover:text-slate-200 transition-colors`}
                 onClick={() => handleSort('ticker')}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span>Ticker</span>
                   {currentSort.key === 'ticker' && (
                     currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                   )}
                 </div>
               </th>
-              <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
+              <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
               {columnSettings.showPPC && (
-                <SortHeader label="PPC" sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
+                <SortHeader label="PPC" sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
               )}
-              <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
-              <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
-              <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
-              <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
+              <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
+              <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} />
               {columnSettings.showDiario && (
-                <SortHeader label="P&L Diario $" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
+                <SortHeader label="P&L Diario $" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
               )}
               {columnSettings.showDiarioPct && (
-                <SortHeader label="P&L Diario %" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} compact={columnSettings.density === 'compact'} />
+                <SortHeader label="P&L Diario %" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
               )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
-            {sortedPositions.map((pos) => (
+            {positionsWithGroup.map((pos) => (
               <tr
                 key={pos.ticker}
-                className={`hover:bg-slate-700/20 transition-colors cursor-pointer`}
+                className={`hover:bg-slate-700/20 transition-colors cursor-pointer ${pos.isFirstInGroup ? 'border-t border-slate-700/30' : ''}`}
                 onClick={() => onRowClick(pos)}
               >
                 <td className={`${paddingX} ${paddingY}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-white font-mono text-sm">{pos.ticker}</span>
-                    {pos.pctChange !== null && pos.pctChange !== undefined && (
-                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                        pos.pctChange >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                      }`}>
-                        {pos.pctChange >= 0 ? '+' : ''}{pos.pctChange.toFixed(2)}%
-                      </span>
-                    )}
-                    {prices[pos.ticker]?.isStale && (
-                      <span className="text-xs text-amber-400" title="Precio desactualizado">⚠</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-slate-500">{pos.assetClass}</span>
+                  <TickerCell
+                    ticker={pos.ticker}
+                    pctChange={pos.pctChange}
+                    assetClass={pos.assetClass}
+                    isStale={prices[pos.ticker]?.isStale}
+                  />
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-slate-300 font-mono text-sm`}>
+                <td className={`text-right ${paddingX} ${paddingY} text-slate-300 font-mono text-sm tabular-nums`}>
                   {formatNumber(pos.cantidadTotal)}
                 </td>
                 {columnSettings.showPPC && (
-                  <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono ${fontSize}`}>
+                  <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-xs tabular-nums`}>
                     {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
                       ? `$${pos.precioPromedio.toFixed(2)}`
                       : formatARS(pos.precioPromedio)
                     }
                   </td>
                 )}
-                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-medium ${fontSize}`}>
+                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-medium text-sm tabular-nums`}>
                   {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
                     ? `$${pos.precioActual.toFixed(2)}`
                     : formatARS(pos.precioActual)
                   }
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono ${fontSize} whitespace-nowrap`}>
+                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono text-sm whitespace-nowrap tabular-nums`}>
                   {formatARS(pos.valuacionActual)}
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap`}>
+                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                   <span className={`font-mono font-medium ${pos.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {formatARS(pos.resultado)}
                   </span>
                 </td>
                 <td className={`text-right ${paddingX} ${paddingY}`}>
-                  <span className={`font-medium px-2 py-0.5 rounded ${
+                  <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
                     pos.resultadoPct >= 0
                       ? 'bg-emerald-500/15 text-emerald-400'
                       : 'bg-red-500/15 text-red-400'
@@ -326,15 +362,15 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </span>
                 </td>
                 {columnSettings.showDiario && (
-                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap`}>
-                    <span className={`font-mono ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                    <span className={`font-mono text-xs ${pos.resultadoDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
                     </span>
                   </td>
                 )}
                 {columnSettings.showDiarioPct && (
                   <td className={`text-right ${paddingX} ${paddingY}`}>
-                    <span className={`font-medium px-2 py-0.5 rounded ${
+                    <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
                       pos.resultadoDiarioPct >= 0
                         ? 'bg-emerald-500/15 text-emerald-400'
                         : 'bg-red-500/15 text-red-400'
@@ -345,23 +381,23 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 )}
               </tr>
             ))}
-            {sortedPositions.length > 0 && (
-              <tr className="bg-slate-900/50 border-t-2 border-slate-600">
+            {positionsWithGroup.length > 0 && (
+              <tr className="bg-slate-900/70 border-t-2 border-slate-600">
                 <td className={`${paddingX} ${paddingY} text-left`}>
-                  <span className="font-bold text-white text-sm uppercase tracking-wide">Total</span>
+                  <span className="font-bold text-white text-sm">Total</span>
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm`}>-</td>
-                {columnSettings.showPPC && <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm`}>-</td>}
-                <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm`}>-</td>
-                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-bold ${fontSize} whitespace-nowrap`}>
-                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.costoUSD, 0))}
+                <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm tabular-nums`}>-</td>
+                {columnSettings.showPPC && <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm tabular-nums`}>-</td>}
+                <td className={`text-right ${paddingX} ${paddingY} text-slate-400 font-mono text-sm tabular-nums`}>-</td>
+                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-bold text-sm whitespace-nowrap tabular-nums`}>
+                  {formatUSD(positionsWithGroup.reduce((sum, p) => sum + p.costoUSD, 0))}
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-bold ${fontSize} whitespace-nowrap`}>
-                  {formatUSD(sortedPositions.reduce((sum, p) => sum + p.valuacionUSD, 0))}
+                <td className={`text-right ${paddingX} ${paddingY} text-white font-mono font-bold text-sm whitespace-nowrap tabular-nums`}>
+                  {formatUSD(positionsWithGroup.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap`}>
+                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                   {(() => {
-                    const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
+                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
                     return (
                       <span className={`font-mono font-bold ${totalResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {formatARS(totalResult)}
@@ -371,11 +407,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 </td>
                 <td className={`text-right ${paddingX} ${paddingY}`}>
                   {(() => {
-                    const totalResult = sortedPositions.reduce((sum, p) => sum + p.resultado, 0);
-                    const totalInvertido = sortedPositions.reduce((sum, p) => sum + p.costoTotal, 0);
+                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
+                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
                     const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
                     return (
-                      <span className={`font-bold px-2 py-0.5 rounded ${
+                      <span className={`font-bold px-1.5 py-0.5 rounded text-xs ${
                         totalResultPct >= 0
                           ? 'bg-emerald-500/15 text-emerald-400'
                           : 'bg-red-500/15 text-red-400'
@@ -386,11 +422,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   })()}
                 </td>
                 {columnSettings.showDiario && (
-                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap`}>
+                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                     {(() => {
-                      const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
+                      const totalDiario = positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0);
                       return (
-                        <span className={`font-mono font-bold ${totalDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <span className={`font-mono font-bold text-xs ${totalDiario >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                           {formatARS(totalDiario)}
                         </span>
                       );
@@ -400,11 +436,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 {columnSettings.showDiarioPct && (
                   <td className={`text-right ${paddingX} ${paddingY}`}>
                     {(() => {
-                      const totalValuation = sortedPositions.reduce((sum, p) => sum + p.valuacionActual, 0);
-                      const totalDiario = sortedPositions.reduce((sum, p) => sum + p.resultadoDiario, 0);
+                      const totalValuation = positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0);
+                      const totalDiario = positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0);
                       const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
                       return (
-                        <span className={`font-bold px-2 py-0.5 rounded ${
+                        <span className={`font-bold px-1.5 py-0.5 rounded text-xs ${
                           totalDiarioPct >= 0
                             ? 'bg-emerald-500/15 text-emerald-400'
                             : 'bg-red-500/15 text-red-400'
@@ -419,7 +455,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
             )}
           </tbody>
         </table>
-        {sortedPositions.length === 0 && (
+        {positionsWithGroup.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-400 mb-2">No hay posiciones</p>
             <p className="text-slate-500 text-sm">Importá tus trades o agregalos manualmente</p>
