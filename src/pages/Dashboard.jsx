@@ -852,12 +852,14 @@ export default function Dashboard() {
         };
       }
       grouped[trade.ticker].trades.push(trade);
-      
-      const cantidad = trade.cantidad || 0;
+
+      // Use Supabase field names (quantity, price) instead of legacy names
+      const cantidad = trade.quantity || trade.cantidad || 0;
+      const precio = trade.price || trade.precioCompra || 0;
       grouped[trade.ticker].cantidadTotal += cantidad;
-      
+
       if (cantidad > 0) {
-        grouped[trade.ticker].costoTotal += cantidad * trade.precioCompra;
+        grouped[trade.ticker].costoTotal += cantidad * precio;
       }
     });
 
@@ -920,7 +922,17 @@ export default function Dashboard() {
 
   const sortedTrades = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) return [];
-    const sorted = [...trades].sort((a, b) => {
+
+    // Map Supabase fields to UI fields
+    const mappedTrades = trades.map(trade => ({
+      ...trade,
+      fecha: trade.trade_date,
+      cantidad: trade.quantity,
+      precioCompra: trade.price,
+      tipo: trade.trade_type === 'buy' ? 'compra' : 'venta'
+    }));
+
+    const sorted = [...mappedTrades].sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
