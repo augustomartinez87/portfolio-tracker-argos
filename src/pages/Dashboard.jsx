@@ -618,34 +618,26 @@ export default function Dashboard() {
                   <SummaryCard title="P&L Hoy" value={formatARS(totals.resultadoDiario)} subtitle={formatPercent(totals.resultadoDiarioPct)} trend={totals.resultadoDiario} />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                  <div className="lg:col-span-3 bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
-                    <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
-                        <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                          <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
-                        </div>
-                        <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
-                      </div>
+                <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
+                  <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
+                      <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
                     </div>
-                    <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                        <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
+                      </div>
+                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium">
+                        <Plus className="w-3.5 h-3.5" />
+                        Nueva Transacción
+                      </button>
+                      <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
+                    </div>
                   </div>
-
-                  <div className="lg:col-span-1 space-y-4">
-                    <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 h-11 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20">
-                      <Plus className="w-5 h-5" />
-                      Agregar Trade
-                    </button>
-
-                    <button onClick={downloadTemplate} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-sm font-medium border border-border-primary">
-                      <Download className="w-4 h-4" />
-                      Descargar Plantilla CSV
-                    </button>
+                  <div className="flex-1 overflow-auto">
+                    <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
                   </div>
                 </div>
               </>
