@@ -105,7 +105,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
     if (!searchTerm || !searchTerm.trim()) return positions;
     const term = searchTerm.toLowerCase();
     return positions.filter(pos =>
-      pos.ticker.toLowerCase().includes(term)
+      pos.ticker.toLowerCase().includes(term) ||
+      (pos.assetClass && pos.assetClass.toLowerCase().includes(term))
     );
   }, [positions, searchTerm]);
 
