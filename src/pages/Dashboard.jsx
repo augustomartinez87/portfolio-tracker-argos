@@ -1224,14 +1224,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Distribution Chart */}
-            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
-              <DistributionChart positions={positions} />
-            </div>
-
-            {/* Top Performers */}
-            <div className="lg:col-span-2">
-              <TopPerformers positions={positions} prices={prices} maxItems={5} />
+            {/* Distribution + Top Performers */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
+                <DistributionChart positions={positions} />
+              </div>
+              <div>
+                <TopPerformers positions={positions} prices={prices} maxItems={5} />
+              </div>
             </div>
 
             {/* Positions Table */}
