@@ -614,8 +614,8 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                   <SummaryCard title="Invertido" value={formatARS(totals.invertido)} subtitle="Total invertido" />
                   <SummaryCard title="Valuación" value={formatARS(totals.valuacion)} subtitle={lastUpdate ? `Actualizado: ${lastUpdate}` : ''} />
-                  <SummaryCard title="Resultado" value={`${formatPercent(totals.resultadoPct)}`} subtitle={formatARS(totals.resultado)} positive={totals.resultado >= 0} />
-                  <SummaryCard title="Hoy" value={`${formatPercent(totals.resultadoDiarioPct)}`} subtitle={formatARS(totals.resultadoDiario)} positive={totals.resultadoDiario >= 0} />
+                  <SummaryCard title="P&L" value={formatARS(totals.resultado)} subtitle={formatPercent(totals.resultadoPct)} trend={totals.resultado} />
+                  <SummaryCard title="P&L Hoy" value={formatARS(totals.resultadoDiario)} subtitle={formatPercent(totals.resultadoDiarioPct)} trend={totals.resultadoDiario} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -628,7 +628,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2">
                         <div className="relative">
                           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                          <input type="text" placeholder="Buscar ticker..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
+                          <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
                         </div>
                         <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
                       </div>
@@ -637,15 +637,6 @@ export default function Dashboard() {
                   </div>
 
                   <div className="lg:col-span-1 space-y-4">
-                    <div className="bg-background-secondary border border-border-primary rounded-xl p-4">
-                      <h3 className="text-sm font-medium text-text-secondary mb-3">Resumen USD</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Invertido</span><span className="text-text-primary">{formatUSD(totals.invertidoUSD)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Valuación</span><span className="text-text-primary">{formatUSD(totals.valuacionUSD)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Resultado</span><span className={totals.resultadoUSD >= 0 ? 'text-success' : 'text-danger'}>{formatUSD(totals.resultadoUSD)}</span></div>
-                      </div>
-                    </div>
-
                     <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 h-11 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20">
                       <Plus className="w-5 h-5" />
                       Agregar Trade
