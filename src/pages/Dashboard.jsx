@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, Columns } from 'lucide-react';
 import { data912 } from '../utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
@@ -1229,20 +1229,34 @@ export default function Dashboard() {
 
             {/* Action Bar */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <button
-                onClick={() => {
-                  setEditingTrade(null);
-                  setModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium ml-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nueva Transacción</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative w-48">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                  <input
+                    type="text"
+                    placeholder="Buscar ticker..."
+                    className="w-full pl-9 pr-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary text-sm focus:outline-none focus:border-success"
+                  />
+                </div>
+                <button className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm">
+                  <Columns className="w-4 h-4" />
+                  <span>Columnas</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingTrade(null);
+                    setModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Nueva Transacción</span>
+                </button>
+              </div>
               <button
                 onClick={fetchPrices}
                 disabled={isPricesLoading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm"
+                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm ml-auto"
               >
                 <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
                 <span>Actualizar</span>

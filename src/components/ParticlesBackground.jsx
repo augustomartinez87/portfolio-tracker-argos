@@ -2,54 +2,53 @@ import { useEffect, useRef, useState } from 'react'
 
 const ParticlesBackground = () => {
   const containerRef = useRef(null)
-  const [loaded, setLoaded] = useState(false)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    let isMounted = true
-    let particlesInstance = null
+    let retryCount = 0
+    const maxRetries = 10
 
     const initParticles = async () => {
-      if (!containerRef.current || !window.tsParticles) {
-        return
-      }
+      if (!containerRef.current) return
 
-      const container = containerRef.current
-      if (container.innerHTML) {
+      if (!window.tsParticles) {
+        retryCount++
+        if (retryCount < maxRetries) {
+          setTimeout(initParticles, 300)
+        } else {
+          setHasError(true)
+        }
         return
       }
 
       try {
         await window.tsParticles.load({
-          id: 'tsparticles-container',
-          container: container,
+          id: 'tsparticles',
+          container: containerRef.current,
           options: {
             background: {
               color: '#000000'
             },
             fpsLimit: 60,
-            pauseOnBlur: true,
-            retinaDetect: true,
             particles: {
               number: {
-                value: 60,
+                value: 50,
                 density: {
                   enable: true,
-                  area: 800
+                  area: 900
                 }
               },
               color: {
-                value: ['#0070F3', '#3B82F6', '#60A5FA', '#FFFFFF']
+                value: '#0070F3'
               },
               shape: {
                 type: 'circle'
               },
               opacity: {
-                value: 0.7,
-                random: true
+                value: 0.6
               },
               size: {
-                value: { min: 2, max: 4 },
-                random: true
+                value: { min: 2, max: 4 }
               },
               move: {
                 enable: true,
@@ -58,88 +57,69 @@ const ParticlesBackground = () => {
                 random: true,
                 outModes: {
                   default: 'bounce'
-                },
-                attract: {
-                  enable: true,
-                  distance: 150,
-                  rotate: {
-                    x: 2000,
-                    y: 2000
-                  }
                 }
               },
               links: {
                 enable: true,
                 color: '#0070F3',
-                opacity: 0.5,
-                width: 2.5,
-                distance: 160
+                opacity: 0.4,
+                width: 2,
+                distance: 150
               }
             },
             interactivity: {
-              detectOn: 'window',
+              detectOn: 'canvas',
               events: {
                 onHover: {
                   enable: true,
-                  mode: 'grab',
-                  distance: 180
+                  mode: 'grab'
                 },
                 onClick: {
                   enable: true,
                   mode: 'push'
-                },
-                resize: {
-                  enable: true,
-                  delay: 150
                 }
               },
               modes: {
                 grab: {
-                  distance: 200,
+                  distance: 180,
                   links: {
-                    opacity: 0.8
+                    opacity: 0.7
                   }
                 },
                 push: {
-                  quantity: 4
-                },
-                repulse: {
-                  distance: 200,
-                  duration: 0.4
+                  quantity: 3
                 }
               }
             }
           }
         })
-
-        if (isMounted) {
-          setLoaded(true)
-        }
       } catch (error) {
-        console.warn('tsParticles init error:', error)
+        console.warn('tsParticles error:', error)
+        setHasError(true)
       }
     }
 
-    const checkAndInit = () => {
-      if (window.tsParticles) {
-        initParticles()
-      } else {
-        setTimeout(checkAndInit, 200)
-      }
-    }
-
-    checkAndInit()
+    initParticles()
 
     return () => {
-      isMounted = false
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
     }
   }, [])
 
+  if (hasError) {
+    return (
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+    )
+  }
+
   return (
     <div
-      id="tsparticles-container"
+      id="tsparticles"
       ref={containerRef}
-      className="fixed inset-0 -z-10 pointer-events-none bg-black"
+      className="fixed inset-0 -z-10"
+      style={{ background: '#000000' }}
     />
   )
 }

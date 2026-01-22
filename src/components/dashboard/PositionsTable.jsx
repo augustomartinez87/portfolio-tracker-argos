@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo, useEffect } from 'react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
-import { ArrowUp, ArrowDown, Search, Columns, Minimize2, Maximize2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Columns, Minimize2, Maximize2 } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },
@@ -240,21 +240,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
 
   return (
     <div className="bg-background-secondary rounded-lg border border-border-primary overflow-hidden">
-      <div className={`${paddingY} ${paddingX} border-b border-border-primary flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2`}>
+      <div className={`${paddingY} ${paddingX} border-b border-border-primary`}>
         <h3 className="text-sm font-medium text-text-primary">Posiciones</h3>
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-44">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
-            <input
-              type="text"
-              placeholder="Buscar ticker..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-9 pr-3 py-1.5 bg-background-tertiary border border-border-primary rounded text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success text-xs`}
-            />
-          </div>
-          <ColumnSelector settings={columnSettings} onSettingsChange={handleSettingsChange} />
-        </div>
       </div>
       {searchTerm && (
         <div className={`${paddingY} ${paddingX} bg-background-tertiary/50 border-b border-border-primary`}>
