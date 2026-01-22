@@ -267,9 +267,6 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 {columnSettings.showPPC && <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs tabular-nums`}>-</td>}
                 <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs tabular-nums`}>-</td>
                 <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono font-semibold text-xs whitespace-nowrap tabular-nums`}>
-                  {formatUSD(positionsWithGroup.reduce((sum, p) => sum + p.costoUSD, 0))}
-                </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono font-semibold text-xs whitespace-nowrap tabular-nums`}>
                   {formatUSD(positionsWithGroup.reduce((sum, p) => sum + p.valuacionUSD, 0))}
                 </td>
                 <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
