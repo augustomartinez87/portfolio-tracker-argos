@@ -142,9 +142,10 @@ const calculateTWR = (trades, prices) => {
       if (tradesThisDay.length > 0) {
         previousDayValue = valueAfterTrades;
       } else if (previousDayValue > 0) {
-        // Día sin trades: actualizar el valor (el portafolio sigue creciendo/decreciendo)
-        // Pero NO actualizamos previousDayValue hasta el próximo aporte
-        // Esto es porque queremos medir el rendimiento entre aportes
+      // Día sin trades: actualizar el valor del portafolio (para medir rendimiento día a día)
+      // El nuevo "valor inicial" para el siguiente día
+      if (previousDayValue > 0) {
+        previousDayValue = valueAfterTrades;
       }
 
       // Si no había portafolio antes, iniciar el tracking
@@ -156,19 +157,9 @@ const calculateTWR = (trades, prices) => {
       // TWR = (producto acumulado - 1) * 100 para expresar en %
       const currentTWR = (twrAccumulated - 1) * 100;
 
-      // También calcular el rendimiento "simple" del último sub-período activo
-      // para mostrar la tendencia actual
-      let currentPeriodReturn = 0;
-      if (previousDayValue > 0) {
-        currentPeriodReturn = ((valueAfterTrades / previousDayValue) - 1) * 100;
-      }
-
-      // Para el gráfico, mostrar TWR + rendimiento del período actual no cerrado
-      const displayTWR = currentTWR + currentPeriodReturn;
-
       history.push({
         date: dateStr,
-        twr: displayTWR,
+        twr: currentTWR,
         valuacion: valueAfterTrades,
         twrAccumulated,
         capitalInflow: capitalInflow > 0 ? capitalInflow : null
@@ -265,26 +256,53 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
       if (filteredHistory.length === 0) return [];
 
-      // Encontrar el primer precio de SPY en el rango
+      // Encontrar el primer precio de SPY disponible (puede ser anterior al rango)
       const sortedSpyDates = Object.keys(spyData).sort();
       let firstSpyPrice = null;
+      let firstSpyDate = null;
       for (const date of sortedSpyDates) {
-        if (new Date(date) >= cutoffDate) {
+        if (spyData[date] > 0) {
           firstSpyPrice = spyData[date];
+          firstSpyDate = date;
           break;
         }
+      }
+
+      // Si SPY no tiene datos, no mostrar comparación
+      if (!firstSpyPrice) {
+        return filteredHistory.map(day => ({
+          date: day.date,
+          displayDate: new Date(day.date).toLocaleDateString('es-AR', {
+            month: 'short',
+            day: 'numeric'
+          }),
+          portfolioChange: day.twr - firstDayTWR,
+          spyChange: null,
+          hasInflow: day.capitalInflow !== null
+        }));
       }
 
       // El TWR del primer día del rango se toma como base (0%)
       const firstDayTWR = filteredHistory[0]?.twr || 0;
 
+      // Encontrar el primer precio de SPY dentro del rango
+      let spyPriceAtRangeStart = null;
+      for (const date of sortedSpyDates) {
+        if (new Date(date) >= cutoffDate && spyData[date] > 0) {
+          spyPriceAtRangeStart = spyData[date];
+          break;
+        }
+      }
+
+      // Usar el precio de SPY al inicio del rango, o el primer disponible si es anterior
+      const baseSpyPrice = spyPriceAtRangeStart || firstSpyPrice;
+
       return filteredHistory.map(day => {
-        // Normalizar TWR para que empiece en 0% desde el inicio del rango seleccionado
         const portfolioChange = day.twr - firstDayTWR;
 
         const spyPrice = spyData[day.date];
-        const spyChange = spyPrice && firstSpyPrice
-          ? ((spyPrice - firstSpyPrice) / firstSpyPrice) * 100
+        const spyChange = spyPrice && baseSpyPrice
+          ? ((spyPrice - baseSpyPrice) / baseSpyPrice) * 100
           : null;
 
         return {
@@ -330,21 +348,26 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
     const { diff } = stats;
 
-    if (Math.abs(diff) < 0.01) return null;
-
-    if (diff > 0) {
+    if (diff > 0.5) {
       return {
-        text: `Superando al SPY por ${formatPercentValue(diff)}`,
+        text: `Cartera superando al SPY por ${formatPercentValue(diff)}`,
         icon: TrendingUp,
         color: 'text-success',
         bg: 'bg-success/10 border-success/30'
       };
-    } else {
+    } else if (diff < -0.5) {
       return {
-        text: `Por debajo del SPY por ${formatPercentValue(Math.abs(diff))}`,
+        text: `Cartera por debajo del SPY por ${formatPercentValue(Math.abs(diff))}`,
         icon: TrendingDown,
         color: 'text-danger',
         bg: 'bg-danger/10 border-danger/30'
+      };
+    } else {
+      return {
+        text: `Cartera alineada con SPY (diferencia: ${formatPercentValue(Math.abs(diff))})`,
+        icon: TrendingUp,
+        color: 'text-slate-400',
+        bg: 'bg-slate-700/50 border-slate-600/30'
       };
     }
   }, [stats, showSpy, spyData]);
