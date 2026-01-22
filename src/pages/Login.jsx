@@ -5,6 +5,11 @@ import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import logo from '../assets/logo.png'
 import ParticlesBackground from '../components/ParticlesBackground'
 
+// Temporary gradient fallback - remove when tsParticles works
+const GradientBackground = () => (
+  <div className="fixed inset-0 -z-10 bg-gradient-to-br from-gray-900 via-blue-900/20 to-black" />
+)
+
 export const Login = () => {
   const navigate = useNavigate()
   const { signIn } = useAuth()
@@ -31,7 +36,7 @@ export const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
-      <ParticlesBackground />
+      <GradientBackground />
 
       <div className="w-full max-w-md px-4 relative z-10">
         <div className="text-center mb-8">
