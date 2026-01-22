@@ -3,6 +3,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
+// Importar funciones de detección de bonos desde la fuente única de verdad
+import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
@@ -18,17 +20,6 @@ const formatPercentage = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
-};
-
-const isBonoPesos = (ticker) => {
-  if (!ticker) return false;
-  const t = ticker.toUpperCase();
-  if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;
-  if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
-  if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
-  if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
-  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
-  return false;
 };
 
 export default function PositionDetailModal({ open, onClose, position, trades }) {

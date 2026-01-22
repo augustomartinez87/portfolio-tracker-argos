@@ -67,7 +67,14 @@ export const AuthProvider = ({ children }) => {
     isLogoutInProgress.current = true
     await supabase.auth.signOut()
     setUser(null)
-    localStorage.clear()
+    // Solo borrar datos de autenticación, preservar caché de precios
+    const keysToRemove = Object.keys(localStorage).filter(key =>
+      key.includes('supabase') ||
+      key.includes('auth') ||
+      key.includes('session') ||
+      key.includes('sb-')
+    )
+    keysToRemove.forEach(key => localStorage.removeItem(key))
     window.location.replace('/login')
   }
 

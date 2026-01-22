@@ -1,4 +1,7 @@
 // src/utils/data912.js
+// Importar funciones de detección de bonos desde la fuente única de verdad
+import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
+
 const BASE_URL = 'https://data912.com';
 const CACHE_PREFIX = 'data912_';
 const CACHE_TTL = 5 * 60 * 1000;
@@ -12,35 +15,16 @@ const KNOWN_CEDEARS = ['AAPL','GOOGL','MSFT','TSLA','AMZN','META','NVDA','KO','D
 
 function isCedear(ticker) {
   const upper = ticker.toUpperCase();
-  
+
   if (upper.endsWith('.BA')) {
     return true;
   }
-  
+
   const tickerBase = upper.replace('.BA', '');
   if (KNOWN_CEDEARS.includes(tickerBase)) {
     return true;
   }
-  
-  return false;
-}
 
-function isBonoPesos(ticker) {
-  if (!ticker) return false;
-  const t = ticker.toUpperCase();
-  if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;
-  if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
-  if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
-  if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
-  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
-  return false;
-}
-
-function isBonoHardDollar(ticker) {
-  if (!ticker) return false;
-  const t = ticker.toUpperCase();
-  if (/^(AL|GD|AE|AN|CO)[0-9]{2}[DC]$/.test(t)) return true;
-  if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
   return false;
 }
 

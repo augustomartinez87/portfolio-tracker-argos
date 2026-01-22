@@ -479,22 +479,26 @@ export default function Dashboard() {
         setMepRate(avgMep / mepCount);
       }
 
-      try {
-        const argStocksResponse = await fetch('https://data912.com/live/arg_stocks', {
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!argStocksResponse.ok) throw new Error('Failed to fetch arg_stocks');
-        const argStocksData = await argStocksResponse.json();
+      // Fetch stocks, cedears y bonds EN PARALELO para mejor performance
+      const [stocksResult, cedearsResult, bondsResult] = await Promise.allSettled([
+        fetch('https://data912.com/live/arg_stocks', { signal: AbortSignal.timeout(10000) })
+          .then(r => r.ok ? r.json() : Promise.reject('Failed')),
+        fetch('https://data912.com/live/arg_cedears', { signal: AbortSignal.timeout(10000) })
+          .then(r => r.ok ? r.json() : Promise.reject('Failed')),
+        fetch('https://data912.com/live/arg_bonds', { signal: AbortSignal.timeout(10000) })
+          .then(r => r.ok ? r.json() : Promise.reject('Failed'))
+      ]);
 
-        argStocksData.forEach(item => {
+      // Procesar arg_stocks
+      if (stocksResult.status === 'fulfilled') {
+        stocksResult.value.forEach(item => {
           const ticker = item.symbol;
           if (!ticker) return;
-          
-          const knownDollarSuffixes = ['ALUAD', 'GGALD', 'PAMPD', 'CEPAD', 'SUPVD', 'TXARD', 'BBARD', 'BYMAD', 
+
+          const knownDollarSuffixes = ['ALUAD', 'GGALD', 'PAMPD', 'CEPAD', 'SUPVD', 'TXARD', 'BBARD', 'BYMAD',
             'COMED', 'CRESD', 'EDND', 'IRSAD', 'LOMAD', 'METRD', 'TECOD', 'TGSUD', 'TRAND', 'VALOD', 'CEPUD',
             'ECOGD', 'TGN4D', 'YPFDD'];
           if (knownDollarSuffixes.includes(ticker)) return;
-          
           if (ticker.endsWith('.D')) return;
 
           const assetClass = getAssetClass(ticker, null, true);
@@ -502,7 +506,7 @@ export default function Dashboard() {
           if (!priceMap[ticker]) {
             const rawPrice = item.c || item.px_ask || item.px_bid || 0;
             const adjustedPrice = adjustBondPrice(ticker, rawPrice);
-            
+
             priceMap[ticker] = {
               precio: adjustedPrice,
               precioRaw: rawPrice,
@@ -516,40 +520,29 @@ export default function Dashboard() {
               isBonoHD: isBonoHardDollar(ticker)
             };
 
-            tickerList.push({
-              ticker,
-              panel: 'arg_stock',
-              assetClass
-            });
+            tickerList.push({ ticker, panel: 'arg_stock', assetClass });
           } else {
             priceMap[ticker].pctChange = item.pct_change;
           }
         });
-      } catch (e) {
-        console.warn('Could not fetch arg_stocks:', e);
+      } else {
+        console.warn('Could not fetch arg_stocks:', stocksResult.reason);
       }
 
-      try {
-        const cedearsResponse = await fetch('https://data912.com/live/arg_cedears', {
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!cedearsResponse.ok) throw new Error('Failed to fetch arg_cedears');
-        const cedearsData = await cedearsResponse.json();
-
-        cedearsData.forEach(item => {
+      // Procesar cedears
+      if (cedearsResult.status === 'fulfilled') {
+        cedearsResult.value.forEach(item => {
           const ticker = item.symbol;
           if (!ticker) return;
-          
-          const isDollarOrCable = ticker.length > 3 && 
-            (ticker.endsWith('D') || ticker.endsWith('C')) && 
+
+          const isDollarOrCable = ticker.length > 3 &&
+            (ticker.endsWith('D') || ticker.endsWith('C')) &&
             /[A-Z]$/.test(ticker.slice(-2, -1));
-          
           if (isDollarOrCable) return;
 
           if (!priceMap[ticker]) {
             const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-            const assetClass = 'CEDEAR';
-            
+
             priceMap[ticker] = {
               precio: rawPrice,
               precioRaw: rawPrice,
@@ -557,42 +550,31 @@ export default function Dashboard() {
               ask: item.px_ask,
               close: item.c,
               panel: 'cedear',
-              assetClass,
+              assetClass: 'CEDEAR',
               pctChange: item.pct_change,
               isBonoPesos: false,
               isBonoHD: false
             };
 
-            tickerList.push({
-              ticker,
-              panel: 'cedear',
-              assetClass
-            });
+            tickerList.push({ ticker, panel: 'cedear', assetClass: 'CEDEAR' });
           } else {
             priceMap[ticker].pctChange = item.pct_change;
           }
         });
-      } catch (e) {
-        console.warn('Could not fetch arg_cedears:', e);
+      } else {
+        console.warn('Could not fetch arg_cedears:', cedearsResult.reason);
       }
 
-      try {
-        const bondsResponse = await fetch('https://data912.com/live/arg_bonds', {
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!bondsResponse.ok) throw new Error('Failed to fetch arg_bonds');
-        const bondsData = await bondsResponse.json();
-
-        bondsData.forEach(item => {
+      // Procesar bonds
+      if (bondsResult.status === 'fulfilled') {
+        bondsResult.value.forEach(item => {
           const ticker = item.symbol;
           if (!ticker) return;
-          
+
           const len = ticker.length;
           if (len > 3 && (ticker.endsWith('D') || ticker.endsWith('C'))) {
             const prevChar = ticker.charAt(len - 2);
-            if (/[0-9]/.test(prevChar)) {
-              return;
-            }
+            if (/[0-9]/.test(prevChar)) return;
           }
 
           if (!priceMap[ticker]) {
@@ -613,19 +595,15 @@ export default function Dashboard() {
               isBonoHD: isBonoHardDollar(ticker)
             };
 
-            tickerList.push({
-              ticker,
-              panel: 'bonds',
-              assetClass
-            });
+            tickerList.push({ ticker, panel: 'bonds', assetClass });
           } else {
             if (item.pct_change !== null && item.pct_change !== undefined) {
               priceMap[ticker].pctChange = item.pct_change;
             }
           }
         });
-      } catch (e) {
-        console.warn('Could not fetch arg_bonds:', e);
+      } else {
+        console.warn('Could not fetch arg_bonds:', bondsResult.reason);
       }
 
       const now = new Date();
