@@ -3,29 +3,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Calendar, Loader2, BarChart2, TrendingUp, TrendingDown, Info, AlertCircle } from 'lucide-react';
 import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
 
-/*
-  EXAMPLES FOR TESTING TWR CALCULATION:
-  
-  trades: [
-    { trade_date: '2025-04-11', ticker: 'AE38', quantity: 1787, price: 839 },
-    { trade_date: '2025-04-24', ticker: 'TTD26', quantity: 1735250, price: 1.01 },
-  ]
-  
-  Expected valuation at trade dates:
-  - 11/04/2025 AE38: 1787 * 839 = 1,499,193 invested, current val 2,067,000, res +567,807 (+37.84%)
-  - 24/04/2025 TTD26: 1,735,250 * 1.01 = 1,752,602.50 invested, current val 2,370,000, res +617,397.50 (+35.20%)
-  
-  Note: TTD26 prices from API are decimals (1.01, 1.36) but need *100 for comparison with trades (101, 136)
-  AE38 is hard dollar bond, prices from API are ~1000-1200 range
-  
-  Debug expected output:
-  flowDates: ['2025-04-11', '2025-04-24', '2026-01-22']
-  sub-period 1: 2025-04-11 to 2025-04-23, v_start=~2,067,000
-  sub-period 2: 2025-04-24 to 2026-01-22, v_start=~4,437,000 (AE38 + TTD26)
-*/
+const LETES_TICKERS = ['TTD26', 'T15E7', 'TX26', 'TX28', 'T2V4', 'T3V4', 'T4V4'];
 
 const isBondTicker = (ticker) => {
   return isBonoPesos(ticker) || isBonoHardDollar(ticker);
+};
+
+const isLetes = (ticker) => {
+  return LETES_TICKERS.includes(ticker.toUpperCase());
 };
 
 const formatPercentValue = (value) => {
@@ -51,7 +36,7 @@ const parseDate = (dateStr) => {
 
 const normalizeApiPrice = (ticker, price) => {
   if (!price || price === 0) return 0;
-  if (isBondTicker(ticker)) {
+  if (isBondTicker(ticker) && price < 100) {
     return price * 100;
   }
   return price;
@@ -64,59 +49,52 @@ const getTradeAvgPrice = (ticker, trades) => {
   return sum / tickerTrades.length;
 };
 
-const fetchHistoricalPrice = async (ticker, date, cache, setCache) => {
-  const cacheKey = `${ticker}_${date}`;
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
-
-  try {
-    const endpoint = isBondTicker(ticker) ? 'bonds' : 'cedears';
-    const url = `https://data912.com/historical/${endpoint}/${ticker}?from=${date}&to=${date}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-
-    if (!response.ok) {
-      cache.set(cacheKey, null);
-      return null;
+const getClosestHistoricalPrice = (prices, targetDate) => {
+  if (!prices || Object.keys(prices).length === 0) return null;
+  
+  const sortedDates = Object.keys(prices).sort((a, b) => new Date(a) - new Date(b));
+  let closestDate = null;
+  let minDiff = Infinity;
+  
+  for (const date of sortedDates) {
+    const diff = Math.abs(new Date(date) - new Date(targetDate));
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestDate = date;
     }
-
-    const data = await response.json();
-    let price = 0;
-
-    if (Array.isArray(data) && data.length > 0) {
-      price = data[0].c || data[0].close || 0;
-    } else if (data && typeof data === 'object') {
-      const values = Object.values(data);
-      if (values.length > 0) price = Number(values[0]) || 0;
-    }
-
-    const normalized = normalizeApiPrice(ticker, price);
-    cache.set(cacheKey, normalized);
-    return normalized;
-  } catch (e) {
-    console.warn(`fetchHistoricalPrice ${ticker} ${date}:`, e.message);
-    cache.set(cacheKey, null);
-    return null;
   }
+  
+  if (closestDate && prices[closestDate] > 0) {
+    return prices[closestDate];
+  }
+  return null;
 };
 
-const getPrice = async (ticker, date, historicalCache, setHistoricalCache, trades, currentPrices) => {
-  const normalized = normalizeApiPrice(ticker, currentPrices[ticker]?.precio || 0);
+const getPrice = async (ticker, date, historicalPrices, trades, currentPrices) => {
+  const histData = historicalPrices[ticker];
   
-  if (normalized > 0) {
-    const historical = await fetchHistoricalPrice(ticker, date, historicalCache, setHistoricalCache);
-    if (historical > 0) {
-      return historical;
+  if (histData && Object.keys(histData).length > 0) {
+    const closestPrice = getClosestHistoricalPrice(histData, date);
+    if (closestPrice && closestPrice > 0) {
+      return normalizeApiPrice(ticker, closestPrice);
     }
   }
-
-  const tradeAvg = getTradeAvgPrice(ticker, trades);
-  if (tradeAvg > 0) {
-    console.log(`No historical for ${ticker} ${date}, using trade avg: ${tradeAvg.toFixed(2)}`);
-    return tradeAvg;
+  
+  if (isLetes(ticker)) {
+    const currentPrice = normalizeApiPrice(ticker, currentPrices[ticker]?.precio || 0);
+    if (currentPrice > 0) {
+      console.log(`Fallback current price for LETES ${ticker} ${date}: ${currentPrice.toFixed(2)}`);
+      return currentPrice;
+    }
+    
+    const tradeAvg = getTradeAvgPrice(ticker, trades);
+    if (tradeAvg > 0) {
+      const normalized = normalizeApiPrice(ticker, tradeAvg);
+      console.log(`Fallback trade avg for LETES ${ticker} ${date}: ${normalized.toFixed(2)}`);
+      return normalized;
+    }
   }
-
-  console.warn(`No price data for ${ticker} ${date}`);
+  
   return 0;
 };
 
@@ -153,12 +131,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function PortfolioEvolutionChart({ trades, prices }) {
   const [selectedDays, setSelectedDays] = useState(90);
   const [showSpy, setShowSpy] = useState(true);
+  const [historicalPrices, setHistoricalPrices] = useState({});
   const [spyPrices, setSpyPrices] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const historicalCacheRef = useRef(new Map());
-  const [historicalCache, setHistoricalCache] = useState(new Map());
 
   console.log('=== PortfolioEvolutionChart RENDER ===');
 
@@ -180,7 +156,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
     console.log('sortedTrades:', parsed.length, 'trades');
     if (parsed.length > 0) {
-      console.log('  First:', parsed[0].parsedDate, parsed[0].ticker, parsed[0].quantity, parsed[0].price);
+      console.log('  First:', parsed[0].parsedDate, parsed[0].ticker, parsed[0].quantity);
       console.log('  Last:', parsed[parsed.length - 1].parsedDate);
     }
 
@@ -198,9 +174,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
     const allFlows = [...tradeDates, today].sort((a, b) => new Date(a) - new Date(b));
     
-    console.log('flowDates:', allFlows.length, 'dates');
-    console.log('  flowDates:', allFlows);
-    
+    console.log('flowDates:', allFlows.length, allFlows);
     return allFlows;
   }, [sortedTrades]);
 
@@ -227,49 +201,110 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     return [...new Set(sortedTrades.map(t => t.ticker))];
   }, [sortedTrades]);
 
+  const letesTickers = useMemo(() => {
+    return uniqueTickers.filter(isLetes);
+  }, [uniqueTickers]);
+
   useEffect(() => {
-    if (!flowDates.length || !showSpy) {
-      console.log('SPY fetch: skipped', { flowDates: flowDates.length, showSpy });
+    if (!flowDates.length || uniqueTickers.length === 0) {
+      console.log('Fetch: skipped - no flowDates or tickers');
       return;
     }
 
-    const start = flowDates[0];
-    const end = flowDates[flowDates.length - 1];
+    const { start, end } = { start: flowDates[0], end: flowDates[flowDates.length - 1] };
 
-    const fetchSpy = async () => {
-      console.log('Fetching SPY from', start, 'to', end);
+    const fetchData = async () => {
+      console.log('=== FETCH HISTORICAL ===');
+      console.log('Range:', start, 'to', end);
       setLoading(true);
+      setError(null);
 
       try {
-        const url = `https://data912.com/historical/cedears/SPY?from=${start}&to=${end}`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        const pricesMap = {};
+        const errors = [];
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        for (const ticker of uniqueTickers) {
+          if (isLetes(ticker)) {
+            console.log(`Skipping fetch for LETES ${ticker} (no historical data)`);
+            continue;
+          }
 
-        const data = await response.json();
-        const spyMap = {};
+          try {
+            const endpoint = isBondTicker(ticker) ? 'bonds' : 'cedears';
+            const url = `https://data912.com/historical/${endpoint}/${ticker}?from=${start}&to=${end}`;
+            console.log(`Fetching ${ticker}: ${url}`);
 
-        if (Array.isArray(data)) {
-          data.forEach(item => {
-            if (item && item.date) {
-              const cleanDate = item.date.split('T')[0];
-              spyMap[cleanDate] = item.c || item.close || 0;
+            const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const tickerPrices = {};
+
+            if (Array.isArray(data)) {
+              data.forEach(item => {
+                if (item && item.date) {
+                  const cleanDate = item.date.split('T')[0];
+                  const rawPrice = item.c || item.close || 0;
+                  tickerPrices[cleanDate] = normalizeApiPrice(ticker, rawPrice);
+                }
+              });
+            } else if (data && typeof data === 'object') {
+              Object.entries(data).forEach(([date, value]) => {
+                if (date && value !== undefined) {
+                  const cleanDate = date.split('T')[0];
+                  tickerPrices[cleanDate] = normalizeApiPrice(ticker, Number(value) || 0);
+                }
+              });
             }
-          });
+
+            console.log(`  ${ticker}: ${Object.keys(tickerPrices).length} prices`);
+            pricesMap[ticker] = tickerPrices;
+          } catch (e) {
+            console.error(`  Fetch ${ticker} failed:`, e.message);
+            errors.push(ticker);
+          }
         }
 
-        console.log('SPY fetched:', Object.keys(spyMap).length, 'prices');
-        setSpyPrices(spyMap);
+        setHistoricalPrices(pricesMap);
+        console.log('Historical fetched for:', Object.keys(pricesMap).length, 'tickers');
+
+        if (showSpy) {
+          try {
+            const spyUrl = `https://data912.com/historical/cedears/SPY?from=${start}&to=${end}`;
+            const response = await fetch(spyUrl, { signal: AbortSignal.timeout(30000) });
+
+            if (response.ok) {
+              const data = await response.json();
+              const spyMap = {};
+              if (Array.isArray(data)) {
+                data.forEach(item => {
+                  if (item && item.date) {
+                    spyMap[item.date.split('T')[0]] = item.c || item.close || 0;
+                  }
+                });
+              }
+              console.log('SPY:', Object.keys(spyMap).length, 'prices');
+              setSpyPrices(spyMap);
+            }
+          } catch (e) {
+            console.error('SPY fetch error:', e);
+          }
+        }
+
+        if (errors.length > 0) {
+          setError(`Error cargando: ${errors.join(', ')}`);
+        }
       } catch (e) {
-        console.error('SPY fetch error:', e);
-        setError('Error cargando SPY');
+        setError(e.message);
       } finally {
         setLoading(false);
+        console.log('=== FETCH END ===');
       }
     };
 
-    fetchSpy();
-  }, [flowDates, showSpy]);
+    fetchData();
+  }, [flowDates, uniqueTickers, showSpy]);
 
   const holdingsByDate = useMemo(() => {
     if (sortedTrades.length === 0 || allDates.length === 0) {
@@ -294,19 +329,19 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       result[date] = JSON.parse(JSON.stringify(holdings));
     }
 
-    const lastDate = allDates[allDates.length - 1];
-    console.log('Holdings at', lastDate, ':', JSON.stringify(result[lastDate]));
-
+    console.log('Holdings calculated for', Object.keys(result).length, 'dates');
     return result;
   }, [sortedTrades, allDates]);
 
   const portfolioValues = useMemo(() => {
     if (allDates.length === 0 || uniqueTickers.length === 0) {
-      console.log('portfolioValues: no dates or tickers');
+      console.log('portfolioValues: no data');
       return {};
     }
 
     console.log('=== CALCULATING PORTFOLIO VALUES ===');
+    console.log('Using LETES fallback for:', letesTickers);
+
     const values = {};
 
     for (const date of allDates) {
@@ -316,9 +351,9 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       for (const ticker of uniqueTickers) {
         const position = holdingsAtDate?.[ticker];
         if (position && position.cantidad > 0) {
-          const currentPrice = normalizeApiPrice(ticker, prices[ticker]?.precio || 0);
-          if (currentPrice > 0) {
-            totalValue += position.cantidad * currentPrice;
+          const price = getPrice(ticker, date, historicalPrices, sortedTrades, prices);
+          if (price > 0) {
+            totalValue += position.cantidad * price;
           }
         }
       }
@@ -327,11 +362,11 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     }
 
     const nonZero = Object.values(values).filter(v => v > 0).length;
-    console.log('portfolioValues: total', allDates.length, 'with value > 0:', nonZero);
+    console.log('Values: total', allDates.length, 'with value > 0:', nonZero);
     console.log('Sample:', Object.entries(values).slice(0, 3).map(([k, v]) => `${k}: ${v.toFixed(0)}`));
 
     return values;
-  }, [allDates, holdingsByDate, uniqueTickers, prices]);
+  }, [allDates, holdingsByDate, uniqueTickers, historicalPrices, sortedTrades, prices, letesTickers]);
 
   const twrData = useMemo(() => {
     if (allDates.length === 0 || flowDates.length === 0 || Object.keys(portfolioValues).length === 0) {
@@ -340,17 +375,25 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     }
 
     console.log('=== CALCULATING TWR ===');
-    console.log('flowDates:', flowDates.length, flowDates);
+    console.log('flowDates:', flowDates);
 
     let cumTWR = 1;
     const result = [];
     const values = portfolioValues;
+    let skippedSubs = 0;
 
     for (let i = 0; i < flowDates.length - 1; i++) {
       const subStart = flowDates[i];
       const subEnd = flowDates[i + 1];
       
       const v_start = values[subStart] || 0;
+      
+      if (v_start <= 0) {
+        console.log(`Skip sub-period ${i + 1}: ${subStart} to ${subEnd} (v_start=0)`);
+        skippedSubs++;
+        continue;
+      }
+
       console.log(`\nSub-period ${i + 1}: ${subStart} to ${subEnd}`);
       console.log(`  v_start: ${v_start.toFixed(0)}`);
 
@@ -360,36 +403,32 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
       for (const date of subDates) {
         const v_d = values[date] || 0;
-        let sub_hpr_d = 0;
-
-        if (v_start > 0) {
-          sub_hpr_d = (v_d / v_start) - 1;
-        }
-
-        const cumulativeReturn = (cumTWR * (1 + sub_hpr_d) - 1) * 100;
+        const daily_hpr = (v_d / v_start) - 1;
+        const portfolioReturn = (cumTWR * (1 + daily_hpr) - 1) * 100;
         
         result.push({
           date,
-          portfolioReturn: cumulativeReturn,
+          portfolioReturn,
           value: v_d
         });
       }
 
-      let sub_hpr = 0;
-      if (v_start > 0 && values[subEnd] !== undefined) {
-        sub_hpr = (values[subEnd] / v_start) - 1;
+      const v_end = values[subEnd];
+      if (v_end !== undefined && v_end > 0) {
+        const sub_hpr = (v_end / v_start) - 1;
         cumTWR *= (1 + sub_hpr);
+        console.log(`  v_end: ${v_end.toFixed(0)}, sub_hpr: ${(sub_hpr * 100).toFixed(2)}%, cumTWR: ${((cumTWR - 1) * 100).toFixed(2)}%`);
+      } else {
+        console.log(`  v_end: undefined or 0`);
       }
-
-      console.log(`  v_end: ${(values[subEnd] || 0).toFixed(0)}`);
-      console.log(`  sub_hpr: ${(sub_hpr * 100).toFixed(2)}%`);
-      console.log(`  cumTWR: ${((cumTWR - 1) * 100).toFixed(2)}%`);
     }
 
     console.log('\n=== TWR COMPLETE ===');
-    console.log('Result:', result.length, 'points');
-    console.log('First:', result[0]);
-    console.log('Last:', result[result.length - 1]);
+    console.log('Result:', result.length, 'points, skipped:', skippedSubs);
+    if (result.length > 0) {
+      console.log('First:', result[0]);
+      console.log('Last:', result[result.length - 1]);
+    }
 
     return result;
   }, [allDates, flowDates, portfolioValues]);
@@ -402,16 +441,11 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
     console.log('=== CALCULATING SPY ===');
     const dates = Object.keys(spyPrices).sort((a, b) => new Date(a) - new Date(b));
-    
-    if (dates.length === 0) return {};
-
     const initialClose = spyPrices[dates[0]];
+    
     console.log('SPY initial close:', initialClose);
 
-    if (!initialClose || initialClose <= 0) {
-      console.warn('SPY initial close is 0 or invalid');
-      return {};
-    }
+    if (!initialClose || initialClose <= 0) return {};
 
     const result = {};
     for (const date of dates) {
@@ -435,10 +469,8 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     const cutoffDate = new Date(now);
     cutoffDate.setDate(cutoffDate.getDate() - selectedDays);
     
-    console.log('Cutoff:', cutoffDate.toISOString().split('T')[0]);
-
     const filtered = twrData.filter(d => new Date(d.date) >= cutoffDate);
-    console.log('Filtered:', filtered.length, 'points');
+    console.log('Filtered from', cutoffDate.toISOString().split('T')[0] + ':', filtered.length, 'points');
 
     if (filtered.length === 0) return [];
 
