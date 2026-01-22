@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -14,12 +15,19 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setUser(session?.user ?? null)
+      } catch (err) {
+        console.error('Error getting session:', err)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
     getSession()
@@ -54,8 +62,14 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      navigate('/login', { replace: true })
+    } catch (error) {
+      console.error('Error signing out:', error)
+      throw error
+    }
   }
 
   const resetPassword = async (email) => {
