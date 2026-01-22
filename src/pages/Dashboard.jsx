@@ -360,26 +360,26 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-background-secondary rounded-xl p-6 w-full max-w-sm border border-border-primary shadow-xl">
         <div className="text-center">
-          <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-7 h-7 text-red-400" />
+          <div className="w-12 h-12 bg-danger/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6 text-danger" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Eliminar Trade</h3>
-          <p className="text-slate-400 mb-6">
-            ¿Eliminar este trade de <span className="text-white font-semibold font-mono">{tradeTicker}</span>?
+          <h3 className="text-lg font-semibold text-text-primary mb-2">Eliminar transacción</h3>
+          <p className="text-text-tertiary mb-6">
+            ¿Eliminar esta transacción de <span className="text-text-primary font-semibold font-mono">{tradeTicker}</span>?
           </p>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+              className="flex-1 px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:bg-border-primary transition-colors font-medium text-sm"
             >
               Cancelar
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors font-semibold"
+              className="flex-1 px-3 py-2.5 h-10 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors font-medium text-sm"
             >
               Eliminar
             </button>
@@ -817,15 +817,15 @@ export default function Dashboard() {
           }
 
           if (savedCount > 0) {
-            setImportStatus(`✓ ${savedCount} trades importados${errorCount > 0 ? ` (${errorCount} fallidos: ${lastError?.message || 'error'})` : ''}`);
+            setImportStatus(`✓ ${savedCount} transacciones importadas${errorCount > 0 ? ` (${errorCount} fallidas: ${lastError?.message || 'error'})` : ''}`);
             loadTrades();
             setTimeout(() => setImportStatus(null), 5000);
           } else {
-            setImportStatus(`Error al guardar trades: ${lastError?.message || 'Error desconocido'}`);
+            setImportStatus(`Error al guardar transacciones: ${lastError?.message || 'Error desconocido'}`);
             setTimeout(() => setImportStatus(null), 5000);
           }
         } else {
-          setImportStatus('No se encontraron trades válidos');
+          setImportStatus('No se encontraron transacciones válidas');
           setTimeout(() => setImportStatus(null), 3000);
         }
       } catch (error) {
@@ -1465,20 +1465,20 @@ export default function Dashboard() {
                 </table>
                 {trades.length === 0 && (
                   <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Plus className="w-8 h-8 text-slate-600" />
+                    <div className="w-16 h-16 bg-background-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Plus className="w-8 h-8 text-text-tertiary" />
                     </div>
-                    <p className="text-slate-400 mb-2 font-medium">No hay trades registrados</p>
-                    <p className="text-slate-500 text-sm mb-4">Empezá importando un archivo CSV o agregando manualmente</p>
+                    <p className="text-text-tertiary mb-2 font-medium">No hay transacciones registradas</p>
+                    <p className="text-text-tertiary/70 text-sm mb-4">Empezá importando un archivo CSV o agregando manualmente</p>
                       <div className="flex justify-center gap-3">
                       <button
                         onClick={() => {
                           setEditingTrade(null);
                           setModalOpen(true);
                         }}
-                        className="text-emerald-400 hover:text-emerald-300 font-medium text-sm"
+                        className="text-primary hover:text-primary/80 font-medium text-sm"
                       >
-                        Agregar trade
+                        Agregar transacción
                       </button>
                     </div>
                   </div>
