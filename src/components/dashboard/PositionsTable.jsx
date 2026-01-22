@@ -185,6 +185,9 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
               )}
               <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
+              {columnSettings.showInvertido && (
+                <SortHeader label="Invertido" sortKey="costoTotal" currentSort={currentSort} onSort={handleSort} />
+              )}
               <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
               <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} />
               {columnSettings.showDiario && (
@@ -229,6 +232,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
                   {formatARS(pos.valuacionActual)}
                 </td>
+                {columnSettings.showInvertido && (
+                  <td className={`text-right ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                    {formatARS(pos.costoTotal)}
+                  </td>
+                )}
                 <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                   <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatARS(pos.resultado)}
@@ -267,12 +275,17 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           {positionsWithGroup.length > 0 && (
             <tfoot className="sticky bottom-0 bg-background-tertiary border-t-2 border-border-secondary backdrop-blur-sm">
               <tr>
-                <td colSpan={columnSettings.showPPC ? 4 : 3} className={`${paddingX} ${paddingY} text-text-primary`}>
+                <td colSpan={3 + (columnSettings.showPPC ? 1 : 0) + (columnSettings.showInvertido ? 1 : 0)} className={`${paddingX} ${paddingY} text-text-primary`}>
                   <span className="font-bold text-lg">Total</span>
                 </td>
                 <td className={`${paddingX} ${paddingY} text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
                   {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}
                 </td>
+                {columnSettings.showInvertido && (
+                  <td className={`${paddingX} ${paddingY} text-right text-text-secondary font-mono font-bold text-lg tabular-nums`}>
+                    {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0))}
+                  </td>
+                )}
                 <td className={`${paddingX} ${paddingY} text-right tabular-nums`}>
                   <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}

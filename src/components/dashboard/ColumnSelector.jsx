@@ -19,6 +19,10 @@ const ColumnToggle = ({ label, checked, onChange }) => (
 const ColumnSelector = ({ settings, onSettingsChange }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleSettingChange = (key, value) => {
+    onSettingsChange({ ...settings, [key]: value });
+  };
+
   return (
     <div className="relative">
       <button
@@ -32,33 +36,36 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-50 bg-background-secondary border border-border-primary rounded-lg shadow-xl p-3 min-w-[200px]">
+          <div 
+            className="absolute right-0 top-full mt-2 z-50 bg-background-secondary border border-border-primary rounded-lg shadow-xl p-3 min-w-[200px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="text-xs text-text-tertiary px-2 pb-2 mb-2 border-b border-border-primary">Mostrar/Ocultar columnas</p>
             <ColumnToggle
               label="PPC"
               checked={settings.showPPC}
-              onChange={(v) => onSettingsChange({ ...settings, showPPC: v })}
+              onChange={(v) => handleSettingChange('showPPC', v)}
             />
             <ColumnToggle
               label="Invertido"
               checked={settings.showInvertido}
-              onChange={(v) => onSettingsChange({ ...settings, showInvertido: v })}
+              onChange={(v) => handleSettingChange('showInvertido', v)}
             />
             <ColumnToggle
               label="P&L Diario $"
               checked={settings.showDiario}
-              onChange={(v) => onSettingsChange({ ...settings, showDiario: v })}
+              onChange={(v) => handleSettingChange('showDiario', v)}
             />
             <ColumnToggle
               label="P&L Diario %"
               checked={settings.showDiarioPct}
-              onChange={(v) => onSettingsChange({ ...settings, showDiarioPct: v })}
+              onChange={(v) => handleSettingChange('showDiarioPct', v)}
             />
             <div className="border-t border-border-primary mt-2 pt-2">
               <p className="text-xs text-text-tertiary px-2 pb-2">Densidad</p>
               <div className="flex gap-1 px-2">
                 <button
-                  onClick={() => onSettingsChange({ ...settings, density: 'compact' })}
+                  onClick={() => handleSettingChange('density', 'compact')}
                   className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
                     settings.density === 'compact'
                       ? 'bg-success/10 text-success border border-success/20'
@@ -70,7 +77,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
                   Compacta
                 </button>
                 <button
-                  onClick={() => onSettingsChange({ ...settings, density: 'comfortable' })}
+                  onClick={() => handleSettingChange('density', 'comfortable')}
                   className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
                     settings.density === 'comfortable'
                       ? 'bg-success/10 text-success border border-success/20'
