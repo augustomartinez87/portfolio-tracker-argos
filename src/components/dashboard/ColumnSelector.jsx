@@ -5,11 +5,14 @@ const ColumnToggle = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-background-tertiary rounded cursor-pointer transition-colors">
     <input
       type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary"
+      defaultChecked={checked}
+      onChange={(e) => {
+        e.stopPropagation();
+        onChange(e.target.checked);
+      }}
+      className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary cursor-pointer"
     />
-    <span className="text-sm text-text-secondary">{label}</span>
+    <span className="text-sm text-text-secondary select-none">{label}</span>
   </label>
 );
 
