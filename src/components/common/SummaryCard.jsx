@@ -19,7 +19,7 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
           </div>
         ) : (
           <>
-            <p className="text-2xl font-semibold text-text-primary font-mono tracking-tight">
+            <p className={`text-2xl font-semibold font-mono tracking-tight ${getTrendColor(trend)}`}>
               {value}
             </p>
             {subValue && (
