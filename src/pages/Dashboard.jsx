@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, Settings2 } from 'lucide-react';
 import { data912 } from '../utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
@@ -1135,6 +1135,22 @@ export default function Dashboard() {
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
           </button>
+          {sidebarOpen && (
+            <div className="bg-background-tertiary rounded-lg p-3 border border-border-primary space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary text-xs">Dólar MEP</span>
+                <span className="text-text-primary font-mono text-sm">{formatARS(mepRate)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary text-xs">Posiciones</span>
+                <span className="text-text-primary font-mono text-sm">{positions.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary text-xs">Trades</span>
+                <span className="text-text-primary font-mono text-sm">{trades.length}</span>
+              </div>
+            </div>
+          )}
           <button
             onClick={() => signOut()}
             className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2.5 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95`}
@@ -1194,52 +1210,47 @@ export default function Dashboard() {
       <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {activeTab === 'dashboard' ? (
           <>
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-              <SummaryCard
-                title="Invertido"
-                value={formatARS(totals.invertido)}
-                subValue={formatUSD(totals.invertidoUSD)}
-                icon={Activity}
-                isLoading={isPricesLoading}
-              />
-              <SummaryCard
-                  title="Valuación Actual"
-                  value={formatARS(totals.valuacion)}
-                  subValue={formatUSD(totals.valuacionUSD)}
-                  icon={TrendingUp}
-                  trend={totals.resultado}
-                  isLoading={isPricesLoading}
-                  highlight
-                />
-              <SummaryCard
-                title="Resultado Total"
-                value={formatARS(totals.resultado)}
-                subValue={formatPercent(totals.resultadoPct)}
-                icon={totals.resultado >= 0 ? TrendingUp : TrendingDown}
-                trend={totals.resultado}
-                isLoading={isPricesLoading}
-              />
+            {/* Compact Header - 3 Metrics */}
+            <div className="grid grid-cols-3 gap-0 mb-3">
+              <div className="bg-background-secondary rounded-l-lg p-4 border border-border-primary border-r-0">
+                <p className="text-text-tertiary text-xs font-medium mb-1">Invertido</p>
+                <p className="text-text-primary font-mono text-2xl font-semibold">{formatARS(totals.invertido)}</p>
+                <p className="text-text-secondary text-sm mt-0.5">{formatUSD(totals.invertidoUSD)}</p>
+              </div>
+              <div className="bg-background-secondary p-4 border border-border-primary">
+                <p className="text-text-tertiary text-xs font-medium mb-1">Valuación Actual</p>
+                <p className="text-text-primary font-mono text-2xl font-semibold">{formatARS(totals.valuacion)}</p>
+                <p className="text-text-secondary text-sm mt-0.5">{formatUSD(totals.valuacionUSD)}</p>
+              </div>
+              <div className="bg-background-secondary rounded-r-lg p-4 border border-border-primary border-l-0">
+                <p className="text-text-tertiary text-xs font-medium mb-1">Resultado Total</p>
+                <p className={`font-mono text-2xl font-semibold ${totals.resultado >= 0 ? 'text-success' : 'text-danger'}`}>{formatARS(totals.resultado)}</p>
+                <p className={`text-sm mt-0.5 ${totals.resultadoPct >= 0 ? 'text-success' : 'text-danger'}`}>{formatPercent(totals.resultadoPct)}</p>
+              </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
-                <p className="text-text-tertiary text-xs mb-1">Posiciones</p>
-                <p className="text-text-primary font-mono text-lg font-semibold">{positions.length}</p>
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className="relative flex-1 min-w-[180px] max-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  className="w-full pl-9 pr-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary text-sm focus:outline-none focus:border-success"
+                />
               </div>
-              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
-                <p className="text-text-tertiary text-xs mb-1">Trades</p>
-                <p className="text-text-primary font-mono text-lg font-semibold">{trades.length}</p>
-              </div>
-              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
-                <p className="text-text-tertiary text-xs mb-1">Dólar MEP</p>
-                <p className="text-text-primary font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
-              </div>
-              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
-                <p className="text-text-tertiary text-xs mb-1">Data</p>
-                <p className="text-text-secondary font-mono text-sm">data912.com</p>
-              </div>
+              <button className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm">
+                <Settings2 className="w-4 h-4" />
+                <span>Columnas</span>
+              </button>
+              <button className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm">
+                <Download className="w-4 h-4" />
+                <span>Exportar</span>
+              </button>
+              <button className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium ml-auto">
+                <Plus className="w-4 h-4" />
+                <span>Nueva Transacción</span>
+              </button>
             </div>
 
             {/* Positions Table */}
