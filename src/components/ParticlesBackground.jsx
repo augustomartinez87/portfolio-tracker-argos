@@ -1,157 +1,145 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const ParticlesBackground = () => {
   const containerRef = useRef(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    const loadParticles = async () => {
-      if (!window.tsParticles || !containerRef.current) return
+    let isMounted = true
+    let particlesInstance = null
 
-      await window.tsParticles.load({
-        id: 'tsparticles',
-        container: containerRef.current,
-        options: {
-          background: {
-            color: '#000000'
-          },
-          fpsLimit: 60,
-          pauseOnBlur: true,
-          retinaDetect: true,
-          particles: {
-            number: {
-              value: 80,
-              density: {
-                enable: true,
-                area: 800
-              }
+    const initParticles = async () => {
+      if (!containerRef.current || !window.tsParticles) {
+        return
+      }
+
+      const container = containerRef.current
+      if (container.innerHTML) {
+        return
+      }
+
+      try {
+        await window.tsParticles.load({
+          id: 'tsparticles-container',
+          container: container,
+          options: {
+            background: {
+              color: '#000000'
             },
-            color: {
-              value: ['#0070F3', '#3B82F6', '#60A5FA', '#FFFFFF']
-            },
-            shape: {
-              type: 'circle'
-            },
-            opacity: {
-              value: 0.8,
-              random: true,
-              animation: {
-                enable: true,
-                speed: 1,
-                minimumValue: 0.3,
-                destroy: 'none'
-              }
-            },
-            size: {
-              value: { min: 2, max: 5 },
-              random: true,
-              animation: {
-                enable: true,
-                speed: 2,
-                minimumValue: 1,
-                destroy: 'none'
-              }
-            },
-            move: {
-              enable: true,
-              speed: 2,
-              direction: 'none',
-              random: true,
-              straight: false,
-              outModes: {
-                default: 'bounce'
-              },
-              attract: {
-                enable: true,
-                distance: 200,
-                rotate: {
-                  x: 2000,
-                  y: 2000
-                }
-              }
-            },
-            links: {
-              enable: true,
-              color: '#0070F3',
-              opacity: 0.5,
-              width: 3,
-              distance: 180,
-              random: true
-            }
-          },
-          interactivity: {
-            detectOn: 'window',
-            events: {
-              onHover: {
-                enable: true,
-                mode: 'grab',
-                distance: 180
-              },
-              onClick: {
-                enable: true,
-                mode: 'push'
-              },
-              onDiv: {
-                enable: false
-              },
-              resize: {
-                enable: true,
-                delay: 150
-              }
-            },
-            modes: {
-              grab: {
-                distance: 200,
-                links: {
-                  opacity: 0.8
+            fpsLimit: 60,
+            pauseOnBlur: true,
+            retinaDetect: true,
+            particles: {
+              number: {
+                value: 60,
+                density: {
+                  enable: true,
+                  area: 800
                 }
               },
-              push: {
-                quantity: 4,
-                groups: []
+              color: {
+                value: ['#0070F3', '#3B82F6', '#60A5FA', '#FFFFFF']
               },
-              repulse: {
-                distance: 200,
-                duration: 0.4,
-                factor: 100,
-                speed: 1,
-                maxSpeed: 50,
-                easing: 'easeOutQuad'
+              shape: {
+                type: 'circle'
               },
-              bubble: {
-                distance: 400,
-                duration: 2,
-                opacity: 0.8,
-                size: 0,
-                groups: []
-              }
-            }
-          },
-          polygons: {
-            enable: false
-          },
-          presets: {
-            basic: {
+              opacity: {
+                value: 0.7,
+                random: true
+              },
+              size: {
+                value: { min: 2, max: 4 },
+                random: true
+              },
+              move: {
+                enable: true,
+                speed: 1.5,
+                direction: 'none',
+                random: true,
+                outModes: {
+                  default: 'bounce'
+                },
+                attract: {
+                  enable: true,
+                  distance: 150,
+                  rotate: {
+                    x: 2000,
+                    y: 2000
+                  }
+                }
+              },
               links: {
-                enable: true
+                enable: true,
+                color: '#0070F3',
+                opacity: 0.5,
+                width: 2.5,
+                distance: 160
+              }
+            },
+            interactivity: {
+              detectOn: 'window',
+              events: {
+                onHover: {
+                  enable: true,
+                  mode: 'grab',
+                  distance: 180
+                },
+                onClick: {
+                  enable: true,
+                  mode: 'push'
+                },
+                resize: {
+                  enable: true,
+                  delay: 150
+                }
+              },
+              modes: {
+                grab: {
+                  distance: 200,
+                  links: {
+                    opacity: 0.8
+                  }
+                },
+                push: {
+                  quantity: 4
+                },
+                repulse: {
+                  distance: 200,
+                  duration: 0.4
+                }
               }
             }
           }
-        },
-        init: undefined,
-        destroy: undefined
-      })
+        })
+
+        if (isMounted) {
+          setLoaded(true)
+        }
+      } catch (error) {
+        console.warn('tsParticles init error:', error)
+      }
     }
 
-    const timeoutId = setTimeout(loadParticles, 100)
+    const checkAndInit = () => {
+      if (window.tsParticles) {
+        initParticles()
+      } else {
+        setTimeout(checkAndInit, 200)
+      }
+    }
 
-    return () => clearTimeout(timeoutId)
+    checkAndInit()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   return (
     <div
-      id="tsparticles"
+      id="tsparticles-container"
       ref={containerRef}
-      className="fixed inset-0 -z-10 pointer-events-none"
+      className="fixed inset-0 -z-10 pointer-events-none bg-black"
     />
   )
 }
