@@ -64,13 +64,23 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     try {
       if (!position) return [];
       if (!trades || !Array.isArray(trades)) return [];
-      return trades
+
+      const filtered = trades
         .filter(t => t && t.ticker === position.ticker)
         .sort((a, b) => {
           const dateA = new Date(a.fecha || a.trade_date).getTime();
           const dateB = new Date(b.fecha || b.trade_date).getTime();
           return dateB - dateA;
         });
+
+      // Mapear campos de Supabase al formato esperado por la UI
+      return filtered.map(trade => ({
+        ...trade,
+        fecha: trade.fecha || trade.trade_date,
+        cantidad: trade.quantity,
+        precioCompra: trade.price,
+        tipo: trade.trade_type === 'buy' ? 'compra' : 'venta'
+      }));
     } catch (err) {
       console.error('Error filtering trades:', err);
       return [];
