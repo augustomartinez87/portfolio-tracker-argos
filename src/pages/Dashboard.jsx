@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search } from 'lucide-react';
 import { CONSTANTS } from '../utils/constants';
-import { formatARS, formatPercent, formatNumber } from '../utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '../utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import { usePrices } from '../services/priceService';
