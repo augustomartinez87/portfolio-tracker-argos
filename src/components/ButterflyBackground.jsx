@@ -9,117 +9,167 @@ const ButterflyBackground = () => {
 
     const ctx = canvas.getContext('2d')
     let animationId = null
-    let particles = []
+    let butterflies = []
 
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      initParticles()
     }
 
-    const initParticles = () => {
-      particles = []
-      const particleCount = 3
+    class Butterfly {
+      constructor() {
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
+        this.size = 15 + Math.random() * 20
+        this.speedX = (Math.random() - 0.5) * 2
+        this.speedY = (Math.random() - 0.5) * 1
+        this.wingPhase = Math.random() * Math.PI * 2
+        this.wingSpeed = 0.15 + Math.random() * 0.1
+        this.opacity = 0.3 + Math.random() * 0.4
+        this.color = '#FFFFFF'
+        this.phase = this.wingPhase
+      }
 
-      for (let i = 0; i < particleCount; i++) {
-        particles.push({
-          x: 0.01 + Math.random() * 0.1,
-          y: 0.01 + Math.random() * 0.1,
-          z: 0.01 + Math.random() * 0.1,
-          color: i === 0 ? '#0070F3' : i === 1 ? '#00aaff' : '#00ffea',
-          speed: 0.005 + Math.random() * 0.005,
-          trail: [],
-          maxTrail: 800
-        })
+      update() {
+        this.x += this.speedX
+        this.y += this.speedY
+
+        if (this.x < -50) this.x = canvas.width + 50
+        if (this.x > canvas.width + 50) this.x = -50
+        if (this.y < -50) this.y = canvas.height + 50
+        if (this.y > canvas.height + 50) this.y = -50
+
+        this.phase += this.wingSpeed
+      }
+
+      draw(ctx) {
+        const wingAngle = Math.sin(this.phase) * 0.5
+        const wingFlap = Math.sin(this.phase) * this.size * 0.8
+
+        ctx.save()
+        ctx.translate(this.x, this.y)
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = 1.5
+        ctx.globalAlpha = this.opacity
+
+        // Body (line)
+        ctx.beginPath()
+        ctx.moveTo(0, -this.size * 0.3)
+        ctx.lineTo(0, this.size * 0.3)
+        ctx.stroke()
+
+        // Antennae
+        ctx.beginPath()
+        ctx.moveTo(0, -this.size * 0.3)
+        ctx.lineTo(-this.size * 0.2, -this.size * 0.5)
+        ctx.moveTo(0, -this.size * 0.3)
+        ctx.lineTo(this.size * 0.2, -this.size * 0.5)
+        ctx.stroke()
+
+        // Left wing
+        ctx.beginPath()
+        ctx.moveTo(0, 0)
+        ctx.quadraticCurveTo(
+          -this.size * 1.5 - wingFlap,
+          -this.size * 0.2,
+          -this.size * 1.2,
+          -this.size * 0.8
+        )
+        ctx.quadraticCurveTo(
+          -this.size * 0.8,
+          -this.size * 0.5,
+          0,
+          0
+        )
+        ctx.stroke()
+
+        // Left lower wing
+        ctx.beginPath()
+        ctx.moveTo(0, 0)
+        ctx.quadraticCurveTo(
+          -this.size * 1.3 + wingFlap * 0.5,
+          this.size * 0.3,
+          -this.size * 1.0,
+          this.size * 0.7
+        )
+        ctx.quadraticCurveTo(
+          -this.size * 0.5,
+          this.size * 0.5,
+          0,
+          0
+        )
+        ctx.stroke()
+
+        // Right wing
+        ctx.beginPath()
+        ctx.moveTo(0, 0)
+        ctx.quadraticCurveTo(
+          this.size * 1.5 + wingFlap,
+          -this.size * 0.2,
+          this.size * 1.2,
+          -this.size * 0.8
+        )
+        ctx.quadraticCurveTo(
+          this.size * 0.8,
+          -this.size * 0.5,
+          0,
+          0
+        )
+        ctx.stroke()
+
+        // Right lower wing
+        ctx.beginPath()
+        ctx.moveTo(0, 0)
+        ctx.quadraticCurveTo(
+          this.size * 1.3 - wingFlap * 0.5,
+          this.size * 0.3,
+          this.size * 1.0,
+          this.size * 0.7
+        )
+        ctx.quadraticCurveTo(
+          this.size * 0.5,
+          this.size * 0.5,
+          0,
+          0
+        )
+        ctx.stroke()
+
+        ctx.restore()
       }
     }
 
-    const lorenz = (x, y, z, s = 10, r = 28, b = 8/3, dt = 0.008) => {
-      const dx = s * (y - x)
-      const dy = x * (r - z) - y
-      const dz = x * y - b * z
-      return {
-        x: x + dx * dt,
-        y: y + dy * dt,
-        z: z + dz * dt
+    const init = () => {
+      butterflies = []
+      const count = Math.min(8, Math.floor((canvas.width * canvas.height) / 200000))
+      for (let i = 0; i < count; i++) {
+        butterflies.push(new Butterfly())
       }
-    }
-
-    const project = (x, y, z, width, height) => {
-      const scale = Math.min(width, height) / 60
-      const x2d = width / 2 + x * scale + 150
-      const y2d = height / 2 + z * scale
-      return { x: x2d, y: y2d }
     }
 
     const animate = () => {
-      const width = canvas.width
-      const height = canvas.height
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'
-      ctx.fillRect(0, 0, width, height)
-
-      particles.forEach((p, pi) => {
-        for (let i = 0; i < 5; i++) {
-          const next = lorenz(p.x, p.y, p.z)
-          p.x = next.x
-          p.y = next.y
-          p.z = next.z
-
-          const pos = project(p.x, p.y, p.z, width, height)
-          p.trail.push({ x: pos.x, y: pos.y })
-
-          if (p.trail.length > p.maxTrail) {
-            p.trail.shift()
-          }
-        }
-
-        ctx.beginPath()
-        ctx.strokeStyle = p.color
-        ctx.lineWidth = 2.5
-        ctx.lineCap = 'round'
-
-        if (p.trail.length > 1) {
-          for (let i = 1; i < p.trail.length; i++) {
-            const alpha = i / p.trail.length
-            ctx.globalAlpha = alpha * 0.7
-            ctx.beginPath()
-            ctx.moveTo(p.trail[i - 1].x, p.trail[i - 1].y)
-            ctx.lineTo(p.trail[i].x, p.trail[i].y)
-            ctx.stroke()
-          }
-        }
-
-        if (p.trail.length > 0) {
-          const head = p.trail[p.trail.length - 1]
-          ctx.globalAlpha = 1
-          ctx.beginPath()
-          ctx.arc(head.x, head.y, 4, 0, Math.PI * 2)
-          ctx.fillStyle = p.color
-          ctx.fill()
-
-          ctx.beginPath()
-          ctx.arc(head.x, head.y, 8, 0, Math.PI * 2)
-          ctx.strokeStyle = p.color
-          ctx.globalAlpha = 0.3
-          ctx.stroke()
-        }
+      butterflies.forEach(b => {
+        b.update()
+        b.draw(ctx)
       })
 
-      ctx.globalAlpha = 1
       animationId = requestAnimationFrame(animate)
     }
 
     resize()
+    init()
     animate()
 
-    window.addEventListener('resize', resize)
+    window.addEventListener('resize', () => {
+      resize()
+      init()
+    })
 
     return () => {
       window.removeEventListener('resize', resize)
-      if (animationId) {
-        cancelAnimationFrame(animationId)
-      }
+      if (animationId) cancelAnimationFrame(animationId)
     }
   }, [])
 

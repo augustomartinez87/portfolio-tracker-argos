@@ -1,7 +1,8 @@
 import React, { memo, useState, useMemo, useEffect } from 'react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
-import { ArrowUp, ArrowDown, Minimize2, Maximize2 } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import ColumnSelector from './ColumnSelector';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },
