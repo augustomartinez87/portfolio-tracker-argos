@@ -110,11 +110,11 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
   };
 
   const assetClassColors = {
-    'CEDEAR': 'text-emerald-400',
-    'ARGY': 'text-blue-400',
+    'CEDEAR': 'text-success',
+    'ARGY': 'text-primary',
     'BONO HARD DOLLAR': 'text-amber-400',
     'BONOS PESOS': 'text-purple-400',
-    'OTROS': 'text-slate-400'
+    'OTROS': 'text-text-tertiary'
   };
 
   return (
@@ -130,21 +130,21 @@ const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
         onFocus={() => setIsOpen(true)}
         disabled={disabled}
         placeholder="Buscar ticker..."
-        className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-custom text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+        className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-all font-mono text-sm"
       />
       {isOpen && filteredTickers.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-slate-800 border border-slate-600 rounded-custom shadow-2xl"
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-background-secondary border border-border-primary rounded-lg shadow-lg"
         >
           {filteredTickers.map((ticker) => (
             <button
               key={ticker.ticker}
               onClick={() => handleSelect(ticker)}
-              className="w-full px-4 py-3 h-12 text-left hover:bg-slate-700 active:bg-slate-600 transition-colors flex justify-between items-center border-b border-slate-700/50 last:border-0"
+              className="w-full px-3 py-2.5 h-10 text-left hover:bg-background-tertiary transition-colors flex justify-between items-center border-b border-border-primary/50 last:border-0"
             >
-              <span className="text-white font-mono font-medium">{ticker.ticker}</span>
-              <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-slate-400'}`}>
+              <span className="text-text-primary font-mono font-medium text-sm">{ticker.ticker}</span>
+              <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-text-tertiary'}`}>
                 {ticker.assetClass}
               </span>
             </button>
