@@ -7,28 +7,7 @@ const isBondTicker = (ticker) => {
   return isBonoPesos(ticker) || isBonoHardDollar(ticker);
 };
 
-const formatPercentValue = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-};
-
-const formatDate = (dateStr) => {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return 'Invalid Date';
-  return d.toLocaleDateString('es-AR', { month: 'short', day: 'numeric' });
-};
-
-const parseTradeDate = (dateStr) => {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) {
-    console.warn('Invalid date:', dateStr);
-    return null;
-  }
-  return date.toISOString().split('T')[0];
-};
-
-const normalizeApiPrice = (ticker, price) => {
+const normalizePrice = (ticker, price) => {
   if (!price || price === 0) return 0;
   if (isBondTicker(ticker)) {
     return price * 100;
@@ -36,40 +15,61 @@ const normalizeApiPrice = (ticker, price) => {
   return price;
 };
 
-const normalizeTradePrice = (ticker, price) => {
-  if (!price || price === 0) return 0;
-  if (isBondTicker(ticker)) {
-    return price;
-  }
-  return price;
+const formatPercentValue = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 };
 
-const getClosestPrice = (prices, targetDate, dates) => {
-  if (!prices || !dates) return 0;
-  const sortedDates = dates.sort((a, b) => new Date(a) - new Date(b));
-  let closest = null;
+const formatDateDisplay = (dateStr) => {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Invalid';
+  return date.toLocaleDateString('es-AR', { month: 'short', day: 'numeric' });
+};
+
+const parseTradeDate = (dateStr) => {
+  if (!dateStr) {
+    console.warn('parseTradeDate: null/undefined date');
+    return null;
+  }
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    console.warn('parseTradeDate: invalid date:', dateStr);
+    return null;
+  }
+  return date.toISOString().split('T')[0];
+};
+
+const getClosestPrice = (prices, targetDate, availableDates) => {
+  if (!prices || !availableDates || availableDates.length === 0) return 0;
+  
+  const sortedDates = [...availableDates].sort((a, b) => new Date(a) - new Date(b));
+  
+  let closestDate = null;
   let minDiff = Infinity;
+  
   for (const date of sortedDates) {
     const diff = Math.abs(new Date(date) - new Date(targetDate));
     if (diff < minDiff) {
       minDiff = diff;
-      closest = prices[date];
+      closestDate = date;
     }
-    if (diff === 0) break;
   }
-  return closest || 0;
+  
+  if (closestDate) {
+    return prices[closestDate] || 0;
+  }
+  return 0;
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length && label) {
-    const dateObj = new Date(label);
-    if (isNaN(dateObj.getTime())) {
-      return null;
-    }
+    const date = new Date(label);
+    if (isNaN(date.getTime())) return null;
+    
     return (
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl">
         <p className="text-white font-semibold text-sm mb-2">
-          {dateObj.toLocaleDateString('es-AR', {
+          {date.toLocaleDateString('es-AR', {
             weekday: 'short',
             year: 'numeric',
             month: 'short',
@@ -99,15 +99,14 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log('=== PortfolioEvolutionChart rendered ===');
-  console.log('trades received:', trades?.length || 0);
-  console.log('prices received:', Object.keys(prices || {}).length);
+  console.log('=== PortfolioEvolutionChart MOUNTED ===');
 
   const sortedTrades = useMemo(() => {
     if (!trades || !Array.isArray(trades)) {
-      console.log('No trades or invalid trades');
+      console.log('sortedTrades: no trades');
       return [];
     }
+
     const parsed = trades
       .map(t => ({
         ...t,
@@ -116,42 +115,48 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
         price: Number(t.price) || Number(t.precioCompra) || 0
       }))
       .filter(t => t.parsedDate && t.ticker && t.quantity !== 0);
-    
+
     const sorted = parsed.sort((a, b) => new Date(a.parsedDate) - new Date(b.parsedDate));
-    console.log('Trades parsed and sorted:', sorted.length);
-    console.log('Sample trade:', sorted[0]);
+    
+    console.log('sortedTrades:', sorted.length, 'trades');
+    if (sorted.length > 0) {
+      console.log('  First trade:', sorted[0].parsedDate, sorted[0].ticker, sorted[0].quantity, sorted[0].price);
+      console.log('  Last trade:', sorted[sorted.length - 1].parsedDate, sorted[sorted.length - 1].ticker);
+    }
+    
     return sorted;
   }, [trades]);
 
   const dateRange = useMemo(() => {
     if (sortedTrades.length === 0) return null;
+    
     const dates = sortedTrades.map(t => t.parsedDate);
     const minDate = new Date(Math.min(...dates.map(d => new Date(d))));
-    const maxDate = new Date();
-    console.log('Date range:', minDate.toISOString().split('T')[0], 'to', maxDate.toISOString().split('T')[0]);
-    return { min: minDate, max: maxDate };
+    const today = new Date();
+    
+    console.log('dateRange:', minDate.toISOString().split('T')[0], 'to', today.toISOString().split('T')[0]);
+    
+    return { start: minDate.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
   }, [sortedTrades]);
 
   const uniqueTickers = useMemo(() => {
     if (sortedTrades.length === 0) return [];
     const tickers = new Set(sortedTrades.map(t => t.ticker));
-    console.log('Unique tickers:', Array.from(tickers));
+    console.log('uniqueTickers:', Array.from(tickers));
     return Array.from(tickers);
   }, [sortedTrades]);
 
-  const fetchHistoricalData = useEffect(() => {
+  useEffect(() => {
     if (!dateRange || uniqueTickers.length === 0) {
-      console.log('Sketch fetch - no dateRange or tickers');
+      console.log('useEffect fetch: skipped - no dateRange or tickers');
       return;
     }
 
-    const startDate = dateRange.min.toISOString().split('T')[0];
-    const endDate = dateRange.max.toISOString().split('T')[0];
+    const { start, end } = dateRange;
 
     const fetchData = async () => {
-      console.log('=== Starting fetch ===');
-      console.log('Start date:', startDate);
-      console.log('End date:', endDate);
+      console.log('=== FETCH START ===');
+      console.log('Date range:', start, 'to', end);
       setLoading(true);
       setError(null);
 
@@ -162,8 +167,8 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
         for (const ticker of uniqueTickers) {
           try {
             const endpoint = isBondTicker(ticker) ? 'bonds' : 'cedears';
-            const url = `https://data912.com/historical/${endpoint}/${ticker}?from=${startDate}&to=${endDate}`;
-            console.log(`Fetching ${ticker}:`, url);
+            const url = `https://data912.com/historical/${endpoint}/${ticker}?from=${start}&to=${end}`;
+            console.log(`Fetching ${ticker}: ${url}`);
 
             const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
 
@@ -179,42 +184,42 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
                 if (item && item.date) {
                   const cleanDate = item.date.split('T')[0];
                   const rawPrice = item.c || item.close || 0;
-                  tickerPrices[cleanDate] = normalizeApiPrice(ticker, rawPrice);
+                  tickerPrices[cleanDate] = normalizePrice(ticker, rawPrice);
                 }
               });
             } else if (data && typeof data === 'object') {
               Object.entries(data).forEach(([date, value]) => {
                 if (date && value !== undefined && value !== null) {
                   const cleanDate = date.split('T')[0];
-                  tickerPrices[cleanDate] = normalizeApiPrice(ticker, Number(value) || 0);
+                  tickerPrices[cleanDate] = normalizePrice(ticker, Number(value) || 0);
                 }
               });
             }
 
-            console.log(`${ticker} prices fetched:`, Object.keys(tickerPrices).length, 'days');
+            console.log(`  ${ticker}: ${Object.keys(tickerPrices).length} prices, min=${Math.min(...Object.values(tickerPrices))}, max=${Math.max(...Object.values(tickerPrices))}`);
             pricesMap[ticker] = tickerPrices;
           } catch (e) {
-            console.error(`Failed to fetch ${ticker}:`, e);
+            console.error(`  Fetch ${ticker} failed:`, e.message);
             errors.push(ticker);
           }
         }
 
         setHistoricalPrices(pricesMap);
-        console.log('All prices fetched:', Object.keys(pricesMap));
+        console.log('All prices fetched, tickers:', Object.keys(pricesMap));
 
         if (showSpy) {
           try {
-            const spyUrl = `https://data912.com/historical/cedears/SPY?from=${startDate}&to=${endDate}`;
+            const spyUrl = `https://data912.com/historical/cedears/SPY?from=${start}&to=${end}`;
             console.log('Fetching SPY:', spyUrl);
 
-            const spyResponse = await fetch(spyUrl, { signal: AbortSignal.timeout(30000) });
+            const response = await fetch(spyUrl, { signal: AbortSignal.timeout(30000) });
 
-            if (spyResponse.ok) {
-              const spyData = await spyResponse.json();
+            if (response.ok) {
+              const data = await response.json();
               const spyMap = {};
 
-              if (Array.isArray(spyData)) {
-                spyData.forEach(item => {
+              if (Array.isArray(data)) {
+                data.forEach(item => {
                   if (item && item.date) {
                     const cleanDate = item.date.split('T')[0];
                     spyMap[cleanDate] = item.c || item.close || 0;
@@ -222,25 +227,25 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
                 });
               }
 
-              console.log('SPY prices fetched:', Object.keys(spyMap).length, 'days');
+              console.log(`SPY: ${Object.keys(spyMap).length} prices`);
               setSpyPrices(spyMap);
             } else {
-              console.warn('SPY fetch failed:', spyResponse.status);
+              console.warn('SPY fetch failed:', response.status);
             }
           } catch (e) {
-            console.error('SPY fetch error:', e);
+            console.error('SPY fetch error:', e.message);
           }
         }
 
         if (errors.length > 0) {
-          setError(`No se pudieron cargar: ${errors.join(', ')}`);
+          setError(`Error cargando: ${errors.join(', ')}`);
         }
       } catch (e) {
         console.error('Global fetch error:', e);
-        setError(e.message || 'Error al cargar datos');
+        setError(e.message || 'Error cargando datos');
       } finally {
         setLoading(false);
-        console.log('=== Fetch complete ===');
+        console.log('=== FETCH END ===');
       }
     };
 
@@ -249,56 +254,58 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
   const allDates = useMemo(() => {
     if (!dateRange) {
-      console.log('No dateRange for allDates');
+      console.log('allDates: no dateRange');
       return [];
     }
+
     const dates = [];
-    const start = new Date(dateRange.min);
-    const end = new Date(dateRange.max);
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+
     for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(d.toISOString().split('T')[0]);
     }
-    console.log('All dates generated:', dates.length);
+
+    console.log('allDates:', dates.length, 'days');
     return dates;
   }, [dateRange]);
 
   const holdingsByDate = useMemo(() => {
     if (sortedTrades.length === 0 || allDates.length === 0) {
-      console.log('No trades or dates for holdingsByDate');
+      console.log('holdingsByDate: no trades or dates');
       return {};
     }
 
-    console.log('=== Calculating holdings by date ===');
+    console.log('=== CALCULATING HOLDINGS ===');
     const holdings = {};
     const result = {};
 
     for (const date of allDates) {
-      const tradesOnDate = sortedTrades.filter(t => t.parsedDate === date);
-      
-      tradesOnDate.forEach(trade => {
+      const tradesUpToDate = sortedTrades.filter(t => t.parsedDate <= date);
+
+      for (const trade of tradesUpToDate) {
         if (!holdings[trade.ticker]) {
-          holdings[trade.ticker] = { cantidad: 0, costoTotal: 0 };
+          holdings[trade.ticker] = { cantidad: 0 };
         }
-        const normalizedPrice = normalizeTradePrice(trade.ticker, trade.price);
         holdings[trade.ticker].cantidad += trade.quantity;
-        holdings[trade.ticker].costoTotal += trade.quantity * normalizedPrice;
-      });
+      }
 
       result[date] = JSON.parse(JSON.stringify(holdings));
     }
 
-    console.log('Holdings calculated for', Object.keys(result).length, 'dates');
-    console.log('Sample holdings at last date:', result[allDates[allDates.length - 1]]);
+    const lastDate = allDates[allDates.length - 1];
+    console.log('Holdings at', lastDate, ':', JSON.stringify(result[lastDate]));
+    
     return result;
   }, [sortedTrades, allDates]);
 
   const portfolioValues = useMemo(() => {
     if (allDates.length === 0 || Object.keys(historicalPrices).length === 0) {
-      console.log('No dates or prices for portfolioValues');
+      console.log('portfolioValues: no dates or prices');
       return {};
     }
 
-    console.log('=== Calculating portfolio values ===');
+    console.log('=== CALCULATING PORTFOLIO VALUES ===');
     const values = {};
     const tickerList = Object.keys(historicalPrices);
 
@@ -311,76 +318,83 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
         if (holdingsAtDate && holdingsAtDate.cantidad > 0) {
           let price = tickerPrices[date];
+          
           if (!price || price === 0) {
             const availableDates = Object.keys(tickerPrices);
             price = getClosestPrice(tickerPrices, date, availableDates);
           }
-          const value = holdingsAtDate.cantidad * price;
-          totalValue += value;
+
+          if (price > 0) {
+            const positionValue = holdingsAtDate.cantidad * price;
+            totalValue += positionValue;
+          }
         }
       }
 
       values[date] = totalValue;
     }
 
-    console.log('Portfolio values calculated:', Object.keys(values).length);
-    console.log('Sample values:', Object.entries(values).slice(0, 5));
+    const nonZeroCount = Object.values(values).filter(v => v > 0).length;
+    console.log('Portfolio values: total days', allDates.length, 'with value > 0:', nonZeroCount);
+    console.log('Sample values:', Object.entries(values).slice(0, 5).map(([k, v]) => `${k}: ${v.toFixed(2)}`));
+    
     return values;
   }, [allDates, historicalPrices, holdingsByDate]);
 
   const twrData = useMemo(() => {
     if (allDates.length === 0 || Object.keys(portfolioValues).length === 0) {
-      console.log('No dates or values for TWR');
+      console.log('twrData: no data');
       return [];
     }
 
-    console.log('=== Calculating TWR ===');
+    console.log('=== CALCULATING TWR ===');
     const values = portfolioValues;
-    const dates = Object.keys(values).sort((a, b) => new Date(a) - new Date(b));
-    
     let cumTWR = 1;
-    const twrHistory = [];
     let prevValue = null;
+    const result = [];
 
-    for (const date of dates) {
+    for (const date of allDates) {
       const currentValue = values[date];
 
+      let hpr = 0;
       if (prevValue !== null && prevValue > 0) {
-        const hpr = (currentValue - prevValue) / prevValue;
+        hpr = (currentValue - prevValue) / prevValue;
         cumTWR *= (1 + hpr);
       } else if (currentValue > 0) {
         cumTWR = 1;
       }
 
-      const twrReturn = (cumTWR - 1) * 100;
+      const returnPct = currentValue > 0 ? (cumTWR - 1) * 100 : 0;
 
-      twrHistory.push({
+      result.push({
         date,
-        twr: twrReturn,
-        portfolioValue: currentValue
+        return: returnPct,
+        value: currentValue
       });
 
+      console.log(`TWR ${date}: value=${currentValue.toFixed(2)}, hpr=${(hpr * 100).toFixed(2)}%, cumTWR=${((cumTWR - 1) * 100).toFixed(2)}%`);
+      
       prevValue = currentValue;
-      console.log(`TWR ${date}: value=${currentValue.toFixed(2)}, twr=${twrReturn.toFixed(2)}%`);
     }
 
-    console.log('TWR calculated:', twrHistory.length, 'data points');
-    return twrHistory;
+    console.log('TWR complete:', result.length, 'points');
+    return result;
   }, [allDates, portfolioValues]);
 
-  const spyCumulative = useMemo(() => {
+  const spyData = useMemo(() => {
     if (!spyPrices || Object.keys(spyPrices).length === 0) {
-      console.log('No SPY prices');
+      console.log('spyData: no spy prices');
       return {};
     }
 
-    console.log('=== Calculating SPY cumulative ===');
+    console.log('=== CALCULATING SPY ===');
     const dates = Object.keys(spyPrices).sort((a, b) => new Date(a) - new Date(b));
-    const spyValues = dates.map(d => ({ date: d, price: spyPrices[d] }));
     
-    if (spyValues.length === 0) return {};
+    if (dates.length === 0) return {};
 
+    const spyValues = dates.map(d => ({ date: d, price: spyPrices[d] }));
     const initialPrice = spyValues[0].price;
+
     console.log('SPY initial price:', initialPrice);
 
     if (initialPrice <= 0) {
@@ -394,82 +408,68 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       result[date] = cumulative;
     }
 
-    console.log('SPY cumulative calculated:', Object.keys(result).length);
+    console.log('SPY cumulative calculated:', Object.keys(result).length, 'points');
     return result;
   }, [spyPrices]);
 
   const chartData = useMemo(() => {
-    console.log('=== Building chart data ===');
-    console.log('twrData length:', twrData.length);
-    console.log('spyCumulative length:', Object.keys(spyCumulative).length);
+    console.log('=== BUILDING CHART DATA ===');
+    console.log('twrData:', twrData.length, 'points');
+    console.log('spyData:', Object.keys(spyData).length, 'points');
 
     if (twrData.length === 0) {
-      console.log('No TWR data for chart');
+      console.log('chartData: empty');
       return [];
     }
 
     const now = new Date();
     const cutoffDate = new Date(now);
     cutoffDate.setDate(cutoffDate.getDate() - selectedDays);
-    console.log('Cutoff date:', cutoffDate.toISOString().split('T')[0]);
+    
+    console.log('Cutoff:', cutoffDate.toISOString().split('T')[0]);
 
     const filteredTWR = twrData.filter(d => new Date(d.date) >= cutoffDate);
-    console.log('Filtered TWR points:', filteredTWR.length);
+    console.log('Filtered TWR:', filteredTWR.length, 'points');
 
     if (filteredTWR.length === 0) return [];
 
-    const firstTWR = filteredTWR[0].twr;
-    console.log('First TWR (will be normalized to 0):', firstTWR);
+    const firstReturn = filteredTWR[0].return;
 
-    const spyDates = Object.keys(spyCumulative).sort((a, b) => new Date(a) - new Date(b));
-    let initialSpyPrice = null;
-    for (const date of spyDates) {
-      if (new Date(date) >= cutoffDate && spyPrices[date] > 0) {
-        initialSpyPrice = spyPrices[date];
-        break;
+    const result = filteredTWR.map(day => {
+      let spyReturn = null;
+      if (spyData[day.date] !== undefined) {
+        spyReturn = spyData[day.date];
       }
-    }
-    console.log('SPY initial price for range:', initialSpyPrice);
-
-    const chart = filteredTWR.map(day => {
-      let spyChange = null;
-      if (initialSpyPrice && spyPrices[day.date]) {
-        spyChange = ((spyPrices[day.date] - initialSpyPrice) / initialSpyPrice) * 100;
-      }
-
+      
       return {
         date: day.date,
-        displayDate: formatDate(day.date),
-        portfolioReturn: day.twr - firstTWR,
-        spyReturn: spyChange
+        displayDate: formatDateDisplay(day.date),
+        portfolioReturn: day.return - firstReturn,
+        spyReturn
       };
     });
 
-    console.log('Chart data built:', chart.length, 'points');
-    console.log('Sample chart point:', chart[0]);
-    console.log('Last chart point:', chart[chart.length - 1]);
+    console.log('chartData built:', result.length, 'points');
+    console.log('First point:', result[0]);
+    console.log('Last 5 points:', result.slice(-5).map(p => `${p.date}: portfolio=${p.portfolioReturn.toFixed(2)}%, spy=${p.spyReturn?.toFixed(2)}%`));
 
-    return chart;
-  }, [twrData, spyCumulative, spyPrices, selectedDays]);
+    return result;
+  }, [twrData, spyData, selectedDays]);
 
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
 
     const last = chartData[chartData.length - 1];
-    const portfolioReturn = last?.portfolioReturn || 0;
-    const spyReturn = last?.spyReturn || 0;
-    const diff = portfolioReturn - spyReturn;
-
-    console.log('=== Stats ===');
-    console.log('Portfolio return:', portfolioReturn);
-    console.log('SPY return:', spyReturn);
-    console.log('Difference:', diff);
-
-    return { portfolioReturn, spyReturn, diff };
+    
+    return {
+      portfolioReturn: last?.portfolioReturn || 0,
+      spyReturn: last?.spyReturn || 0,
+      diff: (last?.portfolioReturn || 0) - (last?.spyReturn || 0)
+    };
   }, [chartData]);
 
   const comparisonMessage = useMemo(() => {
-    if (!stats || !showSpy || Object.keys(spyCumulative).length === 0) return null;
+    if (!stats || !showSpy || Object.keys(spyData).length === 0) return null;
 
     const { diff } = stats;
 
@@ -495,7 +495,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
         bg: 'bg-slate-700/50 border-slate-600/30'
       };
     }
-  }, [stats, showSpy, spyCumulative]);
+  }, [stats, showSpy, spyData]);
 
   if (!trades || trades.length === 0) {
     return (
