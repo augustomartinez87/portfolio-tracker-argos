@@ -3,8 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
-// Importar funciones de detección de bonos desde la fuente única de verdad
-import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
+import { isBonoPesos } from '../hooks/useBondPrices';
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
@@ -29,7 +28,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   const [componentError, setComponentError] = useState(null);
   const [selectedDays, setSelectedDays] = useState(90);
 
-  // Error boundary for component crashes
   if (componentError) {
     console.error('PositionDetailModal error:', componentError);
     return (
@@ -48,7 +46,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     );
   }
 
-  // Filter trades for this position
   const positionTrades = useMemo(() => {
     try {
       if (!position) return [];
@@ -62,7 +59,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     }
   }, [trades, position]);
 
-  // Fetch historical data with retry
   useEffect(() => {
     if (!open || !position) return;
 
@@ -83,12 +79,10 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
           const data = await data912.getHistorical(position.ticker, dateStr);
           
-          // Validate data structure
           if (!Array.isArray(data) || data.length === 0) {
             throw new Error('No hay datos históricos disponibles');
           }
 
-          // Filter out invalid entries
           const validData = data.filter(item => 
             item && 
             item.date && 
@@ -100,14 +94,12 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             throw new Error('Datos históricos inválidos');
           }
 
-          // Sort by date (oldest first) for proper chart display
           const sortedData = validData.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
             return dateA.getTime() - dateB.getTime();
           });
 
-          // Take only selected days if we have more data
           const cutoffTime = Date.now() - (selectedDays * 24 * 60 * 60 * 1000);
           
           const filteredData = sortedData.filter(item => {
@@ -121,7 +113,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           
         } catch (err) {
           lastError = err;
-          // Check if it's a peso bond without historical data - don't retry
           if (isBonoPesos(position.ticker)) {
             setError('data912 no tiene almacenado este precio histórico :(');
             setHistorical([]);
@@ -136,7 +127,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         }
       }
 
-      // All retries exhausted
       console.error('Error fetching historical data after retries:', lastError);
       setError(lastError instanceof Error ? lastError.message : 'Error cargando históricos después de múltiples intentos');
       setHistorical([]);
@@ -146,7 +136,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     fetchHistorical();
   }, [open, position, selectedDays]);
 
-  // Prepare chart data
   const chartData = useMemo(() => {
     if (!Array.isArray(historical) || historical.length === 0) {
       return [];
@@ -164,10 +153,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         console.error('Error processing historical date:', err);
         return null;
       }
-    }).filter(Boolean); // Remove null entries
+    }).filter(Boolean);
   }, [historical]);
 
-  // Calculate historical stats
   const stats = useMemo(() => {
     if (!Array.isArray(historical) || historical.length === 0) {
       return null;
@@ -191,7 +179,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     }
   }, [historical]);
 
-  // Calculate individual trade results with current prices
   const tradesWithResults = useMemo(() => {
     try {
       if (!position) return positionTrades;
@@ -224,7 +211,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     return null;
   }
 
-  // Validate position has required fields
   if (!position.ticker) {
     console.error('Invalid position data:', position);
     return (
@@ -244,14 +230,11 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
   const invested = position?.costoTotal || 0;
   const getColorClass = (value) => (value >= 0 ? 'text-emerald-400' : 'text-red-400');
-
-  // Check if position has valid price data
   const isPositionUnavailable = position && (!position.precioActual || position.precioActual === 0);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-background-secondary rounded-lg w-full max-w-5xl border border-border-primary shadow-2xl my-8 max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="p-6 border-b border-border-primary flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-text-primary font-mono">{position.ticker}</h2>
@@ -266,9 +249,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           </button>
         </div>
 
-        {/* Content - scrollable */}
         <div className="p-6 overflow-y-auto flex-1">
-          {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
               <p className="text-text-tertiary text-xs mb-1">Cantidad</p>
@@ -356,7 +337,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             </div>
           )}
 
-          {/* Historical Price Chart */}
           <div className="bg-background-tertiary/50 rounded-lg p-5 border border-border-primary mb-6">
             <div className="mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
@@ -372,7 +352,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   )}
                 </div>
 
-                {/* Filtros de días */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-text-tertiary flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -413,7 +392,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </div>
                 </div>
               )}
-              </div>
+            </div>
 
             {isPositionUnavailable ? (
               <div className="flex justify-center items-center h-72">
@@ -495,7 +474,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             )}
           </div>
 
-          {/* Trades Table */}
           <div className="bg-background-tertiary/50 rounded-lg p-5 border border-border-primary">
             <h3 className="text-lg font-bold text-text-primary mb-4">
               Historial de Operaciones ({positionTrades.length})
@@ -559,107 +537,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                           </span>
                         </td>
                       </tr>
-                    )}
-          </div>
-
-          {/* Trades Table */}
-          <div className="bg-slate-900/50 rounded-lg p-5 border border-slate-700/50">
-            <h3 className="text-lg font-bold text-white mb-4">
-              Historial de Operaciones ({positionTrades.length})
-            </h3>
-
-            {positionTrades.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-slate-500">No hay operaciones registradas para esta posición</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700/50">
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Fecha</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Tipo</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Cantidad</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Precio</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Invertido</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Valor Actual</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Resultado</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-400 uppercase">% Resultado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/30">
-                    {tradesWithResults.map((trade) => (
-                      <tr key={trade.id} className="hover:bg-slate-800/50 transition-colors">
-                        <td className="px-3 py-3 text-slate-300 text-sm">
-                          {new Date(trade.fecha).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span className="inline-block px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-semibold">
-                            Compra
-                          </span>
-                        </td>
-                        <td className="text-right px-3 py-3 text-white font-mono">{trade.cantidad}</td>
-                        <td className="text-right px-3 py-3 text-white font-mono">
-                          {isBonoPesos(trade.ticker)
-                            ? `$${trade.precioCompra.toFixed(4)}`
-                            : formatCurrency(trade.precioCompra)
-                          }
-                        </td>
-                        <td className="text-right px-3 py-3 text-slate-400 font-mono text-sm">
-                          {formatCurrency(trade.investedAmount)}
-                        </td>
-                        <td className="text-right px-3 py-3 text-white font-mono">
-                          {formatCurrency(trade.currentValue)}
-                        </td>
-                        <td className="text-right px-3 py-3 font-mono">
-                          <div className={`font-medium ${trade.result >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {formatCurrency(trade.result)}
-                          </div>
-                        </td>
-                        <td className="text-right px-3 py-3 font-mono">
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                            trade.resultPct >= 0 
-                              ? 'bg-emerald-500/20 text-emerald-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {formatPercentage(trade.resultPct)}
-                          </span>
-                        </td>
-                      </tr>
                     ))}
-                    
-                    {/* Fila de totales */}
-                    {tradesWithResults.length > 0 && (
-                      <tr className="bg-slate-900/80 border-t-2 border-emerald-500/30">
-                        <td colSpan={4} className="px-3 py-4 text-left">
-                          <span className="font-bold text-emerald-400 uppercase tracking-wide text-sm">TOTAL TRADES</span>
-                        </td>
-                        <td className="text-right px-3 py-4 text-white font-mono font-bold text-sm">
-                          {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0))}
-                        </td>
-                        <td className="text-right px-3 py-4 text-white font-mono font-bold text-sm">
-                          {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.currentValue, 0))}
-                        </td>
-                        <td className="text-right px-3 py-4 font-mono font-bold">
-                          <div className={`font-bold ${tradesWithResults.reduce((sum, t) => sum + t.result, 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {formatCurrency(tradesWithResults.reduce((sum, t) => sum + t.result, 0))}
-                          </div>
-                        </td>
-                        <td className="text-right px-3 py-4">
-                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                            tradesWithResults.reduce((sum, t) => sum + t.result, 0) >= 0 
-                              ? 'bg-emerald-500/20 text-emerald-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {formatPercentage(
-                              tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0) > 0
-                                ? ((tradesWithResults.reduce((sum, t) => sum + t.result, 0) / tradesWithResults.reduce((sum, t) => sum + t.investedAmount, 0)) * 100)
-                                : 0
-                            )}
-                          </span>
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -670,5 +548,3 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     </div>
   );
 }
-
-
