@@ -31,13 +31,13 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   if (componentError) {
     console.error('PositionDetailModal error:', componentError);
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-slate-800 rounded-lg p-6 text-center max-w-md">
-          <p className="text-red-400 mb-4">Error inesperado al cargar el detalle</p>
-          <p className="text-slate-400 text-sm mb-4">{componentError.message}</p>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-background-secondary rounded-lg p-6 text-center max-w-md border border-border-primary">
+          <p className="text-danger mb-4">Error inesperado al cargar el detalle</p>
+          <p className="text-text-tertiary text-sm mb-4">{componentError.message}</p>
           <button 
             onClick={onClose}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+            className="px-4 py-2 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary"
           >
             Cerrar
           </button>
@@ -214,12 +214,12 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   if (!position.ticker) {
     console.error('Invalid position data:', position);
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-slate-800 rounded-lg p-6 text-center">
-          <p className="text-red-400 mb-4">Error al cargar los datos de la posición</p>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-background-secondary rounded-lg p-6 text-center border border-border-primary">
+          <p className="text-danger mb-4">Error al cargar los datos de la posición</p>
           <button 
             onClick={onClose}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+            className="px-4 py-2 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary"
           >
             Cerrar
           </button>
@@ -229,7 +229,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   }
 
   const invested = position?.costoTotal || 0;
-  const getColorClass = (value) => (value >= 0 ? 'text-emerald-400' : 'text-red-400');
+  const getColorClass = (value) => (value >= 0 ? 'text-success' : 'text-danger');
   const isPositionUnavailable = position && (!position.precioActual || position.precioActual === 0);
 
   return (
@@ -404,7 +404,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               </div>
             ) : loading ? (
               <div className="flex justify-center items-center h-72">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
             ) : error ? (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">

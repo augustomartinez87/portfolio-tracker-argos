@@ -34,17 +34,17 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 max-w-md text-center">
+        <div className="min-h-screen bg-background-primary flex items-center justify-center p-6">
+          <div className="bg-background-secondary border border-border-primary rounded-xl p-8 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Error inesperado</h2>
-            <p className="text-slate-400 mb-4">{this.state.error?.message || 'Hubo un problema al cargar la página.'}</p>
+            <h2 className="text-xl font-bold text-text-primary mb-2">Error inesperado</h2>
+            <p className="text-text-tertiary mb-4">{this.state.error?.message || 'Hubo un problema al cargar la página.'}</p>
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
               Recargar página
             </button>
@@ -61,10 +61,10 @@ const PositionDetailModal = lazy(() => import('../components/PositionDetailModal
 
 // Loading fallback for lazy components
 const LoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-      <p className="text-slate-400">Cargando...</p>
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+      <p className="text-text-tertiary">Cargando...</p>
     </div>
   </div>
 );
@@ -1038,10 +1038,10 @@ export default function Dashboard() {
 
   if (tradesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Cargando datos...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-text-tertiary">Cargando datos...</p>
         </div>
       </div>
     );
@@ -1049,12 +1049,12 @@ export default function Dashboard() {
 
   if (!currentPortfolio) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-400 mb-4">No tienes portfolios creados.</p>
+          <p className="text-text-tertiary mb-4">No tienes portfolios creados.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             Recargar página
           </button>
@@ -1452,7 +1452,7 @@ export default function Dashboard() {
                                   setDeletingTrade(trade);
                                   setDeleteModalOpen(true);
                                 }}
-                                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                className="p-2 text-text-tertiary hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

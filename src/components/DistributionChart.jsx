@@ -27,10 +27,10 @@ export const DistributionChart = ({ positions }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900 border border-slate-700 rounded-lg p-2 shadow-xl">
-          <p className="text-white font-semibold text-xs mb-1">{data.name}</p>
-          <p className="text-slate-300 text-xs">{formatCurrency(data.value)}</p>
-          <p className="text-success text-xs">{formatPercentage(data.percentage)}</p>
+        <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
+          <p className="text-text-primary font-semibold text-xs mb-1">{data.name}</p>
+          <p className="text-text-secondary text-xs">{formatCurrency(data.value)}</p>
+          <p className="success text-xs">{formatPercentage(data.percentage)}</p>
         </div>
       );
     }
@@ -45,9 +45,9 @@ export const DistributionChart = ({ positions }) => {
     <div className="relative h-full flex flex-col">
       <div className="flex items-center gap-2 mb-3 flex-shrink-0">
         <div className="p-1.5 bg-primary/20 rounded">
-          <PieChartIcon className="w-4 h-4 text-emerald-400" />
+          <PieChartIcon className="w-4 h-4 text-success" />
         </div>
-        <h3 className="text-sm font-bold text-white">Distribución</h3>
+        <h3 className="text-sm font-bold text-text-primary">Distribución</h3>
       </div>
 
       <div className="flex-1 flex items-center justify-center min-h-[200px] relative">
@@ -87,8 +87,8 @@ export const DistributionChart = ({ positions }) => {
 
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <p className="text-xs text-slate-400">Total</p>
-            <p className="text-sm font-bold text-white font-mono">{formatCurrency(totalValue).replace('ARS', '').trim()}</p>
+            <p className="text-xs text-text-tertiary">Total</p>
+            <p className="text-sm font-bold text-text-primary font-mono">{formatCurrency(totalValue).replace('ARS', '').trim()}</p>
           </div>
         </div>
       </div>
@@ -100,8 +100,8 @@ export const DistributionChart = ({ positions }) => {
             onClick={() => setSelectedCategory(selectedCategory === item.name ? null : item.name)}
             className={`w-full flex justify-between items-center py-1.5 px-3 rounded border transition-all ${
               selectedCategory === item.name 
-                ? 'bg-slate-700/50 border-primary/40' 
-                : 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-800/50'
+                ? 'bg-background-tertiary border-primary/40' 
+                : 'bg-background-secondary/30 border-border-primary/30 hover:bg-background-tertiary'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export const DistributionChart = ({ positions }) => {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              <span className="text-sm text-white font-medium">{item.name}</span>
+              <span className="text-sm text-text-primary font-medium">{item.name}</span>
             </div>
             <span className="text-sm text-success font-mono font-semibold">
               {formatPercentage(item.percentage)}
@@ -119,14 +119,14 @@ export const DistributionChart = ({ positions }) => {
       </div>
 
       {selectedCategory && categoryAssets.length > 0 && (
-        <div className="absolute inset-x-0 bottom-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-3 z-10">
+        <div className="absolute inset-x-0 bottom-0 bg-background-secondary border border-border-primary rounded-lg shadow-xl p-3 z-10">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-white">
-              {selectedCategory} <span className="text-slate-400 font-normal">({categoryAssets.length})</span>
+            <p className="text-sm font-semibold text-text-primary">
+              {selectedCategory} <span className="text-text-tertiary font-normal">({categoryAssets.length})</span>
             </p>
             <button
               onClick={() => setSelectedCategory(null)}
-              className="text-slate-400 hover:text-white"
+              className="text-text-tertiary hover:text-text-primary"
             >
               <X className="w-4 h-4" />
             </button>
@@ -135,9 +135,9 @@ export const DistributionChart = ({ positions }) => {
             {categoryAssets.map((asset, idx) => (
               <div
                 key={idx}
-                className="flex justify-between items-center py-1.5 px-2 rounded bg-slate-700/20"
+                className="flex justify-between items-center py-1.5 px-2 rounded bg-background-tertiary"
               >
-                <span className="text-sm font-mono text-white">{asset.ticker}</span>
+                <span className="text-sm font-mono text-text-primary">{asset.ticker}</span>
                 <span className="text-sm text-primary font-mono">{formatPercentage(asset.percentage)}</span>
               </div>
             ))}
