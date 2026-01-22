@@ -40,7 +40,7 @@ export const Login = () => {
           <p className="text-gray-400">Inicia sesión para continuar</p>
         </div>
 
-        <div className="bg-black/40 backdrop-blur-md border border-gray-800/50 rounded-xl p-8 shadow-2xl">
+        <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl p-8 shadow-2xl">
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-500 px-4 py-3 rounded-lg mb-6">
               {error}
