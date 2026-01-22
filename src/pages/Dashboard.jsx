@@ -6,11 +6,7 @@ import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } fro
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from '../hooks/useBondPrices';
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from '../components/DistributionChart';
-import PortfolioEvolutionChart from '../components/PortfolioEvolutionChart';
-import SummaryCard from '../components/common/SummaryCard';
-import PositionsTable from '../components/dashboard/PositionsTable';
 import { TopPerformers } from '../components/dashboard/TopPerformers';
-import { RecentActivity } from '../components/dashboard/RecentActivity';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -1226,24 +1222,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Distribution + Evolution Chart side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
-                <DistributionChart positions={positions} />
-              </div>
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <PortfolioEvolutionChart trades={trades} prices={prices} mepRate={mepRate} />
-              </div>
+            {/* Distribution Chart */}
+            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
+              <DistributionChart positions={positions} />
             </div>
 
-            {/* Top Performers + Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-              <div className="lg:col-span-2">
-                <TopPerformers positions={positions} prices={prices} maxItems={3} />
-              </div>
-              <div className="lg:col-span-1">
-                <RecentActivity trades={trades} maxItems={3} />
-              </div>
+            {/* Top Performers */}
+            <div className="lg:col-span-2">
+              <TopPerformers positions={positions} prices={prices} maxItems={5} />
             </div>
 
             {/* Positions Table */}
