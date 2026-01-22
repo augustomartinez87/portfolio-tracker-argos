@@ -53,24 +53,23 @@ export const getAssetClass = (ticker, panel, isArgStock = false) => {
 
 /**
  * Ajusta el precio del bono según su tipo
- * Los precios de data912 vienen en formatos diferentes:
- * - Bonos pesos: el precio viene multiplicado, hay que dividir
- * - Bonos hard dollar: precio por USD 100 VN
+ * Los precios de data912 vienen multiplicados por 100:
+ * - Bonos pesos: precio * 100, hay que dividir por 100
+ * - Bonos hard dollar (AE38, AL30, GD30): precio * 100, hay que dividir por 100
  *
  * NOTA: Esta función se usa para normalizar precios al guardar/mostrar
  */
 export const adjustBondPrice = (ticker, price) => {
   if (!price || price === 0) return 0;
 
-  // Bonos en pesos: precio por $1 VN (típicamente 0.8 a 1.5)
-  // Si el precio viene > 10, probablemente está en centavos
+  // Bonos en pesos: dividir por 100
   if (isBonoPesos(ticker)) {
-    return price > 10 ? price / 100 : price;
+    return price / 100;
   }
 
-  // Bonos hard dollar: precio por USD 100 VN
+  // Bonos hard dollar (AE38, AL30, GD30, etc.): dividir por 100
   if (isBonoHardDollar(ticker)) {
-    return price;
+    return price / 100;
   }
 
   return price;
