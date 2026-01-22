@@ -17,10 +17,10 @@ const SORT_OPTIONS = [
 ];
 
 const COLUMN_DEFAULTS = {
-  showPPC: false,
-  showInvertido: false,
-  showDiario: false,
-  showDiarioPct: false,
+  showPPC: true,
+  showInvertido: true,
+  showDiario: true,
+  showDiarioPct: true,
   density: 'comfortable'
 };
 

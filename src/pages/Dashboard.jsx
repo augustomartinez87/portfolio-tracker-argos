@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart } from 'lucide-react';
 import { data912 } from '../utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
@@ -8,7 +8,6 @@ import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
 import PositionsTable from '../components/dashboard/PositionsTable';
-import { TopPerformers } from '../components/dashboard/TopPerformers';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -1098,7 +1097,19 @@ export default function Dashboard() {
             title="Dashboard"
           >
             <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Dashboard</span>
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('graficos')}
+            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
+              activeTab === 'graficos'
+                ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Gráficos"
+          >
+            <PieChart className="w-5 h-5 flex-shrink-0" />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Gráficos</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
@@ -1145,25 +1156,36 @@ export default function Dashboard() {
         <nav className="flex justify-around">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 px-6 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[80px] ${
+            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
               activeTab === 'dashboard'
                 ? 'text-emerald-400 bg-emerald-500/15'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <LayoutDashboard className="w-6 h-6" />
-            <span className="text-xs font-medium mt-0.5">Dashboard</span>
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-xs font-medium">Posiciones</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('graficos')}
+            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
+              activeTab === 'graficos'
+                ? 'text-emerald-400 bg-emerald-500/15'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <PieChart className="w-5 h-5" />
+            <span className="text-xs font-medium">Gráficos</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`flex flex-col items-center gap-1 px-6 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[80px] ${
+            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
               activeTab === 'trades'
                 ? 'text-emerald-400 bg-emerald-500/15'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <FileText className="w-6 h-6" />
-            <span className="text-xs font-medium mt-0.5">Trades</span>
+            <FileText className="w-5 h-5" />
+            <span className="text-xs font-medium">Trades</span>
           </button>
         </nav>
       </div>
@@ -1200,37 +1222,23 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Resumen - 4 cards */}
-            <div className="mb-4">
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-3 border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-[10px] mb-0.5">Posiciones</p>
-                    <p className="text-white font-mono text-base font-semibold">{positions.length}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-[10px] mb-0.5">Trades</p>
-                    <p className="text-white font-mono text-base font-semibold">{trades.length}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-[10px] mb-0.5">Dólar MEP</p>
-                    <p className="text-white font-mono text-base font-semibold">{formatARS(mepRate)}</p>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-[10px] mb-0.5">Data</p>
-                    <p className="text-slate-300 font-mono text-xs">data912.com</p>
-                  </div>
-                </div>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                <p className="text-slate-400 text-xs mb-1">Posiciones</p>
+                <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
               </div>
-            </div>
-
-            {/* Distribution + Top Performers */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-custom p-4 border border-slate-700/50 shadow-xl backdrop-blur-sm min-h-[350px]">
-                <DistributionChart positions={positions} />
+              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                <p className="text-slate-400 text-xs mb-1">Trades</p>
+                <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
               </div>
-              <div>
-                <TopPerformers positions={positions} prices={prices} maxItems={5} />
+              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
+                <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
+                <p className="text-slate-400 text-xs mb-1">Data</p>
+                <p className="text-slate-300 font-mono text-sm">data912.com</p>
               </div>
             </div>
 
@@ -1249,6 +1257,16 @@ export default function Dashboard() {
              {/* Footer - Desktop Only */}
             <div className={`hidden lg:block fixed bottom-0 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
               <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
+            </div>
+          </>
+        ) : activeTab === 'graficos' ? (
+          <>
+            {/* Gráficos Tab */}
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white mb-4">Análisis del Portfolio</h2>
+              <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-4">
+                <DistributionChart positions={positions} />
+              </div>
             </div>
           </>
         ) : (
