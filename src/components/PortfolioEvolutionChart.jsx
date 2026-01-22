@@ -45,7 +45,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const calculateSimpleReturn = (trades, prices) => {
+const calculateSimpleReturn = (trades, prices, mepRate) => {
   if (!trades || !prices || trades.length === 0) return [];
 
   const mappedTrades = trades.map(t => ({
@@ -61,7 +61,6 @@ const calculateSimpleReturn = (trades, prices) => {
 
   const history = [];
 
-  let totalCost = 0;
   const holdings = {};
 
   for (const trade of sortedTrades) {
@@ -79,18 +78,22 @@ const calculateSimpleReturn = (trades, prices) => {
 
     holdings[trade.ticker] = { cantidad: newQty, costoTotal: newCost };
 
-    const avgCost = newQty > 0 ? newCost / newQty : 0;
-    const currentPrice = prices[trade.ticker]?.precio || avgCost;
-    const currentValue = newQty * currentPrice;
+    let totalValue = 0;
+    let totalCost = 0;
 
-    totalCost = newCost;
+    for (const [ticker, pos] of Object.entries(holdings)) {
+      if (pos.cantidad <= 0) continue;
+      const currentPrice = prices[ticker]?.precio || 0;
+      totalValue += pos.cantidad * currentPrice;
+      totalCost += pos.costoTotal;
+    }
 
-    const returnPct = totalCost > 0 ? ((currentValue - totalCost) / totalCost) * 100 : 0;
+    const returnPct = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
 
     history.push({
       date: tradeDate,
       return: returnPct,
-      value: currentValue,
+      value: totalValue,
       cost: totalCost,
       isTradeDay: true
     });
@@ -99,7 +102,7 @@ const calculateSimpleReturn = (trades, prices) => {
   return history;
 };
 
-export default function PortfolioEvolutionChart({ trades, prices }) {
+export default function PortfolioEvolutionChart({ trades, prices, mepRate }) {
   const [selectedDays, setSelectedDays] = useState(90);
   const [showSpy, setShowSpy] = useState(true);
   const [spyData, setSpyData] = useState({});
@@ -107,8 +110,8 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [spyError, setSpyError] = useState(null);
 
   const portfolioHistory = useMemo(() => {
-    return calculateSimpleReturn(trades, prices);
-  }, [trades, prices]);
+    return calculateSimpleReturn(trades, prices, mepRate);
+  }, [trades, prices, mepRate]);
 
   useEffect(() => {
     if (!showSpy) {
