@@ -1234,37 +1234,15 @@ export default function Dashboard() {
                   setEditingTrade(null);
                   setModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium ml-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Nueva Transacción</span>
               </button>
               <button
-                onClick={downloadTemplate}
-                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm"
-              >
-                <Download className="w-4 h-4" />
-                <span>Template</span>
-              </button>
-              <label className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors cursor-pointer text-sm">
-                <input
-                  type="file"
-                  accept=".csv,.txt"
-                  onChange={importFromCSV}
-                  disabled={isLoading}
-                  className="hidden"
-                />
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                <span>Importar</span>
-              </label>
-              <button
                 onClick={fetchPrices}
                 disabled={isPricesLoading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm ml-auto"
+                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
                 <span>Actualizar</span>
