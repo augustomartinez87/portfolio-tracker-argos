@@ -27,19 +27,19 @@ export const ForgotPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background-primary px-4">
         <div className="w-full max-w-md">
-          <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 text-center">
-            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="bg-background-secondary rounded-lg p-8 border border-border-primary text-center">
+            <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-8 h-8 text-success" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">¡Email enviado!</h2>
-            <p className="text-gray-400 mb-6">
+            <h2 className="text-2xl font-bold text-text-primary mb-3">¡Email enviado!</h2>
+            <p className="text-text-secondary mb-6">
               Revisa tu correo electrónico para encontrar las instrucciones para restablecer tu contraseña.
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              className="inline-flex items-center gap-2 text-success hover:text-success/80 transition-colors font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver al inicio de sesión
@@ -51,32 +51,32 @@ export const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background-primary px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Recuperar contraseña</h1>
-          <p className="text-gray-400">Te enviaremos instrucciones por email</p>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Argos Capital</h1>
+          <p className="text-text-secondary">Te enviaremos instrucciones por email</p>
         </div>
 
-        <div className="bg-gray-900 rounded-xl p-8 border border-gray-800">
+        <div className="bg-background-secondary rounded-lg p-8 border border-border-primary">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-danger/10 border border-danger/30 text-danger px-4 py-3 rounded-lg mb-6">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary w-5 h-5" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-background-tertiary border border-border-primary rounded-lg pl-10 pr-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success transition-colors"
                   placeholder="tu@email.com"
                   required
                 />
@@ -86,7 +86,7 @@ export const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+              className="w-full bg-success hover:bg-success/90 disabled:bg-success/50 text-white font-medium py-3 px-4 rounded-lg transition-colors"
             >
               {loading ? 'Enviando...' : 'Enviar instrucciones'}
             </button>
@@ -95,7 +95,7 @@ export const ForgotPassword = () => {
           <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-300 transition-colors"
+              className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver al inicio de sesión
