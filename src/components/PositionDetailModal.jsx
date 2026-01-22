@@ -5,6 +5,17 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { data912 } from '../utils/data912';
 import { isBonoPesos } from '../hooks/useBondPrices';
 
+const formatDateSafe = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 const formatCurrency = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   return new Intl.NumberFormat('es-AR', {
@@ -55,7 +66,11 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       if (!trades || !Array.isArray(trades)) return [];
       return trades
         .filter(t => t && t.ticker === position.ticker)
-        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        .sort((a, b) => {
+          const dateA = new Date(a.fecha || a.trade_date).getTime();
+          const dateB = new Date(b.fecha || b.trade_date).getTime();
+          return dateB - dateA;
+        });
     } catch (err) {
       console.error('Error filtering trades:', err);
       return [];
@@ -136,7 +151,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         } catch (err) {
           lastError = err;
           if (isBonoPesos(position.ticker)) {
-            setError('data912 no tiene almacenado este precio histórico :(');
             setHistorical([]);
             setLoading(false);
             return;
@@ -441,6 +455,14 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                 {error}
               </div>
+            ) : isBonoPesos(position.ticker) && (!chartData || chartData.length === 0) ? (
+              <div className="flex justify-center items-center h-72">
+                <div className="text-center">
+                  <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+                  <p className="text-amber-300 font-medium">Precio histórico no disponible</p>
+                  <p className="text-amber-400 text-sm mt-2">Este bono no tiene datos históricos en data912.com</p>
+                </div>
+              </div>
             ) : (!chartData || chartData.length === 0) ? (
               <div className="flex justify-center items-center h-72">
                 <p className="text-text-tertiary">No hay datos históricos disponibles</p>
@@ -533,7 +555,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                     {tradesWithResults.map((trade) => (
                       <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
                         <td className="px-3 py-3 text-text-secondary text-sm">
-                          {new Date(trade.fecha).toLocaleDateString('es-AR')}
+                          {formatDateSafe(trade.fecha)}
                         </td>
                         <td className="px-3 py-3">
                           <span className="inline-block px-2 py-1 bg-success/20 text-success rounded text-xs font-semibold">
