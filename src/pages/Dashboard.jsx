@@ -848,7 +848,7 @@ export default function Dashboard() {
         </Suspense>
 
         <Suspense fallback={<LoadingFallback />}>
-          <PositionDetailModal isOpen={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} onTradeClick={handleTradeClickFromDetail} />
+          <PositionDetailModal isOpen={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} />
         </Suspense>
       </div>
     </ErrorBoundary>
