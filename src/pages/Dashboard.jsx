@@ -780,6 +780,7 @@ export default function Dashboard() {
         if (newTrades.length > 0) {
           let savedCount = 0;
           let errorCount = 0;
+          let lastError = null;
 
           for (const trade of newTrades) {
             try {
@@ -791,15 +792,20 @@ export default function Dashboard() {
               savedCount++;
             } catch (err) {
               console.error('Error saving trade:', trade.ticker, err);
+              lastError = err;
               errorCount++;
             }
           }
 
           if (savedCount > 0) {
-            setImportStatus(`✓ ${savedCount} trades importados${errorCount > 0 ? ` (${errorCount} fallidos)` : ''}`);
+            setImportStatus(`✓ ${savedCount} trades importados${errorCount > 0 ? ` (${errorCount} fallidos: ${lastError?.message || 'error'})` : ''}`);
             loadTrades();
             setTimeout(() => setImportStatus(null), 5000);
           } else {
+            setImportStatus(`Error al guardar trades: ${lastError?.message || 'Error desconocido'}`);
+            setTimeout(() => setImportStatus(null), 5000);
+          }
+        } else {
             setImportStatus('Error al guardar trades');
             setTimeout(() => setImportStatus(null), 3000);
           }
