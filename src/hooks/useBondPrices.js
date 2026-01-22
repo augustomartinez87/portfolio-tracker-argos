@@ -43,7 +43,7 @@ export const getAssetClass = (ticker, panel, isArgStock = false) => {
   if (isBonoHardDollar(ticker)) return 'BONO HARD DOLLAR';
   if (panel === 'bonds') return 'BONO HARD DOLLAR';
 
-  const argyTickers = ['GGAL', 'YPFD', 'VIST', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN',
+  const argyTickers = ['GGAL', 'YPFD', 'PAMP', 'TXAR', 'ALUA', 'BMA', 'SUPV', 'CEPU', 'EDN',
                         'TGSU2', 'TRAN', 'CRES', 'LOMA', 'COME', 'BBAR', 'BYMA', 'MIRG', 'VALO', 'IRSA',
                         'METR', 'TECO2', 'TGNO4', 'HARG', 'CADO', 'MORI', 'SEMI', 'BOLT', 'GARO'];
   if (isArgStock || argyTickers.includes(ticker.toUpperCase())) return 'ARGY';
