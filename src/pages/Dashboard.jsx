@@ -6,6 +6,7 @@ import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } fro
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from '../hooks/useBondPrices';
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from '../components/DistributionChart';
+import SummaryCard from '../components/common/SummaryCard';
 import { TopPerformers } from '../components/dashboard/TopPerformers';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
