@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import logo from '../assets/logo.png'
-import ButterflyBackground from '../components/ButterflyBackground'
+import ButterflyCSSBackground from '../components/ButterflyCSSBackground'
 
 export const Login = () => {
   const navigate = useNavigate()

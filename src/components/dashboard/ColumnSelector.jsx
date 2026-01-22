@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { List, Minimize2, Maximize2 } from 'lucide-react';
+import { Filter, Minimize2, Maximize2 } from 'lucide-react';
 
 const ColumnToggle = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-background-tertiary rounded cursor-pointer transition-colors">
@@ -23,7 +23,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
         className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm"
         title="Personalizar columnas"
       >
-        <List className="w-4 h-4" />
+        <Filter className="w-4 h-4" />
         <span>Columnas</span>
       </button>
       {isOpen && (

@@ -1252,14 +1252,6 @@ export default function Dashboard() {
                 <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
               </div>
               <button
-                onClick={fetchPrices}
-                disabled={isPricesLoading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors text-sm"
-              >
-                <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
-                <span>Actualizar</span>
-              </button>
-              <button
                 onClick={() => {
                   setEditingTrade(null);
                   setModalOpen(true);
