@@ -31,7 +31,7 @@ export const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
-      <ButterflyBackground />
+      <ButterflyCSSBackground />
 
       <div className="w-full max-w-md px-4 relative z-10">
         <div className="text-center mb-8">
