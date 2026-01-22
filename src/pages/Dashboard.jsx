@@ -398,28 +398,28 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
 
-  // Load trades from Supabase when portfolio changes
-  useEffect(() => {
+  // Load trades from Supabase - extracted as useCallback so it can be called from other places
+  const loadTrades = useCallback(async () => {
     if (!currentPortfolio || !user) {
       setTrades([]);
       return;
     }
-
-    const loadTrades = async () => {
-      try {
-        setTradesLoading(true);
-        const data = await tradeService.getTrades(currentPortfolio.id);
-        setTrades(data || []);
-      } catch (error) {
-        console.error('Error loading trades:', error);
-        setTrades([]);
-      } finally {
-        setTradesLoading(false);
-      }
-    };
-
-    loadTrades();
+    try {
+      setTradesLoading(true);
+      const data = await tradeService.getTrades(currentPortfolio.id);
+      setTrades(data || []);
+    } catch (error) {
+      console.error('Error loading trades:', error);
+      setTrades([]);
+    } finally {
+      setTradesLoading(false);
+    }
   }, [currentPortfolio, user]);
+
+  // Load trades when portfolio changes
+  useEffect(() => {
+    loadTrades();
+  }, [loadTrades]);
 
   // Fetch prices using data912 helper with auto-refresh
   const fetchPrices = useCallback(async () => {
