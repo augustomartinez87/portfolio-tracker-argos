@@ -30,6 +30,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
+    console.error('Component stack:', errorInfo?.componentStack);
   }
 
   render() {
@@ -39,7 +40,7 @@ class ErrorBoundary extends React.Component {
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 max-w-md text-center">
             <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Error inesperado</h2>
-            <p className="text-slate-400 mb-4">Hubo un problema al cargar la página.</p>
+            <p className="text-slate-400 mb-4">{this.state.error?.message || 'Hubo un problema al cargar la página.'}</p>
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null });
