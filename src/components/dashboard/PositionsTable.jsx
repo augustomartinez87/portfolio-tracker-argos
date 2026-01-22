@@ -273,40 +273,68 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
         )}
       </div>
       {positionsWithGroup.length > 0 && (
-        <div className="sticky bottom-0 bg-background-tertiary/98 border-t-2 border-border-secondary px-4 py-3 flex-shrink-0 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-text-primary text-lg">Total</span>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <span className="text-text-tertiary text-xs block">Valuación</span>
-                <span className="text-text-primary font-mono font-bold text-lg">{formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}</span>
-              </div>
-              <div className="text-right">
-                <span className="text-text-tertiary text-xs block">P&L</span>
-                <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-text-tertiary text-xs block">P&L %</span>
-                <span className={`font-bold px-2 py-0.5 rounded text-sm ${
-                  (() => {
-                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
-                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
-                    const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
-                    return totalResultPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger';
-                  })()
-                }`}>
-                  {(() => {
-                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
-                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
-                    const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
-                    return formatPercent(totalResultPct);
-                  })()}
-                </span>
-              </div>
-            </div>
-          </div>
+        <div className="sticky bottom-0 bg-background-tertiary/98 border-t-2 border-border-secondary backdrop-blur-sm flex-shrink-0">
+          <table className="w-full min-w-[900px]">
+            <tbody>
+              <tr>
+                <td className={`${paddingX} py-3 text-text-primary`}>
+                  <span className="font-bold text-lg">Total</span>
+                </td>
+                <td className={`${paddingX} py-3 text-text-secondary font-mono text-xs tabular-nums`}>
+                  {formatNumber(positionsWithGroup.reduce((sum, p) => sum + p.cantidadTotal, 0))}
+                </td>
+                {columnSettings.showPPC && (
+                  <td className={`${paddingX} py-3 text-text-tertiary font-mono text-xs tabular-nums`}>
+                    -
+                  </td>
+                )}
+                <td className={`${paddingX} py-3`}></td>
+                <td className={`${paddingX} py-3 text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
+                  {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}
+                </td>
+                <td className={`${paddingX} py-3 text-right tabular-nums`}>
+                  <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
+                    {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}
+                  </span>
+                </td>
+                <td className={`${paddingX} py-3 text-right`}>
+                  <span className={`font-bold px-2 py-0.5 rounded text-sm ${
+                    (() => {
+                      const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
+                      const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                      const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
+                      return totalResultPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger';
+                    })()
+                  }`}>
+                    {(() => {
+                      const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
+                      const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                      const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
+                      return formatPercent(totalResultPct);
+                    })()}
+                  </span>
+                </td>
+                {columnSettings.showDiario && (
+                  <td className={`${paddingX} py-3 text-right tabular-nums`}>
+                    <span className={`font-mono text-sm font-medium ${(positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {formatARS(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0))}
+                    </span>
+                  </td>
+                )}
+                {columnSettings.showDiarioPct && (
+                  <td className={`${paddingX} py-3 text-right`}>
+                    <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
+                      (positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiarioPct || 0), 0)) >= 0
+                        ? 'bg-success/10 text-success'
+                        : 'bg-danger/10 text-danger'
+                    }`}>
+                      {formatPercent(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiarioPct || 0), 0))}
+                    </span>
+                  </td>
+                )}
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
     </div>
