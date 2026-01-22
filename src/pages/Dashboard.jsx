@@ -227,28 +227,28 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">
-            {trade ? 'Editar Trade' : 'Nuevo Trade'}
+          <h2 className="text-lg font-semibold text-text-primary">
+            {trade ? 'Editar transacción' : 'Nueva transacción'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700 active:scale-95">
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background-tertiary">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
-            <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-text-secondary mb-2">Tipo</label>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setFormData({...formData, tipo: 'compra'})}
-                className={`py-3 px-4 h-12 rounded-custom font-medium text-sm transition-all active:scale-95 ${
+                className={`py-2.5 px-3 h-10 rounded-lg font-medium text-sm transition-all active:scale-95 ${
                   formData.tipo === 'compra'
-                    ? 'bg-emerald-600 text-white border-2 border-emerald-500'
-                    : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
+                    ? 'bg-success text-white'
+                    : 'bg-background-tertiary text-text-secondary border border-border-primary hover:border-text-tertiary'
                 }`}
               >
                 Compra
@@ -256,10 +256,10 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               <button
                 type="button"
                 onClick={() => setFormData({...formData, tipo: 'venta'})}
-                className={`py-3 px-4 h-12 rounded-custom font-medium text-sm transition-all active:scale-95 ${
+                className={`py-2.5 px-3 h-10 rounded-lg font-medium text-sm transition-all active:scale-95 ${
                   formData.tipo === 'venta'
-                    ? 'bg-red-600 text-white border-2 border-red-500'
-                    : 'bg-slate-800 text-slate-400 border-2 border-slate-700 hover:border-slate-600'
+                    ? 'bg-danger text-white'
+                    : 'bg-background-tertiary text-text-secondary border border-border-primary hover:border-text-tertiary'
                 }`}
               >
                 Venta
@@ -268,18 +268,18 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Fecha</label>
             <input
               type="date"
               value={formData.fecha}
               onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-custom text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Ticker</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Ticker</label>
             <TickerAutocomplete
               value={formData.ticker}
               onChange={(ticker) => setFormData({...formData, ticker})}
@@ -288,9 +288,9 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Cantidad</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Cantidad</label>
               <input
                 type="number"
                 step="any"
@@ -298,14 +298,14 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
                 inputMode="decimal"
                 value={formData.cantidad}
                 onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
-                className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary font-mono"
                 placeholder="0"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Precio (ARS)</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Precio (ARS)</label>
               <input
                 type="number"
                 step="any"
@@ -313,7 +313,7 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
                 inputMode="decimal"
                 value={formData.precio}
                 onChange={(e) => setFormData({...formData, precio: e.target.value})}
-                className="w-full px-4 py-3 h-12 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary font-mono"
                 placeholder="0.00"
                 required
               />
@@ -321,32 +321,32 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
           </div>
 
           {(isBonoPesos(formData.ticker) || isBonoHardDollar(formData.ticker)) && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-custom p-3">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
               <p className="text-amber-400 text-xs">
                 {isBonoPesos(formData.ticker)
-                  ? '💡 Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
-                  : '💡 Bonos HD: ingresá el precio por cada lámina de 100 USD VN (ej: 1155)'}
+                  ? 'Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
+                  : 'Bonos HD: ingresá el precio por cada lamina de 100 USD VN (ej: 1155)'}
               </p>
             </div>
           )}
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 h-12 bg-slate-700 text-white rounded-custom hover:bg-slate-600 transition-colors font-medium active:scale-95"
+              className="flex-1 px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:bg-border-primary transition-colors font-medium text-sm"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className={`flex-1 px-4 py-3 h-12 font-semibold rounded-custom transition-all active:scale-95 ${
+              className={`flex-1 px-3 py-2.5 h-10 font-medium rounded-lg transition-all active:scale-95 text-sm ${
                 formData.tipo === 'venta'
-                  ? 'bg-red-600 text-white hover:bg-red-500'
-                  : 'bg-primary text-white hover:bg-primary-light'
+                  ? 'bg-danger text-white hover:bg-danger/90'
+                  : 'bg-primary text-white hover:bg-primary/90'
               }`}
             >
-              {trade ? 'Guardar' : (formData.tipo === 'venta' ? 'Registrar Venta' : 'Agregar')}
+              {trade ? 'Guardar' : (formData.tipo === 'venta' ? 'Registrar' : 'Agregar')}
             </button>
           </div>
         </form>
