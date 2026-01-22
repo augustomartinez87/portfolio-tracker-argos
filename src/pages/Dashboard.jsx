@@ -1056,19 +1056,19 @@ export default function Dashboard() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
+      <div className="min-h-screen bg-background-primary flex">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 px-4 py-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PortfolioSelector />
             <img src={logo} alt="Argos Capital" className="w-8 h-8 ml-2" />
-            <h1 className="text-lg font-bold text-white">Argos Capital</h1>
+            <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
           </div>
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className="p-3 h-12 w-12 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-all border border-slate-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             title="Actualizar"
           >
             <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
@@ -1077,34 +1077,34 @@ export default function Dashboard() {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className={`hidden lg:flex bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/50 fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-        <div className="p-4 border-b border-slate-800/50 flex flex-col items-center gap-3">
+      <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+        <div className="p-4 border-b border-border-primary flex flex-col items-center gap-3">
           <PortfolioSelector />
-          <h1 className={`text-xl font-bold text-white tracking-tight flex items-center gap-3 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+          <h1 className={`text-xl font-bold text-text-primary tracking-tight flex items-center gap-3 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
             <img src={logo} alt="Argos Capital" className="w-8 h-8 flex-shrink-0" />
             Argos Capital
           </h1>
         </div>
-        
-        <nav className="flex-1 p-4 space-y-2">
+
+        <nav className="flex-1 p-4 space-y-1">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
               activeTab === 'dashboard'
-                ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-            title="Dashboard"
+            title="Posiciones"
           >
             <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
           </button>
           <button
             onClick={() => setActiveTab('graficos')}
-            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
               activeTab === 'graficos'
-                ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
             title="Gráficos"
           >
@@ -1113,10 +1113,10 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center rounded-custom font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-3' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
               activeTab === 'trades'
-                ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
             title="Trades"
           >
@@ -1125,11 +1125,11 @@ export default function Dashboard() {
           </button>
         </nav>
 
-        <div className="p-4 border-t border-slate-800/50 space-y-2">
+        <div className="p-4 border-t border-border-primary space-y-2">
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-3 h-12 bg-slate-800 text-slate-300 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2.5 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
             title="Actualizar"
           >
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
@@ -1137,14 +1137,14 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-3 h-12 bg-slate-800/50 text-slate-400 rounded-custom hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50 text-sm font-medium active:scale-95`}
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2.5 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95`}
             title="Cerrar sesión"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
           </button>
           {lastUpdate && sidebarOpen && (
-            <p className="text-xs text-slate-500 mt-3 text-center transition-all duration-300">
+            <p className="text-xs text-text-tertiary mt-3 text-center transition-all duration-300">
               Actualizado: {lastUpdateFull || lastUpdate}
             </p>
           )}
@@ -1152,14 +1152,14 @@ export default function Dashboard() {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50 px-2 py-2 safe-area-inset-bottom">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-t border-border-primary px-2 py-2 safe-area-inset-bottom">
         <nav className="flex justify-around">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
+            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
               activeTab === 'dashboard'
-                ? 'text-emerald-400 bg-emerald-500/15'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'text-success bg-success/5'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
@@ -1167,10 +1167,10 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('graficos')}
-            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
+            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
               activeTab === 'graficos'
-                ? 'text-emerald-400 bg-emerald-500/15'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'text-success bg-success/5'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
           >
             <PieChart className="w-5 h-5" />
@@ -1178,10 +1178,10 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all active:scale-95 min-h-[56px] min-w-[70px] ${
+            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
               activeTab === 'trades'
-                ? 'text-emerald-400 bg-emerald-500/15'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'text-success bg-success/5'
+                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
           >
             <FileText className="w-5 h-5" />
@@ -1224,28 +1224,28 @@ export default function Dashboard() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                <p className="text-slate-400 text-xs mb-1">Posiciones</p>
-                <p className="text-white font-mono text-lg font-semibold">{positions.length}</p>
+              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
+                <p className="text-text-tertiary text-xs mb-1">Posiciones</p>
+                <p className="text-text-primary font-mono text-lg font-semibold">{positions.length}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                <p className="text-slate-400 text-xs mb-1">Trades</p>
-                <p className="text-white font-mono text-lg font-semibold">{trades.length}</p>
+              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
+                <p className="text-text-tertiary text-xs mb-1">Trades</p>
+                <p className="text-text-primary font-mono text-lg font-semibold">{trades.length}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                <p className="text-slate-400 text-xs mb-1">Dólar MEP</p>
-                <p className="text-white font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
+              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
+                <p className="text-text-tertiary text-xs mb-1">Dólar MEP</p>
+                <p className="text-text-primary font-mono text-lg font-semibold">{formatARS(mepRate)}</p>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 text-center">
-                <p className="text-slate-400 text-xs mb-1">Data</p>
-                <p className="text-slate-300 font-mono text-sm">data912.com</p>
+              <div className="bg-background-secondary rounded-lg p-3 border border-border-primary text-center">
+                <p className="text-text-tertiary text-xs mb-1">Data</p>
+                <p className="text-text-secondary font-mono text-sm">data912.com</p>
               </div>
             </div>
 
             {/* Positions Table */}
             <div className="mb-20">
-              <PositionsTable 
-                positions={positions} 
+              <PositionsTable
+                positions={positions}
                 onRowClick={handleOpenPositionDetail}
                 prices={prices}
                 mepRate={mepRate}
@@ -1255,16 +1255,16 @@ export default function Dashboard() {
             </div>
 
              {/* Footer - Desktop Only */}
-            <div className={`hidden lg:block fixed bottom-0 right-0 bg-slate-950/90 backdrop-blur-sm border-t border-slate-800/50 py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
-              <p className="text-slate-500 text-xs text-center">Argos Capital v3.0</p>
+            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
+              <p className="text-text-tertiary text-xs text-center">Argos Capital v3.0</p>
             </div>
           </>
         ) : activeTab === 'graficos' ? (
           <>
             {/* Gráficos Tab */}
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-white mb-4">Análisis del Portfolio</h2>
-              <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-4">
+              <h2 className="text-lg font-semibold text-text-primary mb-4">Análisis del Portfolio</h2>
+              <div className="bg-background-secondary rounded-lg border border-border-primary p-4">
                 <DistributionChart positions={positions} />
               </div>
             </div>
@@ -1279,7 +1279,7 @@ export default function Dashboard() {
                     setEditingTrade(null);
                     setModalOpen(true);
                   }}
-                  className="flex items-center justify-center gap-2 px-5 py-3.5 h-12 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 text-sm sm:text-base active:scale-95"
+                  className="flex items-center justify-center gap-2 px-5 py-3 h-11 bg-success text-white rounded-lg hover:bg-success/90 transition-all font-semibold text-sm active:scale-95"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">Nuevo Trade</span>
@@ -1287,13 +1287,12 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={downloadTemplate}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 h-12 bg-purple-600 text-white rounded-custom hover:bg-purple-500 transition-all font-semibold shadow-lg shadow-purple-600/25 text-sm sm:text-base active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-3 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all font-medium border border-border-primary text-sm active:scale-95"
                 >
                   <Download className="w-5 h-5" />
-                  <span className="hidden sm:inline">Descargar Template Excel</span>
-                  <span className="sm:hidden">Template</span>
+                  <span className="hidden sm:inline">Template</span>
                 </button>
-                <label className="flex items-center justify-center gap-2 px-4 py-3.5 h-12 bg-primary text-white rounded-custom hover:bg-primary-light transition-all font-semibold shadow-lg shadow-primary/25 cursor-pointer text-sm sm:text-base active:scale-95 disabled:opacity-50">
+                <label className="flex items-center justify-center gap-2 px-4 py-3 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all font-medium border border-border-primary cursor-pointer text-sm active:scale-95 disabled:opacity-50">
                   <input
                     type="file"
                     accept=".csv,.txt"
@@ -1306,36 +1305,35 @@ export default function Dashboard() {
                   ) : (
                     <Download className="w-5 h-5" />
                   )}
-                  <span className="hidden sm:inline">Importar CSV/Excel</span>
-                  <span className="sm:hidden">Importar</span>
+                  <span className="hidden sm:inline">Importar</span>
                 </label>
                 <div className="relative">
                   <button
                     onClick={() => setShowFormatHelp(!showFormatHelp)}
-                    className="flex items-center justify-center w-12 h-12 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 hover:text-white transition-all border border-slate-600 active:scale-95"
+                    className="flex items-center justify-center w-11 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary active:scale-95"
                     title="Ayuda formato"
                   >
                     <HelpCircle className="w-5 h-5" />
                   </button>
                   {showFormatHelp && (
-                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-custom p-4 border border-slate-700 shadow-xl">
+                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-background-secondary rounded-lg p-4 border border-border-primary shadow-xl">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-blue-300 font-medium text-sm sm:text-base">📋 Formato CSV/Excel:</p>
-                        <button 
+                        <p className="text-text-primary font-medium text-sm sm:text-base">📋 Formato CSV/Excel:</p>
+                        <button
                           onClick={() => setShowFormatHelp(false)}
-                          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 active:scale-95 transition-all"
+                          className="text-text-tertiary hover:text-text-primary p-1 rounded-lg hover:bg-background-tertiary active:scale-95 transition-all"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <ul className="text-slate-300 space-y-1 text-xs sm:text-sm ml-4">
+                      <ul className="text-text-secondary space-y-1 text-xs sm:text-sm ml-4">
                         <li>• <strong>Fecha:</strong> DD/MM/YYYY (ej: 23/12/2024)</li>
                         <li>• <strong>Ticker:</strong> Símbolo del activo (ej: MELI, AAPL, AL30)</li>
                         <li>• <strong>Cantidad:</strong> Número de unidades (ej: 10 o 1250.50)</li>
                         <li>• <strong>Precio:</strong> Precio de compra en ARS (ej: 17220 o 839.50)</li>
                         <li>• <strong>Bonos pesos:</strong> Precio por $1 VN (ej: 1.03)</li>
                       </ul>
-                      <p className="text-slate-400 mt-2 text-xs">
+                      <p className="text-text-tertiary mt-2 text-xs">
                         Tip: Descargá el template para ver un ejemplo completo
                       </p>
                     </div>
@@ -1343,10 +1341,10 @@ export default function Dashboard() {
                 </div>
               </div>
                {importStatus && (
-                <span className={`flex items-center px-4 py-2 rounded-custom text-sm font-medium ${
-                  importStatus.includes('✓') ? 'bg-success/20 text-success' :
-                  importStatus.includes('Error') ? 'bg-danger/20 text-danger' :
-                  'bg-slate-700 text-slate-300'
+                <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+                  importStatus.includes('✓') ? 'bg-success/10 text-success' :
+                  importStatus.includes('Error') ? 'bg-danger/10 text-danger' :
+                  'bg-background-tertiary text-text-secondary'
                 }`}>
                   {importStatus}
                 </span>
@@ -1354,13 +1352,13 @@ export default function Dashboard() {
             </div>
 
             {/* Trades Table */}
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div className="bg-background-secondary rounded-lg border border-border-primary overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-900/50">
+                    <tr className="bg-background-tertiary/30 border-b border-border-primary">
                       <th
-                        className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                        className="text-left px-4 py-2.5 text-xs font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
                         onClick={() => handleSort('fecha')}
                       >
                         <div className="flex items-center gap-1">
@@ -1371,7 +1369,7 @@ export default function Dashboard() {
                         </div>
                       </th>
                       <th
-                        className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                        className="text-left px-4 py-2.5 text-xs font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
                         onClick={() => handleSort('ticker')}
                       >
                         <div className="flex items-center gap-1">
@@ -1381,40 +1379,40 @@ export default function Dashboard() {
                           )}
                         </div>
                       </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Cantidad</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Precio</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Invertido</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Cantidad</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Precio</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary hidden sm:table-cell">Invertido</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/30">
+                  <tbody className="divide-y divide-border-primary">
                     {sortedTrades.map((trade) => {
                       const isBono = isBonoPesos(trade.ticker);
                       return (
-                        <tr key={trade.id} className="hover:bg-slate-700/20 transition-colors">
-                          <td className="px-4 py-3 text-slate-300 text-sm">
+                        <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
+                          <td className="px-4 py-2.5 text-text-secondary text-sm">
                             {new Date(trade.fecha).toLocaleDateString('es-AR')}
                           </td>
-                          <td className="px-4 py-3">
-                            <span className="font-semibold text-white font-mono">{trade.ticker}</span>
+                          <td className="px-4 py-2.5">
+                            <span className="font-semibold text-text-primary font-mono">{trade.ticker}</span>
                           </td>
-                          <td className="text-right px-4 py-3 text-slate-300 font-mono">
+                          <td className="text-right px-4 py-2.5 text-text-secondary font-mono">
                             {formatNumber(trade.cantidad)}
                           </td>
-                          <td className="text-right px-4 py-3 text-white font-mono font-medium">
+                          <td className="text-right px-4 py-2.5 text-text-primary font-mono font-medium">
                             {isBono ? `$${trade.precioCompra.toFixed(4)}` : formatARS(trade.precioCompra)}
                           </td>
-                          <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden sm:table-cell">
+                          <td className="text-right px-4 py-2.5 text-text-tertiary font-mono text-sm hidden sm:table-cell">
                             {formatARS(trade.cantidad * trade.precioCompra)}
                           </td>
-                          <td className="text-right px-4 py-3">
+                          <td className="text-right px-4 py-2.5">
                             <div className="flex justify-end gap-1">
                               <button
                                 onClick={() => {
                                   setEditingTrade(trade);
                                   setModalOpen(true);
                                 }}
-                                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all"
+                                className="p-2 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded-lg transition-all"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>

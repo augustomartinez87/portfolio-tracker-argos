@@ -7,37 +7,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          light: '#2563EB',
-          DEFAULT: '#3B82F6',
-        },
         background: {
-          light: '#F8FAFC',
-          dark: '#020617',
+          primary: '#000000',
+          secondary: '#0a0a0a',
+          tertiary: '#141414',
         },
-        success: '#10B981',
-        danger: '#EF4444',
-      },
-      borderRadius: {
-        'custom': '0.75rem',
+        border: {
+          primary: '#1a1a1a',
+          secondary: '#2a2a2a',
+        },
+        text: {
+          primary: '#ffffff',
+          secondary: '#a1a1a1',
+          tertiary: '#6b6b6b',
+        },
+        success: '#10b981',
+        danger: '#ef4444',
+        'success-muted': 'rgba(16, 185, 129, 0.1)',
+        'danger-muted': 'rgba(239, 68, 68, 0.1)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
       },
     },
   },
