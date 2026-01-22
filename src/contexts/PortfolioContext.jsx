@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -18,6 +18,7 @@ export const PortfolioProvider = ({ children }) => {
   const [currentPortfolio, setCurrentPortfolio] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const lastUserIdRef = useRef(null)
 
   const loadPortfolios = async () => {
     if (!user) {
@@ -53,6 +54,12 @@ export const PortfolioProvider = ({ children }) => {
   }
 
   useEffect(() => {
+    // Solo recargar si el user.id realmente cambió (evita refetch en tab focus)
+    const currentUserId = user?.id ?? null
+    if (currentUserId === lastUserIdRef.current) {
+      return
+    }
+    lastUserIdRef.current = currentUserId
     loadPortfolios()
   }, [user])
 

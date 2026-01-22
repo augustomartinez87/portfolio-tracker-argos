@@ -154,9 +154,6 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
 
   return (
     <div className="bg-background-secondary flex flex-col h-full overflow-hidden">
-      <div className={`${paddingY} ${paddingX} border-b border-border-primary flex-shrink-0`}>
-        <h3 className="text-sm font-medium text-text-primary">Posiciones</h3>
-      </div>
       {searchTerm && searchTerm.trim() && (
         <div className={`${paddingY} ${paddingX} bg-background-tertiary/50 border-b border-border-primary flex-shrink-0`}>
           <span className="text-xs text-text-tertiary">
@@ -273,24 +270,37 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
             ))}
           </tbody>
           {positionsWithGroup.length > 0 && (
-            <tfoot className="sticky bottom-0 bg-background-tertiary border-t-2 border-border-secondary backdrop-blur-sm">
+            <tfoot className="sticky bottom-0 bg-background-tertiary border-t-2 border-border-secondary">
               <tr>
+                {/* 1. Ticker */}
                 <td className={`${paddingX} ${paddingY} text-text-primary`}>
                   <span className="font-bold text-lg">Total</span>
                 </td>
+                {/* 2. Cant. - vacía */}
+                <td className={`${paddingX} ${paddingY}`}></td>
+                {/* 3. PPC - vacía si visible */}
+                {columnSettings.showPPC && (
+                  <td className={`${paddingX} ${paddingY}`}></td>
+                )}
+                {/* 4. P. Actual - vacía */}
+                <td className={`${paddingX} ${paddingY}`}></td>
+                {/* 5. Valuación */}
                 <td className={`${paddingX} ${paddingY} text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
                   {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}
                 </td>
+                {/* 6. Invertido - si visible */}
                 {columnSettings.showInvertido && (
-                  <td className={`${paddingX} ${paddingY} text-right text-text-secondary font-mono font-bold text-lg tabular-nums`}>
+                  <td className={`${paddingX} ${paddingY} text-right text-text-secondary font-mono font-medium tabular-nums`}>
                     {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0))}
                   </td>
                 )}
+                {/* 7. P&L $ */}
                 <td className={`${paddingX} ${paddingY} text-right tabular-nums`}>
                   <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}
                   </span>
                 </td>
+                {/* 8. P&L % */}
                 <td className={`${paddingX} ${paddingY} text-right`}>
                   <span className={`font-bold px-2 py-0.5 rounded text-sm ${
                     (() => {
@@ -308,13 +318,15 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     })()}
                   </span>
                 </td>
+                {/* 9. P&L Diario $ - si visible */}
                 {columnSettings.showDiario && (
                   <td className={`${paddingX} ${paddingY} text-right tabular-nums`}>
-                    <span className={`font-mono text-sm font-medium ${(positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <span className={`font-mono text-sm font-medium ${(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0))}
                     </span>
                   </td>
                 )}
+                {/* 10. P&L Diario % - si visible */}
                 {columnSettings.showDiarioPct && (
                   <td className={`${paddingX} ${paddingY} text-right`}>
                     <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${

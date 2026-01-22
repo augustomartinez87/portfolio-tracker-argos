@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search } from 'lucide-react';
+import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, Info } from 'lucide-react';
 import { CONSTANTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
@@ -47,6 +47,11 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  // Filtros de transacciones
+  const [tradesSearchTerm, setTradesSearchTerm] = useState('');
+  const [periodFilter, setPeriodFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [tickerFilter, setTickerFilter] = useState('all');
   const [columnSettings, setColumnSettings] = useState({
     showPPC: true,
     showInvertido: true,
@@ -204,7 +209,14 @@ export default function Dashboard() {
   const positions = useMemo(() => {
     const grouped = {};
 
-    trades.forEach(trade => {
+    // Ordenar trades por fecha para procesar en orden cronológico
+    const sortedTrades = [...trades].sort((a, b) => {
+      const dateA = new Date(a.trade_date || a.fecha);
+      const dateB = new Date(b.trade_date || b.fecha);
+      return dateA - dateB;
+    });
+
+    sortedTrades.forEach(trade => {
       if (!grouped[trade.ticker]) {
         grouped[trade.ticker] = {
           ticker: trade.ticker,
@@ -215,16 +227,33 @@ export default function Dashboard() {
       }
       grouped[trade.ticker].trades.push(trade);
 
-      const cantidad = trade.quantity || trade.cantidad || 0;
+      const cantidad = Math.abs(trade.quantity || trade.cantidad || 0);
       const precio = trade.price || trade.precioCompra || 0;
-      grouped[trade.ticker].cantidadTotal += cantidad;
+      const isSell = trade.trade_type === 'sell' || trade.tipo === 'venta';
 
-      if (cantidad > 0) {
+      if (isSell) {
+        // Venta: reducir cantidad y costo proporcionalmente (método promedio ponderado)
+        const pos = grouped[trade.ticker];
+        const precioPromedioActual = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
+        const cantidadAVender = Math.min(cantidad, pos.cantidadTotal); // No vender más de lo que hay
+
+        pos.cantidadTotal -= cantidadAVender;
+        pos.costoTotal -= cantidadAVender * precioPromedioActual;
+
+        // Evitar valores negativos por errores de redondeo
+        if (pos.cantidadTotal < 0.0001) {
+          pos.cantidadTotal = 0;
+          pos.costoTotal = 0;
+        }
+      } else {
+        // Compra: sumar cantidad y costo
+        grouped[trade.ticker].cantidadTotal += cantidad;
         grouped[trade.ticker].costoTotal += cantidad * precio;
       }
     });
 
-    return Object.values(grouped).map(pos => {
+    // Filtrar posiciones con cantidad 0 (completamente vendidas)
+    return Object.values(grouped).filter(pos => pos.cantidadTotal > 0).map(pos => {
       const priceData = prices[pos.ticker];
       const precioActual = priceData?.precio || 0;
       const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
@@ -281,18 +310,87 @@ export default function Dashboard() {
     };
   }, [positions, mepRate]);
 
+  // Lista de tickers únicos para el filtro
+  const uniqueTickers = useMemo(() => {
+    if (!Array.isArray(trades) || trades.length === 0) return [];
+    const tickers = [...new Set(trades.map(t => t.ticker))].sort();
+    return tickers;
+  }, [trades]);
+
+  // Función para formatear fecha a dd/mm/yyyy
+  const formatDateDMY = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const sortedTrades = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) return [];
 
     const mappedTrades = trades.map(trade => ({
       ...trade,
       fecha: trade.trade_date,
+      fechaFormatted: formatDateDMY(trade.trade_date),
       cantidad: trade.quantity,
       precioCompra: trade.price,
       tipo: trade.trade_type === 'buy' ? 'compra' : 'venta'
     }));
 
-    const sorted = [...mappedTrades].sort((a, b) => {
+    // Aplicar filtros
+    let filtered = mappedTrades;
+
+    // Filtro de búsqueda
+    if (tradesSearchTerm.trim()) {
+      const term = tradesSearchTerm.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.ticker.toLowerCase().includes(term) ||
+        t.fechaFormatted.includes(term)
+      );
+    }
+
+    // Filtro de tipo
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(t => t.tipo === typeFilter);
+    }
+
+    // Filtro de ticker/activo
+    if (tickerFilter !== 'all') {
+      filtered = filtered.filter(t => t.ticker === tickerFilter);
+    }
+
+    // Filtro de período
+    if (periodFilter !== 'all') {
+      const now = new Date();
+      let fromDate = null;
+
+      switch (periodFilter) {
+        case 'last_month':
+          fromDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+          break;
+        case 'last_3_months':
+          fromDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+          break;
+        case 'last_year':
+          fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+          break;
+        default:
+          fromDate = null;
+      }
+
+      if (fromDate) {
+        filtered = filtered.filter(t => {
+          const tradeDate = new Date(t.fecha);
+          return tradeDate >= fromDate;
+        });
+      }
+    }
+
+    // Ordenar
+    const sorted = [...filtered].sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
@@ -306,7 +404,7 @@ export default function Dashboard() {
       return 0;
     });
     return sorted;
-  }, [trades, sortConfig]);
+  }, [trades, sortConfig, tradesSearchTerm, typeFilter, tickerFilter, periodFilter]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -436,35 +534,35 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 py-4 overflow-y-auto">
-            <div className={`px-3 space-y-1 ${sidebarOpen ? '' : 'hidden'}`}>
-              <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+            <div className={`space-y-1 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
+              <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Dashboard">
                 <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">Dashboard</span>
+                {sidebarOpen && <span className="font-medium text-sm">Dashboard</span>}
               </button>
 
-              <button onClick={() => setActiveTab('trades')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'trades' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+              <button onClick={() => setActiveTab('trades')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'trades' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Transacciones">
                 <FileText className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">Transacciones</span>
+                {sidebarOpen && <span className="font-medium text-sm">Transacciones</span>}
               </button>
 
-              <button onClick={() => setActiveTab('distribution')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'distribution' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+              <button onClick={() => setActiveTab('distribution')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'distribution' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Distribución">
                 <PieChart className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">Distribución</span>
+                {sidebarOpen && <span className="font-medium text-sm">Distribución</span>}
               </button>
 
-              <button onClick={() => setActiveTab('help')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'help' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+              <button onClick={() => setActiveTab('help')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'help' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Ayuda">
                 <HelpCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-sm">Ayuda</span>
+                {sidebarOpen && <span className="font-medium text-sm">Ayuda</span>}
               </button>
             </div>
           </div>
 
           <div className="p-3 border-t border-border-primary">
-            <div className={`flex items-center gap-3 px-2 ${sidebarOpen ? '' : 'justify-center'}`}>
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+            <div className={`flex items-center gap-3 ${sidebarOpen ? 'px-2' : 'flex-col'}`}>
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0" title={user?.email || 'Usuario'}>
                 <span className="text-white font-medium text-sm">{user?.email?.[0]?.toUpperCase() || 'U'}</span>
               </div>
-              {sidebarOpen && (
+              {sidebarOpen ? (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{user?.email || 'Usuario'}</p>
                   <button onClick={() => signOut()} className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1">
@@ -472,6 +570,10 @@ export default function Dashboard() {
                     Cerrar sesión
                   </button>
                 </div>
+              ) : (
+                <button onClick={() => signOut()} className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors" title="Cerrar sesión">
+                  <LogOut className="w-4 h-4" />
+                </button>
               )}
             </div>
           </div>
@@ -539,72 +641,208 @@ export default function Dashboard() {
             )}
 
             {activeTab === 'trades' && (
-              <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
-                  <h2 className="text-lg font-semibold text-text-primary">Transacciones</h2>
-                  <div className="flex gap-2">
-                    <button onClick={downloadTemplate} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary">
-                      <Download className="w-3.5 h-3.5" />
-                      Plantilla
-                    </button>
-                    <label className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary cursor-pointer">
-                      <Download className="w-3.5 h-3.5" />
-                      Importar
-                      <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
-                    </label>
-                    <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium">
-                      <Plus className="w-3.5 h-3.5" />
-                      Nuevo
-                    </button>
+              <div className="space-y-4 lg:space-y-6">
+                {/* Sección de Filtros */}
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-3 sm:p-4 lg:p-5">
+                  {/* Buscador - fila completa en móvil */}
+                  <div className="mb-3 lg:mb-0 lg:hidden">
+                    <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Buscar</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                      <input
+                        type="text"
+                        placeholder="Buscar por ticker, fecha..."
+                        value={tradesSearchTerm}
+                        onChange={(e) => setTradesSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grid de filtros */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-row gap-3 lg:gap-4">
+                    {/* Buscador - visible solo en desktop */}
+                    <div className="hidden lg:block lg:flex-[2]">
+                      <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Buscar</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                        <input
+                          type="text"
+                          placeholder="Buscar por ticker, fecha..."
+                          value={tradesSearchTerm}
+                          onChange={(e) => setTradesSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Filtro Período */}
+                    <div className="lg:flex-1">
+                      <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Período</label>
+                      <select
+                        value={periodFilter}
+                        onChange={(e) => setPeriodFilter(e.target.value)}
+                        className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="last_month">Último mes</option>
+                        <option value="last_3_months">Últimos 3 meses</option>
+                        <option value="last_year">Último año</option>
+                      </select>
+                    </div>
+
+                    {/* Filtro Tipo */}
+                    <div className="lg:flex-1">
+                      <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Tipo</label>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="compra">Compra</option>
+                        <option value="venta">Venta</option>
+                      </select>
+                    </div>
+
+                    {/* Filtro Activo */}
+                    <div className="col-span-2 sm:col-span-1 lg:flex-1">
+                      <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Activo</label>
+                      <select
+                        value={tickerFilter}
+                        onChange={(e) => setTickerFilter(e.target.value)}
+                        className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                      >
+                        <option value="all">Todos</option>
+                        {uniqueTickers.map(ticker => (
+                          <option key={ticker} value={ticker}>{ticker}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                {importStatus && (
-                  <div className={`px-4 py-2 text-sm border-b ${importStatus.includes('Error') || importStatus.includes('error') ? 'bg-danger/10 text-danger border-danger/30' : importStatus.includes('importadas') ? 'bg-success/10 text-success border-success/30' : 'bg-background-tertiary text-text-secondary'}`}>
-                    {importStatus}
-                  </div>
-                )}
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-background-tertiary text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
-                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('fecha')}>
-                          <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                        </th>
-                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('ticker')}>
-                          <div className="flex items-center gap-1">Ticker {sortConfig.key === 'ticker' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                        </th>
-                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary text-right" onClick={() => handleSort('cantidad')}>
-                          <div className="flex items-center justify-end gap-1">Cantidad {sortConfig.key === 'cantidad' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                        </th>
-                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary text-right" onClick={() => handleSort('precioCompra')}>
-                          <div className="flex items-center justify-end gap-1">Precio {sortConfig.key === 'precioCompra' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                        </th>
-                        <th className="px-4 py-3 text-right">Total</th>
-                        <th className="px-4 py-3 text-center">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-primary">
-                      {sortedTrades.length === 0 ? (
-                        <tr><td colSpan="6" className="px-4 py-8 text-center text-text-tertiary text-sm">No hay transacciones registradas</td></tr>
-                      ) : sortedTrades.map((trade, idx) => (
-                        <tr key={trade.id || idx} className="hover:bg-background-tertiary/50 transition-colors">
-                          <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.fecha}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-text-primary whitespace-nowrap">{trade.ticker}</td>
-                          <td className={`px-4 py-3 text-sm text-right whitespace-nowrap font-mono ${trade.cantidad < 0 ? 'text-danger' : 'text-text-primary'}`}>{formatNumber(trade.cantidad, 2)}</td>
-                          <td className="px-4 py-3 text-sm text-right whitespace-nowrap font-mono">{formatARS(trade.precioCompra)}</td>
-                          <td className="px-4 py-3 text-sm text-right whitespace-nowrap font-mono">{formatARS(Math.abs(trade.cantidad) * trade.precioCompra)}</td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => { setEditingTrade(trade); setModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded transition-colors" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => { setDeletingTrade(trade); setDeleteModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-danger hover:bg-background-tertiary rounded transition-colors" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
+                {/* Tabla de Transacciones */}
+                <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
+                  <div className="p-3 sm:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <h2 className="text-base sm:text-lg font-semibold text-text-primary">Transacciones</h2>
+                      <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">
+                        {sortedTrades.length}{sortedTrades.length !== trades.length && `/${trades.length}`}
+                      </span>
+                    </div>
+                    <div className="flex gap-1.5 sm:gap-2">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowFormatHelp(!showFormatHelp)}
+                          className={`flex items-center justify-center h-8 w-8 rounded-lg transition-colors text-xs font-medium border ${showFormatHelp ? 'bg-primary/20 text-primary border-primary/30' : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary hover:bg-border-primary'}`}
+                          title="Formato de archivo"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                        {showFormatHelp && (
+                          <div className="format-help-tooltip absolute right-0 top-full mt-2 w-72 sm:w-80 bg-background-secondary border border-border-primary rounded-lg shadow-xl z-50 p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-text-primary text-sm">Formato del CSV</h4>
+                              <button onClick={() => setShowFormatHelp(false)} className="text-text-tertiary hover:text-text-primary">
+                                <X className="w-4 h-4" />
+                              </button>
                             </div>
-                          </td>
+                            <div className="space-y-2 text-xs text-text-secondary">
+                              <p className="font-medium text-text-primary">Columnas requeridas:</p>
+                              <ul className="list-disc list-inside space-y-1 ml-1">
+                                <li><span className="text-primary font-mono">Fecha</span> - Formato DD/MM/AAAA</li>
+                                <li><span className="text-primary font-mono">Ticker</span> - Ej: MELI, GGAL, AL30</li>
+                                <li><span className="text-primary font-mono">Cantidad</span> - Positivo=compra, Negativo=venta</li>
+                                <li><span className="text-primary font-mono">Precio</span> - Precio por unidad en ARS</li>
+                              </ul>
+                              <div className="mt-3 p-2 bg-background-tertiary rounded text-[10px] font-mono">
+                                <p className="text-text-tertiary mb-1">Ejemplo:</p>
+                                <p>Fecha,Ticker,Cantidad,Precio</p>
+                                <p>23/12/2024,MELI,10,17220</p>
+                                <p>15/01/2025,GGAL,-5,4500</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={downloadTemplate} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary" title="Descargar plantilla">
+                        <Download className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="hidden sm:inline">Plantilla</span>
+                      </button>
+                      <label className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary cursor-pointer" title="Importar CSV">
+                        <Download className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="hidden sm:inline">Importar</span>
+                        <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
+                      </label>
+                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium" title="Nueva transacción">
+                        <Plus className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="hidden sm:inline">Nuevo</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {importStatus && (
+                    <div className={`px-4 py-2 text-sm border-b ${importStatus.includes('Error') || importStatus.includes('error') ? 'bg-danger/10 text-danger border-danger/30' : importStatus.includes('importadas') ? 'bg-success/10 text-success border-success/30' : 'bg-background-tertiary text-text-secondary'}`}>
+                      {importStatus}
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px]">
+                      <thead>
+                        <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
+                          <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('fecha')}>
+                            <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                          </th>
+                          <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('ticker')}>
+                            <div className="flex items-center gap-1">Ticker {sortConfig.key === 'ticker' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                          </th>
+                          <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('tipo')}>
+                            <div className="flex items-center gap-1">Tipo {sortConfig.key === 'tipo' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                          </th>
+                          <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors text-right whitespace-nowrap" onClick={() => handleSort('cantidad')}>
+                            <div className="flex items-center justify-end gap-1">Cant. {sortConfig.key === 'cantidad' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                          </th>
+                          <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors text-right whitespace-nowrap" onClick={() => handleSort('precioCompra')}>
+                            <div className="flex items-center justify-end gap-1">Precio {sortConfig.key === 'precioCompra' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                          </th>
+                          <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Total</th>
+                          <th className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">Acciones</th>
                         </tr>
-                      ))}
+                      </thead>
+                      <tbody className="divide-y divide-border-primary">
+                        {sortedTrades.length === 0 ? (
+                          <tr><td colSpan="7" className="px-4 py-8 text-center text-text-tertiary text-sm">
+                            {trades.length === 0 ? 'No hay transacciones registradas' : 'No hay transacciones que coincidan con los filtros'}
+                          </td></tr>
+                        ) : sortedTrades.map((trade, idx) => (
+                          <tr key={trade.id || idx} className="hover:bg-[#151515] transition-all duration-200">
+                            <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.fechaFormatted}</td>
+                            <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
+                            <td className="px-3 sm:px-4 py-3">
+                              <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${
+                                trade.tipo === 'compra'
+                                  ? 'bg-success/15 text-success border-success/20'
+                                  : 'bg-danger/15 text-danger border-danger/20'
+                              }`}>
+                                {trade.tipo === 'compra' ? 'Compra' : 'Venta'}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.cantidad), 2)}</td>
+                            <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.precioCompra)}</td>
+                            <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(Math.abs(trade.cantidad) * trade.precioCompra)}</td>
+                            <td className="px-3 sm:px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button onClick={() => { setEditingTrade(trade); setModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded transition-colors" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => { setDeletingTrade(trade); setDeleteModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-danger hover:bg-background-tertiary rounded transition-colors" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -633,7 +871,7 @@ export default function Dashboard() {
                         <Plus className="w-3.5 h-3.5" />
                         Nueva Transacción
                       </button>
-                      <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
+                      <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
                     </div>
                   </div>
                   <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />

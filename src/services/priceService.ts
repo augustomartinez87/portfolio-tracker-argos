@@ -247,24 +247,14 @@ export function usePrices() {
     queryFn: () => fetchAllPrices(lastValidPricesRef),
     staleTime: 30 * 1000, // 30 segundos
     refetchInterval: 30 * 1000, // Refetch cada 30 segundos
-    refetchIntervalInBackground: false, // No refetch cuando tab no está activo
-    refetchOnWindowFocus: true, // Refetch cuando vuelve el foco
+    refetchIntervalInBackground: false, // No refetch cuando tab no está activo (se pausa automáticamente)
+    refetchOnWindowFocus: false, // No refetch automático al cambiar tabs - el usuario puede refrescar manualmente
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
-  // Manejar visibility change para pausar/resumir
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Invalidar cache cuando vuelve el usuario
-        queryClient.invalidateQueries({ queryKey: ['prices'] });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [queryClient]);
+  // Nota: El polling se pausa automáticamente cuando la tab está en background
+  // gracias a refetchIntervalInBackground: false. No necesitamos listener de visibilitychange.
 
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['prices'] });
@@ -300,7 +290,7 @@ export const priceQueryConfig = {
       staleTime: 30 * 1000,
       gcTime: 5 * 60 * 1000, // 5 minutos de garbage collection
       retry: 3,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false, // No refetch automático al cambiar tabs
     },
   },
 };

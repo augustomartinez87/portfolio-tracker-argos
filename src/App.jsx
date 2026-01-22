@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
       staleTime: 30 * 1000, // 30 segundos
       gcTime: 5 * 60 * 1000, // 5 minutos
       retry: 3,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false, // No refetch automático al cambiar tabs
       refetchIntervalInBackground: false,
     },
   },

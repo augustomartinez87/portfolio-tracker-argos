@@ -15,14 +15,18 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const isLogoutInProgress = useRef(false)
+  const currentUserIdRef = useRef(null)
 
   useEffect(() => {
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
+        const newUser = session?.user ?? null
+        currentUserIdRef.current = newUser?.id ?? null
+        setUser(newUser)
       } catch (err) {
         console.error('Error getting session:', err)
+        currentUserIdRef.current = null
         setUser(null)
       } finally {
         setLoading(false)
@@ -35,6 +39,12 @@ export const AuthProvider = ({ children }) => {
       if (isLogoutInProgress.current) {
         return
       }
+      const newUserId = session?.user?.id ?? null
+      // Solo actualizar si el usuario realmente cambió (evita re-render en tab focus)
+      if (newUserId === currentUserIdRef.current) {
+        return
+      }
+      currentUserIdRef.current = newUserId
       setUser(session?.user ?? null)
       setLoading(false)
     })
