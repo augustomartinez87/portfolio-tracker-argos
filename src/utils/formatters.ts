@@ -1,0 +1,86 @@
+// src/utils/formatters.ts
+
+/**
+ * Formatea un número como moneda ARS (pesos argentinos)
+ * @example formatARS(1234567.89) => "$ 1.234.567,89"
+ */
+export const formatARS = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const formatted = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+  return `$ ${formatted}`;
+};
+
+/**
+ * Formatea un número como moneda USD (dólares estadounidenses)
+ * @example formatUSD(1234.56) => "US$ 1,234.56"
+ */
+export const formatUSD = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+  return `US$ ${formatted}`;
+};
+
+/**
+ * Formatea un número como porcentaje con signo
+ * @example formatPercent(5.25) => "+5.25%"
+ * @example formatPercent(-3.14) => "-3.14%"
+ */
+export const formatPercent = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+};
+
+/**
+ * Formatea un número con separadores de miles
+ * @example formatNumber(1234567, 0) => "1.234.567"
+ * @example formatNumber(1234.5678, 2) => "1.234,57"
+ */
+export const formatNumber = (value: number | null | undefined, decimals = 0): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value);
+};
+
+/**
+ * Formatea una fecha/hora
+ * @param date - Fecha a formatear
+ * @param format - 'time' para solo hora, 'full' para fecha completa
+ */
+export const formatDateTime = (date: Date | string | null | undefined, format: 'time' | 'full' = 'time'): string => {
+  if (!date) return '';
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+
+  if (format === 'full') {
+    return d.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  return d.toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+/**
+ * Formatea un precio de bono (4 decimales)
+ * @example formatBondPrice(1.0325) => "$1.0325"
+ */
+export const formatBondPrice = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return `$${value.toFixed(4)}`;
+};

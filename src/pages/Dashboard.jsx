@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, List } from 'lucide-react';
-import { data912 } from '../utils/data912';
-import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
-import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
-import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondPrices } from '../hooks/useBondPrices';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search } from 'lucide-react';
+import { CONSTANTS } from '../utils/constants';
+import { formatARS, formatPercent, formatNumber } from '../utils/formatters';
+import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
+import { usePrices } from '../services/priceService';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
 import PositionsTable from '../components/dashboard/PositionsTable';
@@ -13,398 +13,26 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
 import { tradeService } from '../services/tradeService';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { LoadingFallback } from '../components/common/LoadingSpinner';
+import TickerAutocomplete from '../components/common/TickerAutocomplete';
+import TradeModal from '../components/modals/TradeModal';
+import DeleteModal from '../components/modals/DeleteModal';
 import logo from '../assets/logo.png';
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-    console.error('Component stack:', errorInfo?.componentStack);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-background-primary flex items-center justify-center p-6">
-          <div className="bg-background-secondary border border-border-primary rounded-xl p-8 max-w-md text-center">
-            <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-text-primary mb-2">Error inesperado</h2>
-            <p className="text-text-tertiary mb-4">{this.state.error?.message || 'Hubo un problema al cargar la página.'}</p>
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Recargar página
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// Lazy load PositionDetailModal (large component)
 const PositionDetailModal = lazy(() => import('../components/PositionDetailModal'));
-
-// Loading fallback for lazy components
-const LoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
-      <p className="text-text-tertiary">Cargando...</p>
-    </div>
-  </div>
-);
-
-// ============================================
-// COMPONENTS
-// ============================================
-
-// Ticker Autocomplete Component
-const TickerAutocomplete = ({ value, onChange, tickers, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState(value || '');
-  const inputRef = useRef(null);
-  const dropdownRef = useRef(null);
-
-  const filteredTickers = useMemo(() => {
-    if (!search) return tickers.slice(0, 50);
-    const searchUpper = search.toUpperCase();
-    return tickers
-      .filter(t => t.ticker.toUpperCase().includes(searchUpper))
-      .slice(0, 50);
-  }, [search, tickers]);
-
-  useEffect(() => {
-    setSearch(value || '');
-  }, [value]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleSelect = (ticker) => {
-    setSearch(ticker.ticker);
-    onChange(ticker.ticker);
-    setIsOpen(false);
-  };
-
-  const assetClassColors = {
-    'CEDEAR': 'text-success',
-    'ARGY': 'text-primary',
-    'BONO HARD DOLLAR': 'text-amber-400',
-    'BONOS PESOS': 'text-purple-400',
-    'OTROS': 'text-text-tertiary'
-  };
-
-  return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value.toUpperCase());
-          setIsOpen(true);
-        }}
-        onFocus={() => setIsOpen(true)}
-        disabled={disabled}
-        placeholder="Buscar ticker..."
-        className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-all font-mono text-sm"
-      />
-      {isOpen && filteredTickers.length > 0 && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-background-secondary border border-border-primary rounded-lg shadow-lg"
-        >
-          {filteredTickers.map((ticker) => (
-            <button
-              key={ticker.ticker}
-              onClick={() => handleSelect(ticker)}
-              className="w-full px-3 py-2.5 h-10 text-left hover:bg-background-tertiary transition-colors flex justify-between items-center border-b border-border-primary/50 last:border-0"
-            >
-              <span className="text-text-primary font-mono font-medium text-sm">{ticker.ticker}</span>
-              <span className={`text-xs font-medium ${assetClassColors[ticker.assetClass] || 'text-text-tertiary'}`}>
-                {ticker.assetClass}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Trade Form Modal
-const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
-  const [formData, setFormData] = useState({
-    tipo: 'compra',
-    fecha: '',
-    ticker: '',
-    cantidad: '',
-    precio: ''
-  });
-
-  useEffect(() => {
-    if (trade) {
-      setFormData({
-        tipo: trade.tipo || 'compra',
-        fecha: trade.fecha || '',
-        ticker: trade.ticker || '',
-        cantidad: Math.abs(trade.cantidad)?.toString() || '',
-        precio: trade.precioCompra?.toString() || ''
-      });
-    } else {
-      setFormData({
-        tipo: 'compra',
-        fecha: new Date().toISOString().split('T')[0],
-        ticker: '',
-        cantidad: '',
-        precio: ''
-      });
-    }
-  }, [trade, isOpen]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Validación de inputs numéricos
-    const cantidad = parseFloat(formData.cantidad);
-    const precio = parseFloat(formData.precio);
-
-    if (!formData.fecha) {
-      alert('La fecha es requerida');
-      return;
-    }
-
-    if (!formData.ticker || formData.ticker.trim() === '') {
-      alert('El ticker es requerido');
-      return;
-    }
-
-    if (isNaN(cantidad) || cantidad <= 0) {
-      alert('La cantidad debe ser un número mayor a 0');
-      return;
-    }
-
-    if (isNaN(precio) || precio <= 0) {
-      alert('El precio debe ser un número mayor a 0');
-      return;
-    }
-
-    const isVenta = formData.tipo === 'venta';
-
-    onSave({
-      id: trade?.id || crypto.randomUUID(),
-      fecha: formData.fecha,
-      ticker: formData.ticker.toUpperCase().trim(),
-      cantidad: isVenta ? -cantidad : cantidad,
-      precioCompra: precio,
-      tipo: formData.tipo
-    });
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-xl">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-text-primary">
-            {trade ? 'Editar transacción' : 'Nueva transacción'}
-          </h2>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background-tertiary">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Tipo</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setFormData({...formData, tipo: 'compra'})}
-                className={`py-2.5 px-3 h-10 rounded-lg font-medium text-sm transition-all active:scale-95 ${
-                  formData.tipo === 'compra'
-                    ? 'bg-success text-white'
-                    : 'bg-background-tertiary text-text-secondary border border-border-primary hover:border-text-tertiary'
-                }`}
-              >
-                Compra
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({...formData, tipo: 'venta'})}
-                className={`py-2.5 px-3 h-10 rounded-lg font-medium text-sm transition-all active:scale-95 ${
-                  formData.tipo === 'venta'
-                    ? 'bg-danger text-white'
-                    : 'bg-background-tertiary text-text-secondary border border-border-primary hover:border-text-tertiary'
-                }`}
-              >
-                Venta
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Fecha</label>
-            <input
-              type="date"
-              value={formData.fecha}
-              onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Ticker</label>
-            <TickerAutocomplete
-              value={formData.ticker}
-              onChange={(ticker) => setFormData({...formData, ticker})}
-              tickers={tickers}
-              disabled={false}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Cantidad</label>
-              <input
-                type="number"
-                step="any"
-                min="0"
-                inputMode="decimal"
-                value={formData.cantidad}
-                onChange={(e) => setFormData({...formData, cantidad: e.target.value})}
-                className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary font-mono"
-                placeholder="0"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Precio (ARS)</label>
-              <input
-                type="number"
-                step="any"
-                min="0"
-                inputMode="decimal"
-                value={formData.precio}
-                onChange={(e) => setFormData({...formData, precio: e.target.value})}
-                className="w-full px-3 py-2.5 h-10 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:border-primary font-mono"
-                placeholder="0.00"
-                required
-              />
-            </div>
-          </div>
-
-          {(isBonoPesos(formData.ticker) || isBonoHardDollar(formData.ticker)) && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-              <p className="text-amber-400 text-xs">
-                {isBonoPesos(formData.ticker)
-                  ? 'Bonos en pesos: ingresá el precio por cada $1 de VN (ej: 1.03)'
-                  : 'Bonos HD: ingresá el precio por cada lamina de 100 USD VN (ej: 1155)'}
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:bg-border-primary transition-colors font-medium text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 px-3 py-2.5 h-10 font-medium rounded-lg transition-all active:scale-95 text-sm ${
-                formData.tipo === 'venta'
-                  ? 'bg-danger text-white hover:bg-danger/90'
-                  : 'bg-primary text-white hover:bg-primary/90'
-              }`}
-            >
-              {trade ? 'Guardar' : (formData.tipo === 'venta' ? 'Registrar' : 'Agregar')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Confirmation Modal
-const DeleteModal = ({ isOpen, onClose, onConfirm, tradeTicker }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-background-secondary rounded-xl p-6 w-full max-w-sm border border-border-primary shadow-xl">
-        <div className="text-center">
-          <div className="w-12 h-12 bg-danger/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-6 h-6 text-danger" />
-          </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Eliminar transacción</h3>
-          <p className="text-text-tertiary mb-6">
-            ¿Eliminar esta transacción de <span className="text-text-primary font-semibold font-mono">{tradeTicker}</span>?
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="flex-1 px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:bg-border-primary transition-colors font-medium text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={onConfirm}
-              className="flex-1 px-3 py-2.5 h-10 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors font-medium text-sm"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// MAIN DASHBOARD COMPONENT
-// ============================================
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { currentPortfolio } = usePortfolio();
+
+  const { prices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
+
+  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : null;
+  const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+
   const [trades, setTrades] = useState([]);
-  const [prices, setPrices] = useState({});
-  const [tickers, setTickers] = useState([]);
-  const [mepRate, setMepRate] = useState(CONSTANTS.MEP_DEFAULT);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPricesLoading, setIsPricesLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const [lastUpdateFull, setLastUpdateFull] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
@@ -415,7 +43,6 @@ export default function Dashboard() {
   const [positionsSort, setPositionsSort] = useState({ key: 'valuacionActual', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [lastValidPrices, setLastValidPrices] = useState({});
   const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
@@ -428,14 +55,14 @@ export default function Dashboard() {
     density: 'compact'
   });
 
-  // Load trades from Supabase - extracted as useCallback so it can be called from other places
   const loadTrades = useCallback(async () => {
-    if (!currentPortfolio || !user) {
+    if (!currentPortfolio?.id) {
       setTrades([]);
       return;
     }
+
+    setTradesLoading(true);
     try {
-      setTradesLoading(true);
       const data = await tradeService.getTrades(currentPortfolio.id);
       setTrades(data || []);
     } catch (error) {
@@ -444,290 +71,11 @@ export default function Dashboard() {
     } finally {
       setTradesLoading(false);
     }
-  }, [currentPortfolio, user]);
+  }, [currentPortfolio]);
 
-  // Load trades when portfolio changes
   useEffect(() => {
     loadTrades();
   }, [loadTrades]);
-
-  // Fetch prices using data912 helper with auto-refresh
-  const fetchPrices = useCallback(async () => {
-    setIsPricesLoading(true);
-    const priceMap = {};
-    const tickerList = [];
-
-    try {
-      const mepResponse = await fetch('https://data912.com/live/mep', {
-        signal: AbortSignal.timeout(10000)
-      });
-      if (!mepResponse.ok) throw new Error('Failed to fetch MEP data');
-      const mepData = await mepResponse.json();
-
-      let avgMep = 0;
-      let mepCount = 0;
-
-      mepData.forEach(item => {
-        const ticker = item.ticker;
-        const assetClass = getAssetClass(ticker, item.panel);
-
-        let rawPrice = item.ars_bid || item.mark || item.close || 0;
-        const adjustedPrice = adjustBondPrice(ticker, rawPrice);
-
-        const isValidPrice = adjustedPrice > 0;
-        const lastValid = lastValidPrices[ticker];
-        const finalPrice = isValidPrice ? adjustedPrice : (lastValid?.precio || adjustedPrice);
-        const finalRawPrice = isValidPrice ? rawPrice : (lastValid?.precioRaw || rawPrice);
-        
-        priceMap[ticker] = {
-          precio: finalPrice,
-          precioRaw: finalRawPrice,
-          bid: item.ars_bid,
-          ask: item.ars_ask,
-          close: item.close,
-          panel: item.panel,
-          assetClass,
-          pctChange: null,
-          isBonoPesos: isBonoPesos(ticker),
-          isBonoHD: isBonoHardDollar(ticker),
-          isStale: !isValidPrice && lastValid
-        };
-
-        tickerList.push({
-          ticker,
-          panel: item.panel,
-          assetClass
-        });
-
-        if (item.mark > 1400 && item.mark < 1600 && item.panel === 'cedear') {
-          avgMep += item.mark;
-          mepCount++;
-        }
-      });
-
-      if (mepCount > 0) {
-        setMepRate(avgMep / mepCount);
-      }
-
-      // Fetch stocks, cedears y bonds EN PARALELO para mejor performance
-      const [stocksResult, cedearsResult, bondsResult] = await Promise.allSettled([
-        fetch('https://data912.com/live/arg_stocks', { signal: AbortSignal.timeout(10000) })
-          .then(r => r.ok ? r.json() : Promise.reject('Failed')),
-        fetch('https://data912.com/live/arg_cedears', { signal: AbortSignal.timeout(10000) })
-          .then(r => r.ok ? r.json() : Promise.reject('Failed')),
-        fetch('https://data912.com/live/arg_bonds', { signal: AbortSignal.timeout(10000) })
-          .then(r => r.ok ? r.json() : Promise.reject('Failed'))
-      ]);
-
-      // Procesar arg_stocks
-      if (stocksResult.status === 'fulfilled') {
-        stocksResult.value.forEach(item => {
-          const ticker = item.symbol;
-          if (!ticker) return;
-
-          const knownDollarSuffixes = ['ALUAD', 'GGALD', 'PAMPD', 'CEPAD', 'SUPVD', 'TXARD', 'BBARD', 'BYMAD',
-            'COMED', 'CRESD', 'EDND', 'IRSAD', 'LOMAD', 'METRD', 'TECOD', 'TGSUD', 'TRAND', 'VALOD', 'CEPUD',
-            'ECOGD', 'TGN4D', 'YPFDD'];
-          if (knownDollarSuffixes.includes(ticker)) return;
-          if (ticker.endsWith('.D')) return;
-
-          const assetClass = getAssetClass(ticker, null, true);
-
-          if (!priceMap[ticker]) {
-            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-            const adjustedPrice = adjustBondPrice(ticker, rawPrice);
-
-            priceMap[ticker] = {
-              precio: adjustedPrice,
-              precioRaw: rawPrice,
-              bid: item.px_bid,
-              ask: item.px_ask,
-              close: item.c,
-              panel: 'arg_stock',
-              assetClass,
-              pctChange: item.pct_change,
-              isBonoPesos: isBonoPesos(ticker),
-              isBonoHD: isBonoHardDollar(ticker)
-            };
-
-            tickerList.push({ ticker, panel: 'arg_stock', assetClass });
-          } else {
-            priceMap[ticker].pctChange = item.pct_change;
-          }
-        });
-      } else {
-        console.warn('Could not fetch arg_stocks:', stocksResult.reason);
-      }
-
-      // Procesar cedears
-      if (cedearsResult.status === 'fulfilled') {
-        cedearsResult.value.forEach(item => {
-          const ticker = item.symbol;
-          if (!ticker) return;
-
-          const isDollarOrCable = ticker.length > 3 &&
-            (ticker.endsWith('D') || ticker.endsWith('C')) &&
-            /[A-Z]$/.test(ticker.slice(-2, -1));
-          if (isDollarOrCable) return;
-
-          if (!priceMap[ticker]) {
-            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-
-            priceMap[ticker] = {
-              precio: rawPrice,
-              precioRaw: rawPrice,
-              bid: item.px_bid,
-              ask: item.px_ask,
-              close: item.c,
-              panel: 'cedear',
-              assetClass: 'CEDEAR',
-              pctChange: item.pct_change,
-              isBonoPesos: false,
-              isBonoHD: false
-            };
-
-            tickerList.push({ ticker, panel: 'cedear', assetClass: 'CEDEAR' });
-          } else {
-            priceMap[ticker].pctChange = item.pct_change;
-          }
-        });
-      } else {
-        console.warn('Could not fetch arg_cedears:', cedearsResult.reason);
-      }
-
-      // Procesar bonds
-      if (bondsResult.status === 'fulfilled') {
-        bondsResult.value.forEach(item => {
-          const ticker = item.symbol;
-          if (!ticker) return;
-
-          const len = ticker.length;
-          if (len > 3 && (ticker.endsWith('D') || ticker.endsWith('C'))) {
-            const prevChar = ticker.charAt(len - 2);
-            if (/[0-9]/.test(prevChar)) return;
-          }
-
-          if (!priceMap[ticker]) {
-            const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-            const assetClass = getAssetClass(ticker, 'bonds');
-            const adjustedPrice = adjustBondPrice(ticker, rawPrice);
-
-            priceMap[ticker] = {
-              precio: adjustedPrice,
-              precioRaw: rawPrice,
-              bid: item.px_bid,
-              ask: item.px_ask,
-              close: item.c,
-              panel: 'bonds',
-              assetClass,
-              pctChange: item.pct_change,
-              isBonoPesos: isBonoPesos(ticker),
-              isBonoHD: isBonoHardDollar(ticker)
-            };
-
-            tickerList.push({ ticker, panel: 'bonds', assetClass });
-          } else {
-            if (item.pct_change !== null && item.pct_change !== undefined) {
-              priceMap[ticker].pctChange = item.pct_change;
-            }
-          }
-        });
-      } else {
-        console.warn('Could not fetch arg_bonds:', bondsResult.reason);
-      }
-
-      const now = new Date();
-      setPrices(priceMap);
-      setTickers(tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)));
-      setLastUpdate(now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
-      setLastUpdateFull(now.toLocaleDateString('es-AR', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }));
-
-    } catch (error) {
-      console.error('Error fetching prices:', error);
-      const now = new Date();
-      setLastUpdate(now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' (error)');
-      setLastUpdateFull(now.toLocaleDateString('es-AR', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) + ' (error)');
-    } finally {
-      setIsPricesLoading(false);
-    }
-  }, [lastValidPrices]);
-
-  useEffect(() => {
-    fetchPrices();
-  }, [fetchPrices]);
-
-  useEffect(() => {
-    if (!trades || trades.length === 0) return;
-
-    // Flag para evitar actualizar state después del unmount
-    let isMounted = true;
-
-    const refreshPositionPrices = async () => {
-      try {
-        data912.clearBondCache?.();
-
-        const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
-        const tickerData = uniqueTickers.map(ticker => ({
-          ticker,
-          assetClass: getAssetClass(ticker, null)
-        }));
-
-        if (tickerData.length === 0) return;
-
-        const [batchPrices, batchReturns] = await Promise.all([
-          data912.getBatchPrices(tickerData),
-          data912.getBatchDailyReturns(tickerData)
-        ]);
-
-        // Solo actualizar si el componente sigue montado
-        if (!isMounted) return;
-
-        setPrices(prevPrices => {
-          const updated = { ...prevPrices };
-
-          Object.keys(batchPrices).forEach(ticker => {
-            const newPrice = batchPrices[ticker];
-            const adjustedPrice = adjustBondPrice(ticker, newPrice);
-
-            updated[ticker] = {
-              ...updated[ticker],
-              precio: adjustedPrice,
-              precioRaw: newPrice,
-              pctChange: batchReturns[ticker] ?? updated[ticker]?.pctChange,
-              lastUpdate: Date.now(),
-              assetClass: updated[ticker]?.assetClass || getAssetClass(ticker, null),
-              isBonoPesos: isBonoPesos(ticker),
-              isBonoHD: isBonoHardDollar(ticker)
-            };
-          });
-
-          return updated;
-        });
-      } catch (error) {
-        console.error('Error refreshing position prices:', error);
-      }
-    };
-
-    refreshPositionPrices();
-    const interval = setInterval(refreshPositionPrices, 30000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [trades]);
 
   const downloadTemplate = () => {
     const csvContent = `Fecha,Ticker,Cantidad,Precio
@@ -803,11 +151,7 @@ export default function Dashboard() {
 
           for (const trade of newTrades) {
             try {
-              await tradeService.createTrade(
-                currentPortfolio.id,
-                user.id,
-                trade
-              );
+              await tradeService.createTrade(currentPortfolio.id, user.id, trade);
               savedCount++;
             } catch (err) {
               console.error('Error saving trade:', trade.ticker, err);
@@ -871,7 +215,6 @@ export default function Dashboard() {
       }
       grouped[trade.ticker].trades.push(trade);
 
-      // Use Supabase field names (quantity, price) instead of legacy names
       const cantidad = trade.quantity || trade.cantidad || 0;
       const precio = trade.price || trade.precioCompra || 0;
       grouped[trade.ticker].cantidadTotal += cantidad;
@@ -908,7 +251,6 @@ export default function Dashboard() {
         pctChange: priceData?.pctChange,
         isBonoPesos: priceData?.isBonoPesos || isBonoPesos(pos.ticker),
         isBonoHD: priceData?.isBonoHD || isBonoHardDollar(pos.ticker),
-        // Validar mepRate antes de dividir para evitar NaN/Infinity
         costoUSD: mepRate > 0 ? pos.costoTotal / mepRate : 0,
         valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
         resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
@@ -932,7 +274,6 @@ export default function Dashboard() {
       resultadoPct,
       resultadoDiario,
       resultadoDiarioPct,
-      // Validar mepRate antes de dividir para evitar NaN/Infinity
       invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
       valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
       resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
@@ -943,7 +284,6 @@ export default function Dashboard() {
   const sortedTrades = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) return [];
 
-    // Map Supabase fields to UI fields
     const mappedTrades = trades.map(trade => ({
       ...trade,
       fecha: trade.trade_date,
@@ -1000,7 +340,7 @@ export default function Dashboard() {
           trade_date: trade.fecha
         });
       }
-      
+
       const updatedTrades = await tradeService.getTrades(currentPortfolio.id);
       setTrades(updatedTrades || []);
       setModalOpen(false);
@@ -1066,460 +406,270 @@ export default function Dashboard() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PortfolioSelector />
-            <img src={logo} alt="Argos Capital" className="w-8 h-8 ml-2" />
-            <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
-          </div>
-          <button
-            onClick={fetchPrices}
-            disabled={isPricesLoading}
-            className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            title="Actualizar"
-          >
-            <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Desktop Sidebar */}
-      <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-        <div className="p-3 border-b border-border-primary flex items-center justify-center">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors"
-            title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
-              activeTab === 'dashboard'
-                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-            title={sidebarOpen ? "Posiciones" : undefined}
-          >
-            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('graficos')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
-              activeTab === 'graficos'
-                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-            title={sidebarOpen ? "Gráficos" : undefined}
-          >
-            <PieChart className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Gráficos</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
-              activeTab === 'trades'
-                ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-            title={sidebarOpen ? "Trades" : undefined}
-          >
-            <FileText className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Trades</span>
-          </button>
-        </nav>
-
-        <div className="p-3 border-t border-border-primary space-y-2">
-          <button
-            onClick={fetchPrices}
-            disabled={isPricesLoading}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={sidebarOpen ? "Actualizar" : undefined}
-          >
-            <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
-            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
-          </button>
-          {sidebarOpen && (
-            <div className="bg-background-tertiary rounded-lg p-3 border border-border-primary space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-sm">Dólar MEP</span>
-                <span className="text-text-primary font-mono text-sm">{formatARS(mepRate)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-sm">Posiciones</span>
-                <span className="text-text-primary font-mono text-sm">{positions.length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-sm">Trades</span>
-                <span className="text-text-primary font-mono text-sm">{trades.length}</span>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={() => signOut()}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95`}
-            title={sidebarOpen ? "Cerrar sesión" : undefined}
-          >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
-          </button>
-          {lastUpdate && sidebarOpen && (
-            <p className="text-sm text-text-tertiary mt-2 text-center transition-all duration-200">
-              Actualizado: {lastUpdateFull || lastUpdate}
-            </p>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-t border-border-primary px-2 py-2 safe-area-inset-bottom">
-        <nav className="flex justify-around">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
-              activeTab === 'dashboard'
-                ? 'text-success bg-success/5'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-xs font-medium">Posiciones</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('graficos')}
-            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
-              activeTab === 'graficos'
-                ? 'text-success bg-success/5'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-          >
-            <PieChart className="w-5 h-5" />
-            <span className="text-xs font-medium">Gráficos</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('trades')}
-            className={`flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg transition-all active:scale-95 min-h-[52px] min-w-[70px] ${
-              activeTab === 'trades'
-                ? 'text-success bg-success/5'
-                : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-            }`}
-          >
-            <FileText className="w-5 h-5" />
-            <span className="text-xs font-medium">Trades</span>
-          </button>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
-        {activeTab === 'dashboard' ? (
-          <>
-            {/* Portfolio Selector */}
-            <div className="mb-3">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <PortfolioSelector />
+              <img src={logo} alt="Argos Capital" className="w-8 h-8 ml-2" />
+              <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
             </div>
+            <button
+              onClick={() => refetchPrices()}
+              disabled={isPricesLoading}
+              className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              title="Actualizar"
+            >
+              <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
 
-            {/* Compact Header - 3 Metrics */}
-            <div className="grid grid-cols-3 gap-0 mb-3">
-              <div className="bg-background-secondary rounded-l-lg p-4 border border-border-primary border-r-0">
-                <p className="text-text-tertiary text-sm font-medium mb-1">Invertido</p>
-                <p className="text-text-primary font-mono text-xl font-semibold">{formatARS(totals.invertido)}</p>
-              </div>
-              <div className="bg-background-secondary p-4 border border-border-primary">
-                <p className="text-text-tertiary text-sm font-medium mb-1">Valuación Actual</p>
-                <p className="text-text-primary font-mono text-xl font-semibold">{formatARS(totals.valuacion)}</p>
-              </div>
-              <div className="bg-background-secondary rounded-r-lg p-4 border border-border-primary border-l-0">
-                <p className="text-text-tertiary text-sm font-medium mb-1">Resultado Total</p>
-                <p className={`font-mono text-xl font-semibold ${totals.resultado >= 0 ? 'text-success' : 'text-danger'}`}>{formatARS(totals.resultado)}</p>
-                <p className={`text-sm mt-0.5 ${totals.resultadoPct >= 0 ? 'text-success' : 'text-danger'}`}>{formatPercent(totals.resultadoPct)}</p>
-              </div>
-            </div>
+        <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+          <div className="p-3 border-b border-border-primary flex items-center justify-center">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors"
+              title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
 
-            {/* Action Bar */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative w-48">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <input
-                    type="text"
-                    placeholder="Buscar ticker..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary text-sm focus:outline-none focus:border-success"
-                  />
-                </div>
-                <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
-              </div>
-              <button
-                onClick={() => {
-                  setEditingTrade(null);
-                  setModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nueva Transacción</span>
+          <div className="flex-1 py-4 overflow-y-auto">
+            <div className={`px-3 space-y-1 ${sidebarOpen ? '' : 'hidden'}`}>
+              <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+                <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium text-sm">Dashboard</span>
+              </button>
+
+              <button onClick={() => setActiveTab('trades')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'trades' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium text-sm">Transacciones</span>
+              </button>
+
+              <button onClick={() => setActiveTab('distribution')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'distribution' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+                <PieChart className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium text-sm">Distribución</span>
+              </button>
+
+              <button onClick={() => setActiveTab('help')} className={`w-full flex items-center gap-3 px-3 py-2.5 h-10 rounded-lg transition-colors ${activeTab === 'help' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`}>
+                <HelpCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium text-sm">Ayuda</span>
               </button>
             </div>
+          </div>
 
-            {/* Positions Table */}
-            <div className="mb-20">
-              <PositionsTable
-                positions={positions}
-                onRowClick={handleOpenPositionDetail}
-                prices={prices}
-                mepRate={mepRate}
-                sortConfig={positionsSort}
-                onSortChange={setPositionsSort}
-                searchTerm={searchTerm}
-                columnSettings={columnSettings}
-                onColumnSettingsChange={setColumnSettings}
-              />
-            </div>
-
-             {/* Footer - Desktop Only */}
-            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
-              <p className="text-text-tertiary text-sm text-center">Argos Capital v3.0</p>
-            </div>
-          </>
-        ) : activeTab === 'graficos' ? (
-          <>
-            {/* Gráficos Tab */}
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">Análisis del Portfolio</h2>
-              <div className="bg-background-secondary rounded-lg border border-border-primary p-4">
-                <DistributionChart positions={positions} />
+          <div className="p-3 border-t border-border-primary">
+            <div className={`flex items-center gap-3 px-2 ${sidebarOpen ? '' : 'justify-center'}`}>
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-medium text-sm">{user?.email?.[0]?.toUpperCase() || 'U'}</span>
               </div>
-            </div>
-          </>
-        ) : (
-        <>
-            {/* Trades Tab */}
-            <div className="flex flex-col gap-4 mb-6">
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                <button
-                  onClick={() => {
-                    setEditingTrade(null);
-                    setModalOpen(true);
-                  }}
-                  className="flex items-center justify-center gap-2 px-5 py-3 h-11 bg-success text-white rounded-lg hover:bg-success/90 transition-all font-semibold text-sm active:scale-95"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">Nuevo Trade</span>
-                  <span className="sm:hidden">Nuevo</span>
-                </button>
-                <button
-                  onClick={downloadTemplate}
-                  className="flex items-center justify-center gap-2 px-4 py-3 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all font-medium border border-border-primary text-sm active:scale-95"
-                >
-                  <Download className="w-5 h-5" />
-                  <span className="hidden sm:inline">Template</span>
-                </button>
-                <label className="flex items-center justify-center gap-2 px-4 py-3 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all font-medium border border-border-primary cursor-pointer text-sm active:scale-95 disabled:opacity-50">
-                  <input
-                    type="file"
-                    accept=".csv,.txt"
-                    onChange={importFromCSV}
-                    disabled={isLoading}
-                    className="hidden"
-                  />
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  <span className="hidden sm:inline">Importar</span>
-                </label>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowFormatHelp(!showFormatHelp)}
-                    className="flex items-center justify-center w-11 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary active:scale-95"
-                    title="Ayuda formato"
-                  >
-                    <HelpCircle className="w-5 h-5" />
+              {sidebarOpen && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">{user?.email || 'Usuario'}</p>
+                  <button onClick={() => signOut()} className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1">
+                    <LogOut className="w-3 h-3" />
+                    Cerrar sesión
                   </button>
-                  {showFormatHelp && (
-                      <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-background-secondary rounded-lg p-4 border border-border-primary shadow-xl">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-text-primary font-medium text-sm">📋 Formato CSV/Excel:</p>
-                        <button
-                          onClick={() => setShowFormatHelp(false)}
-                          className="text-text-tertiary hover:text-text-primary p-1 rounded-lg hover:bg-background-tertiary active:scale-95 transition-all"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <ul className="text-text-secondary space-y-1 text-sm ml-4">
-                        <li>• <strong>Fecha:</strong> DD/MM/YYYY (ej: 23/12/2024)</li>
-                        <li>• <strong>Ticker:</strong> Símbolo del activo (ej: MELI, AAPL, AL30)</li>
-                        <li>• <strong>Cantidad:</strong> Número de unidades (ej: 10 o 1250.50)</li>
-                        <li>• <strong>Precio:</strong> Precio de compra en ARS (ej: 17220 o 839.50)</li>
-                        <li>• <strong>Bonos pesos:</strong> Precio por $1 VN (ej: 1.03)</li>
-                      </ul>
-                      <p className="text-text-tertiary mt-2 text-sm">
-                        Tip: Descargá el template para ver un ejemplo completo
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-               {importStatus && (
-                <span className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
-                  importStatus.includes('✓') ? 'bg-success/10 text-success' :
-                  importStatus.includes('Error') ? 'bg-danger/10 text-danger' :
-                  'bg-background-tertiary text-text-secondary'
-                }`}>
-                  {importStatus}
-                </span>
               )}
             </div>
+          </div>
+        </aside>
 
-            {/* Trades Table */}
-            <div className="bg-background-secondary rounded-lg border border-border-primary overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                   <thead>
-                     <tr className="bg-background-tertiary/30 border-b border-border-primary">
-                       <th
-                         className="text-left px-4 py-2.5 text-sm font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
-                         onClick={() => handleSort('fecha')}
-                       >
-                         <div className="flex items-center gap-1">
-                           Fecha
-                           {sortConfig.key === 'fecha' && (
-                             sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                           )}
-                         </div>
-                       </th>
-                       <th
-                         className="text-left px-4 py-2.5 text-sm font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
-                         onClick={() => handleSort('ticker')}
-                       >
-                         <div className="flex items-center gap-1">
-                           Ticker
-                           {sortConfig.key === 'ticker' && (
-                             sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                           )}
-                         </div>
-                       </th>
-                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Cantidad</th>
-                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Precio</th>
-                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary hidden sm:table-cell">Invertido</th>
-                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Acciones</th>
-                     </tr>
-                   </thead>
-                  <tbody className="divide-y divide-border-primary">
-                    {sortedTrades.map((trade) => {
-                      const isBono = isBonoPesos(trade.ticker);
-                      return (
-                        <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
-                          <td className="px-4 py-2.5 text-text-secondary text-sm">
-                            {new Date(trade.fecha).toLocaleDateString('es-AR')}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <span className="font-semibold text-text-primary font-mono">{trade.ticker}</span>
-                          </td>
-                          <td className="text-right px-4 py-2.5 text-text-secondary font-mono">
-                            {formatNumber(trade.cantidad)}
-                          </td>
-                          <td className="text-right px-4 py-2.5 text-text-primary font-mono font-medium">
-                            {isBono ? `$${trade.precioCompra.toFixed(4)}` : formatARS(trade.precioCompra)}
-                          </td>
-                          <td className="text-right px-4 py-2.5 text-text-tertiary font-mono text-sm hidden sm:table-cell">
-                            {formatARS(trade.cantidad * trade.precioCompra)}
-                          </td>
-                          <td className="text-right px-4 py-2.5">
-                            <div className="flex justify-end gap-1">
-                              <button
-                                onClick={() => {
-                                  setEditingTrade(trade);
-                                  setModalOpen(true);
-                                }}
-                                className="p-2 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded-lg transition-all"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeletingTrade(trade);
-                                  setDeleteModalOpen(true);
-                                }}
-                                className="p-2 text-text-tertiary hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'} mt-16 lg:mt-0`}>
+          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+            <header className="hidden lg:flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <PortfolioSelector />
+                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+                <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
+                <span className="text-text-tertiary">|</span>
+                <span className="text-sm text-text-tertiary">{lastUpdate || '--:--'}</span>
+                <button
+                  onClick={() => refetchPrices()}
+                  disabled={isPricesLoading}
+                  className="ml-2 p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Actualizar"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </header>
+
+            {activeTab === 'help' && (
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 lg:p-8">
+                  <h2 className="text-xl font-bold text-text-primary mb-6">Guía de Uso</h2>
+                  <div className="space-y-6 text-text-secondary">
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      <p className="text-amber-400 text-sm">
+                        <strong>Nota:</strong> Los precios de CEDEARs y bonos mostrados en la app están expresados en pesos argentinos (ARS).
+                        Los bonos hard dollar (AL30, GD30, etc.) muestran su precio en pesos, representando el valor de cada lamina de USD 100.
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-text-primary mb-2">Agregar Transacciones</h3>
+                      <p className="text-sm">Haz clic en el botón "+" para registrar una nueva transacción. Indica si es compra o venta, la fecha, el ticker y la cantidad.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-text-primary mb-2">Precios</h3>
+                      <p className="text-sm">Los precios se actualizan automáticamente cada 30 segundos. Puedes forzar una actualización con el botón de refresh.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-text-primary mb-2">Importar CSV</h3>
+                      <p className="text-sm">Descarga la plantilla CSV, completa tus transacciones y súbela para importarlas masivamente.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'distribution' && (
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">Distribución del Portfolio</h2>
+                  <DistributionChart positions={positions} />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'trades' && (
+              <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
+                  <h2 className="text-lg font-semibold text-text-primary">Transacciones</h2>
+                  <div className="flex gap-2">
+                    <button onClick={downloadTemplate} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary">
+                      <Download className="w-3.5 h-3.5" />
+                      Plantilla
+                    </button>
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary cursor-pointer">
+                      <Download className="w-3.5 h-3.5" />
+                      Importar
+                      <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
+                    </label>
+                    <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium">
+                      <Plus className="w-3.5 h-3.5" />
+                      Nuevo
+                    </button>
+                  </div>
+                </div>
+
+                {importStatus && (
+                  <div className={`px-4 py-2 text-sm border-b ${importStatus.includes('Error') || importStatus.includes('error') ? 'bg-danger/10 text-danger border-danger/30' : importStatus.includes('importadas') ? 'bg-success/10 text-success border-success/30' : 'bg-background-tertiary text-text-secondary'}`}>
+                    {importStatus}
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-background-tertiary text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('fecha')}>
+                          <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                        </th>
+                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('ticker')}>
+                          <div className="flex items-center gap-1">Ticker {sortConfig.key === 'ticker' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                        </th>
+                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary text-right" onClick={() => handleSort('cantidad')}>
+                          <div className="flex items-center justify-end gap-1">Cantidad {sortConfig.key === 'cantidad' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                        </th>
+                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary text-right" onClick={() => handleSort('precioCompra')}>
+                          <div className="flex items-center justify-end gap-1">Precio {sortConfig.key === 'precioCompra' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                        </th>
+                        <th className="px-4 py-3 text-right">Total</th>
+                        <th className="px-4 py-3 text-center">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-primary">
+                      {sortedTrades.length === 0 ? (
+                        <tr><td colSpan="6" className="px-4 py-8 text-center text-text-tertiary text-sm">No hay transacciones registradas</td></tr>
+                      ) : sortedTrades.map((trade, idx) => (
+                        <tr key={trade.id || idx} className="hover:bg-background-tertiary/50 transition-colors">
+                          <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.fecha}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-text-primary whitespace-nowrap">{trade.ticker}</td>
+                          <td className={`px-4 py-3 text-sm text-right whitespace-nowrap font-mono ${trade.cantidad < 0 ? 'text-danger' : 'text-text-primary'}`}>{formatNumber(trade.cantidad, 2)}</td>
+                          <td className="px-4 py-3 text-sm text-right whitespace-nowrap font-mono">{formatARS(trade.precioCompra)}</td>
+                          <td className="px-4 py-3 text-sm text-right whitespace-nowrap font-mono">{formatARS(Math.abs(trade.cantidad) * trade.precioCompra)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button onClick={() => { setEditingTrade(trade); setModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded transition-colors" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => { setDeletingTrade(trade); setDeleteModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-danger hover:bg-background-tertiary rounded transition-colors" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {trades.length === 0 && (
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-background-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Plus className="w-8 h-8 text-text-tertiary" />
-                    </div>
-                    <p className="text-text-tertiary mb-2 font-medium">No hay transacciones registradas</p>
-                    <p className="text-text-tertiary/70 text-sm mb-4">Empezá importando un archivo CSV o agregando manualmente</p>
-                      <div className="flex justify-center gap-3">
-                      <button
-                        onClick={() => {
-                          setEditingTrade(null);
-                          setModalOpen(true);
-                        }}
-                        className="text-primary hover:text-primary/80 font-medium text-sm"
-                      >
-                        Agregar transacción
-                      </button>
-                    </div>
-                  </div>
-                )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </main>
+            )}
 
-      {/* Modals */}
-      <TradeModal
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingTrade(null);
-        }}
-        onSave={handleSaveTrade}
-        trade={editingTrade}
-        tickers={tickers}
-      />
+            {activeTab === 'dashboard' && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                  <SummaryCard title="Invertido" value={formatARS(totals.invertido)} subtitle="Total invertido" />
+                  <SummaryCard title="Valuación" value={formatARS(totals.valuacion)} subtitle={lastUpdate ? `Actualizado: ${lastUpdate}` : ''} />
+                  <SummaryCard title="Resultado" value={`${formatPercent(totals.resultadoPct)}`} subtitle={formatARS(totals.resultado)} positive={totals.resultado >= 0} />
+                  <SummaryCard title="Hoy" value={`${formatPercent(totals.resultadoDiarioPct)}`} subtitle={formatARS(totals.resultadoDiario)} positive={totals.resultadoDiario >= 0} />
+                </div>
 
-      <DeleteModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setDeletingTrade(null);
-        }}
-        onConfirm={handleDeleteTrade}
-        tradeTicker={deletingTrade?.ticker}
-      />
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-3 bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
+                    <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
+                        <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                          <input type="text" placeholder="Buscar ticker..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
+                        </div>
+                        <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
+                      </div>
+                    </div>
+                    <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                  </div>
 
-      <Suspense fallback={<LoadingFallback />}>
-        <PositionDetailModal
-          open={detailModalOpen}
-          onClose={handleClosePositionDetail}
-          position={selectedPosition}
-          trades={trades}
-        />
-      </Suspense>
-    </div>
+                  <div className="lg:col-span-1 space-y-4">
+                    <div className="bg-background-secondary border border-border-primary rounded-xl p-4">
+                      <h3 className="text-sm font-medium text-text-secondary mb-3">Resumen USD</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Invertido</span><span className="text-text-primary">{formatUSD(totals.invertidoUSD)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Valuación</span><span className="text-text-primary">{formatUSD(totals.valuacionUSD)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-text-tertiary">Resultado</span><span className={totals.resultadoUSD >= 0 ? 'text-success' : 'text-danger'}>{formatUSD(totals.resultadoUSD)}</span></div>
+                      </div>
+                    </div>
+
+                    <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 h-11 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20">
+                      <Plus className="w-5 h-5" />
+                      Agregar Trade
+                    </button>
+
+                    <button onClick={downloadTemplate} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-sm font-medium border border-border-primary">
+                      <Download className="w-4 h-4" />
+                      Descargar Plantilla CSV
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </main>
+
+        <TradeModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditingTrade(null); }} onSave={handleSaveTrade} trade={editingTrade} tickers={tickers} />
+
+        <DeleteModal isOpen={deleteModalOpen} onClose={() => { setDeleteModalOpen(false); setDeletingTrade(null); }} onConfirm={handleDeleteTrade} tradeTicker={deletingTrade?.ticker} />
+
+        <Suspense fallback={<LoadingFallback />}>
+          <PositionDetailModal isOpen={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} onTradeClick={(trade) => { const t = sortedTrades.find(st => st.id === trade.id); if (t) { setEditingTrade(t); setDetailModalOpen(false); setModalOpen(true); } }} />
+        </Suspense>
+      </div>
     </ErrorBoundary>
   );
 }

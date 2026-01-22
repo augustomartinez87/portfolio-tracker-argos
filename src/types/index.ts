@@ -1,0 +1,310 @@
+// ============================================
+// PORTFOLIO TRACKER - TYPE DEFINITIONS
+// ============================================
+
+// ============================================
+// ENUMS Y CONSTANTES TIPADAS
+// ============================================
+
+export const ASSET_CLASSES = {
+  CEDEAR: 'CEDEAR',
+  ARGY: 'ARGY',
+  BONOS_PESOS: 'BONOS PESOS',
+  BONO_HARD_DOLLAR: 'BONO HARD DOLLAR',
+  OTROS: 'OTROS',
+} as const;
+
+export type AssetClass = typeof ASSET_CLASSES[keyof typeof ASSET_CLASSES];
+
+export const TRADE_TYPES = {
+  BUY: 'buy',
+  SELL: 'sell',
+} as const;
+
+export type TradeType = typeof TRADE_TYPES[keyof typeof TRADE_TYPES];
+
+export const CURRENCIES = {
+  ARS: 'ARS',
+  USD: 'USD',
+} as const;
+
+export type Currency = typeof CURRENCIES[keyof typeof CURRENCIES];
+
+// ============================================
+// ENTIDADES DE BASE DE DATOS (Supabase)
+// ============================================
+
+/**
+ * Portfolio - Colección de trades agrupados
+ */
+export interface Portfolio {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  currency: Currency;
+  is_default: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+/**
+ * Trade - Transacción individual de compra/venta
+ */
+export interface Trade {
+  id: string;
+  portfolio_id: string;
+  user_id: string;
+  ticker: string;
+  trade_type: TradeType;
+  quantity: number;
+  price: number;
+  total_amount: number;
+  commission: number;
+  currency: Currency;
+  trade_date: string;
+  notes: string | null;
+  created_at?: string;
+}
+
+// ============================================
+// ENTIDADES DE UI / CALCULADAS
+// ============================================
+
+/**
+ * Trade con campos de UI (mappeo español)
+ */
+export interface TradeUI extends Trade {
+  fecha: string;
+  cantidad: number;
+  precioCompra: number;
+  tipo: 'compra' | 'venta';
+}
+
+/**
+ * Position - Agregación de trades por ticker
+ */
+export interface Position {
+  ticker: string;
+  trades: Trade[];
+  cantidadTotal: number;
+  costoTotal: number;
+  precioPromedio: number;
+  precioActual: number;
+  valuacionActual: number;
+  resultado: number;
+  resultadoPct: number;
+  resultadoDiario: number;
+  resultadoDiarioPct: number;
+  assetClass: AssetClass;
+  pctChange: number | null;
+  isBonoPesos: boolean;
+  isBonoHD: boolean;
+  costoUSD: number;
+  valuacionUSD: number;
+  resultadoUSD: number;
+  resultadoDiarioUSD: number;
+}
+
+/**
+ * Totales del portfolio
+ */
+export interface PortfolioTotals {
+  invertido: number;
+  valuacion: number;
+  resultado: number;
+  resultadoPct: number;
+  resultadoDiario: number;
+  resultadoDiarioPct: number;
+  invertidoUSD: number;
+  valuacionUSD: number;
+  resultadoUSD: number;
+  resultadoDiarioUSD: number;
+}
+
+// ============================================
+// DATOS DE PRECIOS (API data912)
+// ============================================
+
+/**
+ * Datos de precio para un ticker
+ */
+export interface PriceData {
+  precio: number;
+  precioRaw: number;
+  bid?: number;
+  ask?: number;
+  close?: number;
+  panel?: string;
+  assetClass: AssetClass;
+  pctChange: number | null;
+  isBonoPesos: boolean;
+  isBonoHD: boolean;
+  isStale?: boolean;
+  lastUpdate?: number;
+}
+
+/**
+ * Mapa de precios por ticker
+ */
+export type PriceMap = Record<string, PriceData>;
+
+/**
+ * Info básica de un ticker
+ */
+export interface TickerInfo {
+  ticker: string;
+  panel?: string;
+  assetClass: AssetClass;
+}
+
+/**
+ * Datos históricos de un día
+ */
+export interface HistoricalDataPoint {
+  date: string;
+  c: number;  // close
+  o?: number; // open
+  h?: number; // high
+  l?: number; // low
+  v?: number; // volume
+}
+
+// ============================================
+// FORMULARIOS Y MODALES
+// ============================================
+
+/**
+ * Datos del formulario de trade
+ */
+export interface TradeFormData {
+  tipo: 'compra' | 'venta';
+  fecha: string;
+  ticker: string;
+  cantidad: string;
+  precio: string;
+}
+
+/**
+ * Configuración de columnas de la tabla
+ */
+export interface ColumnSettings {
+  showPPC: boolean;
+  showInvertido: boolean;
+  showDiario: boolean;
+  showDiarioPct: boolean;
+  density: 'compact' | 'comfortable';
+}
+
+/**
+ * Configuración de ordenamiento
+ */
+export interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
+// ============================================
+// CONTEXTOS
+// ============================================
+
+/**
+ * Estado del contexto de autenticación
+ */
+export interface AuthContextValue {
+  user: User | null;
+  loading: boolean;
+  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<unknown>;
+  signIn: (email: string, password: string) => Promise<unknown>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+}
+
+/**
+ * Estado del contexto de portfolios
+ */
+export interface PortfolioContextValue {
+  portfolios: Portfolio[];
+  currentPortfolio: Portfolio | null;
+  setCurrentPortfolio: (portfolio: Portfolio | null) => void;
+  loading: boolean;
+  error: string | null;
+  createPortfolio: (name: string, description?: string, currency?: Currency) => Promise<Portfolio>;
+  updatePortfolio: (portfolioId: string, updates: Partial<Portfolio>) => Promise<Portfolio>;
+  deletePortfolio: (portfolioId: string) => Promise<void>;
+  setDefaultPortfolio: (portfolioId: string) => Promise<Portfolio>;
+  refetch: () => Promise<void>;
+}
+
+// ============================================
+// UTILIDADES
+// ============================================
+
+/**
+ * Usuario de Supabase (simplificado)
+ */
+export interface User {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}
+
+/**
+ * Resultado de operaciones async
+ */
+export interface AsyncResult<T> {
+  data: T | null;
+  error: Error | null;
+  loading: boolean;
+}
+
+/**
+ * Cache entry para localStorage
+ */
+export interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+// ============================================
+// API RESPONSES (data912)
+// ============================================
+
+export interface MEPDataItem {
+  ticker: string;
+  panel: string;
+  ars_bid?: number;
+  ars_ask?: number;
+  mark?: number;
+  close?: number;
+}
+
+export interface StockDataItem {
+  symbol: string;
+  c?: number;
+  px_bid?: number;
+  px_ask?: number;
+  pct_change?: number;
+}
+
+export interface BondDataItem extends StockDataItem {
+  panel?: string;
+}
+
+// ============================================
+// CHART DATA
+// ============================================
+
+export interface ChartDataPoint {
+  date: string;
+  price: number;
+  fullDate: string;
+}
+
+export interface DistributionDataItem {
+  name: AssetClass;
+  value: number;
+  percentage: number;
+  color: string;
+}
