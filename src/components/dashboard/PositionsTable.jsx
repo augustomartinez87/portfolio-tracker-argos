@@ -264,40 +264,21 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
               </tr>
             ))}
           </tbody>
-        </table>
-        {positionsWithGroup.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-text-secondary mb-1">No hay posiciones</p>
-            <p className="text-text-tertiary text-xs">Importá tus trades o agregalos manualmente</p>
-          </div>
-        )}
-      </div>
-      {positionsWithGroup.length > 0 && (
-        <div className="sticky bottom-0 bg-background-tertiary/98 border-t-2 border-border-secondary backdrop-blur-sm flex-shrink-0">
-          <table className="w-full min-w-[900px]">
-            <tbody>
+          {positionsWithGroup.length > 0 && (
+            <tfoot className="sticky bottom-0 bg-background-tertiary border-t-2 border-border-secondary backdrop-blur-sm">
               <tr>
-                <td className={`${paddingX} py-3 text-text-primary`}>
+                <td colSpan={columnSettings.showPPC ? 4 : 3} className={`${paddingX} ${paddingY} text-text-primary`}>
                   <span className="font-bold text-lg">Total</span>
                 </td>
-                <td className={`${paddingX} py-3 text-text-secondary font-mono text-xs tabular-nums`}>
-                  {formatNumber(positionsWithGroup.reduce((sum, p) => sum + p.cantidadTotal, 0))}
-                </td>
-                {columnSettings.showPPC && (
-                  <td className={`${paddingX} py-3 text-text-tertiary font-mono text-xs tabular-nums`}>
-                    -
-                  </td>
-                )}
-                <td className={`${paddingX} py-3`}></td>
-                <td className={`${paddingX} py-3 text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
+                <td className={`${paddingX} ${paddingY} text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
                   {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}
                 </td>
-                <td className={`${paddingX} py-3 text-right tabular-nums`}>
+                <td className={`${paddingX} ${paddingY} text-right tabular-nums`}>
                   <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}
                   </span>
                 </td>
-                <td className={`${paddingX} py-3 text-right`}>
+                <td className={`${paddingX} ${paddingY} text-right`}>
                   <span className={`font-bold px-2 py-0.5 rounded text-sm ${
                     (() => {
                       const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
@@ -315,14 +296,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </span>
                 </td>
                 {columnSettings.showDiario && (
-                  <td className={`${paddingX} py-3 text-right tabular-nums`}>
+                  <td className={`${paddingX} ${paddingY} text-right tabular-nums`}>
                     <span className={`font-mono text-sm font-medium ${(positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0))}
                     </span>
                   </td>
                 )}
                 {columnSettings.showDiarioPct && (
-                  <td className={`${paddingX} py-3 text-right`}>
+                  <td className={`${paddingX} ${paddingY} text-right`}>
                     <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
                       (positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiarioPct || 0), 0)) >= 0
                         ? 'bg-success/10 text-success'
@@ -333,10 +314,16 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </td>
                 )}
               </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+            </tfoot>
+          )}
+        </table>
+        {positionsWithGroup.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-text-secondary mb-1">No hay posiciones</p>
+            <p className="text-text-tertiary text-xs">Importá tus trades o agregalos manualmente</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

@@ -24,7 +24,7 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
                 {value}
               </p>
               {showBadge && badgeValue && (
-                <span className={`absolute -top-2 -right-14 px-1.5 py-0.5 rounded text-xs font-mono font-medium ${getTrendColor(trend)} bg-background-tertiary`}>
+                <span className={`absolute -top-2 -right-14 px-1.5 py-0.5 rounded text-sm font-mono font-medium ${getTrendColor(trend)} bg-background-tertiary`}>
                   {badgeValue}
                 </span>
               )}
