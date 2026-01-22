@@ -35,10 +35,11 @@ interface BatchHistoricalResult {
 /**
  * Detecta si un ticker es un CEDEAR
  */
-function isCedear(ticker: string): boolean {
+function isCedear(ticker: string, panel?: string): boolean {
   const upper = ticker.toUpperCase();
 
   if (upper.endsWith('.BA')) return true;
+  if (panel === 'cedear') return true;
 
   const tickerBase = upper.replace('.BA', '');
   return KNOWN_CEDEARS.includes(tickerBase as typeof KNOWN_CEDEARS[number]);
@@ -198,10 +199,10 @@ class Data912Helper {
   /**
    * Determina el endpoint histórico correcto para un ticker
    */
-  getHistoricalEndpoint(ticker: string): string {
+  getHistoricalEndpoint(ticker: string, panel?: string): string {
     const upper = ticker.toUpperCase();
 
-    if (isCedear(upper)) {
+    if (isCedear(upper, panel)) {
       const cleanTicker = upper.replace('.BA', '');
       return `/historical/cedears/${cleanTicker}`;
     }

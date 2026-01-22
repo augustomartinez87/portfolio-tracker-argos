@@ -4,6 +4,7 @@ import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
 import { isBonoPesos } from '../hooks/useBondPrices';
+import { API_ENDPOINTS } from '../utils/constants';
 
 const formatDateSafe = (dateStr) => {
   if (!dateStr) return '-';
@@ -124,7 +125,20 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           fromDate.setDate(fromDate.getDate() - selectedDays);
           const dateStr = fromDate.toISOString().split('T')[0];
 
-          const data = await data912.getHistorical(position.ticker, dateStr);
+          const endpoint = data912.getHistoricalEndpoint(position.ticker, position.panel);
+          const url = `${API_ENDPOINTS.BASE}${endpoint}?from=${dateStr}`;
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
           
           if (!Array.isArray(data) || data.length === 0) {
             throw new Error('No hay datos históricos disponibles');

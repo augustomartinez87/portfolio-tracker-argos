@@ -85,7 +85,8 @@ export const KNOWN_CEDEARS = [
   'AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'META', 'NVDA', 'KO', 'DIS', 'INTC',
   'CSCO', 'IBM', 'QCOM', 'AMD', 'PYPL', 'V', 'JPM', 'UNH', 'MA', 'PG', 'HD',
   'NFLX', 'ADBE', 'CRM', 'ABNB', 'COST', 'MELI', 'SPY', 'QQQ', 'BABA', 'NKE',
-  'WMT', 'PEP', 'MCD', 'SBUX', 'BA', 'GE', 'F', 'GM', 'X', 'GOLD', 'SLV'
+  'WMT', 'PEP', 'MCD', 'SBUX', 'BA', 'GE', 'F', 'GM', 'X', 'GOLD', 'SLV',
+  'VALE', 'PBR', 'EC', 'ABEV', 'BSBR', 'ITUB', 'BBD', 'BBVA', 'SAN', 'TX'
 ] as const;
 
 /**
