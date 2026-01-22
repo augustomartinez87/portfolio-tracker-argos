@@ -44,6 +44,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
                 type="checkbox"
                 checked={settings.showPPC}
                 onChange={(e) => handleSettingChange('showPPC', e.target.checked)}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary cursor-pointer"
               />
               <span className="text-sm text-text-secondary select-none">PPC</span>
@@ -53,6 +54,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
                 type="checkbox"
                 checked={settings.showInvertido}
                 onChange={(e) => handleSettingChange('showInvertido', e.target.checked)}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary cursor-pointer"
               />
               <span className="text-sm text-text-secondary select-none">Invertido</span>
@@ -62,6 +64,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
                 type="checkbox"
                 checked={settings.showDiario}
                 onChange={(e) => handleSettingChange('showDiario', e.target.checked)}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary cursor-pointer"
               />
               <span className="text-sm text-text-secondary select-none">P&L Diario $</span>
@@ -71,6 +74,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
                 type="checkbox"
                 checked={settings.showDiarioPct}
                 onChange={(e) => handleSettingChange('showDiarioPct', e.target.checked)}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-4 h-4 rounded border-border-secondary bg-background-tertiary text-success focus:ring-success focus:ring-offset-background-primary cursor-pointer"
               />
               <span className="text-sm text-text-secondary select-none">P&L Diario %</span>
@@ -81,6 +85,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
             <div className="flex gap-1 px-2">
               <button
                 onClick={() => handleSettingChange('density', 'compact')}
+                onMouseDown={(e) => e.preventDefault()}
                 className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
                   settings.density === 'compact'
                     ? 'bg-success/10 text-success border border-success/20'
@@ -93,6 +98,7 @@ const ColumnSelector = ({ settings, onSettingsChange }) => {
               </button>
               <button
                 onClick={() => handleSettingChange('density', 'comfortable')}
+                onMouseDown={(e) => e.preventDefault()}
                 className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
                   settings.density === 'comfortable'
                     ? 'bg-success/10 text-success border border-success/20'
