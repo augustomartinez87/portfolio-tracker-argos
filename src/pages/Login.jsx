@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import logo from '../assets/logo.png'
 
 export const Login = () => {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ export const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background-primary px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
+          <img src={logo} alt="Argos Capital" className="w-16 h-16 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-text-primary mb-2">Argos Capital</h1>
           <p className="text-text-secondary">Inicia sesión para continuar</p>
         </div>
