@@ -728,15 +728,22 @@ export default function Dashboard() {
     document.body.removeChild(link);
   };
 
-  const importFromCSV = (event) => {
+  const importFromCSV = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    if (!currentPortfolio?.id) {
+      setImportStatus('Error: Selecciona un portfolio primero');
+      setTimeout(() => setImportStatus(null), 3000);
+      event.target.value = null;
+      return;
+    }
 
     setIsLoading(true);
     setImportStatus('Importando...');
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target.result;
         const lines = text.split('\n').slice(1);
@@ -759,18 +766,43 @@ export default function Dashboard() {
 
           if (parsedDate && ticker && parsedCantidad > 0) {
             newTrades.push({
-              id: crypto.randomUUID(),
-              fecha: parsedDate,
               ticker: ticker.trim().toUpperCase(),
-              cantidad: parsedCantidad,
-              precioCompra: parsedPrecio
+              quantity: parsedCantidad,
+              price: parsedPrecio,
+              trade_date: parsedDate,
+              trade_type: 'buy',
+              total_amount: parsedCantidad * parsedPrecio,
+              currency: 'ARS'
             });
           }
         });
 
         if (newTrades.length > 0) {
-          setImportStatus(`✓ ${newTrades.length} trades importados`);
-          setTimeout(() => setImportStatus(null), 3000);
+          let savedCount = 0;
+          let errorCount = 0;
+
+          for (const trade of newTrades) {
+            try {
+              await tradeService.createTrade(
+                currentPortfolio.id,
+                user.id,
+                trade
+              );
+              savedCount++;
+            } catch (err) {
+              console.error('Error saving trade:', trade.ticker, err);
+              errorCount++;
+            }
+          }
+
+          if (savedCount > 0) {
+            setImportStatus(`✓ ${savedCount} trades importados${errorCount > 0 ? ` (${errorCount} fallidos)` : ''}`);
+            loadTrades();
+            setTimeout(() => setImportStatus(null), 5000);
+          } else {
+            setImportStatus('Error al guardar trades');
+            setTimeout(() => setImportStatus(null), 3000);
+          }
         } else {
           setImportStatus('No se encontraron trades válidos');
           setTimeout(() => setImportStatus(null), 3000);
