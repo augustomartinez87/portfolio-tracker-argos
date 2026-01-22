@@ -806,10 +806,6 @@ export default function Dashboard() {
             setTimeout(() => setImportStatus(null), 5000);
           }
         } else {
-            setImportStatus('Error al guardar trades');
-            setTimeout(() => setImportStatus(null), 3000);
-          }
-        } else {
           setImportStatus('No se encontraron trades válidos');
           setTimeout(() => setImportStatus(null), 3000);
         }
