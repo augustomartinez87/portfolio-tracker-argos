@@ -443,24 +443,24 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </div>
                 </div>
               </div>
-              {stats && (
-                <div className="flex gap-4 text-sm">
-                  <div>
-                    <p className="text-text-tertiary text-xs">Máximo</p>
-                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
+                {stats && (
+                  <div className="flex gap-4 text-sm">
+                    <div>
+                      <p className="text-text-tertiary text-xs">Máximo</p>
+                      <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary text-xs">Mínimo</p>
+                      <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-tertiary text-xs">Variación {selectedDays}d</p>
+                      <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
+                        {formatPercentage(stats.change)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-text-tertiary text-xs">Mínimo</p>
-                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
-                  </div>
-                  <div>
-                    <p className="text-text-tertiary text-xs">Variación 90d</p>
-                    <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
-                      {formatPercentage(stats.change)}
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
             </div>
 
             {isPositionUnavailable ? (
