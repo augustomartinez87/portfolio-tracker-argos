@@ -7,6 +7,7 @@ import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, useBondP
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
+import PositionsTable from '../components/dashboard/PositionsTable';
 import { TopPerformers } from '../components/dashboard/TopPerformers';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
