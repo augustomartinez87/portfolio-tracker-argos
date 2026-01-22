@@ -413,7 +413,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </div>
                 </div>
               )}
-            </div}
+              </div>
 
             {isPositionUnavailable ? (
               <div className="flex justify-center items-center h-72">
@@ -433,20 +433,20 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               </div>
             ) : (!chartData || chartData.length === 0) ? (
               <div className="flex justify-center items-center h-72">
-                <p className="text-slate-500">No hay datos históricos disponibles</p>
+                <p className="text-text-tertiary">No hay datos históricos disponibles</p>
               </div>
             ) : (
               <div className="relative">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
                     <XAxis
                       dataKey="date"
-                      tick={{ fontSize: 12, fill: '#94a3b8' }}
-                      stroke="#475569"
+                      tick={{ fontSize: 12, fill: '#6b6b6b' }}
+                      stroke="#2a2a2a"
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: '#94a3b8' }}
+                      tick={{ fontSize: 12, fill: '#6b6b6b' }}
                       tickFormatter={(value) => {
                         try {
                           return `$${Number(value).toFixed(0)}`;
@@ -454,12 +454,12 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                           return '$0';
                         }
                       }}
-                      stroke="#475569"
+                      stroke="#2a2a2a"
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#1e293b',
-                        border: '1px solid #334155',
+                        backgroundColor: '#0a0a0a',
+                        border: '1px solid #1a1a1a',
                         borderRadius: '8px',
                         color: '#fff'
                       }}
@@ -493,6 +493,73 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                 </ResponsiveContainer>
               </div>
             )}
+          </div>
+
+          {/* Trades Table */}
+          <div className="bg-background-tertiary/50 rounded-lg p-5 border border-border-primary">
+            <h3 className="text-lg font-bold text-text-primary mb-4">
+              Historial de Operaciones ({positionTrades.length})
+            </h3>
+
+            {positionTrades.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-text-tertiary">No hay operaciones registradas para esta posición</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border-primary">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Fecha</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Tipo</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Cantidad</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Precio</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Invertido</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Valor Actual</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">Resultado</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-text-tertiary uppercase">% Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-primary">
+                    {tradesWithResults.map((trade) => (
+                      <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
+                        <td className="px-3 py-3 text-text-secondary text-sm">
+                          {new Date(trade.fecha).toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="inline-block px-2 py-1 bg-success/20 text-success rounded text-xs font-semibold">
+                            Compra
+                          </span>
+                        </td>
+                        <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.cantidad}</td>
+                        <td className="text-right px-3 py-3 text-text-primary font-mono">
+                          {isBonoPesos(trade.ticker)
+                            ? `$${trade.precioCompra.toFixed(4)}`
+                            : formatCurrency(trade.precioCompra)
+                          }
+                        </td>
+                        <td className="text-right px-3 py-3 text-text-tertiary font-mono text-sm">
+                          {formatCurrency(trade.investedAmount)}
+                        </td>
+                        <td className="text-right px-3 py-3 text-text-primary font-mono">
+                          {formatCurrency(trade.currentValue)}
+                        </td>
+                        <td className="text-right px-3 py-3 font-mono">
+                          <div className={`font-medium ${trade.result >= 0 ? 'text-success' : 'text-danger'}`}>
+                            {formatCurrency(trade.result)}
+                          </div>
+                        </td>
+                        <td className="text-right px-3 py-3 font-mono">
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                            trade.resultPct >= 0
+                              ? 'bg-success/20 text-success'
+                              : 'bg-danger/20 text-danger'
+                          }`}>
+                            {formatPercentage(trade.resultPct)}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
           </div>
 
           {/* Trades Table */}
