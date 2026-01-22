@@ -305,11 +305,19 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 {columnSettings.showDiarioPct && (
                   <td className={`${paddingX} ${paddingY} text-right`}>
                     <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
-                      (positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiarioPct || 0), 0)) >= 0
-                        ? 'bg-success/10 text-success'
-                        : 'bg-danger/10 text-danger'
+                      (() => {
+                        const totalDiario = positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
+                        const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                        const totalDiarioPct = totalInvertido > 0 ? (totalDiario / totalInvertido) * 100 : 0;
+                        return totalDiarioPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger';
+                      })()
                     }`}>
-                      {formatPercent(positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiarioPct || 0), 0))}
+                      {(() => {
+                        const totalDiario = positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
+                        const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                        const totalDiarioPct = totalInvertido > 0 ? (totalDiario / totalInvertido) * 100 : 0;
+                        return formatPercent(totalDiarioPct);
+                      })()}
                     </span>
                   </td>
                 )}
