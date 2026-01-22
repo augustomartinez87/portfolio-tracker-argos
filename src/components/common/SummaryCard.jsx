@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChange, isLoading, highlight }) => {
+const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChange, isLoading, highlight, showBadge, badgeValue }) => {
   const getTrendColor = (value) => {
     if (value === undefined || value === null || value === 0) return 'text-text-tertiary';
     return value >= 0 ? 'text-success' : 'text-danger';
@@ -19,11 +19,18 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
           </div>
         ) : (
           <>
-            <p className={`text-2xl font-semibold font-mono tracking-tight ${getTrendColor(trend)}`}>
-              {value}
-            </p>
-            {subValue && (
-              <p className={`text-sm mt-0.5 font-medium ${getTrendColor(trend)}`}>
+            <div className="relative">
+              <p className={`text-2xl font-semibold font-mono tracking-tight ${trend !== undefined ? getTrendColor(trend) : 'text-text-primary'}`}>
+                {value}
+              </p>
+              {showBadge && badgeValue && (
+                <span className={`absolute -top-2 -right-14 px-1.5 py-0.5 rounded text-xs font-mono font-medium ${getTrendColor(trend)} bg-background-tertiary`}>
+                  {badgeValue}
+                </span>
+              )}
+            </div>
+            {subValue && !showBadge && (
+              <p className={`text-sm mt-0.5 font-medium ${trend !== undefined ? getTrendColor(trend) : 'text-text-tertiary'}`}>
                 {subValue}
               </p>
             )}

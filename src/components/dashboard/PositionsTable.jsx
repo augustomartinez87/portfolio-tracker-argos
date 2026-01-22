@@ -153,20 +153,20 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
   const paddingX = 'px-3';
 
   return (
-    <div className="bg-background-secondary rounded-lg border border-border-primary overflow-hidden">
-      <div className={`${paddingY} ${paddingX} border-b border-border-primary`}>
+    <div className="bg-background-secondary flex flex-col h-full overflow-hidden">
+      <div className={`${paddingY} ${paddingX} border-b border-border-primary flex-shrink-0`}>
         <h3 className="text-sm font-medium text-text-primary">Posiciones</h3>
       </div>
       {searchTerm && searchTerm.trim() && (
-        <div className={`${paddingY} ${paddingX} bg-background-tertiary/50 border-b border-border-primary`}>
+        <div className={`${paddingY} ${paddingX} bg-background-tertiary/50 border-b border-border-primary flex-shrink-0`}>
           <span className="text-xs text-text-tertiary">
             {filteredPositions.length} de {positions.length} resultados
           </span>
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="flex-1 overflow-auto min-h-0">
         <table className="w-full min-w-[900px]">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-background-secondary">
             <tr className="bg-background-tertiary/30 border-b border-border-primary">
               <th
                 className={`text-left ${paddingX} py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
@@ -263,75 +263,6 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                 )}
               </tr>
             ))}
-            {positionsWithGroup.length > 0 && (
-              <tr className="bg-background-tertiary/50 border-t-2 border-border-secondary">
-                <td className={`${paddingX} ${paddingY} text-left`}>
-                  <span className="font-bold text-text-primary text-lg">Total</span>
-                </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-sm font-bold tabular-nums`}>-</td>
-                {columnSettings.showPPC && <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-sm font-bold tabular-nums`}>-</td>}
-                <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-sm font-bold tabular-nums`}>-</td>
-                <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono font-bold text-lg whitespace-nowrap tabular-nums`}>
-                  {formatUSD(positionsWithGroup.reduce((sum, p) => sum + p.valuacionUSD, 0))}
-                </td>
-                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                  {(() => {
-                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
-                    return (
-                      <span className={`font-mono font-bold text-lg ${totalResult >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {formatARS(totalResult)}
-                      </span>
-                    );
-                  })()}
-                </td>
-                <td className={`text-right ${paddingX} ${paddingY}`}>
-                  {(() => {
-                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
-                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
-                    const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
-                    return (
-                      <span className={`font-bold px-1.5 py-0.5 rounded text-lg ${
-                        totalResultPct >= 0
-                          ? 'bg-success/10 text-success'
-                          : 'bg-danger/10 text-danger'
-                      }`}>
-                        {formatPercent(totalResultPct)}
-                      </span>
-                    );
-                  })()}
-                </td>
-                {columnSettings.showDiario && (
-                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                    {(() => {
-                      const totalDiario = positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0);
-                      return (
-                        <span className={`font-mono font-bold text-lg ${totalDiario >= 0 ? 'text-success' : 'text-danger'}`}>
-                          {formatARS(totalDiario)}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                )}
-                {columnSettings.showDiarioPct && (
-                  <td className={`text-right ${paddingX} ${paddingY}`}>
-                    {(() => {
-                      const totalValuation = positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0);
-                      const totalDiario = positionsWithGroup.reduce((sum, p) => sum + p.resultadoDiario, 0);
-                      const totalDiarioPct = totalValuation > 0 ? (totalDiario / totalValuation) * 100 : 0;
-                      return (
-                        <span className={`font-bold px-1.5 py-0.5 rounded text-lg ${
-                          totalDiarioPct >= 0
-                            ? 'bg-success/10 text-success'
-                            : 'bg-danger/10 text-danger'
-                        }`}>
-                          {formatPercent(totalDiarioPct)}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                )}
-              </tr>
-            )}
           </tbody>
         </table>
         {positionsWithGroup.length === 0 && (
@@ -341,6 +272,43 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           </div>
         )}
       </div>
+      {positionsWithGroup.length > 0 && (
+        <div className="sticky bottom-0 bg-background-tertiary/98 border-t-2 border-border-secondary px-4 py-3 flex-shrink-0 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-text-primary text-lg">Total</span>
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <span className="text-text-tertiary text-xs block">Valuación</span>
+                <span className="text-text-primary font-mono font-bold text-lg">{formatARS(positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0))}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-text-tertiary text-xs block">P&L</span>
+                <span className={`font-mono font-bold text-lg ${(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {formatARS(positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0))}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-text-tertiary text-xs block">P&L %</span>
+                <span className={`font-bold px-2 py-0.5 rounded text-sm ${
+                  (() => {
+                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
+                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                    const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
+                    return totalResultPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger';
+                  })()
+                }`}>
+                  {(() => {
+                    const totalResult = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
+                    const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
+                    const totalResultPct = totalInvertido > 0 ? (totalResult / totalInvertido) * 100 : 0;
+                    return formatPercent(totalResultPct);
+                  })()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

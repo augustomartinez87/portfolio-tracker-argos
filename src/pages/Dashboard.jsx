@@ -614,8 +614,8 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                   <SummaryCard title="Invertido" value={formatARS(totals.invertido)} subtitle="Total invertido" />
                   <SummaryCard title="Valuación" value={formatARS(totals.valuacion)} subtitle={lastUpdate ? `Actualizado: ${lastUpdate}` : ''} />
-                  <SummaryCard title="P&L" value={formatARS(totals.resultado)} subtitle={formatPercent(totals.resultadoPct)} trend={totals.resultado} />
-                  <SummaryCard title="P&L Hoy" value={formatARS(totals.resultadoDiario)} subtitle={formatPercent(totals.resultadoDiarioPct)} trend={totals.resultadoDiario} />
+                  <SummaryCard title="P&L" value={formatARS(totals.resultado)} trend={totals.resultado} showBadge badgeValue={formatPercent(totals.resultadoPct)} />
+                  <SummaryCard title="P&L Hoy" value={formatARS(totals.resultadoDiario)} trend={totals.resultadoDiario} showBadge badgeValue={formatPercent(totals.resultadoDiarioPct)} />
                 </div>
 
                 <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
@@ -636,9 +636,7 @@ export default function Dashboard() {
                       <ColumnSelector settings={columnSettings} onChange={setColumnSettings} />
                     </div>
                   </div>
-                  <div className="flex-1 overflow-auto">
-                    <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
-                  </div>
+                  <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
                 </div>
               </>
             )}
