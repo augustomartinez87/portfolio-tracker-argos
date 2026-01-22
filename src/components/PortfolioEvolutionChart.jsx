@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Calendar, Loader2, BarChart2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar, Loader2, BarChart2, TrendingUp, TrendingDown, Info } from 'lucide-react';
 
 const formatPercentValue = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
@@ -25,12 +25,12 @@ const CustomTooltip = ({ active, payload, label }) => {
         </p>
         {payload.map((entry, idx) => (
           <div key={idx} className="flex items-center gap-2 mb-1">
-            <div 
-              className="w-2 h-2 rounded-full" 
+            <div
+              className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-slate-400 text-xs">{entry.name}:</span>
-            <span 
+            <span
               className={`text-sm font-mono font-semibold ${
                 entry.value >= 0 ? 'text-success' : 'text-danger'
               }`}
@@ -45,85 +45,141 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Calcular valuación histórica de la cartera
-const calculatePortfolioHistory = (trades, prices) => {
+/**
+ * Calcula el Time-Weighted Return (TWR) de la cartera
+ *
+ * TWR elimina el efecto de los aportes de capital para medir el rendimiento real.
+ *
+ * Metodología:
+ * 1. Identifica cada día con flujo de capital (trade)
+ * 2. Calcula el rendimiento de cada sub-período
+ * 3. Encadena geométricamente: TWR = ∏(1 + Ri) - 1
+ *
+ * @param {Array} trades - Lista de trades con fecha, ticker, cantidad, precio
+ * @param {Object} prices - Precios actuales de cada ticker
+ * @returns {Array} - Historial con TWR acumulado por día
+ */
+const calculateTWR = (trades, prices) => {
   if (!trades || !prices || trades.length === 0) return [];
 
   try {
-    const sortedTrades = [...trades].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    // Mapear trades con campos correctos (Supabase usa trade_date, quantity, price)
+    const mappedTrades = trades.map(t => ({
+      fecha: t.trade_date || t.fecha,
+      ticker: t.ticker,
+      cantidad: t.quantity || t.cantidad || 0,
+      precio: t.price || t.precioCompra || 0
+    })).filter(t => t.fecha && t.ticker);
+
+    if (mappedTrades.length === 0) return [];
+
+    // Ordenar trades por fecha
+    const sortedTrades = [...mappedTrades].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
     const firstDate = new Date(sortedTrades[0].fecha);
     const today = new Date();
 
     // Agrupar trades por fecha
     const tradesByDate = {};
     sortedTrades.forEach(trade => {
-      if (!trade || !trade.fecha) return;
       const tradeDate = trade.fecha;
       if (!tradesByDate[tradeDate]) {
-        tradesByDate[tradeDate] = {};
+        tradesByDate[tradeDate] = [];
       }
-      if (!tradesByDate[tradeDate][trade.ticker]) {
-        tradesByDate[tradeDate][trade.ticker] = 0;
-      }
-      tradesByDate[tradeDate][trade.ticker] += trade.cantidad || 0;
+      tradesByDate[tradeDate].push(trade);
     });
 
-    // Calcular posiciones acumuladas por día
-    const positionsByTicker = {};
+    // Estado del portafolio
+    const positions = {}; // { ticker: { cantidad, costoTotal } }
+    let twrAccumulated = 1; // Producto acumulado de (1 + Ri)
+
     const history = [];
+    let previousDayValue = 0;
+    let previousDayDate = null;
 
+    // Iterar cada día desde el primer trade hasta hoy
     for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
-      const date = d.toISOString().split('T')[0];
+      const dateStr = d.toISOString().split('T')[0];
+      const tradesThisDay = tradesByDate[dateStr] || [];
 
-      // Aplicar trades de esta fecha
-      if (tradesByDate[date]) {
-        Object.entries(tradesByDate[date]).forEach(([ticker, cantidad]) => {
-          if (!positionsByTicker[ticker]) {
-            positionsByTicker[ticker] = 0;
-          }
-          positionsByTicker[ticker] += cantidad;
-        });
+      // Calcular valor del portafolio ANTES de los trades del día
+      let valueBeforeTrades = 0;
+      Object.entries(positions).forEach(([ticker, pos]) => {
+        if (pos.cantidad <= 0) return;
+        const priceData = prices[ticker];
+        const currentPrice = priceData?.precio || 0;
+        valueBeforeTrades += pos.cantidad * currentPrice;
+      });
+
+      // Si hay trades hoy Y ya teníamos portafolio, calcular rendimiento del sub-período
+      if (tradesThisDay.length > 0 && previousDayValue > 0) {
+        // Rendimiento del período = Valor actual / Valor inicio del período
+        const periodReturn = valueBeforeTrades / previousDayValue;
+        twrAccumulated *= periodReturn;
       }
 
-      // Calcular valuación usando precios actuales y pct_change diario
-      let valuacion = 0;
-      let flujoCapital = 0;
-
-      Object.entries(positionsByTicker).forEach(([ticker, cantidad]) => {
-        if (cantidad === 0) return;
-
-        const priceData = prices[ticker];
-        if (!priceData) return;
-
-        // Usar precio actual como base
-        const currentPrice = priceData.precio || 0;
-        const pctChange = priceData.pctChange || 0;
-
-        // Aproximación: precio en ese día usando pct_change
-        // NOTA: Esta es una aproximación, no es perfecta
-        // En producción se deberían usar precios históricos reales
-        const priceInDay = currentPrice / (1 + pctChange / 100);
-
-        const value = cantidad * priceInDay;
-        valuacion += value;
+      // Aplicar los trades del día (aportes de capital)
+      let capitalInflow = 0;
+      tradesThisDay.forEach(trade => {
+        if (!positions[trade.ticker]) {
+          positions[trade.ticker] = { cantidad: 0, costoTotal: 0 };
+        }
+        positions[trade.ticker].cantidad += trade.cantidad;
+        positions[trade.ticker].costoTotal += trade.cantidad * trade.precio;
+        capitalInflow += trade.cantidad * trade.precio;
       });
+
+      // Calcular valor del portafolio DESPUÉS de los trades
+      let valueAfterTrades = 0;
+      Object.entries(positions).forEach(([ticker, pos]) => {
+        if (pos.cantidad <= 0) return;
+        const priceData = prices[ticker];
+        const currentPrice = priceData?.precio || 0;
+        valueAfterTrades += pos.cantidad * currentPrice;
+      });
+
+      // El nuevo "valor inicial" para el siguiente período es el valor después de aportes
+      if (tradesThisDay.length > 0) {
+        previousDayValue = valueAfterTrades;
+      } else if (previousDayValue > 0) {
+        // Día sin trades: actualizar el valor (el portafolio sigue creciendo/decreciendo)
+        // Pero NO actualizamos previousDayValue hasta el próximo aporte
+        // Esto es porque queremos medir el rendimiento entre aportes
+      }
+
+      // Si no había portafolio antes, iniciar el tracking
+      if (previousDayValue === 0 && valueAfterTrades > 0) {
+        previousDayValue = valueAfterTrades;
+      }
+
+      // Guardar el TWR acumulado del día
+      // TWR = (producto acumulado - 1) * 100 para expresar en %
+      const currentTWR = (twrAccumulated - 1) * 100;
+
+      // También calcular el rendimiento "simple" del último sub-período activo
+      // para mostrar la tendencia actual
+      let currentPeriodReturn = 0;
+      if (previousDayValue > 0) {
+        currentPeriodReturn = ((valueAfterTrades / previousDayValue) - 1) * 100;
+      }
+
+      // Para el gráfico, mostrar TWR + rendimiento del período actual no cerrado
+      const displayTWR = currentTWR + currentPeriodReturn;
 
       history.push({
-        date,
-        valuacion
+        date: dateStr,
+        twr: displayTWR,
+        valuacion: valueAfterTrades,
+        twrAccumulated,
+        capitalInflow: capitalInflow > 0 ? capitalInflow : null
       });
-    }
 
-    console.log('Portfolio history:', {
-      totalDays: history.length,
-      firstDate: history[0]?.date,
-      lastDate: history[history.length - 1]?.date,
-      lastValue: history[history.length - 1]?.valuacion
-    });
+      previousDayDate = dateStr;
+    }
 
     return history;
   } catch (e) {
-    console.error('Error calculating portfolio history:', e);
+    console.error('Error calculating TWR:', e);
     return [];
   }
 };
@@ -135,22 +191,12 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
   const [loading, setLoading] = useState(false);
   const [spyError, setSpyError] = useState(null);
 
-  console.log('PortfolioEvolutionChart props:', {
-    tradesCount: trades?.length,
-    pricesKeys: Object.keys(prices || {}).length,
-    samplePrices: Object.keys(prices || {}).slice(0, 5)
-  });
-
+  // Calcular TWR del portafolio
   const portfolioHistory = useMemo(() => {
-    const history = calculatePortfolioHistory(trades, prices);
-    console.log('PortfolioHistory memo:', {
-      length: history.length,
-      first: history[0],
-      last: history[history.length - 1]
-    });
-    return history;
+    return calculateTWR(trades, prices);
   }, [trades, prices]);
 
+  // Fetch datos históricos de SPY
   useEffect(() => {
     if (!showSpy) {
       setSpyData({});
@@ -163,36 +209,24 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       try {
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setDate(startDate.getDate() - selectedDays);
-        
-        const url = `https://data912.com/historical/cedears/SPY?from=${startDate.toISOString().split('T')[0]}&to=${endDate.toISOString().split('T')[0]}`;
-        console.log('Fetching SPY:', url);
-        
-        const response = await fetch(url);
-        console.log('SPY response status:', response.status);
-        
+        startDate.setDate(startDate.getDate() - Math.max(selectedDays, 365)); // Pedir al menos 1 año
+
+        const url = `https://data912.com/historical/cedears/SPY?from=${startDate.toISOString().split('T')[0]}`;
+
+        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        
-        const text = await response.text();
-        
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (parseError) {
-          throw new Error('Invalid JSON response');
-        }
-        
-        console.log('SPY data type:', typeof data, Array.isArray(data) ? '(array)' : '(object)');
-        
+
+        const data = await response.json();
+
         const spyPrices = {};
-        
+
         if (Array.isArray(data)) {
           data.forEach(item => {
             if (item && item.date) {
               const cleanDate = item.date.split('T')[0];
-              // El API devuelve: o, h, l, c, v, dr, sa (c es el cierre)
               spyPrices[cleanDate] = item.c || item.close || 0;
             }
           });
@@ -204,13 +238,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             }
           });
         }
-        
-        console.log('SPY prices mapped:', Object.keys(spyPrices).length);
-        if (Object.keys(spyPrices).length > 0) {
-          const dates = Object.keys(spyPrices).sort();
-          console.log('SPY date range:', dates[0], 'to', dates[dates.length - 1]);
-        }
-        
+
         setSpyData(spyPrices);
       } catch (e) {
         console.warn('Could not fetch SPY data:', e);
@@ -223,6 +251,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     fetchSpyData();
   }, [selectedDays, showSpy]);
 
+  // Construir datos para el gráfico
   const chartData = useMemo(() => {
     if (portfolioHistory.length === 0) return [];
 
@@ -236,15 +265,22 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
       if (filteredHistory.length === 0) return [];
 
-      const firstDayValue = filteredHistory[0]?.valuacion || 0;
-      const firstSpyPrice = Object.keys(spyData).length > 0
-        ? spyData[Object.keys(spyData).sort()[0]]
-        : null;
+      // Encontrar el primer precio de SPY en el rango
+      const sortedSpyDates = Object.keys(spyData).sort();
+      let firstSpyPrice = null;
+      for (const date of sortedSpyDates) {
+        if (new Date(date) >= cutoffDate) {
+          firstSpyPrice = spyData[date];
+          break;
+        }
+      }
+
+      // El TWR del primer día del rango se toma como base (0%)
+      const firstDayTWR = filteredHistory[0]?.twr || 0;
 
       return filteredHistory.map(day => {
-        const portfolioChange = firstDayValue > 0
-          ? ((day.valuacion - firstDayValue) / firstDayValue) * 100
-          : 0;
+        // Normalizar TWR para que empiece en 0% desde el inicio del rango seleccionado
+        const portfolioChange = day.twr - firstDayTWR;
 
         const spyPrice = spyData[day.date];
         const spyChange = spyPrice && firstSpyPrice
@@ -258,7 +294,8 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             day: 'numeric'
           }),
           portfolioChange,
-          spyChange
+          spyChange,
+          hasInflow: day.capitalInflow !== null
         };
       });
     } catch (e) {
@@ -267,6 +304,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
     }
   }, [portfolioHistory, spyData, selectedDays]);
 
+  // Calcular estadísticas
   const stats = useMemo(() => {
     if (!chartData || chartData.length === 0) return null;
 
@@ -275,13 +313,6 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
       const portfolioReturnVal = lastChange?.portfolioChange || 0;
       const lastSpyChange = lastChange?.spyChange || 0;
       const diff = portfolioReturnVal - lastSpyChange;
-
-      console.log('Stats calculated:', {
-        portfolioReturn: portfolioReturnVal,
-        spyReturn: lastSpyChange,
-        diff,
-        chartDataLength: chartData.length
-      });
 
       return {
         portfolioReturn: portfolioReturnVal,
@@ -296,21 +327,21 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
 
   const comparisonMessage = useMemo(() => {
     if (!stats || !showSpy || Object.keys(spyData).length === 0) return null;
-    
+
     const { diff } = stats;
-    
+
     if (Math.abs(diff) < 0.01) return null;
-    
+
     if (diff > 0) {
       return {
-        text: `Estás beat al SPY por ${formatPercentValue(diff)}`,
+        text: `Superando al SPY por ${formatPercentValue(diff)}`,
         icon: TrendingUp,
         color: 'text-success',
         bg: 'bg-success/10 border-success/30'
       };
     } else {
       return {
-        text: `Estás under al SPY por ${formatPercentValue(Math.abs(diff))}`,
+        text: `Por debajo del SPY por ${formatPercentValue(Math.abs(diff))}`,
         icon: TrendingDown,
         color: 'text-danger',
         bg: 'bg-danger/10 border-danger/30'
@@ -334,8 +365,16 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             <BarChart2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Retorno Cartera vs SPY</h3>
-            <p className="text-xs text-slate-500">Desde el primer trade</p>
+            <h3 className="text-sm font-bold text-white">Retorno TWR vs SPY</h3>
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              Time-Weighted Return
+              <span className="group relative">
+                <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-xs text-slate-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-700 z-10">
+                  Excluye aportes de capital del rendimiento
+                </span>
+              </span>
+            </p>
           </div>
         </div>
 
@@ -349,7 +388,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             />
             <span className="text-xs text-slate-400">Mostrar SPY</span>
           </label>
-          
+
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3 text-slate-400" />
             <div className="flex gap-1">
@@ -370,6 +409,13 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
           </div>
         </div>
       </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+          <span className="ml-2 text-xs text-slate-400">Cargando SPY...</span>
+        </div>
+      )}
 
       {chartData.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
@@ -400,14 +446,14 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
                   width={45}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
+                <Legend
                   wrapperStyle={{ paddingTop: 10 }}
                   formatter={(value) => <span className="text-xs text-slate-400">{value}</span>}
                 />
                 <Line
                   type="monotone"
                   dataKey="portfolioChange"
-                  name="Cartera"
+                  name="Cartera (TWR)"
                   stroke="#10B981"
                   strokeWidth={2}
                   dot={false}
@@ -434,7 +480,7 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
             <div className="space-y-3 mt-3 pt-3 border-t border-slate-700/50 flex-shrink-0">
               <div className="flex items-center justify-center gap-6">
                 <div className="text-center">
-                  <p className="text-xs text-slate-500">Cartera</p>
+                  <p className="text-xs text-slate-500">Cartera (TWR)</p>
                   <p className={`text-sm font-mono font-semibold ${stats.portfolioReturn >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatPercentValue(stats.portfolioReturn)}
                   </p>
@@ -443,14 +489,14 @@ export default function PortfolioEvolutionChart({ trades, prices }) {
                 <div className="text-center">
                   <p className="text-xs text-slate-500">SPY</p>
                   <p className="text-sm font-mono font-semibold text-blue-400">
-                    {showSpy && chartData.some(d => d.spyChange !== null) 
+                    {showSpy && chartData.some(d => d.spyChange !== null)
                       ? formatPercentValue(stats.spyReturn)
                       : '-'
                     }
                   </p>
                 </div>
               </div>
-              
+
               {comparisonMessage && (
                 <div className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border ${comparisonMessage.bg}`}>
                   <comparisonMessage.icon className={`w-4 h-4 ${comparisonMessage.color}`} />
