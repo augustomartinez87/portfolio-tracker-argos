@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect } from 'react';
 import { API_ENDPOINTS, CONSTANTS, DOLLAR_SUFFIXES } from '../utils/constants';
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from '../utils/bondUtils';
-import type { PriceData, PriceMap, TickerInfo, MEPDataItem, StockDataItem, BondDataItem, AssetClass } from '@/types';
+import type { PriceData, PriceMap, TickerInfo, MEPDataItem, StockDataItem, BondDataItem, AssetClass } from '../types';
 
 // ============================================
 // TIPOS
