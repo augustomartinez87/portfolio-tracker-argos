@@ -1,5 +1,5 @@
 // src/components/PositionDetailModal.jsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { data912 } from '../utils/data912';
@@ -28,6 +28,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   const [componentError, setComponentError] = useState(null);
   const [selectedDays, setSelectedDays] = useState(90);
 
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
   if (componentError) {
     console.error('PositionDetailModal error:', componentError);
     return (
@@ -35,7 +38,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         <div className="bg-background-secondary rounded-lg p-6 text-center max-w-md border border-border-primary">
           <p className="text-danger mb-4">Error inesperado al cargar el detalle</p>
           <p className="text-text-tertiary text-sm mb-4">{componentError.message}</p>
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary"
           >
@@ -58,6 +61,25 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       return [];
     }
   }, [trades, position]);
+
+  // Focus management and ESC key handler
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement;
+      modalRef.current?.focus();
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [open, onClose]);
 
   useEffect(() => {
     if (!open || !position) return;
@@ -205,7 +227,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   }, [position, positionTrades]);
 
   if (!open) return null;
-  
+
   if (!position) {
     console.error('Position is null or undefined');
     return null;
@@ -217,7 +239,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-background-secondary rounded-lg p-6 text-center border border-border-primary">
           <p className="text-danger mb-4">Error al cargar los datos de la posición</p>
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary"
           >
@@ -233,18 +255,27 @@ export default function PositionDetailModal({ open, onClose, position, trades })
   const isPositionUnavailable = position && (!position.precioActual || position.precioActual === 0);
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-background-secondary rounded-lg w-full max-w-5xl border border-border-primary shadow-2xl my-8 max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="position-detail-title"
+    >
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className="bg-background-secondary rounded-lg w-full max-w-5xl border border-border-primary shadow-2xl my-8 max-h-[90vh] flex flex-col focus:outline-none"
+      >
         <div className="p-6 border-b border-border-primary flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-text-primary font-mono">{position.ticker}</h2>
+            <h2 id="position-detail-title" className="text-2xl font-bold text-text-primary font-mono">{position.ticker}</h2>
             {position.assetClass && (
               <span className="inline-block mt-2 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                 {position.assetClass}
               </span>
             )}
           </div>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors p-2">
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors p-2" aria-label="Cerrar detalle">
             <X className="w-6 h-6" />
           </button>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, Info } from 'lucide-react';
-import { CONSTANTS } from '../utils/constants';
+import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info } from 'lucide-react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
 import { parseARSNumber, parseDateDMY } from '../utils/parsers';
@@ -9,6 +8,9 @@ import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
 import PositionsTable from '../components/dashboard/PositionsTable';
 import ColumnSelector from '../components/dashboard/ColumnSelector';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import DashboardSummaryCards from '../components/dashboard/DashboardSummaryCards';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -16,11 +18,11 @@ import { tradeService } from '../services/tradeService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
 import TickerAutocomplete from '../components/common/TickerAutocomplete';
-import TradeModal from '../components/modals/TradeModal';
-import DeleteModal from '../components/modals/DeleteModal';
 import logo from '../assets/logo.png';
 
 const PositionDetailModal = lazy(() => import('../components/PositionDetailModal'));
+const TradeModal = lazy(() => import('../components/modals/TradeModal'));
+const DeleteModal = lazy(() => import('../components/modals/DeleteModal'));
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -28,8 +30,8 @@ export default function Dashboard() {
 
   const { prices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
 
-  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : null;
-  const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
+  const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
 
   const [trades, setTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +46,7 @@ export default function Dashboard() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [showFormatHelp, setShowFormatHelp] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   // Filtros de transacciones
@@ -82,7 +84,7 @@ export default function Dashboard() {
     loadTrades();
   }, [loadTrades]);
 
-  const downloadTemplate = () => {
+  const downloadTemplate = useCallback(() => {
     const csvContent = `Fecha,Ticker,Cantidad,Precio
 23/12/2024,MELI,10,17220
 03/04/2025,MSFT,31,16075
@@ -98,9 +100,9 @@ export default function Dashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, []);
 
-  const importFromCSV = async (event) => {
+  const importFromCSV = useCallback(async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -194,7 +196,7 @@ export default function Dashboard() {
     };
 
     reader.readAsText(file);
-  };
+  }, [currentPortfolio, user, loadTrades]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -406,14 +408,14 @@ export default function Dashboard() {
     return sorted;
   }, [trades, sortConfig, tradesSearchTerm, typeFilter, tickerFilter, periodFilter]);
 
-  const handleSort = (key) => {
+  const handleSort = useCallback((key) => {
     setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
-  };
+  }, []);
 
-  const handleSaveTrade = async (trade) => {
+  const handleSaveTrade = useCallback(async (trade) => {
     if (!currentPortfolio || !user) return;
 
     try {
@@ -447,9 +449,9 @@ export default function Dashboard() {
       console.error('Error saving trade:', error);
       alert('Error al guardar el trade: ' + error.message);
     }
-  };
+  }, [currentPortfolio, user, editingTrade]);
 
-  const handleDeleteTrade = async () => {
+  const handleDeleteTrade = useCallback(async () => {
     if (!deletingTrade) return;
 
     try {
@@ -462,17 +464,36 @@ export default function Dashboard() {
       console.error('Error deleting trade:', error);
       alert('Error al eliminar el trade: ' + error.message);
     }
-  };
+  }, [deletingTrade, currentPortfolio]);
 
-  const handleOpenPositionDetail = (position) => {
+  const handleOpenPositionDetail = useCallback((position) => {
     setSelectedPosition(position);
     setDetailModalOpen(true);
-  };
+  }, []);
 
-  const handleClosePositionDetail = () => {
+  const handleClosePositionDetail = useCallback(() => {
     setDetailModalOpen(false);
     setSelectedPosition(null);
-  };
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+    setEditingTrade(null);
+  }, []);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setDeleteModalOpen(false);
+    setDeletingTrade(null);
+  }, []);
+
+  const handleTradeClickFromDetail = useCallback((trade) => {
+    const t = sortedTrades.find(st => st.id === trade.id);
+    if (t) {
+      setEditingTrade(t);
+      setDetailModalOpen(false);
+      setModalOpen(true);
+    }
+  }, [sortedTrades]);
 
   if (tradesLoading) {
     return (
@@ -504,104 +525,44 @@ export default function Dashboard() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
+        {/* Header mobile top */}
         <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <PortfolioSelector />
-              <img src={logo} alt="Argos Capital" className="w-8 h-8 ml-2" />
+              <img src={logo} alt="Argos Capital" className="w-8 h-8" />
               <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
             </div>
-            <button
-              onClick={() => refetchPrices()}
-              disabled={isPricesLoading}
-              className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              title="Actualizar"
-            >
-              <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
-            </button>
+              <button
+                onClick={() => refetchPrices()}
+                disabled={isPricesLoading}
+                className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                title="Actualizar"
+                aria-label="Actualizar"
+              >
+                <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
+              </button>
           </div>
         </div>
 
-        <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-          <div className="p-3 border-b border-border-primary flex items-center justify-center">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors"
-              title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          </div>
+        {/* Sidebar desktop */}
+        <DashboardSidebar
+          user={user}
+          signOut={signOut}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isExpanded={sidebarExpanded}
+          setIsExpanded={setSidebarExpanded}
+        />
 
-          <div className="flex-1 py-4 overflow-y-auto">
-            <div className={`space-y-1 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
-              <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Dashboard">
-                <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium text-sm">Dashboard</span>}
-              </button>
-
-              <button onClick={() => setActiveTab('trades')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'trades' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Transacciones">
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium text-sm">Transacciones</span>}
-              </button>
-
-              <button onClick={() => setActiveTab('distribution')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'distribution' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Distribución">
-                <PieChart className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium text-sm">Distribución</span>}
-              </button>
-
-              <button onClick={() => setActiveTab('help')} className={`w-full flex items-center gap-3 py-2.5 h-10 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'} ${activeTab === 'help' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'}`} title="Ayuda">
-                <HelpCircle className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium text-sm">Ayuda</span>}
-              </button>
-            </div>
-          </div>
-
-          <div className="p-3 border-t border-border-primary">
-            <div className={`flex items-center gap-3 ${sidebarOpen ? 'px-2' : 'flex-col'}`}>
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0" title={user?.email || 'Usuario'}>
-                <span className="text-white font-medium text-sm">{user?.email?.[0]?.toUpperCase() || 'U'}</span>
-              </div>
-              {sidebarOpen ? (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{user?.email || 'Usuario'}</p>
-                  <button onClick={() => signOut()} className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1">
-                    <LogOut className="w-3 h-3" />
-                    Cerrar sesión
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => signOut()} className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors" title="Cerrar sesión">
-                  <LogOut className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        </aside>
-
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'} mt-16 lg:mt-0`}>
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            <header className="hidden lg:flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <PortfolioSelector />
-                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
-                <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
-                <span className="text-text-tertiary">|</span>
-                <span className="text-sm text-text-tertiary">{lastUpdate || '--:--'}</span>
-                <button
-                  onClick={() => refetchPrices()}
-                  disabled={isPricesLoading}
-                  className="ml-2 p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Actualizar"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            </header>
+            <DashboardHeader
+              mepRate={mepRate}
+              lastUpdate={lastUpdate}
+              isPricesLoading={isPricesLoading}
+              refetchPrices={refetchPrices}
+            />
 
             {activeTab === 'help' && (
               <div className="max-w-3xl mx-auto">
@@ -849,30 +810,27 @@ export default function Dashboard() {
 
             {activeTab === 'dashboard' && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                  <SummaryCard title="Invertido" value={formatARS(totals.invertido)} subtitle="Total invertido" />
-                  <SummaryCard title="Valuación" value={formatARS(totals.valuacion)} subtitle={lastUpdate ? `Actualizado: ${lastUpdate}` : ''} />
-                  <SummaryCard title="P&L" value={formatARS(totals.resultado)} trend={totals.resultado} showBadge badgeValue={formatPercent(totals.resultadoPct)} />
-                  <SummaryCard title="P&L Hoy" value={formatARS(totals.resultadoDiario)} trend={totals.resultadoDiario} showBadge badgeValue={formatPercent(totals.resultadoDiarioPct)} />
-                </div>
+                <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
                 <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
-                  <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
-                      <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                        <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-32 lg:w-48" />
+                  <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-3 items-center justify-between flex-shrink-0">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
+                        <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
                       </div>
-                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium">
-                        <Plus className="w-3.5 h-3.5" />
-                        Nueva Transacción
-                      </button>
-                      <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                          <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-48" />
+                        </div>
+                        <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
+                      </div>
                     </div>
+                    <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-2 px-5 py-2 h-9 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 transition-all text-sm font-medium shadow-lg shadow-emerald-600/20">
+                      <Plus className="w-4 h-4" />
+                      Nueva Transacción
+                    </button>
                   </div>
                   <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
                 </div>
@@ -881,12 +839,16 @@ export default function Dashboard() {
           </div>
         </main>
 
-        <TradeModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditingTrade(null); }} onSave={handleSaveTrade} trade={editingTrade} tickers={tickers} />
-
-        <DeleteModal isOpen={deleteModalOpen} onClose={() => { setDeleteModalOpen(false); setDeletingTrade(null); }} onConfirm={handleDeleteTrade} tradeTicker={deletingTrade?.ticker} />
+        <Suspense fallback={<LoadingFallback />}>
+          <TradeModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveTrade} trade={editingTrade} tickers={tickers} />
+        </Suspense>
 
         <Suspense fallback={<LoadingFallback />}>
-          <PositionDetailModal isOpen={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} onTradeClick={(trade) => { const t = sortedTrades.find(st => st.id === trade.id); if (t) { setEditingTrade(t); setDetailModalOpen(false); setModalOpen(true); } }} />
+          <DeleteModal isOpen={deleteModalOpen} onClose={handleCloseDeleteModal} onConfirm={handleDeleteTrade} tradeTicker={deletingTrade?.ticker} />
+        </Suspense>
+
+        <Suspense fallback={<LoadingFallback />}>
+          <PositionDetailModal isOpen={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} onTradeClick={handleTradeClickFromDetail} />
         </Suspense>
       </div>
     </ErrorBoundary>

@@ -46,7 +46,7 @@ export const useBondPrices = (): UseBondPricesReturn => {
   /**
    * Obtiene el precio ajustado para mostrar
    */
-  const getDisplayPrice = useCallback((ticker: string, price: number, _mepRate = 0): number => {
+  const getDisplayPrice = useCallback((_ticker: string, price: number, _mepRate = 0): number => {
     if (!price || price === 0) return 0;
     // La lógica de ajuste ahora está en adjustBondPrice de bondUtils
     return price;

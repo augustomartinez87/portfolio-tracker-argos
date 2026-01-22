@@ -61,18 +61,20 @@ export const formatDateTime = (date: Date | string | null | undefined, format: '
   const d = typeof date === 'string' ? new Date(date) : date;
 
   if (format === 'full') {
-    return d.toLocaleDateString('es-AR', {
+    return d.toLocaleString('es-AR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: false
     });
   }
 
   return d.toLocaleTimeString('es-AR', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   });
 };
 

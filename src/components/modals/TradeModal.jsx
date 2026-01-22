@@ -1,5 +1,5 @@
 // src/components/modals/TradeModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
 import { TickerAutocomplete } from '../common/TickerAutocomplete';
@@ -13,6 +13,10 @@ export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
     precio: ''
   });
 
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  // Reset form when modal opens or trade changes
   useEffect(() => {
     if (trade) {
       setFormData({
@@ -33,7 +37,26 @@ export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
     }
   }, [trade, isOpen]);
 
-  const handleSubmit = (e) => {
+  // Focus management and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement;
+      modalRef.current?.focus();
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [isOpen, onClose]);
+
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
 
     const cantidad = parseFloat(formData.cantidad);
@@ -69,20 +92,30 @@ export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
       precioCompra: precio,
       tipo: formData.tipo
     });
-  };
+  }, [formData, trade, onSave]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-xl">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="trade-modal-title"
+    >
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-xl focus:outline-none"
+      >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-text-primary">
+          <h2 id="trade-modal-title" className="text-lg font-semibold text-text-primary">
             {trade ? 'Editar transacción' : 'Nueva transacción'}
           </h2>
           <button
             onClick={onClose}
             className="text-text-tertiary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background-tertiary"
+            aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
