@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, List } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, List, Pin, PinOff } from 'lucide-react';
 import { data912 } from '../utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
@@ -418,6 +418,7 @@ export default function Dashboard() {
   const [lastValidPrices, setLastValidPrices] = useState({});
   const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarPinned, setSidebarPinned] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [columnSettings, setColumnSettings] = useState({
@@ -1087,59 +1088,73 @@ export default function Dashboard() {
 
       {/* Desktop Sidebar */}
       <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-        <div className="p-4 border-b border-border-primary flex flex-col items-center gap-3">
-          <PortfolioSelector />
-          <h1 className={`text-xl font-bold text-text-primary tracking-tight flex items-center gap-3 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-            <img src={logo} alt="Argos Capital" className="w-8 h-8 flex-shrink-0" />
-            Argos Capital
-          </h1>
+        <div className="p-3 border-b border-border-primary flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <PortfolioSelector />
+            <h1 className={`text-base font-bold text-text-primary tracking-tight flex items-center gap-2 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+              <img src={logo} alt="Argos Capital" className="w-7 h-7 flex-shrink-0" />
+              <span className="whitespace-nowrap">Argos Capital</span>
+            </h1>
+          </div>
+          <button
+            onClick={() => {
+              if (!sidebarPinned) {
+                setSidebarOpen(true);
+              }
+              setSidebarPinned(!sidebarPinned);
+            }}
+            className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${sidebarPinned ? 'text-text-tertiary hover:text-text-primary bg-background-tertiary' : 'text-text-tertiary hover:text-text-primary'}`}
+            title={sidebarPinned ? "Desanclar sidebar" : "Anclar sidebar"}
+          >
+            {sidebarPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
               activeTab === 'dashboard'
                 ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
                 : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-            title="Posiciones"
+            title={sidebarOpen ? "Posiciones" : undefined}
           >
             <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
           </button>
           <button
             onClick={() => setActiveTab('graficos')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
               activeTab === 'graficos'
                 ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
                 : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-            title="Gráficos"
+            title={sidebarOpen ? "Gráficos" : undefined}
           >
             <PieChart className="w-5 h-5 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Gráficos</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
-            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-0 py-3 h-12'} ${
+            className={`w-full flex items-center rounded-lg font-medium text-sm transition-all active:scale-95 ${sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center px-0 py-2.5 h-10'} ${
               activeTab === 'trades'
                 ? 'bg-background-tertiary text-text-primary border-l-2 border-success'
                 : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-            title="Trades"
+            title={sidebarOpen ? "Trades" : undefined}
           >
             <FileText className="w-5 h-5 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Trades</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-border-primary space-y-2">
+        <div className="p-3 border-t border-border-primary space-y-2">
           <button
             onClick={fetchPrices}
             disabled={isPricesLoading}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2.5 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
-            title="Actualizar"
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+            title={sidebarOpen ? "Actualizar" : undefined}
           >
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
@@ -1147,29 +1162,29 @@ export default function Dashboard() {
           {sidebarOpen && (
             <div className="bg-background-tertiary rounded-lg p-3 border border-border-primary space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-xs">Dólar MEP</span>
+                <span className="text-text-tertiary text-sm">Dólar MEP</span>
                 <span className="text-text-primary font-mono text-sm">{formatARS(mepRate)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-xs">Posiciones</span>
+                <span className="text-text-tertiary text-sm">Posiciones</span>
                 <span className="text-text-primary font-mono text-sm">{positions.length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-text-tertiary text-xs">Trades</span>
+                <span className="text-text-tertiary text-sm">Trades</span>
                 <span className="text-text-primary font-mono text-sm">{trades.length}</span>
               </div>
             </div>
           )}
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-4 py-2.5 h-11 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95`}
-            title="Cerrar sesión"
+            className={`w-full flex items-center ${sidebarOpen ? 'justify-center gap-2' : 'justify-center'} px-3 py-2.5 h-10 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-background-tertiary transition-all border border-border-primary text-sm font-medium active:scale-95`}
+            title={sidebarOpen ? "Cerrar sesión" : undefined}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
           </button>
           {lastUpdate && sidebarOpen && (
-            <p className="text-xs text-text-tertiary mt-3 text-center transition-all duration-300">
+            <p className="text-sm text-text-tertiary mt-2 text-center transition-all duration-300">
               Actualizado: {lastUpdateFull || lastUpdate}
             </p>
           )}
@@ -1216,22 +1231,22 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarPinned && sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {activeTab === 'dashboard' ? (
           <>
             {/* Compact Header - 3 Metrics */}
             <div className="grid grid-cols-3 gap-0 mb-3">
               <div className="bg-background-secondary rounded-l-lg p-4 border border-border-primary border-r-0">
-                <p className="text-text-tertiary text-xs font-medium mb-1">Invertido</p>
-                <p className="text-text-primary font-mono text-2xl font-semibold">{formatARS(totals.invertido)}</p>
+                <p className="text-text-tertiary text-sm font-medium mb-1">Invertido</p>
+                <p className="text-text-primary font-mono text-xl font-semibold">{formatARS(totals.invertido)}</p>
               </div>
               <div className="bg-background-secondary p-4 border border-border-primary">
-                <p className="text-text-tertiary text-xs font-medium mb-1">Valuación Actual</p>
-                <p className="text-text-primary font-mono text-2xl font-semibold">{formatARS(totals.valuacion)}</p>
+                <p className="text-text-tertiary text-sm font-medium mb-1">Valuación Actual</p>
+                <p className="text-text-primary font-mono text-xl font-semibold">{formatARS(totals.valuacion)}</p>
               </div>
               <div className="bg-background-secondary rounded-r-lg p-4 border border-border-primary border-l-0">
-                <p className="text-text-tertiary text-xs font-medium mb-1">Resultado Total</p>
-                <p className={`font-mono text-2xl font-semibold ${totals.resultado >= 0 ? 'text-success' : 'text-danger'}`}>{formatARS(totals.resultado)}</p>
+                <p className="text-text-tertiary text-sm font-medium mb-1">Resultado Total</p>
+                <p className={`font-mono text-xl font-semibold ${totals.resultado >= 0 ? 'text-success' : 'text-danger'}`}>{formatARS(totals.resultado)}</p>
                 <p className={`text-sm mt-0.5 ${totals.resultadoPct >= 0 ? 'text-success' : 'text-danger'}`}>{formatPercent(totals.resultadoPct)}</p>
               </div>
             </div>
@@ -1279,8 +1294,8 @@ export default function Dashboard() {
             </div>
 
              {/* Footer - Desktop Only */}
-            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
-              <p className="text-text-tertiary text-xs text-center">Argos Capital v3.0</p>
+            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarPinned && sidebarOpen ? 'left-64' : 'left-16'}`}>
+              <p className="text-text-tertiary text-sm text-center">Argos Capital v3.0</p>
             </div>
           </>
         ) : activeTab === 'graficos' ? (
@@ -1340,9 +1355,9 @@ export default function Dashboard() {
                     <HelpCircle className="w-5 h-5" />
                   </button>
                   {showFormatHelp && (
-                    <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-background-secondary rounded-lg p-4 border border-border-primary shadow-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-text-primary font-medium text-sm sm:text-base">📋 Formato CSV/Excel:</p>
+                      <div className="format-help-tooltip absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-background-secondary rounded-lg p-4 border border-border-primary shadow-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-text-primary font-medium text-sm">📋 Formato CSV/Excel:</p>
                         <button
                           onClick={() => setShowFormatHelp(false)}
                           className="text-text-tertiary hover:text-text-primary p-1 rounded-lg hover:bg-background-tertiary active:scale-95 transition-all"
@@ -1350,14 +1365,14 @@ export default function Dashboard() {
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <ul className="text-text-secondary space-y-1 text-xs sm:text-sm ml-4">
+                      <ul className="text-text-secondary space-y-1 text-sm ml-4">
                         <li>• <strong>Fecha:</strong> DD/MM/YYYY (ej: 23/12/2024)</li>
                         <li>• <strong>Ticker:</strong> Símbolo del activo (ej: MELI, AAPL, AL30)</li>
                         <li>• <strong>Cantidad:</strong> Número de unidades (ej: 10 o 1250.50)</li>
                         <li>• <strong>Precio:</strong> Precio de compra en ARS (ej: 17220 o 839.50)</li>
                         <li>• <strong>Bonos pesos:</strong> Precio por $1 VN (ej: 1.03)</li>
                       </ul>
-                      <p className="text-text-tertiary mt-2 text-xs">
+                      <p className="text-text-tertiary mt-2 text-sm">
                         Tip: Descargá el template para ver un ejemplo completo
                       </p>
                     </div>
@@ -1379,36 +1394,36 @@ export default function Dashboard() {
             <div className="bg-background-secondary rounded-lg border border-border-primary overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="bg-background-tertiary/30 border-b border-border-primary">
-                      <th
-                        className="text-left px-4 py-2.5 text-xs font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
-                        onClick={() => handleSort('fecha')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Fecha
-                          {sortConfig.key === 'fecha' && (
-                            sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                          )}
-                        </div>
-                      </th>
-                      <th
-                        className="text-left px-4 py-2.5 text-xs font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
-                        onClick={() => handleSort('ticker')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Ticker
-                          {sortConfig.key === 'ticker' && (
-                            sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                          )}
-                        </div>
-                      </th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Cantidad</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Precio</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary hidden sm:table-cell">Invertido</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-text-tertiary">Acciones</th>
-                    </tr>
-                  </thead>
+                   <thead>
+                     <tr className="bg-background-tertiary/30 border-b border-border-primary">
+                       <th
+                         className="text-left px-4 py-2.5 text-sm font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
+                         onClick={() => handleSort('fecha')}
+                       >
+                         <div className="flex items-center gap-1">
+                           Fecha
+                           {sortConfig.key === 'fecha' && (
+                             sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                           )}
+                         </div>
+                       </th>
+                       <th
+                         className="text-left px-4 py-2.5 text-sm font-medium text-text-tertiary cursor-pointer hover:text-text-primary transition-colors"
+                         onClick={() => handleSort('ticker')}
+                       >
+                         <div className="flex items-center gap-1">
+                           Ticker
+                           {sortConfig.key === 'ticker' && (
+                             sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                           )}
+                         </div>
+                       </th>
+                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Cantidad</th>
+                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Precio</th>
+                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary hidden sm:table-cell">Invertido</th>
+                       <th className="text-right px-4 py-2.5 text-sm font-medium text-text-tertiary">Acciones</th>
+                     </tr>
+                   </thead>
                   <tbody className="divide-y divide-border-primary">
                     {sortedTrades.map((trade) => {
                       const isBono = isBonoPesos(trade.ticker);
