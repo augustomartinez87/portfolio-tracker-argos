@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePortfolio } from '../contexts/PortfolioContext'
-import { Plus, MoreVertical, Check, Star, Edit2, Trash2 } from 'lucide-react'
+import { Plus, MoreVertical, Check, Star, Edit2, Trash2, X } from 'lucide-react'
 
 export const PortfolioSelector = () => {
   const { portfolios, currentPortfolio, setCurrentPortfolio, createPortfolio, deletePortfolio, setDefaultPortfolio } = usePortfolio()
@@ -56,16 +56,17 @@ export const PortfolioSelector = () => {
       <div className="relative">
         <button
           onClick={() => setShowMenu(currentPortfolio?.id)}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-all text-white font-medium"
+          className="flex items-center gap-2 px-3 py-2 bg-background-tertiary hover:bg-border-primary rounded-lg border border-border-primary transition-all text-text-primary font-medium text-sm"
         >
+          <div className="w-2 h-2 rounded-full bg-success"></div>
           {currentPortfolio?.name || 'Seleccionar Portfolio'}
-          <MoreVertical className="w-4 h-4" />
+          <MoreVertical className="w-4 h-4 text-text-tertiary" />
         </button>
 
         {showMenu && (
-          <div className="absolute left-0 top-full mt-2 z-50 w-72 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
-            <div className="p-2 border-b border-slate-700">
-              <p className="text-xs text-slate-500 font-medium px-2 py-1">PORTFOLIOS</p>
+          <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-background-secondary border border-border-primary rounded-lg shadow-xl overflow-hidden">
+            <div className="p-2 border-b border-border-primary">
+              <p className="text-text-tertiary text-xs font-medium px-2 py-1">PORTFOLIOS</p>
             </div>
             {portfolios.map((portfolio) => (
               <div key={portfolio.id} className="relative group">
@@ -74,19 +75,19 @@ export const PortfolioSelector = () => {
                     setCurrentPortfolio(portfolio)
                     setShowMenu(null)
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-background-tertiary transition-colors text-left"
                 >
                   <div className="flex-1">
-                    <p className="text-white font-medium text-sm">{portfolio.name}</p>
+                    <p className="text-text-primary font-medium text-sm">{portfolio.name}</p>
                     {portfolio.description && (
-                      <p className="text-slate-400 text-xs">{portfolio.description}</p>
+                      <p className="text-text-tertiary text-xs">{portfolio.description}</p>
                     )}
                   </div>
                   {portfolio.is_default && (
-                    <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" />
+                    <Star className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" />
                   )}
                   {currentPortfolio?.id === portfolio.id && (
-                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <Check className="w-4 h-4 text-success flex-shrink-0" />
                   )}
                 </button>
                 <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -96,7 +97,7 @@ export const PortfolioSelector = () => {
                         e.stopPropagation()
                         handleSetDefault(portfolio.id)
                       }}
-                      className="p-1.5 hover:bg-slate-600 rounded text-slate-400 hover:text-yellow-500 transition-colors"
+                      className="p-1.5 hover:bg-background-tertiary rounded text-text-tertiary hover:text-amber-500 transition-colors"
                       title="Establecer como por defecto"
                     >
                       <Star className="w-3.5 h-3.5" />
@@ -107,7 +108,7 @@ export const PortfolioSelector = () => {
                       e.stopPropagation()
                       handleDeletePortfolio(portfolio.id)
                     }}
-                    className="p-1.5 hover:bg-slate-600 rounded text-slate-400 hover:text-red-500 transition-colors"
+                    className="p-1.5 hover:bg-background-tertiary rounded text-text-tertiary hover:text-danger transition-colors"
                     title="Eliminar portfolio"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -120,7 +121,7 @@ export const PortfolioSelector = () => {
                 setShowModal(true)
                 setShowMenu(null)
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700 transition-colors text-emerald-400 font-medium border-t border-slate-700"
+              className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-background-tertiary transition-colors text-success font-medium border-t border-border-primary"
             >
               <Plus className="w-4 h-4" />
               Nuevo Portfolio
@@ -131,9 +132,9 @@ export const PortfolioSelector = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-700 shadow-2xl">
+          <div className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">Nuevo Portfolio</h2>
+              <h2 className="text-xl font-bold text-text-primary">Nuevo Portfolio</h2>
               <button
                 onClick={() => {
                   setShowModal(false)
@@ -141,44 +142,42 @@ export const PortfolioSelector = () => {
                   setNewPortfolioDescription('')
                   setError('')
                 }}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-text-tertiary hover:text-text-primary transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-4">
+              <div className="bg-danger-muted border border-danger/50 text-danger px-4 py-3 rounded-lg mb-4">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleCreatePortfolio} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nombre <span className="text-red-400">*</span>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Nombre <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   value={newPortfolioName}
                   onChange={(e) => setNewPortfolioName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-background-tertiary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-success focus:border-transparent"
                   placeholder="Mi Portfolio"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">
                   Descripción (opcional)
                 </label>
                 <textarea
                   value={newPortfolioDescription}
                   onChange={(e) => setNewPortfolioDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 bg-background-tertiary border border-border-primary rounded-lg text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-success focus:border-transparent resize-none"
                   placeholder="Descripción de tu portfolio..."
                 />
               </div>
@@ -192,14 +191,14 @@ export const PortfolioSelector = () => {
                     setNewPortfolioDescription('')
                     setError('')
                   }}
-                  className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary transition-colors font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:bg-emerald-600/50 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-success text-white rounded-lg hover:bg-success/90 disabled:bg-success/50 transition-colors font-medium"
                 >
                   {loading ? 'Creando...' : 'Crear Portfolio'}
                 </button>

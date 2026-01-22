@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, List, Pin, PinOff } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, AlertCircle, Loader2, Activity, DollarSign, BarChart3, ArrowUp, ArrowDown, LogOut, LayoutDashboard, FileText, HelpCircle, Menu, PieChart, Search, List } from 'lucide-react';
 import { data912 } from '../utils/data912';
 import { CONSTANTS, API_ENDPOINTS } from '../utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber, formatDateTime } from '../utils/formatters';
@@ -418,7 +418,6 @@ export default function Dashboard() {
   const [lastValidPrices, setLastValidPrices] = useState({});
   const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarPinned, setSidebarPinned] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [columnSettings, setColumnSettings] = useState({
@@ -1088,25 +1087,13 @@ export default function Dashboard() {
 
       {/* Desktop Sidebar */}
       <aside className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-        <div className="p-3 border-b border-border-primary flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <PortfolioSelector />
-            <h1 className={`text-base font-bold text-text-primary tracking-tight flex items-center gap-2 transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-              <img src={logo} alt="Argos Capital" className="w-7 h-7 flex-shrink-0" />
-              <span className="whitespace-nowrap">Argos Capital</span>
-            </h1>
-          </div>
+        <div className="p-3 border-b border-border-primary flex items-center justify-center">
           <button
-            onClick={() => {
-              if (!sidebarPinned) {
-                setSidebarOpen(true);
-              }
-              setSidebarPinned(!sidebarPinned);
-            }}
-            className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${sidebarPinned ? 'text-text-tertiary hover:text-text-primary bg-background-tertiary' : 'text-text-tertiary hover:text-text-primary'}`}
-            title={sidebarPinned ? "Desanclar sidebar" : "Anclar sidebar"}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-tertiary transition-colors"
+            title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
           >
-            {sidebarPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+            <Menu className="w-5 h-5" />
           </button>
         </div>
 
@@ -1121,7 +1108,7 @@ export default function Dashboard() {
             title={sidebarOpen ? "Posiciones" : undefined}
           >
             <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
+            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Posiciones</span>
           </button>
           <button
             onClick={() => setActiveTab('graficos')}
@@ -1133,7 +1120,7 @@ export default function Dashboard() {
             title={sidebarOpen ? "Gráficos" : undefined}
           >
             <PieChart className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Gráficos</span>
+            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Gráficos</span>
           </button>
           <button
             onClick={() => setActiveTab('trades')}
@@ -1145,7 +1132,7 @@ export default function Dashboard() {
             title={sidebarOpen ? "Trades" : undefined}
           >
             <FileText className="w-5 h-5 flex-shrink-0" />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Trades</span>
+            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Trades</span>
           </button>
         </nav>
 
@@ -1157,7 +1144,7 @@ export default function Dashboard() {
             title={sidebarOpen ? "Actualizar" : undefined}
           >
             <RefreshCw className={`w-4 h-4 flex-shrink-0 ${isPricesLoading ? 'animate-spin' : ''}`} />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
+            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Actualizar</span>
           </button>
           {sidebarOpen && (
             <div className="bg-background-tertiary rounded-lg p-3 border border-border-primary space-y-2">
@@ -1181,10 +1168,10 @@ export default function Dashboard() {
             title={sidebarOpen ? "Cerrar sesión" : undefined}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
+            <span className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Cerrar sesión</span>
           </button>
           {lastUpdate && sidebarOpen && (
-            <p className="text-sm text-text-tertiary mt-2 text-center transition-all duration-300">
+            <p className="text-sm text-text-tertiary mt-2 text-center transition-all duration-200">
               Actualizado: {lastUpdateFull || lastUpdate}
             </p>
           )}
@@ -1231,9 +1218,14 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarPinned && sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <main className={`flex-1 p-3 lg:p-4 pb-24 lg:pb-24 mt-14 lg:mt-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {activeTab === 'dashboard' ? (
           <>
+            {/* Portfolio Selector */}
+            <div className="mb-3">
+              <PortfolioSelector />
+            </div>
+
             {/* Compact Header - 3 Metrics */}
             <div className="grid grid-cols-3 gap-0 mb-3">
               <div className="bg-background-secondary rounded-l-lg p-4 border border-border-primary border-r-0">
@@ -1294,7 +1286,7 @@ export default function Dashboard() {
             </div>
 
              {/* Footer - Desktop Only */}
-            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarPinned && sidebarOpen ? 'left-64' : 'left-16'}`}>
+            <div className={`hidden lg:block fixed bottom-0 right-0 bg-background-primary border-t border-border-primary py-2 px-6 transition-all duration-300 ${sidebarOpen ? 'left-64' : 'left-16'}`}>
               <p className="text-text-tertiary text-sm text-center">Argos Capital v3.0</p>
             </div>
           </>
