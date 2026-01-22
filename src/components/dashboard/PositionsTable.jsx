@@ -275,7 +275,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           {positionsWithGroup.length > 0 && (
             <tfoot className="sticky bottom-0 bg-background-tertiary border-t-2 border-border-secondary backdrop-blur-sm">
               <tr>
-                <td colSpan={3 + (columnSettings.showPPC ? 1 : 0) + (columnSettings.showInvertido ? 1 : 0)} className={`${paddingX} ${paddingY} text-text-primary`}>
+                <td className={`${paddingX} ${paddingY} text-text-primary`}>
                   <span className="font-bold text-lg">Total</span>
                 </td>
                 <td className={`${paddingX} ${paddingY} text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
