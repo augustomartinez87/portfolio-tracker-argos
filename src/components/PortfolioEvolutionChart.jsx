@@ -45,6 +45,25 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+const isBonoPesos = (ticker) => {
+  if (!ticker) return false;
+  const t = ticker.toUpperCase();
+  if (/^T[A-Z0-9]{2,5}$/.test(t)) return true;
+  if (/^S[0-9]{2}[A-Z][0-9]$/.test(t)) return true;
+  if (/^(DICP|PARP|CUAP|PR13|TC23|TO26|TY24)/.test(t)) return true;
+  if (t.startsWith('TTD') || t.startsWith('TTS')) return true;
+  return false;
+};
+
+const isBonoHardDollar = (ticker) => {
+  if (!ticker) return false;
+  const t = ticker.toUpperCase();
+  if (/^(AL|AE|AN|CO|GD)[0-9]{2}$/.test(t)) return true;
+  if (/^(AL|AE|AN|CO|GD)[0-9]{2}[DC]$/.test(t)) return true;
+  if (/^(DICA|DICY|DIED|AY24|BU24|BP26)/.test(t)) return true;
+  return false;
+};
+
 const calculateSimpleReturn = (trades, prices, mepRate) => {
   if (!trades || !prices || trades.length === 0) return [];
 
@@ -52,8 +71,9 @@ const calculateSimpleReturn = (trades, prices, mepRate) => {
     fecha: t.trade_date || t.fecha,
     ticker: t.ticker,
     cantidad: t.quantity || t.cantidad || 0,
-    precio: t.price || t.precioCompra || 0
-  })).filter(t => t.fecha && t.ticker);
+    precio: t.price || t.precioCompra || 0,
+    isBono: isBonoPesos(t.ticker) || isBonoHardDollar(t.ticker)
+  })).filter(t => t.fecha && t.ticker && t.cantidad > 0);
 
   if (mappedTrades.length === 0) return [];
 
@@ -70,11 +90,13 @@ const calculateSimpleReturn = (trades, prices, mepRate) => {
       holdings[trade.ticker] = { cantidad: 0, costoTotal: 0 };
     }
 
+    const tradePrice = trade.isBono ? trade.precio / 100 : trade.precio;
+
     const currentQty = holdings[trade.ticker].cantidad;
     const currentCost = holdings[trade.ticker].costoTotal;
 
     const newQty = currentQty + trade.cantidad;
-    const newCost = currentCost + (trade.cantidad * trade.precio);
+    const newCost = currentCost + (trade.cantidad * tradePrice);
 
     holdings[trade.ticker] = { cantidad: newQty, costoTotal: newCost };
 
