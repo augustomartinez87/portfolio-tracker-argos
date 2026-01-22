@@ -165,19 +165,17 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     {formatNumber(pos.cantidadTotal)}
                   </td>
                   <td className="text-right px-4 py-3 text-slate-400 font-mono text-sm hidden md:table-cell">
-                    {isBonoPesos(pos.ticker) 
-                      ? `$${pos.precioPromedio.toFixed(2)}` 
-                      : isBonoHardDollar(pos.ticker)
-                        ? `$${(pos.precioPromedio / 100).toFixed(2)}`
-                        : formatARS(pos.precioPromedio)
+                    {/* Precios ya vienen ajustados desde Dashboard, no dividir de nuevo */}
+                    {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
+                      ? `$${pos.precioPromedio.toFixed(2)}`
+                      : formatARS(pos.precioPromedio)
                     }
                   </td>
                   <td className="text-right px-4 py-3 text-white font-mono font-medium">
-                    {isBonoPesos(pos.ticker) 
-                      ? `$${pos.precioActual.toFixed(2)}` 
-                      : isBonoHardDollar(pos.ticker)
-                        ? `$${(pos.precioActual / 100).toFixed(2)}`
-                        : formatARS(pos.precioActual)
+                    {/* Precios ya vienen ajustados desde Dashboard, no dividir de nuevo */}
+                    {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
+                      ? `$${pos.precioActual.toFixed(2)}`
+                      : formatARS(pos.precioActual)
                     }
                   </td>
                   <td className="text-right px-4 py-3 text-slate-400 font-mono text-xs hidden lg:table-cell whitespace-nowrap">

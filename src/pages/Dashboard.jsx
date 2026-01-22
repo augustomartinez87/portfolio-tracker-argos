@@ -189,15 +189,39 @@ const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const cantidad = parseFloat(formData.cantidad) || 0;
+
+    // Validación de inputs numéricos
+    const cantidad = parseFloat(formData.cantidad);
+    const precio = parseFloat(formData.precio);
+
+    if (!formData.fecha) {
+      alert('La fecha es requerida');
+      return;
+    }
+
+    if (!formData.ticker || formData.ticker.trim() === '') {
+      alert('El ticker es requerido');
+      return;
+    }
+
+    if (isNaN(cantidad) || cantidad <= 0) {
+      alert('La cantidad debe ser un número mayor a 0');
+      return;
+    }
+
+    if (isNaN(precio) || precio <= 0) {
+      alert('El precio debe ser un número mayor a 0');
+      return;
+    }
+
     const isVenta = formData.tipo === 'venta';
-    
+
     onSave({
       id: trade?.id || crypto.randomUUID(),
       fecha: formData.fecha,
-      ticker: formData.ticker.toUpperCase(),
+      ticker: formData.ticker.toUpperCase().trim(),
       cantidad: isVenta ? -cantidad : cantidad,
-      precioCompra: parseFloat(formData.precio) || 0,
+      precioCompra: precio,
       tipo: formData.tipo
     });
   };
@@ -641,6 +665,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (!trades || trades.length === 0) return;
 
+    // Flag para evitar actualizar state después del unmount
+    let isMounted = true;
+
     const refreshPositionPrices = async () => {
       try {
         data912.clearBondCache?.();
@@ -650,21 +677,24 @@ export default function Dashboard() {
           ticker,
           assetClass: getAssetClass(ticker, null)
         }));
-        
+
         if (tickerData.length === 0) return;
 
         const [batchPrices, batchReturns] = await Promise.all([
           data912.getBatchPrices(tickerData),
           data912.getBatchDailyReturns(tickerData)
         ]);
-        
+
+        // Solo actualizar si el componente sigue montado
+        if (!isMounted) return;
+
         setPrices(prevPrices => {
           const updated = { ...prevPrices };
-          
+
           Object.keys(batchPrices).forEach(ticker => {
             const newPrice = batchPrices[ticker];
             const adjustedPrice = adjustBondPrice(ticker, newPrice);
-            
+
             updated[ticker] = {
               ...updated[ticker],
               precio: adjustedPrice,
@@ -676,7 +706,7 @@ export default function Dashboard() {
               isBonoHD: isBonoHardDollar(ticker)
             };
           });
-          
+
           return updated;
         });
       } catch (error) {
@@ -686,7 +716,11 @@ export default function Dashboard() {
 
     refreshPositionPrices();
     const interval = setInterval(refreshPositionPrices, 30000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [trades]);
 
   const downloadTemplate = () => {
@@ -868,10 +902,11 @@ export default function Dashboard() {
         pctChange: priceData?.pctChange,
         isBonoPesos: priceData?.isBonoPesos || isBonoPesos(pos.ticker),
         isBonoHD: priceData?.isBonoHD || isBonoHardDollar(pos.ticker),
-        costoUSD: pos.costoTotal / mepRate,
-        valuacionUSD: valuacionActual / mepRate,
-        resultadoUSD: resultado / mepRate,
-        resultadoDiarioUSD: resultadoDiario / mepRate
+        // Validar mepRate antes de dividir para evitar NaN/Infinity
+        costoUSD: mepRate > 0 ? pos.costoTotal / mepRate : 0,
+        valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
+        resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
+        resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
       };
     }).sort((a, b) => b.valuacionActual - a.valuacionActual);
   }, [trades, prices, mepRate]);
@@ -891,10 +926,11 @@ export default function Dashboard() {
       resultadoPct,
       resultadoDiario,
       resultadoDiarioPct,
-      invertidoUSD: invertido / mepRate,
-      valuacionUSD: valuacion / mepRate,
-      resultadoUSD: resultado / mepRate,
-      resultadoDiarioUSD: resultadoDiario / mepRate
+      // Validar mepRate antes de dividir para evitar NaN/Infinity
+      invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
+      valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
+      resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
+      resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
     };
   }, [positions, mepRate]);
 
