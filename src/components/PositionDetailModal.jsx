@@ -250,18 +250,18 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl w-full max-w-5xl border border-slate-700 shadow-2xl my-8 max-h-[90vh] flex flex-col">
+      <div className="bg-background-secondary rounded-lg w-full max-w-5xl border border-border-primary shadow-2xl my-8 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-700/50 flex justify-between items-start">
+        <div className="p-6 border-b border-border-primary flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-white font-mono">{position.ticker}</h2>
+            <h2 className="text-2xl font-bold text-text-primary font-mono">{position.ticker}</h2>
             {position.assetClass && (
-              <span className="inline-block mt-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-semibold">
+              <span className="inline-block mt-2 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                 {position.assetClass}
               </span>
             )}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-2">
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors p-2">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -270,14 +270,14 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         <div className="p-6 overflow-y-auto flex-1">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Cantidad</p>
-              <p className="text-white font-mono text-lg font-semibold">{position.cantidadTotal}</p>
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
+              <p className="text-text-tertiary text-xs mb-1">Cantidad</p>
+              <p className="text-text-primary font-mono text-lg font-semibold">{position.cantidadTotal}</p>
             </div>
 
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Precio Prom.</p>
-              <p className="text-white font-mono text-lg font-semibold">
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
+              <p className="text-text-tertiary text-xs mb-1">Precio Prom.</p>
+              <p className="text-text-primary font-mono text-lg font-semibold">
                 {isBonoPesos(position.ticker)
                   ? `$${position.precioPromedio.toFixed(4)}`
                   : formatCurrency(position.precioPromedio)
@@ -285,9 +285,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               </p>
             </div>
 
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Precio Actual</p>
-              <p className="text-white font-mono text-lg font-bold">
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
+              <p className="text-text-tertiary text-xs mb-1">Precio Actual</p>
+              <p className="text-text-primary font-mono text-lg font-bold">
                 {isBonoPesos(position.ticker)
                   ? `$${position.precioActual.toFixed(4)}`
                   : formatCurrency(position.precioActual)
@@ -295,26 +295,26 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               </p>
             </div>
 
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Invertido</p>
-              <p className="text-white font-mono text-lg font-semibold">
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
+              <p className="text-text-tertiary text-xs mb-1">Invertido</p>
+              <p className="text-text-primary font-mono text-lg font-semibold">
                 {formatCurrency(invested)}
               </p>
             </div>
 
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Valuación Actual</p>
-              <p className="text-white font-mono text-lg font-bold">
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
+              <p className="text-text-tertiary text-xs mb-1">Valuación Actual</p>
+              <p className="text-text-primary font-mono text-lg font-bold">
                 {formatCurrency(position.valuacionActual)}
               </p>
             </div>
 
             <div className={`rounded-lg p-4 border ${
               position.resultado >= 0
-                ? 'bg-emerald-500/10 border-emerald-500/30'
-                : 'bg-red-500/10 border-red-500/30'
+                ? 'bg-success/10 border-success/30'
+                : 'bg-danger/10 border-danger/30'
             }`}>
-              <p className="text-slate-400 text-xs mb-1">P&L Acumulado</p>
+              <p className="text-text-tertiary text-xs mb-1">P&L Acumulado</p>
               <p className={`font-mono text-lg font-bold ${getColorClass(position.resultado)}`}>
                 {formatCurrency(position.resultado)}
               </p>
@@ -323,13 +323,13 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               </p>
             </div>
 
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50 col-span-2">
-              <p className="text-slate-400 text-xs mb-1">Variación Diaria</p>
+            <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary col-span-2">
+              <p className="text-text-tertiary text-xs mb-1">Variación Diaria</p>
               <div className="flex items-center gap-2">
                 {position.resultadoDiario >= 0 ? (
-                  <TrendingUp className="w-5 h-5 text-emerald-400" />
+                  <TrendingUp className="w-5 h-5 text-success" />
                 ) : (
-                  <TrendingDown className="w-5 h-5 text-red-400" />
+                  <TrendingDown className="w-5 h-5 text-danger" />
                 )}
                 <p className={`font-mono text-lg font-bold ${getColorClass(position.resultadoDiario)}`}>
                   {formatCurrency(position.resultadoDiario || 0)}
@@ -357,16 +357,16 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           )}
 
           {/* Historical Price Chart */}
-          <div className="bg-slate-900/50 rounded-lg p-5 border border-slate-700/50 mb-6">
+          <div className="bg-background-tertiary/50 rounded-lg p-5 border border-border-primary mb-6">
             <div className="mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-success" />
                     Precio Histórico
                   </h3>
                   {chartData.length > 0 && (
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-text-tertiary mt-1">
                       Mostrando {chartData.length} días de datos
                     </p>
                   )}
@@ -374,7 +374,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
                 {/* Filtros de días */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <span className="text-xs text-text-tertiary flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Período:
                   </span>
@@ -385,8 +385,8 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                         onClick={() => setSelectedDays(days)}
                         className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
                           selectedDays === days
-                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                            : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600 hover:text-white'
+                            ? 'bg-success text-white'
+                            : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
                         }`}
                       >
                         {days === 365 ? '1A' : `${days}d`}
@@ -398,22 +398,22 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               {stats && (
                 <div className="flex gap-4 text-sm">
                   <div>
-                    <p className="text-slate-500 text-xs">Máximo</p>
-                    <p className="text-white font-mono font-medium">{formatCurrency(stats.high)}</p>
+                    <p className="text-text-tertiary text-xs">Máximo</p>
+                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs">Mínimo</p>
-                    <p className="text-white font-mono font-medium">{formatCurrency(stats.low)}</p>
+                    <p className="text-text-tertiary text-xs">Mínimo</p>
+                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs">Variación 90d</p>
+                    <p className="text-text-tertiary text-xs">Variación 90d</p>
                     <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
                       {formatPercentage(stats.change)}
                     </p>
                   </div>
                 </div>
               )}
-            </div>
+            </div}
 
             {isPositionUnavailable ? (
               <div className="flex justify-center items-center h-72">

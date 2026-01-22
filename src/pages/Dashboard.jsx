@@ -8,6 +8,7 @@ import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
 import PositionsTable from '../components/dashboard/PositionsTable';
+import ColumnSelector from '../components/dashboard/ColumnSelector';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -418,6 +419,14 @@ export default function Dashboard() {
   const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tradesLoading, setTradesLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [columnSettings, setColumnSettings] = useState({
+    showPPC: true,
+    showInvertido: true,
+    showDiario: true,
+    showDiarioPct: true,
+    density: 'compact'
+  });
 
   // Load trades from Supabase - extracted as useCallback so it can be called from other places
   const loadTrades = useCallback(async () => {
@@ -1271,6 +1280,9 @@ export default function Dashboard() {
                 mepRate={mepRate}
                 sortConfig={positionsSort}
                 onSortChange={setPositionsSort}
+                searchTerm={searchTerm}
+                columnSettings={columnSettings}
+                onColumnSettingsChange={setColumnSettings}
               />
             </div>
 
