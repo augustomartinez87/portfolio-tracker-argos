@@ -5,7 +5,7 @@ import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import logo from '../assets/logo.png'
 import ParticlesBackground from '../components/ParticlesBackground'
 
-const Login = () => {
+export const Login = () => {
   const navigate = useNavigate()
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
