@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const location = useLocation()
+  const isLogoutInProgress = useRef(false)
 
   useEffect(() => {
     const getSession = async () => {
@@ -33,6 +35,9 @@ export const AuthProvider = ({ children }) => {
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isLogoutInProgress.current) {
+        return
+      }
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -63,11 +68,16 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
+      isLogoutInProgress.current = true
       await supabase.auth.signOut()
       setUser(null)
-      navigate('/login', { replace: true })
+      localStorage.clear()
+      if (location.pathname !== '/login') {
+        navigate('/login', { replace: true })
+      }
     } catch (error) {
       console.error('Error signing out:', error)
+      isLogoutInProgress.current = false
       throw error
     }
   }
