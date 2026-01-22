@@ -141,9 +141,7 @@ const calculateTWR = (trades, prices) => {
       // El nuevo "valor inicial" para el siguiente período es el valor después de aportes
       if (tradesThisDay.length > 0) {
         previousDayValue = valueAfterTrades;
-      } else if (previousDayValue > 0) {
       // Día sin trades: actualizar el valor del portafolio (para medir rendimiento día a día)
-      // El nuevo "valor inicial" para el siguiente día
       if (previousDayValue > 0) {
         previousDayValue = valueAfterTrades;
       }
