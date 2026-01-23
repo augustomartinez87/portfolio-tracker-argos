@@ -27,7 +27,7 @@ const DeleteModal = lazy(() => import('../components/modals/DeleteModal'));
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const { currentPortfolio } = usePortfolio();
+  const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
 
   const { prices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
 
@@ -496,12 +496,12 @@ export default function Dashboard() {
     }
   }, [sortedTrades]);
 
-  if (tradesLoading) {
+  if (portfolioLoading) {
     return (
       <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-text-tertiary">Cargando datos...</p>
+          <p className="text-text-tertiary">Cargando portfolio...</p>
         </div>
       </div>
     );
@@ -835,7 +835,21 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <div className="flex-1 overflow-auto min-h-0 custom-scrollbar">
-                    <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                    {isPricesLoading && positions.length === 0 ? (
+                      <div className="p-8 space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="animate-pulse flex items-center gap-4">
+                            <div className="h-6 bg-background-tertiary rounded w-20"></div>
+                            <div className="h-6 bg-background-tertiary rounded w-16"></div>
+                            <div className="h-6 bg-background-tertiary rounded w-24 flex-1"></div>
+                            <div className="h-6 bg-background-tertiary rounded w-20"></div>
+                            <div className="h-6 bg-background-tertiary rounded w-16"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                    )}
                   </div>
                 </div>
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Lock, Mail, User, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import signupBg from '../assets/signup-bg.jpg'
 
 export const SignUp = () => {
   const navigate = useNavigate()
@@ -47,14 +48,25 @@ export const SignUp = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-primary px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-success/10 border border-success/30 text-success px-4 py-8 rounded-lg">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0A0A0A]">
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `url(${signupBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute inset-0 z-0 bg-black/50" />
+
+        <div className="w-full max-w-md px-4 relative z-10">
+          <div className="bg-success/10 border border-success/30 text-success px-4 py-8 rounded-xl backdrop-blur-md">
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h2 className="text-xl font-bold text-text-primary mb-2">¡Cuenta creada!</h2>
-            <p className="text-success">Redirigiendo al dashboard...</p>
+            <h2 className="text-xl font-bold text-text-primary mb-2 text-center">¡Cuenta creada!</h2>
+            <p className="text-success text-center">Redirigiendo al dashboard...</p>
           </div>
         </div>
       </div>
@@ -62,14 +74,25 @@ export const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-primary px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0A0A0A]">
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `url(${signupBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      <div className="absolute inset-0 z-0 bg-black/50" />
+
+      <div className="w-full max-w-md px-4 relative z-10 flex flex-col items-center justify-center py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-text-primary mb-2">Argos Capital</h1>
-          <p className="text-text-secondary">Crea tu cuenta para comenzar</p>
+          <p className="text-text-tertiary">Crea tu cuenta para comenzar</p>
         </div>
 
-        <div className="bg-background-secondary rounded-lg p-8 border border-border-primary">
+        <div className="w-full bg-background-secondary/80 backdrop-blur-md border border-border-primary rounded-xl p-8 shadow-xl">
           {error && (
             <div className="bg-danger/10 border border-danger/30 text-danger px-4 py-3 rounded-lg mb-6">
               {error}
@@ -87,7 +110,7 @@ export const SignUp = () => {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-background-tertiary border border-border-primary rounded-lg pl-10 pr-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success transition-colors"
+                  className="w-full bg-background-tertiary border border-border-primary text-text-primary placeholder-text-tertiary rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-primary transition-all duration-200"
                   placeholder="Tu nombre"
                 />
               </div>
@@ -103,7 +126,7 @@ export const SignUp = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-background-tertiary border border-border-primary rounded-lg pl-10 pr-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success transition-colors"
+                  className="w-full bg-background-tertiary border border-border-primary text-text-primary placeholder-text-tertiary rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-primary transition-all duration-200"
                   placeholder="tu@email.com"
                   required
                 />
@@ -120,14 +143,14 @@ export const SignUp = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-background-tertiary border border-border-primary rounded-lg pl-10 pr-12 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success transition-colors"
+                  className="w-full bg-background-tertiary border border-border-primary text-text-primary placeholder-text-tertiary rounded-lg pl-10 pr-12 py-3 focus:outline-none focus:border-primary transition-all duration-200"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -144,14 +167,14 @@ export const SignUp = () => {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-background-tertiary border border-border-primary rounded-lg pl-10 pr-12 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-success transition-colors"
+                  className="w-full bg-background-tertiary border border-border-primary text-text-primary placeholder-text-tertiary rounded-lg pl-10 pr-12 py-3 focus:outline-none focus:border-primary transition-all duration-200"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -161,7 +184,7 @@ export const SignUp = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-success hover:bg-success/90 disabled:bg-success/50 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-primary to-primary/80 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98]"
             >
               {loading ? 'Creando cuenta...' : (
                 <>
@@ -173,9 +196,9 @@ export const SignUp = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-text-secondary">
+            <p className="text-text-tertiary">
               ¿Ya tienes cuenta?{' '}
-              <Link to="/login" className="text-success hover:text-success/80 transition-colors font-medium">
+              <Link to="/login" className="text-white hover:text-white/80 transition-colors font-medium">
                 Inicia sesión
               </Link>
             </p>
@@ -185,3 +208,5 @@ export const SignUp = () => {
     </div>
   )
 }
+
+export default SignUp
