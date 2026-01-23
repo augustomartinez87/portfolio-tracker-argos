@@ -1,146 +1,134 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * LorenzAttractorBackground - Atractor de Lorenz con Canvas
  *
- * Sistema de ecuaciones diferenciales:
- * dx/dt = σ(y - x)
- * dy/dt = x(ρ - z) - y
- * dz/dt = xy - βz
- *
- * Parámetros clásicos: σ=10, ρ=28, β=8/3
- *
- * === TIMING (líneas 28-29) ===
- * - DRAW_DURATION = 20000ms (20 segundos de dibujo)
- * - PAUSE_DURATION = 20000ms (20 segundos de pausa)
- *
- * === COLORES (líneas 248-249 para central, 291-292 para chiquitas) ===
- * - Central: alterna entre #ffffff (blanco) y #000000 (negro)
- * - Chiquitas: alterna entre #ffffff, #000000 y #888888 (gris)
- *
- * === COLISIONES (líneas 140-142) ===
- * - Distancia mínima de central: 400px
- * - Distancia mínima entre chiquitas: 250px
+ * ============================================================
+ * PARÁMETROS AJUSTABLES
+ * ============================================================
  */
+
+// Parámetros del sistema de Lorenz (clásicos de Edward Lorenz)
+const SIGMA = 10;
+const RHO = 28;
+const BETA = 8 / 3;
+
+// === MARIPOSA CENTRAL (estática, visible desde el inicio) ===
+const CENTRAL_DT = 0.005;           // Paso de integración
+const CENTRAL_STEPS = 12000;        // Puntos de la trayectoria
+const CENTRAL_SCALE = 12;           // Escala de proyección
+const CENTRAL_LINE_WIDTH = 2.5;     // Grosor de línea
+const CENTRAL_COLOR = '#ffffff';    // Color blanco puro
+const CENTRAL_OFFSET_Y_RATIO = 0.28; // Posición vertical (0.28 = 28% desde arriba)
+
+// === MARIPOSAS PEQUEÑAS (animadas, posiciones random) ===
+const SMALL_COUNT_DESKTOP = 12;     // Cantidad en desktop
+const SMALL_COUNT_MOBILE = 6;       // Cantidad en mobile
+const SMALL_SCALE_MIN = 0.30;       // Escala mínima (30% de central)
+const SMALL_SCALE_MAX = 0.45;       // Escala máxima (45% de central)
+const SMALL_DT = 0.008;             // dt más grande = dibujo más rápido
+const SMALL_LINE_WIDTH = 1.2;       // Grosor de línea
+const SMALL_OPACITY_MIN = 0.3;      // Opacidad mínima
+const SMALL_OPACITY_MAX = 0.6;      // Opacidad máxima
+const SMALL_POINTS_PER_FRAME = 8;   // Puntos dibujados por frame
+
+// === DISTANCIAS MÍNIMAS (evitar superposición) ===
+const MIN_DIST_FROM_CENTER = 500;   // Distancia mínima de la central (px)
+const MIN_DIST_BETWEEN_SMALL = 300; // Distancia mínima entre chiquitas (px)
+const MAX_PLACEMENT_ATTEMPTS = 100; // Intentos máximos para colocar
+
+// === FADE DEL FONDO (trails elegantes) ===
+const BACKGROUND_FADE = 'rgba(10, 10, 10, 0.04)';
+
+/**
+ * Genera los puntos de la trayectoria del atractor de Lorenz
+ * usando integración de Euler
+ */
+const generateLorenzTrajectory = (steps, dt) => {
+  const points = [];
+  // Condiciones iniciales (cerca del atractor)
+  let x = 0.1;
+  let y = 0;
+  let z = 0;
+
+  for (let i = 0; i < steps; i++) {
+    // Ecuaciones diferenciales de Lorenz
+    const dx = SIGMA * (y - x) * dt;
+    const dy = (x * (RHO - z) - y) * dt;
+    const dz = (x * y - BETA * z) * dt;
+
+    x += dx;
+    y += dy;
+    z += dz;
+
+    points.push({ x, y, z });
+  }
+
+  return points;
+};
+
+/**
+ * Proyecta punto 3D a 2D con perspectiva isométrica
+ * screenX = x * scale
+ * screenY = y * scale + z * zFactor (da profundidad)
+ */
+const projectTo2D = (point, scale, zFactor = 0.3) => {
+  return {
+    x: point.x * scale,
+    y: point.y * scale + point.z * zFactor * scale * 0.5
+  };
+};
+
+/**
+ * Calcula distancia euclidiana entre dos puntos
+ */
+const distance = (p1, p2) => Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+/**
+ * Genera posición aleatoria evitando superposición
+ */
+const generateSafePosition = (
+  width,
+  height,
+  centerPos,
+  existingPositions,
+  minDistFromCenter,
+  minDistBetween
+) => {
+  const padding = 150;
+
+  for (let attempt = 0; attempt < MAX_PLACEMENT_ATTEMPTS; attempt++) {
+    const candidate = {
+      x: padding + Math.random() * (width - 2 * padding),
+      y: padding + Math.random() * (height - 2 * padding)
+    };
+
+    // Verificar distancia de la mariposa central
+    if (distance(candidate, centerPos) < minDistFromCenter) {
+      continue;
+    }
+
+    // Verificar distancia de otras mariposas pequeñas
+    let tooClose = false;
+    for (const pos of existingPositions) {
+      if (distance(candidate, pos) < minDistBetween) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (!tooClose) {
+      return candidate;
+    }
+  }
+
+  // Si no encuentra posición válida después de X intentos, retorna null
+  return null;
+};
 
 const LorenzAttractorBackground = () => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
-
-  // Parámetros del Atractor de Lorenz
-  const sigma = 10;
-  const rho = 28;
-  const beta = 8 / 3;
-  const dt = 0.005;
-
-  // =====================================================
-  // TIMING: 20 segundos de dibujo + 20 segundos de pausa
-  // =====================================================
-  const DRAW_DURATION = 20000; // 20 segundos en ms
-  const PAUSE_DURATION = 20000; // 20 segundos en ms
-
-  // =====================================================
-  // COLISIONES: Distancias mínimas
-  // =====================================================
-  const MIN_DISTANCE_FROM_CENTER = 400; // px desde la central
-  const MIN_DISTANCE_BETWEEN_SMALL = 250; // px entre chiquitas
-
-  // Generar puntos del atractor de Lorenz
-  const generateLorenzPoints = useCallback((steps = 15000) => {
-    const points = [];
-    let x = 0.1;
-    let y = 0;
-    let z = 0;
-
-    for (let i = 0; i < steps; i++) {
-      const dx = sigma * (y - x) * dt;
-      const dy = (x * (rho - z) - y) * dt;
-      const dz = (x * y - beta * z) * dt;
-
-      x += dx;
-      y += dy;
-      z += dz;
-
-      points.push({ x, y, z });
-    }
-
-    return points;
-  }, []);
-
-  // Normalizar puntos al canvas con posición y escala específicas
-  const normalizePointsWithTransform = useCallback((points, centerX, centerY, scale, width, height) => {
-    const allX = points.map(p => p.x);
-    const allY = points.map(p => p.z);
-
-    const minX = Math.min(...allX);
-    const maxX = Math.max(...allX);
-    const minY = Math.min(...allY);
-    const maxY = Math.max(...allY);
-
-    const rangeX = maxX - minX;
-    const rangeY = maxY - minY;
-
-    // Tamaño base de la mariposa
-    const baseSize = Math.min(width, height) * 0.8 * scale;
-
-    return points.map(p => ({
-      x: centerX + ((p.x - minX) / rangeX - 0.5) * baseSize,
-      y: centerY + ((p.z - minY) / rangeY - 0.5) * baseSize
-    }));
-  }, []);
-
-  // Calcular distancia entre dos puntos
-  const distance = (p1, p2) => {
-    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-  };
-
-  // =====================================================
-  // EVITAR SUPERPOSICIÓN: Generar posición random
-  // =====================================================
-  const generateRandomPosition = useCallback((width, height, existingPositions, minDistanceBetween, centerPosition, minDistanceFromCenter) => {
-    const padding = 150;
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    while (attempts < maxAttempts) {
-      const x = padding + Math.random() * (width - 2 * padding);
-      const y = padding + Math.random() * (height - 2 * padding);
-      const candidate = { x, y };
-
-      let valid = true;
-
-      // Chequear distancia con la mariposa central (distancia estricta)
-      if (centerPosition) {
-        const distToCenter = distance(candidate, centerPosition);
-        if (distToCenter < minDistanceFromCenter) {
-          valid = false;
-        }
-      }
-
-      // Chequear distancia con otras mariposas chiquitas
-      if (valid) {
-        for (const pos of existingPositions) {
-          const dist = distance(candidate, pos);
-          if (dist < minDistanceBetween) {
-            valid = false;
-            break;
-          }
-        }
-      }
-
-      if (valid) {
-        return candidate;
-      }
-
-      attempts++;
-    }
-
-    // Si no encuentra posición válida, posición en esquina
-    return {
-      x: padding + Math.random() * 100,
-      y: padding + Math.random() * 100
-    };
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -150,215 +138,197 @@ const LorenzAttractorBackground = () => {
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
 
-    // Generar puntos del atractor de Lorenz (15000 puntos)
-    const allPoints = generateLorenzPoints(15000);
+    // Detectar si es mobile para ajustar cantidad
+    const isMobile = width < 768;
+    const smallCount = isMobile ? SMALL_COUNT_MOBILE : SMALL_COUNT_DESKTOP;
 
-    // Centro de la mariposa principal (centro de pantalla)
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const centralPosition = { x: centerX, y: centerY };
+    // ============================================================
+    // MARIPOSA CENTRAL - Estática, visible desde el inicio
+    // ============================================================
 
-    // Puntos para mariposa central (escala 1.0 = tamaño completo)
-    const centralPoints = normalizePointsWithTransform(allPoints, centerX, centerY, 1.0, width, height);
+    // Posición central (arriba del título)
+    const centralPos = {
+      x: width / 2,
+      y: height * CENTRAL_OFFSET_Y_RATIO
+    };
 
-    // =====================================================
-    // MARIPOSAS CHICAS: Generar posiciones sin superposición
-    // =====================================================
-    const numSmallButterflies = 6;
-    const smallButterflyPositions = [];
+    // Generar trayectoria completa
+    const centralTrajectory = generateLorenzTrajectory(CENTRAL_STEPS, CENTRAL_DT);
 
-    for (let i = 0; i < numSmallButterflies; i++) {
-      const pos = generateRandomPosition(
-        width,
-        height,
-        smallButterflyPositions,
-        MIN_DISTANCE_BETWEEN_SMALL,  // 250px entre chiquitas
-        centralPosition,
-        MIN_DISTANCE_FROM_CENTER     // 400px de la central
-      );
-      smallButterflyPositions.push(pos);
-    }
-
-    // Crear datos para cada mariposa chiquita
-    const smallButterfliesData = smallButterflyPositions.map((pos, idx) => {
-      // Escala random entre 0.15 y 0.25 (pequeñas)
-      const scale = 0.15 + Math.random() * 0.1;
-      const points = normalizePointsWithTransform(allPoints, pos.x, pos.y, scale, width, height);
-
+    // Proyectar todos los puntos a 2D y centrar
+    const centralPoints2D = centralTrajectory.map(p => {
+      const projected = projectTo2D(p, CENTRAL_SCALE);
       return {
-        points,
-        position: pos
+        x: centralPos.x + projected.x,
+        y: centralPos.y + projected.y
       };
     });
 
-    // =====================================================
-    // ESTADO MARIPOSA CENTRAL
-    // =====================================================
-    const centralState = {
-      drawIndex: 0,
-      phase: 'drawing', // 'drawing' | 'pause' | 'reset'
-      color: '#ffffff', // Empieza blanco, alterna a negro
-      pauseStartTime: 0,
-      drawStartTime: performance.now()
+    // ============================================================
+    // MARIPOSAS PEQUEÑAS - Posiciones aleatorias sin superposición
+    // ============================================================
+
+    const smallButterflies = [];
+    const usedPositions = [];
+
+    for (let i = 0; i < smallCount; i++) {
+      // Intentar encontrar posición válida
+      const pos = generateSafePosition(
+        width,
+        height,
+        centralPos,
+        usedPositions,
+        MIN_DIST_FROM_CENTER,
+        MIN_DIST_BETWEEN_SMALL
+      );
+
+      // Si no encuentra posición, saltar esta mariposa
+      if (!pos) continue;
+
+      usedPositions.push(pos);
+
+      // Escala aleatoria entre min y max
+      const scale = CENTRAL_SCALE * (SMALL_SCALE_MIN + Math.random() * (SMALL_SCALE_MAX - SMALL_SCALE_MIN));
+
+      // Opacidad aleatoria
+      const opacity = SMALL_OPACITY_MIN + Math.random() * (SMALL_OPACITY_MAX - SMALL_OPACITY_MIN);
+
+      // Generar trayectoria independiente
+      const trajectory = generateLorenzTrajectory(CENTRAL_STEPS, SMALL_DT);
+
+      // Proyectar puntos
+      const points2D = trajectory.map(p => {
+        const projected = projectTo2D(p, scale);
+        return {
+          x: pos.x + projected.x,
+          y: pos.y + projected.y
+        };
+      });
+
+      smallButterflies.push({
+        points: points2D,
+        opacity,
+        drawIndex: 0,
+        // Offset de inicio aleatorio para que no empiecen todas juntas
+        startDelay: Math.random() * 3000
+      });
+    }
+
+    // ============================================================
+    // FUNCIÓN DE DIBUJO - Mariposa central (una sola vez)
+    // ============================================================
+
+    const drawCentralButterfly = () => {
+      ctx.beginPath();
+      ctx.moveTo(centralPoints2D[0].x, centralPoints2D[0].y);
+
+      for (let i = 1; i < centralPoints2D.length; i++) {
+        ctx.lineTo(centralPoints2D[i].x, centralPoints2D[i].y);
+      }
+
+      ctx.strokeStyle = CENTRAL_COLOR;
+      ctx.lineWidth = CENTRAL_LINE_WIDTH;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
     };
 
-    // Calcular puntos por frame para que dure exactamente 20 segundos
-    // Asumiendo ~60fps = ~1200 frames en 20 segundos
-    const framesIn20Seconds = (DRAW_DURATION / 1000) * 60;
-    const pointsPerFrame = Math.ceil(centralPoints.length / framesIn20Seconds);
+    // ============================================================
+    // LOOP DE ANIMACIÓN
+    // ============================================================
 
-    // =====================================================
-    // ESTADO MARIPOSAS CHIQUITAS (ciclo independiente)
-    // =====================================================
-    const smallButterflyStates = smallButterfliesData.map((_, idx) => ({
-      drawIndex: 0,
-      phase: 'drawing',
-      color: '#ffffff',
-      pauseStartTime: 0,
-      drawStartTime: performance.now() + Math.random() * 8000, // Offset aleatorio 0-8s
-      // Timing más corto para las chiquitas
-      drawDuration: 10000 + Math.random() * 5000,  // 10-15 segundos de dibujo
-      pauseDuration: 8000 + Math.random() * 7000   // 8-15 segundos de pausa
-    }));
+    let startTime = performance.now();
+    let centralDrawn = false;
 
-    // Calcular puntos por frame para cada chiquita
-    const smallPointsPerFrame = smallButterfliesData.map((butterfly, idx) => {
-      const state = smallButterflyStates[idx];
-      const framesForDraw = (state.drawDuration / 1000) * 60;
-      return Math.ceil(butterfly.points.length / framesForDraw);
-    });
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
 
-    // Manejo de redimensionamiento
+      // Aplicar fade suave al fondo (crea trails elegantes)
+      ctx.fillStyle = BACKGROUND_FADE;
+      ctx.fillRect(0, 0, width, height);
+
+      // Dibujar mariposa central (solo necesita dibujarse una vez
+      // pero la redibujamos para mantenerla visible con el fade)
+      if (!centralDrawn || elapsed % 500 < 20) {
+        drawCentralButterfly();
+        centralDrawn = true;
+      }
+
+      // ============================================================
+      // ANIMAR MARIPOSAS PEQUEÑAS
+      // ============================================================
+
+      smallButterflies.forEach((butterfly) => {
+        // Esperar delay inicial
+        if (elapsed < butterfly.startDelay) return;
+
+        const { points, opacity, drawIndex } = butterfly;
+
+        // Calcular nuevo índice
+        const newIndex = Math.min(drawIndex + SMALL_POINTS_PER_FRAME, points.length);
+
+        if (drawIndex < points.length) {
+          // Dibujar segmento actual
+          ctx.beginPath();
+          ctx.moveTo(points[drawIndex].x, points[drawIndex].y);
+
+          for (let i = drawIndex + 1; i < newIndex; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+
+          ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+          ctx.lineWidth = SMALL_LINE_WIDTH;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          butterfly.drawIndex = newIndex;
+        }
+
+        // Si terminó de dibujar, reiniciar después de una pausa
+        if (butterfly.drawIndex >= points.length) {
+          // Reiniciar con nuevo delay aleatorio
+          butterfly.drawIndex = 0;
+          butterfly.startDelay = elapsed + 5000 + Math.random() * 10000;
+        }
+      });
+
+      // Redibujar la central periódicamente para que no se desvanezca
+      if (elapsed % 100 < 20) {
+        drawCentralButterfly();
+      }
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    // Limpiar canvas inicial (negro absoluto)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, width, height);
+
+    // Dibujar mariposa central inmediatamente
+    drawCentralButterfly();
+
+    // Iniciar animación
+    animationRef.current = requestAnimationFrame(animate);
+
+    // ============================================================
+    // MANEJO DE RESIZE
+    // ============================================================
+
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+
+      // Limpiar y redibujar central
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+      drawCentralButterfly();
     };
 
     window.addEventListener('resize', handleResize);
 
-    // Función de renderizado principal
-    const render = (currentTime) => {
-      // Fade trail effect suave para trails elegantes
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.03)';
-      ctx.fillRect(0, 0, width, height);
-
-      // =====================================================
-      // DIBUJAR MARIPOSA CENTRAL
-      // =====================================================
-      const cs = centralState;
-
-      if (cs.phase === 'drawing') {
-        // Dibujar puntos progresivamente
-        const endIndex = Math.min(cs.drawIndex + pointsPerFrame, centralPoints.length);
-
-        if (cs.drawIndex < endIndex) {
-          ctx.beginPath();
-          ctx.moveTo(centralPoints[cs.drawIndex].x, centralPoints[cs.drawIndex].y);
-
-          for (let i = cs.drawIndex + 1; i < endIndex; i++) {
-            ctx.lineTo(centralPoints[i].x, centralPoints[i].y);
-          }
-
-          ctx.strokeStyle = cs.color;
-          ctx.lineWidth = 0.8;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.stroke();
-
-          cs.drawIndex = endIndex;
-        }
-
-        // Verificar si terminó el dibujo (~20 segundos)
-        if (cs.drawIndex >= centralPoints.length) {
-          cs.phase = 'pause';
-          cs.pauseStartTime = currentTime;
-        }
-      } else if (cs.phase === 'pause') {
-        // =====================================================
-        // PAUSA: Mantener visible 20 segundos
-        // =====================================================
-        if (currentTime - cs.pauseStartTime >= PAUSE_DURATION) {
-          cs.phase = 'reset';
-        }
-      } else if (cs.phase === 'reset') {
-        // =====================================================
-        // RESET: Alternar color y reiniciar
-        // =====================================================
-        // Fade más fuerte para limpiar antes de redibujar
-        ctx.fillStyle = 'rgba(10, 10, 10, 0.2)';
-        ctx.fillRect(0, 0, width, height);
-
-        // ALTERNAR COLOR: blanco <-> negro
-        cs.color = cs.color === '#ffffff' ? '#000000' : '#ffffff';
-
-        cs.drawIndex = 0;
-        cs.phase = 'drawing';
-        cs.drawStartTime = currentTime;
-      }
-
-      // =====================================================
-      // DIBUJAR MARIPOSAS CHIQUITAS
-      // =====================================================
-      smallButterfliesData.forEach((butterfly, idx) => {
-        const state = smallButterflyStates[idx];
-        const points = butterfly.points;
-        const ppf = smallPointsPerFrame[idx];
-
-        // Esperar offset inicial
-        if (currentTime < state.drawStartTime) {
-          return;
-        }
-
-        if (state.phase === 'drawing') {
-          const endIndex = Math.min(state.drawIndex + ppf, points.length);
-
-          if (state.drawIndex < endIndex) {
-            ctx.beginPath();
-            ctx.moveTo(points[state.drawIndex].x, points[state.drawIndex].y);
-
-            for (let i = state.drawIndex + 1; i < endIndex; i++) {
-              ctx.lineTo(points[i].x, points[i].y);
-            }
-
-            ctx.strokeStyle = state.color;
-            ctx.lineWidth = 0.4;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-
-            state.drawIndex = endIndex;
-          }
-
-          if (state.drawIndex >= points.length) {
-            state.phase = 'pause';
-            state.pauseStartTime = currentTime;
-          }
-        } else if (state.phase === 'pause') {
-          if (currentTime - state.pauseStartTime >= state.pauseDuration) {
-            state.phase = 'reset';
-          }
-        } else if (state.phase === 'reset') {
-          // =====================================================
-          // ALTERNAR COLOR CHIQUITAS: blanco -> negro -> gris
-          // =====================================================
-          if (state.color === '#ffffff') {
-            state.color = '#000000';
-          } else if (state.color === '#000000') {
-            state.color = '#666666';
-          } else {
-            state.color = '#ffffff';
-          }
-
-          state.drawIndex = 0;
-          state.phase = 'drawing';
-          state.drawStartTime = currentTime;
-        }
-      });
-
-      animationRef.current = requestAnimationFrame(render);
-    };
-
-    // Iniciar animación
-    animationRef.current = requestAnimationFrame(render);
+    // ============================================================
+    // CLEANUP
+    // ============================================================
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -366,14 +336,14 @@ const LorenzAttractorBackground = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [generateLorenzPoints, normalizePointsWithTransform, generateRandomPosition]);
+  }, []);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
       style={{
-        background: 'transparent',
+        background: '#0a0a0a',
         zIndex: 0
       }}
     />
