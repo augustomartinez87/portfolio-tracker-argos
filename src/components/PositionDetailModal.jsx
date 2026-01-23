@@ -122,7 +122,11 @@ export default function PositionDetailModal({ open, onClose, position, trades })
         try {
           attempts++;
           const fromDate = new Date();
-          fromDate.setDate(fromDate.getDate() - selectedDays);
+          if (selectedDays !== 99999) {
+            fromDate.setDate(fromDate.getDate() - selectedDays);
+          } else {
+            fromDate.setFullYear(fromDate.getFullYear() - 2);
+          }
           const dateStr = fromDate.toISOString().split('T')[0];
 
           const endpoint = data912.getHistoricalEndpoint(position.ticker, position.panel);
@@ -165,12 +169,16 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             return dateA.getTime() - dateB.getTime();
           });
 
-          const cutoffTime = Date.now() - (selectedDays * 24 * 60 * 60 * 1000);
+          const cutoffTime = selectedDays !== 99999 
+            ? Date.now() - (selectedDays * 24 * 60 * 60 * 1000)
+            : 0;
           
-          const filteredData = sortedData.filter(item => {
-            const itemTime = new Date(item.date).getTime();
-            return itemTime >= cutoffTime;
-          });
+          const filteredData = selectedDays !== 99999 
+            ? sortedData.filter(item => {
+                const itemTime = new Date(item.date).getTime();
+                return itemTime >= cutoffTime;
+              })
+            : sortedData;
 
           setHistorical(filteredData);
           setLoading(false);
@@ -420,7 +428,10 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </h3>
                   {chartData.length > 0 && (
                     <p className="text-xs text-text-tertiary mt-1">
-                      Mostrando {chartData.length} días de datos
+                      {selectedDays === 99999 
+                        ? `Mostrando todos los datos disponibles (${chartData.length} registros)`
+                        : `Mostrando ${chartData.length} días de datos`
+                      }
                     </p>
                   )}
                 </div>
@@ -431,7 +442,13 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                     Período:
                   </span>
                   <div className="flex gap-1">
-                    {[30, 60, 90, 120, 365].map(days => (
+                    {[
+                      { days: 30, label: '30D' },
+                      { days: 90, label: '90D' },
+                      { days: 180, label: '6M' },
+                      { days: 365, label: '1Y' },
+                      { days: 99999, label: 'MAX' }
+                    ].map(({ days, label }) => (
                       <button
                         key={days}
                         onClick={() => setSelectedDays(days)}
@@ -441,7 +458,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                             : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
                         }`}
                       >
-                        {days === 365 ? '1A' : `${days}d`}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -458,7 +475,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                       <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
                     </div>
                     <div>
-                      <p className="text-text-tertiary text-xs">Variación {selectedDays}d</p>
+                      <p className="text-text-tertiary text-xs">Variación {selectedDays === 99999 ? 'MAX' : `${selectedDays}d`}</p>
                       <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
                         {formatPercentage(stats.change)}
                       </p>
