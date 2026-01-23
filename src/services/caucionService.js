@@ -11,10 +11,16 @@ export const caucionService = {
 
       if (uploadError) throw uploadError;
 
-      // 2. Obtener URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('caucion-pdfs')
-        .getPublicUrl(filePath);
+      // 2. Obtener URL pública robusta
+      let pdfUrl = null;
+      try {
+        const { data: urlData } = supabase.storage
+          .from('caucion-pdfs')
+          .getPublicUrl(filePath);
+        pdfUrl = urlData?.publicURL ?? urlData?.publicUrl ?? null;
+      } catch (e) {
+        pdfUrl = null;
+      }
 
       // 3. Llamar API Vercel para parsing
       const response = await fetch('/api/parse-caucion', {
@@ -51,7 +57,7 @@ export const caucionService = {
         success: true,
         filename: file.name,
         pdf_storage_path: data.path,
-        pdf_url: publicUrl,
+        pdf_url: pdfUrl,
         operaciones: result.operaciones,
         total_cierres: result.total_operaciones,
         message: result.message

@@ -1,19 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
 import { createRequire } from 'module';
 
-// Lazy loading de pdf-parse para evitar errores en inicialización del módulo
+// Robust lazy loading de pdf-parse (solo en Node) para evitar errores en ejecución
 let pdfParse: any = null;
-function getPdfParse() {
+async function getPdfParse() {
   if (!pdfParse) {
     try {
-      const require = createRequire(import.meta.url);
-      pdfParse = require('pdf-parse');
+      // Evitar ejecución en navegador
+      if (typeof window !== 'undefined') {
+        throw new Error('pdf-parse cannot run in the browser');
+      }
+      const mod: any = await import('pdf-parse');
+      pdfParse = (mod && mod.default) ? mod.default : mod;
     } catch (error) {
       console.error('Error loading pdf-parse:', error);
       throw new Error('Failed to load pdf-parse module');
     }
   }
   return pdfParse;
+}
+
+// Utilidad para convertir Blob/Blob-like a Buffer (funciona en Node y navegador cuando se aplica correctamente)
+async function blobToBuffer(blob: any): Promise<Buffer> {
+  if (!blob) throw new Error('No blob provided for PDF');
+  if (Buffer.isBuffer(blob)) return blob;
+  // Blob en navegador
+  if (typeof blob.arrayBuffer === 'function') {
+    const ab = await blob.arrayBuffer();
+    return Buffer.from(ab);
+  }
+  // Uint8Array o ArrayBuffer directo
+  if (blob instanceof Uint8Array) return Buffer.from(blob);
+  if (blob instanceof ArrayBuffer) return Buffer.from(blob);
+  throw new Error('Unsupported blob type for PDF data');
 }
 
 // Lazy initialization de Supabase para validar variables de entorno en runtime
@@ -197,17 +216,25 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // Convertir Blob a Buffer para pdf-parse
-    console.log('Converting Blob to Buffer...');
-    const arrayBuffer = await pdfBlob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Obtener URL pública robusta del PDF (si disponible)
+    let pdfUrl: string | null = null;
+    try {
+      const { data: urlData } = supabase.storage.from('caucion-pdfs').getPublicUrl(pdfPath);
+      pdfUrl = urlData?.publicURL ?? urlData?.publicUrl ?? null;
+    } catch (e) {
+      pdfUrl = null;
+    }
+
+    // Convertir Blob a Buffer para pdf-parse (robusto)
+    console.log('Converting PDF blob to Buffer...');
+    const buffer = await blobToBuffer(pdfBlob);
     console.log(`Buffer created, size: ${buffer.length} bytes`);
 
     // Parsear PDF (lazy load pdf-parse)
     console.log('Loading pdf-parse module...');
-    let pdfParse;
+    let pdfParseFn: any;
     try {
-      pdfParse = getPdfParse();
+      pdfParseFn = await getPdfParse();
       console.log('pdf-parse loaded successfully');
     } catch (pdfParseError) {
       console.error('Failed to load pdf-parse:', pdfParseError);
@@ -219,7 +246,7 @@ export default async function handler(req: any, res: any) {
     }
     
     console.log('Parsing PDF...');
-    const pdfData = await pdfParse(buffer);
+    const pdfData = await pdfParseFn(buffer);
     const text = pdfData.text;
     console.log(`PDF parsed successfully, text length: ${text.length} characters`);
     
@@ -243,6 +270,7 @@ export default async function handler(req: any, res: any) {
         user_id: userId,
         pdf_filename: pdfPath.split('/').pop(),
         pdf_storage_path: pdfPath,
+        pdf_url: pdfUrl,
         boleto: op.boleto,
         fecha_inicio: fecha_inicio?.toISOString().split('T')[0],
         fecha_fin: fecha_fin?.toISOString().split('T')[0],
