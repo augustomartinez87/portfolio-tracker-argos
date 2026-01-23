@@ -1,4 +1,3 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import pdf from 'pdf-parse';
 import { createClient } from '@supabase/supabase-js';
 
@@ -38,10 +37,21 @@ function calcularDias(fecha_inicio: Date, fecha_fin: Date): number {
   return Math.ceil((fecha_fin.getTime() - fecha_inicio.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-async function parsePDFText(text: string) {
-  const operaciones = [];
+// Definir tipo para operación
+interface Operacion {
+  tipo: string;
+  fecha_liquidacion: string | null;
+  capital: number;
+  monto_devolver: number;
+  tasa_tna: number;
+  boleto: string | null;
+  raw_text: string;
+}
+
+async function parsePDFText(text: string): Promise<Operacion[]> {
+  const operaciones: Operacion[] = [];
   const lines = text.split('\n');
-  let currentOperacion = null;
+  let currentOperacion: Operacion | null = null;
   let state = 'idle';
 
   for (let i = 0; i < lines.length; i++) {
@@ -54,7 +64,7 @@ async function parsePDFText(text: string) {
       }
       currentOperacion = {
         tipo: tipoMatch[1].toLowerCase(),
-        fecha_liquidacion: null as string | null,
+        fecha_liquidacion: null,
         capital: 0,
         monto_devolver: 0,
         tasa_tna: 0,
@@ -117,7 +127,9 @@ async function parsePDFText(text: string) {
     }));
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: any, res: any) {
+  console.log('parse-caucion invoked');
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
