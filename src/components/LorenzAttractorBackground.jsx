@@ -247,7 +247,7 @@ const LorenzAttractorBackground = () => {
         .lorenz-path-main {
           stroke-dasharray: 50000;
           stroke-dashoffset: 50000;
-          animation: draw-lorenz-main 12s ease-in-out infinite;
+          animation: draw-lorenz-main 25s ease-in-out infinite;
         }
 
         .lorenz-path-random {
