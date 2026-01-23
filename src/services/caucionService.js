@@ -27,12 +27,14 @@ export const caucionService = {
       });
 
       if (!response.ok) {
+        // Clonar la respuesta antes de leer el body para evitar "body stream already read"
+        const clonedResponse = response.clone();
         let errorData;
         try {
           errorData = await response.json();
         } catch (e) {
-          // Si la respuesta no es JSON válido, usar el texto de la respuesta
-          const text = await response.text();
+          // Si response.json() falló, usar el texto de la respuesta clonada
+          const text = await clonedResponse.text();
           throw new Error(`Error en parsing: ${text || response.statusText}`);
         }
         throw new Error(errorData.error || 'Error en parsing');
