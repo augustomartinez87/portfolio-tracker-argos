@@ -484,7 +484,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                 <div className="text-center">
                   <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
                   <p className="text-amber-300 font-medium">Precio histórico no disponible</p>
-                  <p className="text-amber-400 text-sm mt-2">Este {position.ticker} no tiene datos históricos en data912.com</p>
+                  <p className="text-amber-400 text-sm mt-2">El ticker {position.ticker} no tiene datos históricos en data912.com</p>
                 </div>
               </div>
             ) : (!chartData || chartData.length === 0) ? (
@@ -492,7 +492,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                 <div className="text-center">
                   <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
                   <p className="text-amber-300 font-medium">Precio histórico no disponible</p>
-                  <p className="text-amber-400 text-sm mt-2">Este {position.ticker} no tiene datos históricos en data912.com</p>
+                  <p className="text-amber-400 text-sm mt-2">El ticker {position.ticker} no tiene datos históricos en data912.com</p>
                 </div>
               </div>
             ) : (
