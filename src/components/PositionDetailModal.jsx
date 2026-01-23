@@ -479,14 +479,6 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                 {error}
               </div>
-            ) : isBonoPesos(position.ticker) && (!chartData || chartData.length === 0) ? (
-              <div className="flex justify-center items-center h-72">
-                <div className="text-center">
-                  <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-                  <p className="text-amber-300 font-medium">Precio histórico no disponible</p>
-                  <p className="text-amber-400 text-sm mt-2">El ticker {position.ticker} no tiene datos históricos en data912.com</p>
-                </div>
-              </div>
             ) : (!chartData || chartData.length === 0) ? (
               <div className="flex justify-center items-center h-72">
                 <div className="text-center">
