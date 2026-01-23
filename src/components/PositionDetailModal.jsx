@@ -463,15 +463,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                 )}
             </div>
 
-            {isPositionUnavailable ? (
-              <div className="flex justify-center items-center h-72">
-                <div className="text-center">
-                  <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-                  <p className="text-amber-300 font-medium">Gráfico no disponible</p>
-                  <p className="text-amber-400 text-sm mt-2">Datos históricos no encontrados para este ticker</p>
-                </div>
-              </div>
-            ) : loading ? (
+            {loading ? (
               <div className="flex justify-center items-center h-72">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
@@ -479,7 +471,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                 {error}
               </div>
-            ) : (!chartData || chartData.length === 0) ? (
+            ) : isPositionUnavailable || !chartData || chartData.length === 0 ? (
               <div className="flex justify-center items-center h-72">
                 <div className="text-center">
                   <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
