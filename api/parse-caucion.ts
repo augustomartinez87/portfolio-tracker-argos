@@ -10,25 +10,15 @@ async function getPdfParse() {
       if (typeof window !== 'undefined') {
         throw new Error('pdf-parse cannot run in the browser');
       }
-      // First, try require (CommonJS) as fallback for environments that support it
-      try {
-        const req = createRequire(import.meta.url);
-        pdfParse = req('pdf-parse');
-      } catch (e1) {
-        // Fallback to dynamic import
-        const mod: any = await import('pdf-parse');
-        pdfParse = (mod && mod.default) ? mod.default : mod;
-      }
+      // Carga simple por dynamic import (no usar require para evitar problemas de compatibilidad)
+      const mod: any = await import('pdf-parse');
+      pdfParse = (mod?.default) ? mod.default : mod;
     } catch (error) {
-      // Enriquecemos el log para diagnosticar mejor la causa del fallo en 0x-parse load
-      console.error('Error loading pdf-parse:', {
+      // Logs detallados para diagnosticar el fallo de carga
+      console.error('Error loading pdf-parse via dynamic import:', {
         name: error?.name,
         message: error?.message,
-        stack: error?.stack,
-        env: {
-          nodeVersion: process?.version,
-        },
-        runtime: typeof window === 'undefined' ? 'server' : 'browser'
+        stack: error?.stack
       });
       throw new Error('Failed to load pdf-parse module');
     }
