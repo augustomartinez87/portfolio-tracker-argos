@@ -168,8 +168,9 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           </span>
         </div>
       )}
-      <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full min-w-[900px]">
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto min-h-0">
+          <table className="w-full min-w-[900px]">
           <thead className="sticky top-0 z-10 bg-background-secondary">
             <tr className="bg-background-tertiary/30 border-b border-border-primary">
               <th
@@ -277,8 +278,9 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
             ))}
           </tbody>
         </table>
+        </div>
         {positionsWithGroup.length > 0 && (
-          <div className="flex-shrink-0 mt-2 mb-2 mx-2">
+          <div className="flex-shrink-0 border-t border-border-primary bg-background-secondary p-4">
             <div className="flex items-center bg-background-secondary border border-border-primary rounded-lg p-4 shadow-md">
               <div className={`${paddingX} ${paddingY} text-text-primary pr-8 w-32`}>
                 <span className="font-bold text-lg text-success">Total</span>
