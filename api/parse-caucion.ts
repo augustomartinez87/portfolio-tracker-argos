@@ -41,6 +41,22 @@ async function blobToBuffer(blob: any): Promise<Buffer> {
   throw new Error('Unsupported blob type for PDF data');
 }
 
+// Diagnostic helper: prueba rápida de carga de pdf-parse en runtime
+async function diagnosticPdfParseLoad(): Promise<{ ok: boolean; error?: string; name?: string; message?: string; stack?: string }> {
+  try {
+    const loader = await getPdfParse();
+    // Si llega aquí, carga fue OK
+    return { ok: true };
+  } catch (err: any) {
+    return {
+      ok: false,
+      error: err?.name,
+      message: err?.message,
+      stack: err?.stack
+    };
+  }
+}
+
 // Lazy initialization de Supabase para validar variables de entorno en runtime
 function getSupabaseClient() {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -169,6 +185,25 @@ async function parsePDFText(text: string): Promise<Operacion[]> {
 }
 
 export default async function handler(req: any, res: any) {
+  // Diagnostic route: /api/parse-caucion?debug=env
+  try {
+    const reqUrl = (req as any).url as string | undefined;
+    if (req.method === 'GET' && reqUrl) {
+      const urlObj = new URL(reqUrl, 'http://localhost');
+      const debug = urlObj.searchParams.get('debug');
+      if (debug === 'env') {
+        const pdfParseStatus = await diagnosticPdfParseLoad();
+        const hasEnv = !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+        return res.status(200).json({
+          nodeVersion: process.version,
+          hasEnv,
+          pdfParseLoad: pdfParseStatus
+        });
+      }
+    }
+  } catch (e) {
+    // ignore diagnostic route errors, fall back to normal handling
+  }
   console.log('parse-caucion invoked', {
     method: req.method,
     timestamp: new Date().toISOString()
