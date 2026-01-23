@@ -311,8 +311,11 @@ const LorenzAttractorBackground = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 pointer-events-none"
-      style={{ background: '#1a1a1a' }}
+      className="fixed inset-0 pointer-events-none"
+      style={{ 
+        background: 'transparent',
+        zIndex: -10
+      }}
     />
   );
 };

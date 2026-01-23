@@ -30,7 +30,7 @@ export const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0A0A0A]">
       <LorenzAttractorBackground />
 
       <div className="w-full max-w-md px-4 relative z-10">
