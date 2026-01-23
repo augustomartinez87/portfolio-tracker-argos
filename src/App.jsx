@@ -8,6 +8,7 @@ import { SignUp } from './pages/SignUp'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
+import Spread from './pages/Spread'
 
 // Configuración de React Query
 const queryClient = new QueryClient({
@@ -39,6 +40,17 @@ function App() {
                 <ProtectedRoute>
                   <PortfolioProvider>
                     <Dashboard />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/spread"
+              element={
+                <ProtectedRoute>
+                  <PortfolioProvider>
+                    <Spread />
                   </PortfolioProvider>
                 </ProtectedRoute>
               }

@@ -1,178 +1,267 @@
 import { useMemo } from 'react';
 
 /**
- * BackgroundButterflies - Mariposas decorativas de fondo
+ * BackgroundButterflies - Mariposas decorativas estilo wireframe/paramétrico
  *
- * Genera mariposas estilizadas usando curvas de Bézier
- * distribuidas alrededor del login con variaciones en:
- * - Tamaño (scale)
- * - Rotación
- * - Opacidad
- * - Posición
+ * Anatomía de cada mariposa:
+ * - Alas superiores: 6 líneas concéntricas, forma ovalada/almendrada
+ * - Alas inferiores: 5 líneas concéntricas, más pequeñas y redondeadas
+ * - Cuerpo central: línea vertical con punto brillante
+ * - Antenas: curvas delicadas con puntos en las puntas
  */
 
 /**
- * Genera el path SVG de una mariposa usando curvas de Bézier
- * Diseño simétrico con dos alas superiores e inferiores
+ * Genera líneas concéntricas para un ala
+ * Cada línea es progresivamente más pequeña creando efecto de profundidad
  */
-const generateButterflyPath = () => {
-  // Ala superior derecha
-  const upperRight = 'M 0 0 C 15 -20, 40 -25, 50 -15 C 55 -10, 50 -5, 40 0';
-  // Ala inferior derecha
-  const lowerRight = 'M 0 0 C 10 15, 30 30, 45 20 C 50 15, 45 5, 35 0';
-  // Ala superior izquierda (espejada)
-  const upperLeft = 'M 0 0 C -15 -20, -40 -25, -50 -15 C -55 -10, -50 -5, -40 0';
-  // Ala inferior izquierda (espejada)
-  const lowerLeft = 'M 0 0 C -10 15, -30 30, -45 20 C -50 15, -45 5, -35 0';
-  // Cuerpo
-  const body = 'M 0 -8 L 0 15';
-  // Antenas
-  const antennaRight = 'M 0 -8 C 3 -12, 8 -18, 12 -22';
-  const antennaLeft = 'M 0 -8 C -3 -12, -8 -18, -12 -22';
-
-  return {
-    wings: `${upperRight} ${lowerRight} ${upperLeft} ${lowerLeft}`,
-    body: `${body} ${antennaRight} ${antennaLeft}`
-  };
-};
-
-/**
- * Genera posiciones distribuidas en los bordes/esquinas
- * evitando el centro donde está el login
- */
-const generatePositions = (count, avoidCenter = true) => {
-  const positions = [];
-  const centerX = 50; // Porcentaje
-  const centerY = 50;
-  const safeRadius = 35; // Radio seguro alrededor del centro
-
-  // Posiciones predefinidas en los bordes
-  const edgePositions = [
-    { x: 5, y: 10 },    // Esquina superior izquierda
-    { x: 15, y: 5 },
-    { x: 85, y: 8 },    // Esquina superior derecha
-    { x: 92, y: 15 },
-    { x: 8, y: 85 },    // Esquina inferior izquierda
-    { x: 18, y: 92 },
-    { x: 88, y: 88 },   // Esquina inferior derecha
-    { x: 95, y: 75 },
-    { x: 3, y: 45 },    // Lado izquierdo
-    { x: 97, y: 55 },   // Lado derecho
-    { x: 25, y: 3 },    // Lado superior
-    { x: 75, y: 95 },   // Lado inferior
-  ];
-
-  for (let i = 0; i < Math.min(count, edgePositions.length); i++) {
-    const pos = edgePositions[i];
-
-    // Verificar que no esté en el centro
-    if (avoidCenter) {
-      const distFromCenter = Math.hypot(pos.x - centerX, pos.y - centerY);
-      if (distFromCenter < safeRadius) continue;
-    }
-
-    // Añadir variación aleatoria pequeña
-    positions.push({
-      x: pos.x + (Math.random() - 0.5) * 5,
-      y: pos.y + (Math.random() - 0.5) * 5
+const generateWingLines = (baseWidth, baseHeight, numLines) => {
+  const lines = [];
+  for (let i = 0; i < numLines; i++) {
+    const scale = 1 - (i * 0.12); // Cada línea es 12% más pequeña
+    const w = baseWidth * scale;
+    const h = baseHeight * scale;
+    // Curva bezier para forma de ala elegante
+    lines.push({
+      d: `M 0,0 Q ${w},${-h * 0.3} ${w * 0.8},${-h} Q ${w * 0.3},${-h * 0.7} 0,0`,
+      opacity: 1 - i * 0.12
     });
   }
-
-  return positions;
+  return lines;
 };
 
 /**
- * Genera configuración para cada mariposa
+ * Componente de mariposa paramétrica individual
  */
-const generateButterflies = (count) => {
-  const positions = generatePositions(count);
+const ParametricButterfly = ({
+  size = 100,
+  opacity = 0.3,
+  rotation = 0,
+  animated = true,
+  animationDelay = 0
+}) => {
+  // Pre-generar líneas de alas (memoizado)
+  const upperWingLines = useMemo(() => generateWingLines(45, 55, 6), []);
+  const lowerWingLines = useMemo(() => generateWingLines(35, 40, 5), []);
 
-  return positions.map((pos, index) => ({
-    id: index,
-    x: pos.x,
-    y: pos.y,
-    scale: 0.3 + Math.random() * 0.9, // 0.3 - 1.2
-    rotation: Math.random() * 360,
-    opacity: 0.1 + Math.random() * 0.3, // 0.1 - 0.4
-    animationDelay: Math.random() * 5, // Delay para animación
-    animationDuration: 4 + Math.random() * 4 // 4-8 segundos
-  }));
+  return (
+    <svg
+      viewBox="-60 -50 120 120"
+      style={{
+        width: size,
+        height: size * 1.2,
+        filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.1))'
+      }}
+      className={animated ? 'butterfly-animated' : ''}
+    >
+      <g
+        transform={`rotate(${rotation})`}
+        opacity={opacity}
+        style={animated ? {
+          animation: `breathe 4s ease-in-out infinite`,
+          animationDelay: `${animationDelay}s`
+        } : {}}
+      >
+        {/* ============================================================
+            ALA SUPERIOR IZQUIERDA - 6 líneas concéntricas
+            ============================================================ */}
+        <g transform="rotate(-50)">
+          {upperWingLines.map((line, i) => (
+            <path
+              key={`ul-${i}`}
+              d={line.d}
+              fill="none"
+              stroke="white"
+              strokeWidth={0.5}
+              opacity={line.opacity}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+
+        {/* ============================================================
+            ALA SUPERIOR DERECHA - Espejada
+            ============================================================ */}
+        <g transform="rotate(50) scale(-1, 1)">
+          {upperWingLines.map((line, i) => (
+            <path
+              key={`ur-${i}`}
+              d={line.d}
+              fill="none"
+              stroke="white"
+              strokeWidth={0.5}
+              opacity={line.opacity}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+
+        {/* ============================================================
+            ALA INFERIOR IZQUIERDA - 5 líneas, más pequeña
+            ============================================================ */}
+        <g transform="rotate(30) translate(0, 8)">
+          {lowerWingLines.map((line, i) => (
+            <path
+              key={`ll-${i}`}
+              d={line.d}
+              fill="none"
+              stroke="white"
+              strokeWidth={0.4}
+              opacity={line.opacity * 0.8}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+
+        {/* ============================================================
+            ALA INFERIOR DERECHA - Espejada
+            ============================================================ */}
+        <g transform="rotate(-30) scale(-1, 1) translate(0, 8)">
+          {lowerWingLines.map((line, i) => (
+            <path
+              key={`lr-${i}`}
+              d={line.d}
+              fill="none"
+              stroke="white"
+              strokeWidth={0.4}
+              opacity={line.opacity * 0.8}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+
+        {/* ============================================================
+            CUERPO CENTRAL - Elipse vertical delgada
+            ============================================================ */}
+        <ellipse
+          cx="0"
+          cy="8"
+          rx="1.5"
+          ry="18"
+          fill="none"
+          stroke="white"
+          strokeWidth={0.4}
+          opacity={0.5}
+        />
+
+        {/* ============================================================
+            PUNTO CENTRAL BRILLANTE - Donde se unen las alas
+            ============================================================ */}
+        <circle cx="0" cy="0" r="2" fill="white" opacity={0.8}>
+          {animated && (
+            <animate
+              attributeName="opacity"
+              values="0.8;0.4;0.8"
+              dur="3s"
+              repeatCount="indefinite"
+            />
+          )}
+        </circle>
+
+        {/* Resplandor sutil del punto central */}
+        <circle cx="0" cy="0" r="4" fill="white" opacity={0.15}>
+          {animated && (
+            <animate
+              attributeName="opacity"
+              values="0.15;0.05;0.15"
+              dur="3s"
+              repeatCount="indefinite"
+            />
+          )}
+        </circle>
+
+        {/* ============================================================
+            ANTENAS - Curvas delicadas con puntos en las puntas
+            ============================================================ */}
+        {/* Antena izquierda */}
+        <path
+          d="M -1,-12 Q -10,-30 -6,-38"
+          fill="none"
+          stroke="white"
+          strokeWidth={0.3}
+          opacity={0.5}
+          strokeLinecap="round"
+        />
+        <circle cx="-6" cy="-38" r="1" fill="white" opacity={0.4} />
+
+        {/* Antena derecha */}
+        <path
+          d="M 1,-12 Q 10,-30 6,-38"
+          fill="none"
+          stroke="white"
+          strokeWidth={0.3}
+          opacity={0.5}
+          strokeLinecap="round"
+        />
+        <circle cx="6" cy="-38" r="1" fill="white" opacity={0.4} />
+      </g>
+    </svg>
+  );
 };
+
+/**
+ * Configuración de mariposas para el fondo
+ * Posiciones en porcentaje, distribuidas evitando el centro
+ */
+const BUTTERFLY_CONFIG = [
+  { x: 5, y: 8, size: 80, rotation: -15, opacity: 0.2 },
+  { x: 88, y: 5, size: 60, rotation: 20, opacity: 0.15 },
+  { x: 3, y: 45, size: 100, rotation: -30, opacity: 0.25 },
+  { x: 92, y: 50, size: 90, rotation: 45, opacity: 0.2 },
+  { x: 8, y: 85, size: 70, rotation: 10, opacity: 0.28 },
+  { x: 85, y: 88, size: 85, rotation: -25, opacity: 0.18 },
+  { x: 2, y: 70, size: 50, rotation: 60, opacity: 0.12 },
+  { x: 95, y: 25, size: 55, rotation: -40, opacity: 0.15 },
+  { x: 15, y: 3, size: 45, rotation: 35, opacity: 0.1 },
+  { x: 75, y: 92, size: 65, rotation: -10, opacity: 0.2 },
+];
 
 const BackgroundButterflies = ({
   count = 10,
-  strokeColor = '#ffffff',
-  strokeWidth = 0.5,
   animated = true,
   className = ''
 }) => {
-  // Generar mariposas (memoizado)
-  const butterflies = useMemo(() => generateButterflies(count), [count]);
-  const butterflyPaths = useMemo(() => generateButterflyPath(), []);
+  // Usar solo las primeras 'count' mariposas de la configuración
+  const butterflies = useMemo(() =>
+    BUTTERFLY_CONFIG.slice(0, Math.min(count, BUTTERFLY_CONFIG.length)),
+    [count]
+  );
 
   return (
     <div className={`fixed inset-0 pointer-events-none overflow-hidden ${className}`}>
-      <svg
-        className="w-full h-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          {/* Filtro de blur sutil */}
-          <filter id="butterfly-blur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.1" />
-          </filter>
+      {/* Estilos de animación */}
+      <style>
+        {`
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+          }
 
-          {/* Keyframes para animación de floating */}
-          <style>
-            {`
-              @keyframes butterfly-float {
-                0%, 100% { transform: translateY(0) rotate(0deg); }
-                25% { transform: translateY(-0.5%) rotate(2deg); }
-                50% { transform: translateY(-1%) rotate(0deg); }
-                75% { transform: translateY(-0.5%) rotate(-2deg); }
-              }
+          .butterfly-animated {
+            transition: opacity 0.3s ease;
+          }
+        `}
+      </style>
 
-              @keyframes butterfly-breathe {
-                0%, 100% { opacity: var(--base-opacity); }
-                50% { opacity: calc(var(--base-opacity) * 1.3); }
-              }
-            `}
-          </style>
-        </defs>
-
-        {butterflies.map((butterfly) => (
-          <g
-            key={butterfly.id}
-            transform={`translate(${butterfly.x}, ${butterfly.y}) scale(${butterfly.scale * 0.15}) rotate(${butterfly.rotation})`}
-            opacity={butterfly.opacity}
-            filter="url(#butterfly-blur)"
-            style={animated ? {
-              '--base-opacity': butterfly.opacity,
-              animation: `butterfly-float ${butterfly.animationDuration}s ease-in-out infinite, butterfly-breathe ${butterfly.animationDuration * 0.8}s ease-in-out infinite`,
-              animationDelay: `${butterfly.animationDelay}s`
-            } : {}}
-          >
-            {/* Alas */}
-            <path
-              d={butterflyPaths.wings}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Cuerpo y antenas */}
-            <path
-              d={butterflyPaths.body}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth={strokeWidth * 0.8}
-              strokeLinecap="round"
-            />
-          </g>
-        ))}
-      </svg>
+      {/* Renderizar mariposas */}
+      {butterflies.map((config, index) => (
+        <div
+          key={index}
+          style={{
+            position: 'absolute',
+            left: `${config.x}%`,
+            top: `${config.y}%`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <ParametricButterfly
+            size={config.size}
+            rotation={config.rotation}
+            opacity={config.opacity}
+            animated={animated}
+            animationDelay={index * 0.5}
+          />
+        </div>
+      ))}
     </div>
   );
 };
