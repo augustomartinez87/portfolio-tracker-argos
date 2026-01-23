@@ -10,9 +10,17 @@ import { useEffect, useRef, useCallback } from 'react';
  *
  * Parámetros clásicos: σ=10, ρ=28, β=8/3
  *
- * TIMING: 20 segundos dibujo + 20 segundos pausa
- * COLORES: Alterna blanco (#ffffff) y negro (#000000) cada ciclo
- * COLISIONES: Distancia mínima 400px de la central, 250px entre chiquitas
+ * === TIMING (líneas 28-29) ===
+ * - DRAW_DURATION = 20000ms (20 segundos de dibujo)
+ * - PAUSE_DURATION = 20000ms (20 segundos de pausa)
+ *
+ * === COLORES (líneas 248-249 para central, 291-292 para chiquitas) ===
+ * - Central: alterna entre #ffffff (blanco) y #000000 (negro)
+ * - Chiquitas: alterna entre #ffffff, #000000 y #888888 (gris)
+ *
+ * === COLISIONES (líneas 140-142) ===
+ * - Distancia mínima de central: 400px
+ * - Distancia mínima entre chiquitas: 250px
  */
 
 const LorenzAttractorBackground = () => {
@@ -25,9 +33,17 @@ const LorenzAttractorBackground = () => {
   const beta = 8 / 3;
   const dt = 0.005;
 
-  // Timing: 20 segundos de dibujo + 20 segundos de pausa
+  // =====================================================
+  // TIMING: 20 segundos de dibujo + 20 segundos de pausa
+  // =====================================================
   const DRAW_DURATION = 20000; // 20 segundos en ms
   const PAUSE_DURATION = 20000; // 20 segundos en ms
+
+  // =====================================================
+  // COLISIONES: Distancias mínimas
+  // =====================================================
+  const MIN_DISTANCE_FROM_CENTER = 400; // px desde la central
+  const MIN_DISTANCE_BETWEEN_SMALL = 250; // px entre chiquitas
 
   // Generar puntos del atractor de Lorenz
   const generateLorenzPoints = useCallback((steps = 15000) => {
@@ -51,8 +67,8 @@ const LorenzAttractorBackground = () => {
     return points;
   }, []);
 
-  // Normalizar puntos al canvas
-  const normalizePoints = useCallback((points, width, height, padding = 40) => {
+  // Normalizar puntos al canvas con posición y escala específicas
+  const normalizePointsWithTransform = useCallback((points, centerX, centerY, scale, width, height) => {
     const allX = points.map(p => p.x);
     const allY = points.map(p => p.z);
 
@@ -61,9 +77,15 @@ const LorenzAttractorBackground = () => {
     const minY = Math.min(...allY);
     const maxY = Math.max(...allY);
 
+    const rangeX = maxX - minX;
+    const rangeY = maxY - minY;
+
+    // Tamaño base de la mariposa
+    const baseSize = Math.min(width, height) * 0.8 * scale;
+
     return points.map(p => ({
-      x: padding + ((p.x - minX) / (maxX - minX)) * (width - 2 * padding),
-      y: padding + ((p.z - minY) / (maxY - minY)) * (height - 2 * padding)
+      x: centerX + ((p.x - minX) / rangeX - 0.5) * baseSize,
+      y: centerY + ((p.z - minY) / rangeY - 0.5) * baseSize
     }));
   }, []);
 
@@ -72,9 +94,11 @@ const LorenzAttractorBackground = () => {
     return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
   };
 
-  // Generar posición random evitando colisiones
-  const generateRandomPosition = useCallback((width, height, existingPositions, minDistance, centerPosition = null) => {
-    const padding = 100;
+  // =====================================================
+  // EVITAR SUPERPOSICIÓN: Generar posición random
+  // =====================================================
+  const generateRandomPosition = useCallback((width, height, existingPositions, minDistanceBetween, centerPosition, minDistanceFromCenter) => {
+    const padding = 150;
     let attempts = 0;
     const maxAttempts = 100;
 
@@ -85,19 +109,19 @@ const LorenzAttractorBackground = () => {
 
       let valid = true;
 
-      // Chequear distancia con la mariposa central
+      // Chequear distancia con la mariposa central (distancia estricta)
       if (centerPosition) {
         const distToCenter = distance(candidate, centerPosition);
-        if (distToCenter < minDistance) {
+        if (distToCenter < minDistanceFromCenter) {
           valid = false;
         }
       }
 
-      // Chequear distancia con otras mariposas
+      // Chequear distancia con otras mariposas chiquitas
       if (valid) {
         for (const pos of existingPositions) {
           const dist = distance(candidate, pos);
-          if (dist < minDistance) {
+          if (dist < minDistanceBetween) {
             valid = false;
             break;
           }
@@ -111,8 +135,11 @@ const LorenzAttractorBackground = () => {
       attempts++;
     }
 
-    // Si no encuentra posición válida, devolver posición por defecto
-    return { x: width * 0.2, y: height * 0.2 };
+    // Si no encuentra posición válida, posición en esquina
+    return {
+      x: padding + Math.random() * 100,
+      y: padding + Math.random() * 100
+    };
   }, []);
 
   useEffect(() => {
@@ -123,70 +150,83 @@ const LorenzAttractorBackground = () => {
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
 
-    // Generar puntos del atractor de Lorenz
+    // Generar puntos del atractor de Lorenz (15000 puntos)
     const allPoints = generateLorenzPoints(15000);
 
-    // Centro de la mariposa principal
+    // Centro de la mariposa principal (centro de pantalla)
     const centerX = width / 2;
     const centerY = height / 2;
     const centralPosition = { x: centerX, y: centerY };
 
-    // Mariposas pequeñas: generar posiciones evitando colisiones
+    // Puntos para mariposa central (escala 1.0 = tamaño completo)
+    const centralPoints = normalizePointsWithTransform(allPoints, centerX, centerY, 1.0, width, height);
+
+    // =====================================================
+    // MARIPOSAS CHICAS: Generar posiciones sin superposición
+    // =====================================================
     const numSmallButterflies = 6;
     const smallButterflyPositions = [];
 
     for (let i = 0; i < numSmallButterflies; i++) {
-      // Mínimo 400px de la central, 250px entre cada una
-      const pos = generateRandomPosition(width, height, smallButterflyPositions, 250, centralPosition);
+      const pos = generateRandomPosition(
+        width,
+        height,
+        smallButterflyPositions,
+        MIN_DISTANCE_BETWEEN_SMALL,  // 250px entre chiquitas
+        centralPosition,
+        MIN_DISTANCE_FROM_CENTER     // 400px de la central
+      );
       smallButterflyPositions.push(pos);
     }
 
-    // Escalar puntos para mariposas pequeñas (40-60% del tamaño)
-    const scaleSmall = 0.4 + Math.random() * 0.2;
-
-    // Función para transformar puntos según posición y escala
-    const transformPoints = (points, pos, scale, centerRef) => {
-      return points.map(p => ({
-        x: pos.x + (p.x - centerRef.x) * scale,
-        y: pos.y + (p.y - centerRef.y) * scale
-      }));
-    };
-
-    // Puntos para mariposa central
-    const centralPoints = normalizePoints(allPoints, width, height, 40);
-
-    // Puntos para mariposas pequeñas
+    // Crear datos para cada mariposa chiquita
     const smallButterfliesData = smallButterflyPositions.map((pos, idx) => {
-      const points = transformPoints(allPoints, pos, scaleSmall, centralPosition);
-      const normalizedPoints = normalizePoints(points, width, height, 20);
+      // Escala random entre 0.15 y 0.25 (pequeñas)
+      const scale = 0.15 + Math.random() * 0.1;
+      const points = normalizePointsWithTransform(allPoints, pos.x, pos.y, scale, width, height);
+
       return {
-        points: normalizedPoints,
-        colorPhase: 'white' // Alternará entre white/black
+        points,
+        position: pos
       };
     });
 
-    // Estado de animación para mariposa central
-    let centralState = {
+    // =====================================================
+    // ESTADO MARIPOSA CENTRAL
+    // =====================================================
+    const centralState = {
       drawIndex: 0,
       phase: 'drawing', // 'drawing' | 'pause' | 'reset'
-      color: '#ffffff',
-      lastTime: performance.now(),
-      pauseStartTime: 0
+      color: '#ffffff', // Empieza blanco, alterna a negro
+      pauseStartTime: 0,
+      drawStartTime: performance.now()
     };
 
-    // Calcular puntos por frame para duración exacta de 20 segundos
-    const totalPoints = centralPoints.length;
-    const pointsPerFrame = Math.ceil(totalPoints / (DRAW_DURATION / 16.67)); // 60fps aproximado
+    // Calcular puntos por frame para que dure exactamente 20 segundos
+    // Asumiendo ~60fps = ~1200 frames en 20 segundos
+    const framesIn20Seconds = (DRAW_DURATION / 1000) * 60;
+    const pointsPerFrame = Math.ceil(centralPoints.length / framesIn20Seconds);
 
-    // Estado de animación para mariposas pequeñas
-    const smallButterflyStates = smallButterflyData.map(() => ({
+    // =====================================================
+    // ESTADO MARIPOSAS CHIQUITAS (ciclo independiente)
+    // =====================================================
+    const smallButterflyStates = smallButterfliesData.map((_, idx) => ({
       drawIndex: 0,
       phase: 'drawing',
       color: '#ffffff',
-      lastTime: performance.now() + Math.random() * 5000, // Offset aleatorio
       pauseStartTime: 0,
-      pauseDuration: 5000 + Math.random() * 5000 // 5-10 segundos de pausa
+      drawStartTime: performance.now() + Math.random() * 8000, // Offset aleatorio 0-8s
+      // Timing más corto para las chiquitas
+      drawDuration: 10000 + Math.random() * 5000,  // 10-15 segundos de dibujo
+      pauseDuration: 8000 + Math.random() * 7000   // 8-15 segundos de pausa
     }));
+
+    // Calcular puntos por frame para cada chiquita
+    const smallPointsPerFrame = smallButterfliesData.map((butterfly, idx) => {
+      const state = smallButterflyStates[idx];
+      const framesForDraw = (state.drawDuration / 1000) * 60;
+      return Math.ceil(butterfly.points.length / framesForDraw);
+    });
 
     // Manejo de redimensionamiento
     const handleResize = () => {
@@ -196,87 +236,97 @@ const LorenzAttractorBackground = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Función de renderizado
+    // Función de renderizado principal
     const render = (currentTime) => {
-      // Fade trail effect suave (rgba(0,0,0,0.04))
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+      // Fade trail effect suave para trails elegantes
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.03)';
       ctx.fillRect(0, 0, width, height);
 
-      // === MARIPOSA CENTRAL ===
+      // =====================================================
+      // DIBUJAR MARIPOSA CENTRAL
+      // =====================================================
       const cs = centralState;
 
       if (cs.phase === 'drawing') {
-        // Dibujar desde drawIndex hasta drawIndex + pointsPerFrame
+        // Dibujar puntos progresivamente
         const endIndex = Math.min(cs.drawIndex + pointsPerFrame, centralPoints.length);
-        const prevIndex = cs.drawIndex;
 
-        ctx.beginPath();
-        let moved = false;
+        if (cs.drawIndex < endIndex) {
+          ctx.beginPath();
+          ctx.moveTo(centralPoints[cs.drawIndex].x, centralPoints[cs.drawIndex].y);
 
-        for (let i = prevIndex; i < endIndex; i++) {
-          if (i === 0) {
-            ctx.moveTo(centralPoints[i].x, centralPoints[i].y);
-            moved = true;
-          } else {
+          for (let i = cs.drawIndex + 1; i < endIndex; i++) {
             ctx.lineTo(centralPoints[i].x, centralPoints[i].y);
           }
+
+          ctx.strokeStyle = cs.color;
+          ctx.lineWidth = 0.8;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+
+          cs.drawIndex = endIndex;
         }
 
-        ctx.strokeStyle = cs.color;
-        ctx.lineWidth = 0.8;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-
-        cs.drawIndex = endIndex;
-
+        // Verificar si terminó el dibujo (~20 segundos)
         if (cs.drawIndex >= centralPoints.length) {
           cs.phase = 'pause';
           cs.pauseStartTime = currentTime;
         }
       } else if (cs.phase === 'pause') {
-        // Mantener visible durante 20 segundos
+        // =====================================================
+        // PAUSA: Mantener visible 20 segundos
+        // =====================================================
         if (currentTime - cs.pauseStartTime >= PAUSE_DURATION) {
           cs.phase = 'reset';
         }
       } else if (cs.phase === 'reset') {
-        // Limpiar canvas y reiniciar
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        // =====================================================
+        // RESET: Alternar color y reiniciar
+        // =====================================================
+        // Fade más fuerte para limpiar antes de redibujar
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.2)';
         ctx.fillRect(0, 0, width, height);
 
-        // Alternar color: blanco <-> negro
+        // ALTERNAR COLOR: blanco <-> negro
         cs.color = cs.color === '#ffffff' ? '#000000' : '#ffffff';
 
         cs.drawIndex = 0;
         cs.phase = 'drawing';
+        cs.drawStartTime = currentTime;
       }
 
-      // === MARIPOSAS PEQUEÑAS ===
-      smallButterflyData.forEach((butterfly, idx) => {
+      // =====================================================
+      // DIBUJAR MARIPOSAS CHIQUITAS
+      // =====================================================
+      smallButterfliesData.forEach((butterfly, idx) => {
         const state = smallButterflyStates[idx];
         const points = butterfly.points;
+        const ppf = smallPointsPerFrame[idx];
+
+        // Esperar offset inicial
+        if (currentTime < state.drawStartTime) {
+          return;
+        }
 
         if (state.phase === 'drawing') {
-          const pointsPerFrameSmall = Math.ceil(points.length / 10000); // Más rápido
-          const endIndex = Math.min(state.drawIndex + pointsPerFrameSmall, points.length);
-          const prevIndex = state.drawIndex;
+          const endIndex = Math.min(state.drawIndex + ppf, points.length);
 
-          ctx.beginPath();
+          if (state.drawIndex < endIndex) {
+            ctx.beginPath();
+            ctx.moveTo(points[state.drawIndex].x, points[state.drawIndex].y);
 
-          for (let i = prevIndex; i < endIndex; i++) {
-            if (i === 0) {
-              ctx.moveTo(points[i].x, points[i].y);
-            } else {
+            for (let i = state.drawIndex + 1; i < endIndex; i++) {
               ctx.lineTo(points[i].x, points[i].y);
             }
+
+            ctx.strokeStyle = state.color;
+            ctx.lineWidth = 0.4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            state.drawIndex = endIndex;
           }
-
-          // Color: blanco o negro (con algo de gris para variedad)
-          ctx.strokeStyle = state.color;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-
-          state.drawIndex = endIndex;
 
           if (state.drawIndex >= points.length) {
             state.phase = 'pause';
@@ -287,17 +337,27 @@ const LorenzAttractorBackground = () => {
             state.phase = 'reset';
           }
         } else if (state.phase === 'reset') {
-          // Alternar color para variedad
-          state.color = state.color === '#ffffff' ? '#000000' : '#888888';
+          // =====================================================
+          // ALTERNAR COLOR CHIQUITAS: blanco -> negro -> gris
+          // =====================================================
+          if (state.color === '#ffffff') {
+            state.color = '#000000';
+          } else if (state.color === '#000000') {
+            state.color = '#666666';
+          } else {
+            state.color = '#ffffff';
+          }
 
           state.drawIndex = 0;
           state.phase = 'drawing';
+          state.drawStartTime = currentTime;
         }
       });
 
       animationRef.current = requestAnimationFrame(render);
     };
 
+    // Iniciar animación
     animationRef.current = requestAnimationFrame(render);
 
     return () => {
@@ -306,15 +366,15 @@ const LorenzAttractorBackground = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [generateLorenzPoints, normalizePoints, generateRandomPosition]);
+  }, [generateLorenzPoints, normalizePointsWithTransform, generateRandomPosition]);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ 
+      style={{
         background: 'transparent',
-        zIndex: -10
+        zIndex: 0
       }}
     />
   );
