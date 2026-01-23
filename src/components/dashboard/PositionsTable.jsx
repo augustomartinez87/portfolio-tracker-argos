@@ -280,7 +280,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
         </table>
         </div>
         {positionsWithGroup.length > 0 && (
-          <div className="flex-shrink-0 border-t border-border-primary bg-background-secondary p-4">
+          <div className="flex-shrink-0 border-t border-border-primary p-4">
             <div className="flex items-center bg-background-secondary border border-border-primary rounded-lg p-4 shadow-md">
               <div className={`${paddingX} ${paddingY} text-text-primary pr-8 w-32`}>
                 <span className="font-bold text-lg text-success">Total</span>
