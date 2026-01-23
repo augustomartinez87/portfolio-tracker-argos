@@ -1,9 +1,18 @@
-import pdf from 'pdf-parse';
 import { createClient } from '@supabase/supabase-js';
+import { createRequire } from 'module';
+
+// Importación de pdf-parse compatible con Vercel Node.js Serverless Functions
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 // Configuración de Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
+}
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Regex patterns para parsing de cauciones
@@ -32,12 +41,6 @@ function parseDate(dateStr: string): Date | null {
   return new Date(`${year}-${month}-${day}`);
 }
 
-function calcularDias(fecha_inicio: Date, fecha_fin: Date): number {
-  if (!fecha_inicio || !fecha_fin) return 0;
-  return Math.ceil((fecha_fin.getTime() - fecha_inicio.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-// Definir tipo para operación
 interface Operacion {
   tipo: string;
   fecha_liquidacion: string | null;
@@ -128,7 +131,10 @@ async function parsePDFText(text: string): Promise<Operacion[]> {
 }
 
 export default async function handler(req: any, res: any) {
-  console.log('parse-caucion invoked');
+  console.log('parse-caucion invoked', {
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -137,12 +143,14 @@ export default async function handler(req: any, res: any) {
   try {
     const { pdfPath, userId } = req.body;
 
-    // Validación básica
     if (!pdfPath || !userId) {
+      console.error('Missing required fields', { pdfPath: !!pdfPath, userId: !!userId });
       return res.status(400).json({ error: 'Missing required fields: pdfPath and userId' });
     }
 
-    // 1. Descargar PDF desde Supabase Storage
+    console.log(`Processing PDF: ${pdfPath} for user: ${userId}`);
+
+    // Descargar PDF desde Supabase Storage
     const { data: pdfBlob, error: downloadError } = await supabase.storage
       .from('caucion-pdfs')
       .download(pdfPath);
@@ -155,11 +163,22 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 2. Parsear PDF con pdf-parse (Node.js)
-    const pdfData = await pdf(pdfBlob);
+    if (!pdfBlob) {
+      console.error('PDF blob is null or undefined');
+      return res.status(404).json({ 
+        error: 'PDF blob is empty'
+      });
+    }
+
+    // Convertir Blob a Buffer para pdf-parse
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Parsear PDF
+    const pdfData = await pdfParse(buffer);
     const text = pdfData.text;
     
-    // 3. Extraer operaciones del texto
+    // Extraer operaciones del texto
     const operaciones = await parsePDFText(text);
     
     if (operaciones.length === 0) {
@@ -170,7 +189,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 4. Preparar datos para inserción (solo cierres)
+    // Preparar datos para inserción
     const cierresParaGuardar = operaciones.map(op => {
       const fecha_inicio = parseDate(op.fecha_liquidacion!);
       const fecha_fin = parseDate(op.fecha_liquidacion!);
@@ -188,7 +207,7 @@ export default async function handler(req: any, res: any) {
       };
     });
 
-    // 5. Insertar en database
+    // Insertar en database
     const { data, error: insertError } = await supabase
       .from('cauciones')
       .insert(cierresParaGuardar)
@@ -218,15 +237,4 @@ export default async function handler(req: any, res: any) {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-}
-
-// Endpoint para testing
-export async function GET() {
-  return new Response(JSON.stringify({
-    message: 'Caución PDF parsing API (Vercel Serverless)',
-    version: '1.0.0',
-    status: 'active'
-  }), {
-    headers: { 'Content-Type': 'application/json' }
-  });
 }

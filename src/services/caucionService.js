@@ -27,7 +27,14 @@ export const caucionService = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // Si la respuesta no es JSON válido, usar el texto de la respuesta
+          const text = await response.text();
+          throw new Error(`Error en parsing: ${text || response.statusText}`);
+        }
         throw new Error(errorData.error || 'Error en parsing');
       }
 
