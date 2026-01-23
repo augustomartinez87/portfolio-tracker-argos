@@ -48,14 +48,13 @@ const saveColumnSettings = (settings) => {
 const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
   const isActive = currentSort.key === sortKey;
   const isAsc = isActive && currentSort.direction === 'asc';
-  const isDesc = isActive && currentSort.direction === 'desc';
 
   return (
     <th
-      className={`text-right px-2 py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
+      className={`text-center px-2 py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
       onClick={() => onSort(sortKey)}
     >
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-center gap-1">
         <span>{label}</span>
         {isActive ? (
           isAsc ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
@@ -163,7 +162,19 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
       )}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[900px] table-fixed">
+          <colgroup>
+            <col className="w-[140px]" /> {/* Ticker */}
+            <col className="w-[80px]" />  {/* Cant */}
+            {columnSettings.showPPC && <col className="w-[100px]" />}  {/* PPC */}
+            <col className="w-[100px]" /> {/* P. Actual */}
+            <col className="w-[120px]" /> {/* Valuación */}
+            {columnSettings.showInvertido && <col className="w-[110px]" />} {/* Invertido */}
+            <col className="w-[120px]" /> {/* P&L $ */}
+            <col className="w-[90px]" />  {/* P&L % */}
+            {columnSettings.showDiario && <col className="w-[110px]" />} {/* Diario $ */}
+            {columnSettings.showDiarioPct && <col className="w-[90px]" />} {/* Diario % */}
+          </colgroup>
           <thead className="sticky top-0 z-10 bg-background-secondary">
             <tr className="bg-background-tertiary/30 border-b border-border-primary">
               <th
@@ -210,37 +221,37 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     isStale={prices[pos.ticker]?.isStale}
                   />
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
                   {formatNumber(pos.cantidadTotal)}
                 </td>
                 {columnSettings.showPPC && (
-                  <td className={`text-right ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
+                  <td className={`text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
                     {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
                       ? `$${pos.precioPromedio.toFixed(2)}`
                       : formatARS(pos.precioPromedio)
                     }
                   </td>
                 )}
-                <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
+                <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
                   {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
                     ? `$${pos.precioActual.toFixed(2)}`
                     : formatARS(pos.precioActual)
                   }
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
+                <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
                   {formatARS(pos.valuacionActual)}
                 </td>
                 {columnSettings.showInvertido && (
-                  <td className={`text-right ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                  <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
                     {formatARS(pos.costoTotal)}
                   </td>
                 )}
-                <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                   <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatARS(pos.resultado)}
                   </span>
                 </td>
-                <td className={`text-right ${paddingX} ${paddingY}`}>
+                <td className={`text-center ${paddingX} ${paddingY}`}>
                   <span className={`font-medium px-1.5 py-0.5 rounded text-sm ${
                     pos.resultadoPct >= 0
                       ? 'bg-success/10 text-success'
@@ -250,14 +261,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </span>
                 </td>
                 {columnSettings.showDiario && (
-                  <td className={`text-right ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                  <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                     <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(pos.resultadoDiario || 0)}
                     </span>
                   </td>
                 )}
                 {columnSettings.showDiarioPct && (
-                  <td className={`text-right ${paddingX} ${paddingY}`}>
+                  <td className={`text-center ${paddingX} ${paddingY}`}>
                     <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
                       pos.resultadoDiarioPct >= 0
                         ? 'bg-success/10 text-success'

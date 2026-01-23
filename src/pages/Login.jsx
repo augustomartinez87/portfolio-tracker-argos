@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import logo from '../assets/logo.png'
-import ButterflyCSSBackground from '../components/ButterflyCSSBackground'
+import LorenzAttractorBackground from '../components/LorenzAttractorBackground'
 
 export const Login = () => {
   const navigate = useNavigate()
@@ -30,8 +30,8 @@ export const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-primary relative overflow-hidden">
-      <ButterflyCSSBackground />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      <LorenzAttractorBackground />
 
       <div className="w-full max-w-md px-4 relative z-10">
         <div className="text-center mb-8">
