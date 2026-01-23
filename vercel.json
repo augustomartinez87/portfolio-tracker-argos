@@ -1,8 +1,6 @@
 {
   "functions": {
-    "api/parse-caucion.ts": {
-      "runtime": "nodejs18.x"
-    }
+    "api/parse-caucion.ts": {}
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
