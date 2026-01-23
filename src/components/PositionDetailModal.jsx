@@ -1,7 +1,7 @@
 // src/components/PositionDetailModal.jsx
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
 import { data912 } from '../utils/data912';
 import { isBonoPesos } from '../hooks/useBondPrices';
 import { API_ENDPOINTS } from '../utils/constants';
@@ -494,7 +494,13 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             ) : (
               <div className="relative">
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
+                  <ComposedChart data={chartData}>
+                    <defs>
+                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
                     <XAxis
                       dataKey="date"
@@ -537,6 +543,12 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                         }
                       }}
                     />
+                    <Area
+                      type="monotone"
+                      dataKey="price"
+                      fill="url(#areaGradient)"
+                      stroke="transparent"
+                    />
                     <Line
                       type="monotone"
                       dataKey="price"
@@ -545,7 +557,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                       dot={false}
                       activeDot={{ r: 6, fill: '#10b981' }}
                     />
-                  </LineChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             )}
