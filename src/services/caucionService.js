@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase';
 
 export const caucionService = {
-  async uploadAndParsePDF(userId, file) {
+  async uploadPDFAndTriggerParsing(userId, file) {
     try {
       // 1. Subir PDF a Supabase Storage
       const filePath = `${userId}/${Date.now()}-${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('caucion-pdfs')
         .upload(filePath, file);
 
@@ -16,44 +16,38 @@ export const caucionService = {
         .from('caucion-pdfs')
         .getPublicUrl(filePath);
 
-      // 3. Convertir archivo a base64 para Edge Function
-      const fileData = await this.fileToBase64(file);
+      // 3. Llamar API Vercel para parsing
+      const response = await fetch('/api/parse-caucion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pdfPath: data.path, 
+          userId 
+        })
+      });
 
-      // 4. Llamar Edge Function para parsing
-      const { data: parseData, error: parseError } = await supabase.functions
-        .invoke('parse-caucion-pdf', {
-          body: {
-            userId,
-            filename: file.name,
-            fileData
-          }
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error en parsing');
+      }
 
-      if (parseError) throw parseError;
+      const result = await response.json();
 
-      // 5. Retornar resultado con metadata de storage
+      // 4. Retornar resultado completo
       return {
-        ...parseData,
-        pdf_storage_path: filePath,
-        pdf_url: publicUrl
+        success: true,
+        filename: file.name,
+        pdf_storage_path: data.path,
+        pdf_url: publicUrl,
+        operaciones: result.operaciones,
+        total_cierres: result.total_operaciones,
+        message: result.message
       };
 
     } catch (error) {
       console.error('Upload and parse error:', error);
       throw error;
     }
-  },
-
-  async fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
   },
 
   async insertCauciones(userId, cauciones) {

@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useContext } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Upload, FileText, X, Check, AlertCircle } from 'lucide-react';
 import { caucionService } from '../../services/caucionService';
 import { formatARS } from '../../utils/formatters';
@@ -33,8 +33,8 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
         return { filename: file.name, error: 'Este PDF ya fue procesado anteriormente' };
       }
 
-      // Subir y parsear via server-side
-      const result = await caucionService.uploadAndParsePDF(userId, file);
+      // Subir y parsear via API Vercel
+      const result = await caucionService.uploadPDFAndTriggerParsing(userId, file);
       
       if (!result.success) {
         return { filename: file.name, error: result.error || 'Error procesando PDF' };
@@ -75,7 +75,7 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
       results.push(result);
     }
 
-    const validResults = results.filter(r => !r.error && r.cierres?.length > 0);
+    const validResults = results.filter(r => !r.error && r.operaciones?.length > 0);
     const fileErrors = results.filter(r => r.error);
 
     if (fileErrors.length > 0) {
@@ -95,9 +95,9 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
     });
   };
 
-  const totalOperaciones = parsedFiles.reduce((sum, f) => sum + (f.cierres?.length || 0), 0);
+  const totalOperaciones = parsedFiles.reduce((sum, f) => sum + (f.operaciones?.length || 0), 0);
   const totalCapital = parsedFiles.reduce((sum, f) =>
-    sum + f.cierres?.reduce((s, c) => s + c.capital, 0) || 0, 0);
+    sum + f.operaciones?.reduce((s, c) => s + c.capital, 0) || 0, 0);
 
   return (
     <div className="space-y-4">
@@ -187,7 +187,7 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
                       {file.filename}
                     </p>
                     <p className="text-text-tertiary text-xs">
-                      {file.cierres?.length || 0} operaciones • {formatARS(file.cierres?.reduce((s, c) => s + c.capital, 0) || 0)}
+                      {file.operaciones?.length || 0} operaciones • {formatARS(file.operaciones?.reduce((s, c) => s + c.capital, 0) || 0)}
                     </p>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
                 <Check className="w-5 h-5 text-success" />
                 <div>
                   <p className="text-text-primary font-medium">
-                    {totalOperaciones} operaciones listas para guardar
+                    {totalOperaciones} operaciones procesadas
                   </p>
                   <p className="text-text-tertiary text-sm">
                     Capital total: {formatARS(totalCapital)}
