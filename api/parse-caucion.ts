@@ -1,19 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 import { createRequire } from 'module';
 
-// Importación de pdf-parse compatible con Vercel Node.js Serverless Functions
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
-
-// Configuración de Supabase
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
+// Lazy loading de pdf-parse para evitar errores en inicialización del módulo
+let pdfParse: any = null;
+function getPdfParse() {
+  if (!pdfParse) {
+    try {
+      const require = createRequire(import.meta.url);
+      pdfParse = require('pdf-parse');
+    } catch (error) {
+      console.error('Error loading pdf-parse:', error);
+      throw new Error('Failed to load pdf-parse module');
+    }
+  }
+  return pdfParse;
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazy initialization de Supabase para validar variables de entorno en runtime
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel settings.');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // Regex patterns para parsing de cauciones
 const DATE_REGEX = /(\d{2})\/(\d{2})\/(\d{2,4})/;
@@ -141,6 +154,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    // Inicializar Supabase con validación de variables de entorno
+    const supabase = getSupabaseClient();
+    
     const { pdfPath, userId } = req.body;
 
     if (!pdfPath || !userId) {
@@ -174,7 +190,8 @@ export default async function handler(req: any, res: any) {
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Parsear PDF
+    // Parsear PDF (lazy load pdf-parse)
+    const pdfParse = getPdfParse();
     const pdfData = await pdfParse(buffer);
     const text = pdfData.text;
     
@@ -232,9 +249,19 @@ export default async function handler(req: any, res: any) {
 
   } catch (error) {
     console.error('Parse caucion error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log detallado para debugging en Vercel
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    
     return res.status(500).json({ 
       error: 'Error procesando caución',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage
     });
   }
 }
