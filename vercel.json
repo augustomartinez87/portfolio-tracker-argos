@@ -1,7 +1,4 @@
 {
-  "functions": {
-    "api/parse-caucion.ts": {}
-  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
