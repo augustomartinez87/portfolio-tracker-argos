@@ -270,7 +270,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
             ))}
           </tbody>
           {positionsWithGroup.length > 0 && (
-            <tfoot className="sticky bottom-0 bg-background-secondary border-t-2 border-success/50">
+            <tfoot className="sticky bottom-0 bg-background-secondary border-t-2 border-success/50 mt-2 shadow-lg shadow-black/20">
               <tr className="hover:bg-background-tertiary/50">
                 {/* 1. Ticker */}
                 <td className={`${paddingX} ${paddingY} text-text-primary`}>
