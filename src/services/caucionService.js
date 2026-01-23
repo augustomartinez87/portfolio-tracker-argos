@@ -37,7 +37,11 @@ export const caucionService = {
           const text = await clonedResponse.text();
           throw new Error(`Error en parsing: ${text || response.statusText}`);
         }
-        throw new Error(errorData.error || 'Error en parsing');
+        // Incluir detalles del error si están disponibles
+        const errorMsg = errorData.error || 'Error en parsing';
+        const errorDetails = errorData.details ? ` - ${errorData.details}` : '';
+        const errorType = errorData.type ? ` [${errorData.type}]` : '';
+        throw new Error(`${errorMsg}${errorDetails}${errorType}`);
       }
 
       const result = await response.json();

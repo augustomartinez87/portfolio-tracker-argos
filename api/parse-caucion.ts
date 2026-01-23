@@ -155,7 +155,18 @@ export default async function handler(req: any, res: any) {
 
   try {
     // Inicializar Supabase con validación de variables de entorno
-    const supabase = getSupabaseClient();
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+      console.log('Supabase client initialized successfully');
+    } catch (supabaseError) {
+      console.error('Failed to initialize Supabase:', supabaseError);
+      return res.status(500).json({ 
+        error: 'Error de configuración',
+        details: supabaseError instanceof Error ? supabaseError.message : 'Failed to initialize Supabase',
+        type: 'CONFIG_ERROR'
+      });
+    }
     
     const { pdfPath, userId } = req.body;
 
@@ -187,13 +198,30 @@ export default async function handler(req: any, res: any) {
     }
 
     // Convertir Blob a Buffer para pdf-parse
+    console.log('Converting Blob to Buffer...');
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    console.log(`Buffer created, size: ${buffer.length} bytes`);
 
     // Parsear PDF (lazy load pdf-parse)
-    const pdfParse = getPdfParse();
+    console.log('Loading pdf-parse module...');
+    let pdfParse;
+    try {
+      pdfParse = getPdfParse();
+      console.log('pdf-parse loaded successfully');
+    } catch (pdfParseError) {
+      console.error('Failed to load pdf-parse:', pdfParseError);
+      return res.status(500).json({ 
+        error: 'Error cargando módulo de parsing',
+        details: pdfParseError instanceof Error ? pdfParseError.message : 'Failed to load pdf-parse',
+        type: 'PDF_PARSE_ERROR'
+      });
+    }
+    
+    console.log('Parsing PDF...');
     const pdfData = await pdfParse(buffer);
     const text = pdfData.text;
+    console.log(`PDF parsed successfully, text length: ${text.length} characters`);
     
     // Extraer operaciones del texto
     const operaciones = await parsePDFText(text);
@@ -256,12 +284,21 @@ export default async function handler(req: any, res: any) {
     console.error('Error details:', {
       message: errorMessage,
       stack: errorStack,
-      name: error instanceof Error ? error.name : 'Unknown'
+      name: error instanceof Error ? error.name : 'Unknown',
+      env: {
+        hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      }
     });
+    
+    // Devolver error más descriptivo
+    const isEnvError = errorMessage.includes('Missing Supabase environment variables');
+    const isPdfParseError = errorMessage.includes('Failed to load pdf-parse');
     
     return res.status(500).json({ 
       error: 'Error procesando caución',
-      details: errorMessage
+      details: errorMessage,
+      type: isEnvError ? 'ENV_ERROR' : isPdfParseError ? 'PDF_PARSE_ERROR' : 'UNKNOWN_ERROR'
     });
   }
 }
