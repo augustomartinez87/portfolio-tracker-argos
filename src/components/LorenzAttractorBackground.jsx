@@ -194,9 +194,27 @@ const LorenzAttractorBackground = () => {
         @keyframes draw-lorenz-main {
           0% {
             stroke-dashoffset: 50000;
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          30% {
+            stroke-dashoffset: 0;
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          70% {
+            opacity: 0;
+          }
+          85% {
+            opacity: 0;
           }
           100% {
             stroke-dashoffset: 0;
+            opacity: 1;
           }
         }
 
@@ -229,7 +247,7 @@ const LorenzAttractorBackground = () => {
         .lorenz-path-main {
           stroke-dasharray: 50000;
           stroke-dashoffset: 50000;
-          animation: draw-lorenz-main 20s linear forwards;
+          animation: draw-lorenz-main 12s ease-in-out infinite;
         }
 
         .lorenz-path-random {
