@@ -11,6 +11,7 @@ import ColumnSelector from '../components/dashboard/ColumnSelector';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardSummaryCards from '../components/dashboard/DashboardSummaryCards';
+import TotalCard from '../components/dashboard/TotalCard';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -812,7 +813,7 @@ export default function Dashboard() {
               <>
                 <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
-                <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
+                <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
                   <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-3 items-center justify-between flex-shrink-0">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
@@ -832,7 +833,16 @@ export default function Dashboard() {
                       Nueva Transacción
                     </button>
                   </div>
-                  <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                  <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                    <div className="flex-1 overflow-auto min-h-0">
+                      <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                    </div>
+                    {positions.length > 0 && (
+                      <div className="flex-shrink-0 border-t border-border-primary p-4">
+                        <TotalCard totals={totals} columnSettings={columnSettings} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}

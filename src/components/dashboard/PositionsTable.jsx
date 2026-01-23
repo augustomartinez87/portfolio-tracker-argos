@@ -152,13 +152,6 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
   const paddingY = columnSettings.density === 'compact' ? 'py-2' : 'py-2.5';
   const paddingX = 'px-3';
 
-  const totalValuacion = positionsWithGroup.reduce((sum, p) => sum + p.valuacionActual, 0);
-  const totalInvertido = positionsWithGroup.reduce((sum, p) => sum + p.costoTotal, 0);
-  const totalResultado = positionsWithGroup.reduce((sum, p) => sum + p.resultado, 0);
-  const totalResultadoPct = totalInvertido > 0 ? (totalResultado / totalInvertido) * 100 : 0;
-  const totalDiario = positionsWithGroup.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
-  const totalDiarioPct = totalInvertido > 0 ? (totalDiario / totalInvertido) * 100 : 0;
-
   return (
     <div className="bg-background-secondary flex flex-col h-full overflow-hidden">
       {searchTerm && searchTerm.trim() && (
@@ -279,52 +272,6 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
           </tbody>
         </table>
         </div>
-        {positionsWithGroup.length > 0 && (
-          <div className="flex-shrink-0 border-t border-border-primary p-4">
-            <div className="flex items-center bg-background-secondary border border-border-primary rounded-lg p-4 shadow-md">
-              <div className={`${paddingX} ${paddingY} text-text-primary pr-8 w-32`}>
-                <span className="font-bold text-lg text-success">Total</span>
-              </div>
-              <div className={`${paddingX} ${paddingY} w-20`}></div>
-              {columnSettings.showPPC && (
-                <div className={`${paddingX} ${paddingY} w-24`}></div>
-              )}
-              <div className={`${paddingX} ${paddingY} w-24`}></div>
-              <div className={`${paddingX} ${paddingY} flex-1 text-right text-text-primary font-mono font-bold text-lg tabular-nums`}>
-                {formatARS(totalValuacion)}
-              </div>
-              {columnSettings.showInvertido && (
-                <div className={`${paddingX} ${paddingY} w-32 text-right text-text-secondary font-mono font-medium tabular-nums`}>
-                  {formatARS(totalInvertido)}
-                </div>
-              )}
-              <div className={`${paddingX} ${paddingY} w-32 text-right tabular-nums`}>
-                <span className={`font-mono font-bold text-lg ${totalResultado >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {formatARS(totalResultado)}
-                </span>
-              </div>
-              <div className={`${paddingX} ${paddingY} w-24 text-right`}>
-                <span className={`font-bold px-2 py-0.5 rounded text-sm ${totalResultadoPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
-                  {formatPercent(totalResultadoPct)}
-                </span>
-              </div>
-              {columnSettings.showDiario && (
-                <div className={`${paddingX} ${paddingY} w-28 text-right tabular-nums`}>
-                  <span className={`font-mono text-sm font-medium ${totalDiario >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {formatARS(totalDiario)}
-                  </span>
-                </div>
-              )}
-              {columnSettings.showDiarioPct && (
-                <div className={`${paddingX} ${paddingY} w-24 text-right`}>
-                  <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${totalDiarioPct >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
-                    {formatPercent(totalDiarioPct)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
         {positionsWithGroup.length === 0 && (
           <div className="text-center py-8">
             <p className="text-text-secondary mb-1">No hay posiciones</p>
