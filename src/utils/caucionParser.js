@@ -1,6 +1,6 @@
-import * as pdfParseLib from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 
-const pdfParse = pdfParseLib.default || pdfParseLib;
+const pdfParse = new PDFParse();
 const DATE_REGEX = /(\d{2})\/(\d{2})\/(\d{2,4})/;
 const BOLETO_REGEX = /BOL\s+(\d{10})/;
 const LIQUIDACION_REGEX = /Liquidaci[óo]n del d[íi]a\s+(\d{2}\/\d{2}\/\d{4})/;
