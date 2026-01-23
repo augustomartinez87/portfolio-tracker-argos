@@ -21,8 +21,8 @@ const sortCauciones = (data, config) => {
         bVal = b[config.key] || (b.monto_devolver - b.capital);
         break;
       case 'tna_real':
-        aVal = a.tasa_tna || 0;
-        bVal = b.tasa_tna || 0;
+        aVal = a.tna_real || 0;
+        bVal = b.tna_real || 0;
         break;
       case 'dias':
         aVal = Math.ceil((new Date(a.fecha_fin) - new Date(a.fecha_inicio)) / (1000 * 60 * 60 * 24));
@@ -193,7 +193,7 @@ const SpreadTable = ({ cauciones, onDelete, loading }) => {
                   </td>
                   <td className="px-3 py-3">
                     <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm font-mono font-medium">
-                      {formatPercent(c.tasa_tna / 100, 2)}
+                      {formatPercent(c.tna_real / 100, 2)}
                     </span>
                   </td>
                   <td className="px-2 py-3">

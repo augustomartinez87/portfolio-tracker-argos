@@ -1,9 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useContext } from 'react';
 import { Upload, FileText, X, Check, AlertCircle } from 'lucide-react';
-import { parseCaucionPDF } from '../../utils/caucionParser';
+import { caucionService } from '../../services/caucionService';
 import { formatARS } from '../../utils/formatters';
+import { useAuth } from '../../contexts/AuthContext';
 
 const SpreadUpload = ({ onFilesParsed, onClear }) => {
+  const { user } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parsedFiles, setParsedFiles] = useState([]);
@@ -19,13 +21,25 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
     setIsDragging(false);
   }, []);
 
-  const processFile = async (file) => {
+  const processFile = async (file, userId) => {
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       return { filename: file.name, error: 'Solo se aceptan archivos PDF' };
     }
 
     try {
-      const result = await parseCaucionPDF(file);
+      // Verificar si ya existe
+      const exists = await caucionService.existePDF(userId, file.name);
+      if (exists) {
+        return { filename: file.name, error: 'Este PDF ya fue procesado anteriormente' };
+      }
+
+      // Subir y parsear via server-side
+      const result = await caucionService.uploadAndParsePDF(userId, file);
+      
+      if (!result.success) {
+        return { filename: file.name, error: result.error || 'Error procesando PDF' };
+      }
+
       return result;
     } catch (err) {
       return { filename: file.name, error: err.message };
@@ -47,12 +61,17 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
   };
 
   const processFiles = async (files) => {
+    if (!user) {
+      setErrors(['Usuario no autenticado']);
+      return;
+    }
+
     setParsing(true);
     setErrors([]);
 
     const results = [];
     for (const file of files) {
-      const result = await processFile(file);
+      const result = await processFile(file, user.id);
       results.push(result);
     }
 
@@ -105,7 +124,7 @@ const SpreadUpload = ({ onFilesParsed, onClear }) => {
         {parsing ? (
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-text-secondary">Procesando PDFs...</p>
+            <p className="text-text-secondary">Subiendo y procesando PDFs...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">

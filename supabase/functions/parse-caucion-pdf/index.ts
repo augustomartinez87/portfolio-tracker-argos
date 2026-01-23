@@ -1,12 +1,11 @@
-import * as pdfParseLib from 'pdf-parse';
+import { createClient } from '@supabase/supabase-js';
+import * as pdfParse from 'pdf-parse';
 
-let pdfParse;
-try {
-  pdfParse = new pdfParseLib.PDFParse();
-} catch (e) {
-  console.warn('PDFParse class not available, using fallback');
-  pdfParse = pdfParseLib;
-}
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Regex patterns para parsing de cauciones
 const DATE_REGEX = /(\d{2})\/(\d{2})\/(\d{2,4})/;
 const BOLETO_REGEX = /BOL\s+(\d{10})/;
 const LIQUIDACION_REGEX = /Liquidaci[óo]n del d[íi]a\s+(\d{2}\/\d{2}\/\d{4})/;
@@ -14,15 +13,14 @@ const CAPITAL_FROM_CIERRE_REGEX = /Cantidad\s+([\d.]+,\d{2})\s*@/;
 const MONTO_DEVOLVER_REGEX = /Importe\s+ARS\s+([\d.]+,\d{2})\s*D/;
 const TNA_REGEX = /TNA:\s*([\d,]+)%/;
 const TIPO_OPERACION_REGEX = /Operaci[óo]n de\s+(apertura|cierre)\s+de\s+cauci[óo]n/i;
-const PLASO_REGEX = /\[(\w+)\]\s+(\d+)\s*d[íi]as?\)/i;
 
-function parseARSAmount(str) {
+function parseARSAmount(str: string): number {
   if (!str) return 0;
   const clean = str.replace(/\./g, '').replace(',', '.');
   return parseFloat(clean) || 0;
 }
 
-function parseDate(dateStr) {
+function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
   const match = DATE_REGEX.exec(dateStr);
   if (!match) return null;
@@ -33,21 +31,15 @@ function parseDate(dateStr) {
   return `${year}-${month}-${day}`;
 }
 
-export async function parseCaucionPDF(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const data = await pdfParse(arrayBuffer);
-  const text = data.text;
-
+async function parsePDFText(text: string) {
   const operaciones = [];
   const lines = text.split('\n');
-
   let currentOperacion = null;
   let state = 'idle';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const lineLower = line.toLowerCase();
-
+    
     const tipoMatch = TIPO_OPERACION_REGEX.exec(line);
     if (tipoMatch) {
       if (currentOperacion && currentOperacion.tipo === 'cierre') {
@@ -105,7 +97,7 @@ export async function parseCaucionPDF(file) {
     operaciones.push(currentOperacion);
   }
 
-  const cierresValidos = operaciones
+  return operaciones
     .filter(op => op.tipo === 'cierre' && op.capital > 0 && op.monto_devolver > 0)
     .map(op => ({
       tipo: 'cierre',
@@ -116,85 +108,80 @@ export async function parseCaucionPDF(file) {
       tasa_tna: op.tasa_tna,
       raw_text: text.substring(0, 500)
     }));
-
-  return {
-    filename: file.name,
-    total_operaciones: cierresValidos.length,
-    cierres: cierresValidos,
-    raw_text: text
-  };
 }
 
-export function matchAperturasConCierres(aperturas, cierres) {
-  const matched = [];
-  const unmatchedCierres = [...cierres];
-
-  for (const apertura of aperturas) {
-    const matchIndex = unmatchedCierres.findIndex(
-      cierre =>
-        cierre.capital === apertura.capital &&
-        Math.abs(cierre.tasa_tna - apertura.tasa_tna) < 0.5
-    );
-
-    if (matchIndex !== -1) {
-      const cierre = unmatchedCierres[matchIndex];
-      matched.push({
-        tipo: 'completa',
-        boleto_cierre: cierre.boleto,
-        boleto_apertura: apertura.boleto,
-        fecha_inicio: apertura.fecha_liquidacion,
-        fecha_fin: cierre.fecha_liquidacion,
-        capital: cierre.capital,
-        monto_devolver: cierre.monto_devolver,
-        tasa_tna: cierre.tasa_tna,
-        raw_text: `${apertura.raw_text}\n${cierre.raw_text}`
+export async function POST(request: Request) {
+  try {
+    const { userId, filename, fileData } = await request.json();
+    
+    if (!userId || !filename || !fileData) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       });
-      unmatchedCierres.splice(matchIndex, 1);
     }
-  }
 
-  return {
-    matched,
-    unmatched: {
-      aperturas: aperturas.filter(a =>
-        !matched.some(m => m.boleto_apertura === a.boleto)
-      ),
-      cierres: unmatchedCierres
+    // Validar que el usuario exista
+    const { data: user, error: userError } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid user' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
-  };
+
+    // Parsear PDF
+    const buffer = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+    const pdfData = await pdfParse(buffer);
+    const text = pdfData.text;
+    
+    // Extraer operaciones
+    const cierres = await parsePDFText(text);
+    
+    if (cierres.length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'No se encontraron operaciones de cierre válidas',
+        filename,
+        raw_text: text.substring(0, 500)
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      filename,
+      cierres,
+      raw_text: text,
+      total_operaciones: cierres.length
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('PDF parsing error:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Error procesando PDF',
+      details: error.message 
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
 
-export function calcularMetricas(cauciones) {
-  if (!cauciones || cauciones.length === 0) {
-    return {
-      capitalTotal: 0,
-      interesTotal: 0,
-      tnaPromedioPonderada: 0,
-      totalOperaciones: 0,
-      totalDias: 0
-    };
-  }
-
-  const capitalTotal = cauciones.reduce((sum, c) => sum + c.capital, 0);
-  const interesTotal = cauciones.reduce((sum, c) => sum + (c.monto_devolver - c.capital), 0);
-  const totalDias = cauciones.reduce((sum, c) => {
-    const dias = Math.ceil((new Date(c.fecha_fin) - new Date(c.fecha_inicio)) / (1000 * 60 * 60 * 24));
-    return sum + (dias > 0 ? dias : 0);
-  }, 0);
-
-  const tnaPonderada = capitalTotal > 0
-    ? cauciones.reduce((sum, c) => sum + (c.capital * c.tasa_tna), 0) / capitalTotal
-    : 0;
-
-  return {
-    capitalTotal,
-    interesTotal,
-    tnaPromedioPonderada: tnaPonderada,
-    totalOperaciones: cauciones.length,
-    totalDias
-  };
-}
-
-export function parsePDFBatch(files) {
-  return Promise.all(files.map(file => parseCaucionPDF(file)));
+export async function GET() {
+  return new Response(JSON.stringify({
+    message: 'Caución PDF parsing Edge Function',
+    version: '1.0.0',
+    status: 'active'
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
