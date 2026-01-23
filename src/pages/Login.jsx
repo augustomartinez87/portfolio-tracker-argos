@@ -92,7 +92,7 @@ export const Login = () => {
             <div className="flex items-center justify-between">
               <Link
                 to="/forgot-password"
-                className="text-sm text-primary hover:text-primary/80 transition-colors"
+                className="text-sm text-white/70 hover:text-white transition-colors"
               >
                 ¿Olvidaste tu contraseña?
               </Link>
@@ -117,7 +117,7 @@ export const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-text-tertiary">
               ¿No tienes cuenta?{' '}
-              <Link to="/signup" className="text-primary hover:text-primary/80 transition-colors font-medium">
+              <Link to="/signup" className="text-white hover:text-white/80 transition-colors font-medium">
                 Regístrate
               </Link>
             </p>
