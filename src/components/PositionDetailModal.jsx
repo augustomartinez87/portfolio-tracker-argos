@@ -141,7 +141,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           const data = await response.json();
           
           if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('No hay datos históricos disponibles');
+            setHistorical([]);
+            setLoading(false);
+            return;
           }
 
           const validData = data.filter(item => 
@@ -152,7 +154,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           );
 
           if (validData.length === 0) {
-            throw new Error('Datos históricos inválidos');
+            setHistorical([]);
+            setLoading(false);
+            return;
           }
 
           const sortedData = validData.sort((a, b) => {
