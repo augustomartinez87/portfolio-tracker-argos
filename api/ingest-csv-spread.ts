@@ -42,7 +42,7 @@ function toNumber(n: any): number {
 }
 
 function validateHeaders(headers: string[]): boolean {
-  const required = ['fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real'];
+  const required = ['fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real','archivo'];
   const lower = headers.map(h => h.trim());
   return required.every(r => lower.includes(r));
 }
@@ -51,7 +51,7 @@ async function ingestFromCsvLocal(csvText: string) {
   const rows = basicParseCsv(csvText);
   if (rows.length < 2) throw new Error('CSV must have header and at least one data row');
   const headers = rows[0] as string[];
-  if (!validateHeaders(headers)) throw new Error('CSV headers invalid. Expected: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real');
+  if (!validateHeaders(headers)) throw new Error('CSV headers invalid. Expected: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, archivo');
   const idx: Record<string, number> = {
     fecha_apertura: headers.indexOf('fecha_apertura'),
     fecha_cierre: headers.indexOf('fecha_cierre'),
@@ -60,6 +60,7 @@ async function ingestFromCsvLocal(csvText: string) {
     interes: headers.indexOf('interes'),
     dias: headers.indexOf('dias'),
     tna_real: headers.indexOf('tna_real'),
+    archivo: headers.indexOf('archivo'),
   } as any;
 
   const records: any[] = [];
@@ -75,12 +76,11 @@ async function ingestFromCsvLocal(csvText: string) {
     const interes = toNumber(row[idx.interes]);
     const dias = Number(row[idx.dias]);
     const tna_real = toNumber(row[idx.tna_real]);
+    const archivo = row[idx.archivo] ?? '';
     if (!(capital > 0) || !(monto_devolver > 0) || !Number.isFinite(dias) || !Number.isFinite(tna_real)) {
       continue;
     }
-    const monto_calc = capital * (1 + (tna_real * dias) / 365);
-    const interes_calc = monto_calc - capital;
-    const rec = { fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, monto_calc, interes_calc };
+    const rec = { fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, archivo };
     records.push(rec);
     totalCapital += capital; totalMontoDevolver += monto_devolver; totalInteres += interes;
     totalTna += capital * tna_real;

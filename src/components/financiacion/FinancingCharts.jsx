@@ -31,10 +31,10 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
       '150%+': { count: 0, capital: 0 }
     };
 
-    // Datos de ejemplo para visualización (reemplazar con cálculos reales)
+    // Procesar datos usando campos del CSV
     data.forEach(op => {
       const days = op.dias || 0;
-      const rate = op.tasa_tna || 0;
+      const rate = op.tna_real || 0;
       const capital = op.capital || 0;
 
       // Agrupar por tenor
@@ -50,6 +50,42 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
       else rateBuckets['150%+'].count += 1;
     });
 
+      // Agrupar por mes usando fecha_apertura del CSV
+      const monthlyData = {};
+      data.forEach(op => {
+        const fecha = op.fecha_apertura || op.fecha_inicio;
+        if (!fecha) return;
+        
+        // Parsear fecha y agrupar por mes
+        const date = new Date(fecha);
+        if (isNaN(date.getTime())) return;
+        
+        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = {
+            month: monthKey,
+            count: 0,
+            capital: 0,
+            interes: 0,
+            avgRate: 0,
+            totalRateWeight: 0
+          };
+        }
+        
+        monthlyData[monthKey].count += 1;
+        monthlyData[monthKey].capital += capital;
+        monthlyData[monthKey].interes += op.interes || 0;
+        monthlyData[monthKey].totalRateWeight += rate * capital;
+      });
+
+      // Calcular promedios
+      Object.values(monthlyData).forEach(month => {
+        month.avgRate = month.capital > 0 ? month.totalRateWeight / month.capital : 0;
+      });
+
+      const monthlyTrends = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+
       const totalOps = data.length;
       return {
         tenorDistribution: Object.entries(tenorBuckets).map(([label, data]) => ({
@@ -62,8 +98,12 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
           count: data.count,
           percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
         })),
-        monthlyTrends: [],
-        capitalFlow: []
+        monthlyTrends,
+        capitalFlow: monthlyTrends.map(m => ({
+          month: m.month,
+          capital: m.capital,
+          interes: m.interes
+        }))
       };
   }, [cauciones, csvData]);
 
@@ -150,6 +190,31 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
           colorClass="bg-green-500"
         />
       </div>
+
+      {/* Tendencias Mensuales usando fechas del CSV */}
+      {chartData.monthlyTrends.length > 0 && (
+        <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-text-tertiary" />
+            <h3 className="text-sm font-medium text-text-primary">Evolución Mensual (por fecha_apertura)</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {chartData.monthlyTrends.slice(-6).map((trend, index) => (
+              <div key={index} className="bg-background-secondary rounded p-3">
+                <p className="text-xs text-text-tertiary">{trend.month}</p>
+                <p className="text-sm font-medium text-text-primary">{trend.count} ops</p>
+                <p className="text-xs text-text-tertiary">
+                  Capital: ${(trend.capital / 1000000).toFixed(1)}M
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  TNA Prom: {(trend.avgRate).toFixed(1)}%
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Resumen de Métricas */}
       <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary">

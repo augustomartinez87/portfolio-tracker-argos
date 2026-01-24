@@ -1,6 +1,6 @@
 // CSV-based Spread Ingestor
-// Reads a pre-transformed CSV and produces derived metrics for pricing/curves
-// Expected CSV columns: fecha_apertura,fecha_cierre,capital,monto_devolver,interes,dias,tna_real
+// Reads CSV and processes metrics - CSV is source of truth, no recalculation
+// Expected CSV columns: fecha_apertura,fecha_cierre,capital,monto_devolver,interes,dias,tna_real,archivo
 // Encoding: ASCII/UTF-8
 
 export type CsvRecord = {
@@ -11,12 +11,10 @@ export type CsvRecord = {
   interes: number;
   dias: number;
   tna_real: number;
+  archivo: string;
 };
 
 export type DerivedRecord = CsvRecord & {
-  monto_devolver_calc: number;
-  interes_calc: number;
-  diff: number; // diferencia entre declarado y calculado
   fecha_apertura_dt?: Date;
   fecha_cierre_dt?: Date;
 };
@@ -91,7 +89,7 @@ function validateHeaders(headers: string[]): boolean {
   console.log('Headers encontrados:', headers);
   
   const required = [
-    'fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real'
+    'fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real','archivo'
   ];
   const lower = headers.map(h => h.trim().toLowerCase());
   console.log('Headers en minúsculas:', lower);
@@ -117,7 +115,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
   }
   const headers = rows[0] as string[];
   if (!validateHeaders(headers)) {
-    throw new Error(`CSV headers inválidos. Se esperaban: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real. Encontrados: [${headers.join(', ')}]`);
+    throw new Error(`CSV headers inválidos. Se esperaban: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, archivo. Encontrados: [${headers.join(', ')}]`);
   }
 
   const idx: Record<string, number> = {
@@ -127,7 +125,8 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     monto_devolver: headers.indexOf('monto_devolver'),
     interes: headers.indexOf('interes'),
     dias: headers.indexOf('dias'),
-    tna_real: headers.indexOf('tna_real')
+    tna_real: headers.indexOf('tna_real'),
+    archivo: headers.indexOf('archivo')
   } as any;
 
   const records: DerivedRecord[] = [];
@@ -155,15 +154,12 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     const interes = toNumber(row[idx.interes]);
     const dias = Number(row[idx.dias]);
     const tna_real = toNumber(row[idx.tna_real]);
+    const archivo = row[idx.archivo] ?? '';
 
     // Basic validation
     if (!(capital > 0) || !(monto_devolver > 0) || !Number.isFinite(dias) || !Number.isFinite(tna_real)) {
       continue;
     }
-
-    const monto_devolver_calc = capital * (1 + (tna_real * dias) / 365);
-    const interes_calc = monto_devolver_calc - capital;
-    const diff = monto_devolver - monto_devolver_calc;
 
     const dateA = parseDateSafe(fecha_apertura);
     const dateB = parseDateSafe(fecha_cierre);
@@ -176,9 +172,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
       interes,
       dias,
       tna_real,
-      monto_devolver_calc,
-      interes_calc,
-      diff,
+      archivo,
       fecha_apertura_dt: dateA ?? undefined,
       fecha_cierre_dt: dateB ?? undefined,
     };

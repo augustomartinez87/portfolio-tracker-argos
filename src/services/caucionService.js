@@ -136,7 +136,7 @@ export const caucionService = {
   async getResumen(userId) {
     const { data, error } = await supabase
       .from('cauciones')
-      .select('capital, monto_devolver, tna_real, fecha_inicio, fecha_fin')
+      .select('capital, monto_devolver, interes, dias, tna_real, fecha_inicio, fecha_fin')
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -145,29 +145,28 @@ export const caucionService = {
       return {
         capitalTotal: 0,
         interesTotal: 0,
+        diasPromedio: 0,
         tnaPromedioPonderada: 0,
-        totalOperaciones: 0,
-        totalDias: 0
+        totalOperaciones: 0
       };
     }
 
+    // Fórmulas contractuales
     const capitalTotal = data.reduce((sum, c) => sum + Number(c.capital), 0);
-    const interesTotal = data.reduce((sum, c) => sum + (Number(c.monto_devolver) - Number(c.capital)), 0);
-    const tnaPonderada = capitalTotal > 0
-      ? data.reduce((sum, c) => sum + (Number(c.capital) * Number(c.tna_real || 0)), 0) / capitalTotal
+    const interesTotal = data.reduce((sum, c) => sum + Number(c.interes || 0), 0);
+    const diasPromedio = data.length > 0 ? data.reduce((sum, c) => sum + Number(c.dias || 0), 0) / data.length : 0;
+    
+    // TNA ponderada = (interes_total / capital_total) * (365 / dias_promedio)
+    const tnaPromedioPonderada = capitalTotal > 0 && diasPromedio > 0
+      ? (interesTotal / capitalTotal) * (365 / diasPromedio)
       : 0;
-
-    const totalDias = data.reduce((sum, c) => {
-      const d = Math.ceil((new Date(c.fecha_fin) - new Date(c.fecha_inicio)) / (1000 * 60 * 60 * 24));
-      return sum + (d > 0 ? d : 0);
-    }, 0);
 
     return {
       capitalTotal,
       interesTotal,
-      tnaPromedioPonderada: tnaPonderada,
-      totalOperaciones: data.length,
-      totalDias
+      diasPromedio,
+      tnaPromedioPonderada,
+      totalOperaciones: data.length
     };
   },
 

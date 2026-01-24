@@ -88,10 +88,11 @@ const CSVUploadView = ({ onProcessed }) => {
         <div className="mt-4 p-3 bg-background-tertiary rounded-lg border border-border-primary">
           <h3 className="text-sm font-medium text-text-primary mb-2">📋 Formato del CSV</h3>
           <div className="text-xs text-text-tertiary space-y-1">
-            <p>• El archivo debe incluir: fecha, capital, tasa, días, intereses</p>
-            <p>• Formato de fechas: DD/MM/YYYY</p>
-            <p>• Separador: coma (,) o punto y coma (;)</p>
-            <p>• Encoding preferido: UTF-8</p>
+            <p>• Columnas requeridas: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, archivo</p>
+            <p>• Formato de fechas: YYYY-MM-DD</p>
+            <p>• Separador: coma (,)</p>
+            <p>• Encoding: UTF-8</p>
+            <p>• El CSV es fuente de verdad, no se recalculan valores</p>
           </div>
         </div>
       </div>
