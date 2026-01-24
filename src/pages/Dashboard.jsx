@@ -553,18 +553,13 @@ export default function Dashboard() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          currentPortfolio={currentPortfolio}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            {/* Portfolio Tabs - positioned below header and above summary cards */}
-            <div className="hidden lg:block">
-              <PortfolioTabs 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
-                currentPortfolio={currentPortfolio}
-              />
-            </div>
             <DashboardHeader
               mepRate={mepRate}
               lastUpdate={lastUpdate}

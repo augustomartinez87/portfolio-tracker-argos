@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Briefcase, TrendingUp, LogOut } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PortfolioSelector } from '../PortfolioSelector';
+import { PortfolioTabs } from '../portfolio/PortfolioTabs';
 
-export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
+export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded, activeTab, setActiveTab, currentPortfolio }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -28,6 +30,24 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
     >
       <div className="h-20 flex items-center justify-center border-b border-border-primary">
         <Briefcase className="w-5 h-5 text-text-tertiary group-hover:text-text-primary transition-colors" />
+      </div>
+
+      {/* Portfolio Selector */}
+      <div className="px-3 py-4 border-b border-border-primary">
+        <div className="group-hover:w-full transition-all duration-200">
+          <PortfolioSelector />
+        </div>
+      </div>
+
+      {/* Portfolio Tabs */}
+      <div className="border-b border-border-primary">
+        <div className="px-3 py-4">
+          <PortfolioTabs 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            currentPortfolio={currentPortfolio}
+          />
+        </div>
       </div>
 
       <div className="flex-1 py-4 overflow-hidden">
