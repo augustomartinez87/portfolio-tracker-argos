@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TrendingUp, Upload, BarChart3, Filter } from 'lucide-react';
 import FinancingKPIs from './FinancingKPIs';
 import CSVUploadView from './CSVUploadView';
@@ -8,37 +8,35 @@ import SummaryCard from '../common/SummaryCard';
 const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [kpisData, setKpisData] = useState(null);
+  const csvDataRef = useRef(null); // Ref persistente para datos CSV
 
   const handleCSVProcessed = useCallback((processedData) => {
-    console.log('FinancingDashboard - handleCSVProcessed llamado con:', processedData);
-    console.log('FinancingDashboard - kpisData ANTES de actualizar:', kpisData);
-    console.log('FinancingDashboard - processedData.summary:', processedData?.summary);
-    console.log('FinancingDashboard - processedData.records:', processedData?.records?.length);
+    console.log('✅ CSV procesado - registros:', processedData?.records?.length);
+    console.log('✅ CSV procesado - summary:', processedData?.summary);
     
-    // Actualizar kpisData inmediatamente con los datos del CSV
+    // Guardar en ref persistente Y en estado
     if (processedData && processedData.summary) {
-      console.log('FinancingDashboard - ANTES de setKpisData');
+      csvDataRef.current = processedData;
       setKpisData(processedData);
-      console.log('FinancingDashboard - DESPUÉS de setKpisData');
-      
-      // Pequeño timeout para verificar que el estado se mantiene
-      setTimeout(() => {
-        console.log('FinancingDashboard - Verificación timeout kpisData:', kpisData);
-      }, 100);
+      console.log('✅ kpisData actualizado con datos del CSV');
+      console.log('✅ csvDataRef.current guardado:', csvDataRef.current?.records?.length);
     } else {
-      console.error('FinancingDashboard - processedData no tiene estructura esperada:', processedData);
+      console.error('❌ Estructura de datos inválida:', processedData);
     }
-    
-    console.log('FinancingDashboard - Llamando a onRefresh...');
-    
-    // Refrescar datos principales después del procesamiento
-    onRefresh();
-  }, [onRefresh]); // Removido kpisData de las dependencias para evitar loops
+  }, []); // Sin dependencias para evitar re-creaciones
 
-  // Agregar useEffect para monitorear cambios en kpisData
+  // useEffect simple para monitorear cambios
   useEffect(() => {
-    console.log('FinancingDashboard - kpisData cambió a:', kpisData);
-    console.log('FinancingDashboard - stack trace de cambio:', new Error().stack?.substring(0, 200));
+    console.log('🔄 kpisData changed:', kpisData ? 'CON DATOS' : 'NULL');
+    console.log('🔄 csvDataRef.current:', csvDataRef.current?.records?.length || 'NULL');
+  }, [kpisData]);
+
+  // useEffect para restaurar datos desde ref si kpisData se pierde
+  useEffect(() => {
+    if (!kpisData && csvDataRef.current && csvDataRef.current.summary) {
+      console.log('🔧 Restaurando kpisData desde ref persistente');
+      setKpisData(csvDataRef.current);
+    }
   }, [kpisData]);
 
   const viewOptions = [
