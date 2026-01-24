@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { processCsvClient } from '../../ingest/csvSpreadClient';
 
-const SpreadLocalUploader = () => {
+const SpreadLocalUploader = ({ onFilesParsed }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -18,6 +18,9 @@ const SpreadLocalUploader = () => {
       try {
         const res = await processCsvClient(text);
         setResult(res);
+        if (onFilesParsed) {
+          onFilesParsed(res);
+        }
       } catch (err) {
         setError(err?.message || 'Error procesando CSV');
       } finally {

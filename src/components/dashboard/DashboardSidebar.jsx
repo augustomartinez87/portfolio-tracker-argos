@@ -12,12 +12,12 @@ export const DashboardSidebar = ({ user, signOut, activeTab, setActiveTab, isExp
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'trades', label: 'Transacciones', icon: FileText },
     { id: 'distribution', label: 'Distribución', icon: PieChart },
-    { id: 'spread', label: 'Financiación', icon: TrendingUp, path: '/spread' },
+    { id: 'financiacion', label: 'Financiación', icon: TrendingUp, path: '/financiacion' },
     { id: 'help', label: 'Ayuda', icon: HelpCircle },
   ];
 
   const isActive = (id) => {
-    if (id === 'spread') return useLocation().pathname === '/spread';
+    if (id === 'financiacion') return useLocation().pathname === '/financiacion';
     return activeTab === id;
   };
 

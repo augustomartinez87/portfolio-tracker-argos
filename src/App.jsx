@@ -8,7 +8,7 @@ import { SignUp } from './pages/SignUp'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
-import Spread from './pages/Spread'
+import Financiacion from './pages/Financiacion'
 
 // Configuración de React Query
 const queryClient = new QueryClient({
@@ -46,14 +46,20 @@ function App() {
             />
 
             <Route
-              path="/spread"
+              path="/financiacion"
               element={
                 <ProtectedRoute>
                   <PortfolioProvider>
-                    <Spread />
+                    <Financiacion />
                   </PortfolioProvider>
                 </ProtectedRoute>
               }
+            />
+            
+            {/* Redirect old spread route to new financing route */}
+            <Route
+              path="/spread"
+              element={<Navigate to="/financiacion" replace />}
             />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
