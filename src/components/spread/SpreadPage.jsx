@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { caucionService } from '../../services/caucionService';
-import SpreadUpload from './SpreadUpload';
 import SpreadTable from './SpreadTable';
+import SpreadLocalUploader from './SpreadLocalUploader';
 import SpreadCards from './SpreadCards';
 import { CheckCircle } from 'lucide-react';
 
@@ -60,7 +60,7 @@ const SpreadPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary">Funding Engine</h1>
+          <h1 className="text-2xl font-semibold text-text-primary">Financiación</h1>
           <p className="text-text-tertiary text-sm mt-1">
             Costo real de las cauciones tomadoras
           </p>
@@ -77,8 +77,12 @@ const SpreadPage = () => {
       )}
 
       <div className="bg-background-secondary rounded-xl border border-border-primary p-6">
-        <h2 className="text-text-primary font-medium mb-4">Subir comprobantes</h2>
-        <SpreadUpload onFilesParsed={handleFilesParsed} />
+        <h2 className="text-text-primary font-medium mb-4">Importación de CSV (ETL) procesado</h2>
+        <p className="text-text-tertiary mb-2">
+          Esta página ya no acepta cargas de comprobantes. El CSV debe haber sido procesado previamente por el pipeline ETL y subirlo a través de ese flujo.
+        </p>
+        <p className="text-text-tertiary">Por favor, utilice el CSV generado por el ETL para actualizar las cauciones. No se admiten envíos de archivos individuales desde esta interfaz.</p>
+        <SpreadLocalUploader />
       </div>
 
       <div>

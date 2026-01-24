@@ -12,7 +12,7 @@ export const DashboardSidebar = ({ user, signOut, activeTab, setActiveTab, isExp
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'trades', label: 'Transacciones', icon: FileText },
     { id: 'distribution', label: 'Distribución', icon: PieChart },
-    { id: 'spread', label: 'Funding', icon: TrendingUp, path: '/spread' },
+    { id: 'spread', label: 'Financiación', icon: TrendingUp, path: '/spread' },
     { id: 'help', label: 'Ayuda', icon: HelpCircle },
   ];
 
