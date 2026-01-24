@@ -12,14 +12,22 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
   const handleCSVProcessed = useCallback((processedData) => {
     console.log('FinancingDashboard - handleCSVProcessed llamado con:', processedData);
     console.log('FinancingDashboard - kpisData ANTES de actualizar:', kpisData);
-    setKpisData(processedData);
-    setTimeout(() => {
-      console.log('FinancingDashboard - kpisData DESPUÉS de actualizar (setTimeout):', kpisData);
-    }, 100);
+    console.log('FinancingDashboard - processedData.summary:', processedData?.summary);
+    console.log('FinancingDashboard - processedData.records:', processedData?.records?.length);
+    
+    // Actualizar kpisData inmediatamente con los datos del CSV
+    if (processedData && processedData.summary) {
+      setKpisData(processedData);
+      console.log('FinancingDashboard - setKpisData llamado con datos válidos');
+    } else {
+      console.error('FinancingDashboard - processedData no tiene estructura esperada:', processedData);
+    }
+    
     console.log('FinancingDashboard - Llamando a onRefresh...');
+    
     // Refrescar datos principales después del procesamiento
     onRefresh();
-  }, [onRefresh, kpisData]); // Agregar kpisData a dependencias
+  }, [onRefresh]); // Removido kpisData de las dependencias para evitar loops
 
   // Agregar useEffect para monitorear cambios en kpisData
   useEffect(() => {
