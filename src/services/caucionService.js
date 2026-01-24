@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase';
 
 export const caucionService = {
+  // CSV ingestion currently disabled
+  async ingestCsv(csvText) {
+    throw new Error('CSV ingestion is disabled in this deployment');
+  },
   async uploadPDFAndTriggerParsing(userId, file) {
     try {
       // 1. Subir PDF a Supabase Storage

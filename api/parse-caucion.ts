@@ -185,6 +185,15 @@ async function parsePDFText(text: string): Promise<Operacion[]> {
 }
 
 export default async function handler(req: any, res: any) {
+  // CSV-only mode: disable PDF/ETL processing
+  const CSV_ONLY = true;
+  if (CSV_ONLY) {
+    return res.status(501).json({
+      error: 'PDF/ETL processing is disabled in CSV-only mode',
+      message: 'Use /api/ingest-csv-spread to ingest CSV data as source of truth',
+      type: 'CSV_ONLY'
+    });
+  }
   // Diagnostic route: /api/parse-caucion?debug=env
   try {
     const reqUrl = (req as any).url as string | undefined;
