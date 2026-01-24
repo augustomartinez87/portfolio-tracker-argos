@@ -10,7 +10,10 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
   const [kpisData, setKpisData] = useState(null);
 
   const handleCSVProcessed = useCallback((processedData) => {
+    console.log('FinancingDashboard - handleCSVProcessed llamado con:', processedData);
+    console.log('FinancingDashboard - Actualizando kpisData...');
     setKpisData(processedData);
+    console.log('FinancingDashboard - Llamando a onRefresh...');
     // Refrescar datos principales después del procesamiento
     onRefresh();
   }, [onRefresh]);

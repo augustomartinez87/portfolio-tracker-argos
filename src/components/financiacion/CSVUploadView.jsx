@@ -9,17 +9,27 @@ const CSVUploadView = ({ onProcessed }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFilesProcessed = useCallback(async (result) => {
+    console.log('CSVUploadView - handleFilesProcessed llamado con:', result);
     setIsProcessing(true);
     try {
-      setProcessedFiles(prev => [...prev, {
+      const fileEntry = {
         id: Date.now(),
         timestamp: new Date(),
         summary: result.summary || {},
         operations: result.operaciones || [],
         details: result
-      }]);
+      };
+      console.log('CSVUploadView - Agregando archivo a historial:', fileEntry);
+      
+      setProcessedFiles(prev => {
+        console.log('CSVUploadView - Estado anterior processedFiles:', prev);
+        const nuevo = [...prev, fileEntry];
+        console.log('CSVUploadView - Estado nuevo processedFiles:', nuevo);
+        return nuevo;
+      });
       
       // Llamar al callback del padre con los datos procesados
+      console.log('CSVUploadView - Llamando a onProcessed callback...');
       if (onProcessed) {
         onProcessed(result);
       }

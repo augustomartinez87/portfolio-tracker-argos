@@ -50,7 +50,7 @@ const Financiacion = () => {
           user={user}
           signOut={signOut}
           activeTab="financiacion"
-          setActiveTab={() => {}}
+          setActiveTab={() => {}} // No necesitamos tab switching en financiación
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
         />
