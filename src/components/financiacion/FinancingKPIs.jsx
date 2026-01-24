@@ -55,7 +55,7 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
 
 MetricCard.displayName = 'MetricCard';
 
-const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
+const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
   // Agregar logging para debugging
   console.log('FinancingKPIs render - csvData:', csvData, 'cauciones:', cauciones, 'metrics:', metrics);
 
@@ -113,7 +113,7 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
     };
     console.log('FinancingKPIs - Resultado por defecto:', defaultResult);
     return defaultResult;
-  }, [csvData, metrics, cauciones]); // Agregar cauciones a las dependencias
+  }, [csvData, metrics, operations]); // Agregar operations a las dependencias
   console.log('FinancingKPIs kpiData calculado:', kpiData);
 
   return (
@@ -134,7 +134,7 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
       />
       <MetricCard
         title="Tasa Promedio Ponderada"
-        value={formatPercent(kpiData.tnaPromedio / 100, 2)}
+        value={formatPercent(kpiData.tnaPromedio, 2)}
         icon={Percent}
         loading={loading}
         tooltip="Tasa promedio ponderada por monto de capital"
@@ -148,7 +148,7 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
       />
       <MetricCard
         title="Spread vs BADLAR"
-        value={formatPercent(kpiData.spreadBADLAR / 100, 2)}
+        value={formatPercent(kpiData.spreadBADLAR, 2)}
         icon={TrendingUp}
         loading={loading}
         tooltip="Diferencia entre tasa de caución y BADLAR"
@@ -156,7 +156,7 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
       />
       <MetricCard
         title="Volatilidad de Tasas"
-        value={formatPercent(kpiData.desviacionTasa / 100, 2)}
+        value={formatPercent(kpiData.desviacionTasa, 2)}
         icon={Activity}
         loading={loading}
         tooltip="Desviación estándar de las tasas de interés"

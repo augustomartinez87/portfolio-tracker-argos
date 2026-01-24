@@ -1,46 +1,96 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { TrendingUp, RefreshCw, Upload, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
 import FinancingDashboard from '../components/financiacion/FinancingDashboard';
-import { caucionService } from '../services/caucionService';
+import { financingService } from '../services/financingService';
 
 const Financiacion = () => {
   const { user, signOut } = useAuth();
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
+  const queryClient = useQueryClient();
 
-  const [cauciones, setCauciones] = useState([]);
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('financiacion'); // Estado para navegación del sidebar
 
-  const loadCauciones = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
+  // React Query para obtener operaciones (persistencia real)
+  const { data: operations = [], isLoading: loadingOps, error: opsError, refetch: refetchOps } = useQuery({
+    queryKey: ['financing-operations', user?.id, currentPortfolio?.id],
+    queryFn: () => financingService.getOperations(user.id, currentPortfolio.id),
+    enabled: !!user && !!currentPortfolio,
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    retry: 2,
+    refetchOnWindowFocus: false
+  });
+
+  // React Query para obtener métricas (calculadas desde DB)
+  const { data: metrics, isLoading: loadingMetrics, error: metricsError, refetch: refetchMetrics } = useQuery({
+    queryKey: ['financing-metrics', user?.id, currentPortfolio?.id],
+    queryFn: () => financingService.getMetrics(user.id, currentPortfolio.id),
+    enabled: !!user && !!currentPortfolio,
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    retry: 2,
+    refetchOnWindowFocus: false
+  });
+
+  // Combinar estados de loading
+  const loading = loadingOps || loadingMetrics || portfolioLoading;
+
+  // Función para refrescar ambas queries
+  const handleRefresh = useCallback(async () => {
+    console.log('🔄 Refrescando datos de financiación...');
     try {
-      const [data, resumen] = await Promise.all([
-        caucionService.getCauciones(user.id),
-        caucionService.getResumen(user.id)
-      ]);
-      setCauciones(data);
-      setMetrics(resumen);
-    } catch (err) {
-      console.error('Error cargando cauciones:', err);
-    } finally {
-      setLoading(false);
+      await Promise.all([refetchOps(), refetchMetrics()]);
+      console.log('✅ Datos refrescados exitosamente');
+    } catch (error) {
+      console.error('❌ Error refrescando datos:', error);
     }
-  }, [user]);
+  }, [refetchOps, refetchMetrics]);
 
-  useEffect(() => {
-    loadCauciones();
-  }, [loadCauciones]);
+  // Manejo de errores
+  const hasError = opsError || metricsError;
+  const errorMessage = opsError?.message || metricsError?.message;
 
-  if (loading || portfolioLoading) {
+  // Exponer función para actualización desde componentes hijos
+  React.useEffect(() => {
+    // Hacer disponible la función de refresh globalmente para este componente
+    if (typeof window !== 'undefined') {
+      window.refreshFinancingData = handleRefresh;
+    }
+  }, [handleRefresh]);
+
+  if (loading) {
     return <LoadingFallback />;
+  }
+
+  if (hasError) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+          <div className="bg-background-secondary border border-border-primary rounded-xl p-6 max-w-md w-full">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-8 h-8 text-red-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-text-primary mb-2">Error cargando datos</h2>
+              <p className="text-text-tertiary text-sm mb-4">{errorMessage}</p>
+              <button
+                onClick={handleRefresh}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -61,11 +111,12 @@ const Financiacion = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold text-text-primary">Financiación</h1>
             <button
-              onClick={loadCauciones}
-              className="p-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="p-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary disabled:opacity-50"
               title="Actualizar datos"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -85,10 +136,11 @@ const Financiacion = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={loadCauciones}
-                  className="flex items-center gap-2 px-4 py-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary disabled:opacity-50"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Actualizar
                 </button>
               </div>
@@ -96,10 +148,13 @@ const Financiacion = () => {
 
             {/* Financing Dashboard Content */}
             <FinancingDashboard
-              cauciones={cauciones}
+              operations={operations}
               metrics={metrics}
               loading={loading}
-              onRefresh={loadCauciones}
+              onRefresh={handleRefresh}
+              queryClient={queryClient}
+              userId={user?.id}
+              portfolioId={currentPortfolio?.id}
             />
           </div>
         </main>

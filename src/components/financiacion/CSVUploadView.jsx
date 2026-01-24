@@ -1,48 +1,66 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import SpreadLocalUploader from '../spread/SpreadLocalUploader';
-import { caucionService } from '../../services/caucionService';
+import { financingService } from '../../services/financingService';
 
-const CSVUploadView = ({ onProcessed }) => {
+const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
   const [processedFiles, setProcessedFiles] = useState([]);
   const [expandedFile, setExpandedFile] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleFilesProcessed = useCallback(async (result) => {
-    console.log('CSVUploadView - handleFilesProcessed llamado con:', result);
-    setIsProcessing(true);
-    try {
+  // React Query mutation para persistir CSV
+  const uploadCsvMutation = useMutation({
+    mutationFn: ({ csvText }) => 
+      financingService.ingestFromCsv(userId, csvText, portfolioId),
+    onSuccess: (data) => {
+      console.log('✅ CSV persistido exitosamente:', data);
+      
+      // Invalidar queries para refrescar datos automáticamente
+      queryClient.invalidateQueries(['financing-operations']);
+      queryClient.invalidateQueries(['financing-metrics']);
+      
+      // Agregar al historial local para feedback visual
       const fileEntry = {
         id: Date.now(),
         timestamp: new Date(),
-        summary: result.summary || {},
-        operations: result.operaciones || [],
-        details: result
+        summary: data.summary || {},
+        operations: data.records || [],
+        details: data
       };
-      console.log('CSVUploadView - Agregando archivo a historial:', fileEntry);
       
-      setProcessedFiles(prev => {
-        console.log('CSVUploadView - Estado anterior processedFiles:', prev);
-        const nuevo = [...prev, fileEntry];
-        console.log('CSVUploadView - Estado nuevo processedFiles:', nuevo);
-        return nuevo;
-      });
+      setProcessedFiles(prev => [...prev, fileEntry]);
       
-      // Llamar al callback del padre con los datos procesados
-      console.log('CSVUploadView - Llamando a onProcessed callback...');
+      // Llamar al callback del padre
       if (onProcessed) {
-        onProcessed(result);
+        onProcessed(data);
       }
-      
-      // Opcional: Guardar en Supabase si está configurado
-      // await caucionService.saveOperaciones(result.operaciones);
-      
-    } catch (error) {
-      console.error('Error procesando archivos:', error);
-    } finally {
-      setIsProcessing(false);
+    },
+    onError: (error) => {
+      console.error('❌ Error persistiendo CSV:', error);
+      // Manejar error visualmente
+      const errorEntry = {
+        id: Date.now(),
+        timestamp: new Date(),
+        error: error.message,
+        isError: true
+      };
+      setProcessedFiles(prev => [...prev, errorEntry]);
     }
-  }, [onProcessed]);
+  });
+
+  const handleFilesProcessed = useCallback(async (result) => {
+    console.log('🔄 CSVUploadView - procesando archivo para persistencia...');
+    
+    // Obtener texto CSV del resultado (necesitamos pasarlo desde el uploader)
+    if (result.csvText) {
+      uploadCsvMutation.mutate({ csvText: result.csvText });
+    } else {
+      console.error('❌ No se encontró csvText en el resultado');
+      uploadCsvMutation.mutate({ csvText: result.rawCsv || '' });
+    }
+  }, [uploadCsvMutation]);
+
+  const isProcessing = uploadCsvMutation.isPending;
 
   const toggleExpanded = (fileId) => {
     setExpandedFile(expandedFile === fileId ? null : fileId);
@@ -80,7 +98,31 @@ const CSVUploadView = ({ onProcessed }) => {
           <div className="mt-4 p-3 bg-background-tertiary rounded-lg border border-border-primary">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              <span className="text-text-tertiary text-sm">Procesando datos...</span>
+              <span className="text-text-tertiary text-sm">
+                {uploadCsvMutation.isPending ? 'Guardando en base de datos...' : 'Procesando datos...'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {uploadCsvMutation.isError && (
+          <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/20 rounded-lg border border-red-300 dark:border-red-800">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span className="text-red-700 dark:text-red-300 text-sm">
+                Error: {uploadCsvMutation.error?.message || 'Error procesando archivo'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {uploadCsvMutation.isSuccess && (
+          <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-300 dark:border-green-800">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-green-700 dark:text-green-300 text-sm">
+                ¡Archivo guardado exitosamente! ({uploadCsvMutation.data?.totalInserted || 0} operaciones)
+              </span>
             </div>
           </div>
         )}
@@ -116,21 +158,33 @@ const CSVUploadView = ({ onProcessed }) => {
             {processedFiles.map((file) => (
               <div 
                 key={file.id}
-                className="bg-background-tertiary rounded-lg border border-border-primary overflow-hidden"
+                className={`bg-background-tertiary rounded-lg border overflow-hidden ${
+                  file.isError 
+                    ? 'border-red-300 dark:border-red-800' 
+                    : 'border-border-primary'
+                }`}
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between cursor-pointer" 
                        onClick={() => toggleExpanded(file.id)}>
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-success" />
+                      {file.isError ? (
+                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      ) : (
+                        <CheckCircle className="w-5 h-5 text-success" />
+                      )}
                       <div>
                         <p className="text-sm font-medium text-text-primary">
-                          Procesado: {formatTimestamp(file.timestamp)}
+                          {file.isError ? 'Error' : 'Procesado'}: {formatTimestamp(file.timestamp)}
                         </p>
                         <p className="text-xs text-text-tertiary">
-                          {file.summary.totalRecords || 0} operaciones • 
-                          Capital: ${(file.summary.totalCapital || 0).toLocaleString('es-AR')} •
-                          Intereses: ${(file.summary.totalInteres || 0).toLocaleString('es-AR')}
+                          {file.isError ? (
+                            file.error || 'Error desconocido'
+                          ) : (
+                            `${file.summary?.totalRecords || file.operations?.length || 0} operaciones • ` +
+                            `Capital: $${(file.summary?.totalCapital || 0).toLocaleString('es-AR')} • ` +
+                            `Intereses: $${(file.summary?.totalInteres || 0).toLocaleString('es-AR')}`
+                          )}
                         </p>
                       </div>
                     </div>
@@ -142,39 +196,41 @@ const CSVUploadView = ({ onProcessed }) => {
 
                   {expandedFile === file.id && (
                     <div className="mt-4 pt-4 border-t border-border-primary">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-text-tertiary">Capital Total</p>
-                          <p className="text-sm font-medium text-text-primary">
-                            ${(file.summary.totalCapital || 0).toLocaleString('es-AR')}
-                          </p>
+                      {!file.isError && file.summary && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div>
+                            <p className="text-xs text-text-tertiary">Capital Total</p>
+                            <p className="text-sm font-medium text-text-primary">
+                              ${(file.summary.totalCapital || 0).toLocaleString('es-AR')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-text-tertiary">Interés Total</p>
+                            <p className="text-sm font-medium text-text-primary">
+                              ${(file.summary.totalInteres || 0).toLocaleString('es-AR')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-text-tertiary">TNA Promedio</p>
+                            <p className="text-sm font-medium text-text-primary">
+                              {((file.summary.tnaPromedioPonderado || 0)).toFixed(2)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-text-tertiary">Registros</p>
+                            <p className="text-sm font-medium text-text-primary">
+                              {file.summary.totalRecords || 0}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-text-tertiary">Interés Total</p>
-                          <p className="text-sm font-medium text-text-primary">
-                            ${(file.summary.totalInteres || 0).toLocaleString('es-AR')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-tertiary">TNA Promedio</p>
-                          <p className="text-sm font-medium text-text-primary">
-                            {((file.summary.tnaPromedioPonderado || 0)).toFixed(2)}%
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-tertiary">Registros</p>
-                          <p className="text-sm font-medium text-text-primary">
-                            {file.summary.totalRecords || 0}
-                          </p>
-                        </div>
-                      </div>
+                      )}
                       
                       <details className="mt-3">
                         <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-primary">
                           Ver detalles técnicos (JSON)
                         </summary>
                         <pre className="mt-2 text-xs bg-background-secondary rounded p-3 overflow-x-auto">
-                          {JSON.stringify(file.details, null, 2)}
+                          {JSON.stringify(file.details || file, null, 2)}
                         </pre>
                       </details>
                     </div>

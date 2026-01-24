@@ -26,7 +26,12 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
         setResult(res);
         console.log('Llamando a onFilesParsed callback...');
         if (onFilesParsed) {
-          onFilesParsed(res);
+          // Pasar también el texto CSV original para persistencia
+          const enrichedResult = {
+            ...res,
+            csvText: text // Agregar texto CSV para persistencia
+          };
+          onFilesParsed(enrichedResult);
         }
       } catch (err) {
         console.error('Error procesando CSV:', err);

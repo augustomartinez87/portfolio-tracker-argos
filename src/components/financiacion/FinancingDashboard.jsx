@@ -5,7 +5,7 @@ import CSVUploadView from './CSVUploadView';
 import FinancingCharts from './FinancingCharts';
 import SummaryCard from '../common/SummaryCard';
 
-const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
+const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClient, userId, portfolioId }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [kpisData, setKpisData] = useState(null);
   const csvDataRef = useRef(null); // Ref persistente para datos CSV
@@ -71,7 +71,7 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
       <FinancingKPIs 
         metrics={metrics} 
         csvData={kpisData} 
-        cauciones={cauciones}
+        operations={operations}
         loading={loading} 
       />
 
@@ -89,18 +89,18 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
                   </div>
                 ))}
               </div>
-            ) : cauciones.length > 0 ? (
+            ) : operations.length > 0 ? (
               <div className="space-y-4">
                 <SummaryCard
                   title="Total de Operaciones"
-                  value={cauciones.length}
+                  value={operations.length}
                   subValue="Último período"
                   icon={BarChart3}
                 />
                 <div className="text-text-tertiary">
-                  <p>• Capital promedio por operación: ${metrics?.capitalPromedio?.toLocaleString?.('es-AR') || '—'}</p>
+                  <p>• Capital promedio por operación: ${metrics?.capitalTotal ? (metrics.capitalTotal / operations.length).toLocaleString('es-AR', {minimumFractionDigits: 2}) : '—'}</p>
                   <p>• Tasa promedio: {metrics?.tnaPromedioPonderada?.toFixed?.(2) || '—'}%</p>
-                  <p>• Duración promedio: {metrics?.diasPromedio || '—'} días</p>
+                  <p>• Duración promedio: {metrics?.diasPromedio?.toFixed?.(0) || '—'} días</p>
                 </div>
               </div>
             ) : (
@@ -116,12 +116,17 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
         )}
 
         {activeView === 'upload' && (
-          <CSVUploadView onProcessed={handleCSVProcessed} />
+          <CSVUploadView 
+            onProcessed={handleCSVProcessed} 
+            userId={userId}
+            portfolioId={portfolioId}
+            queryClient={queryClient}
+          />
         )}
 
         {activeView === 'charts' && (
           <FinancingCharts 
-            cauciones={cauciones} 
+            operations={operations} 
             csvData={kpisData}
             loading={loading} 
           />

@@ -12,6 +12,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardSummaryCards from '../components/dashboard/DashboardSummaryCards';
 import TotalCard from '../components/dashboard/TotalCard';
+import { PortfolioTabs } from '../components/portfolio/PortfolioTabs';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -550,13 +551,16 @@ export default function Dashboard() {
         <DashboardSidebar
           user={user}
           signOut={signOut}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+          <PortfolioTabs 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            currentPortfolio={currentPortfolio}
+          />
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
             <DashboardHeader
               mepRate={mepRate}

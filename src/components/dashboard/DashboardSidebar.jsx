@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, FileText, PieChart, HelpCircle, LogOut, TrendingUp } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Briefcase, TrendingUp, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-export const DashboardSidebar = ({ user, signOut, activeTab, setActiveTab, isExpanded, setIsExpanded }) => {
+export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const handleMouseEnter = () => setIsExpanded(true);
   const handleMouseLeave = () => setIsExpanded(false);
 
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'trades', label: 'Transacciones', icon: FileText },
-    { id: 'distribution', label: 'Distribución', icon: PieChart },
+    { id: 'portfolio', label: 'Portafolio', icon: Briefcase, path: '/dashboard' },
     { id: 'financiacion', label: 'Financiación', icon: TrendingUp, path: '/financiacion' },
-    { id: 'help', label: 'Ayuda', icon: HelpCircle },
   ];
 
   const isActive = (id) => {
-    if (id === 'financiacion') return useLocation().pathname === '/financiacion';
-    return activeTab === id;
+    return location.pathname === navItems.find(item => item.id === id)?.path;
   };
 
   return (
@@ -28,61 +27,35 @@ export const DashboardSidebar = ({ user, signOut, activeTab, setActiveTab, isExp
       onMouseLeave={handleMouseLeave}
     >
       <div className="h-20 flex items-center justify-center border-b border-border-primary">
-        <LayoutDashboard className="w-5 h-5 text-text-tertiary group-hover:text-text-primary transition-colors" />
+        <Briefcase className="w-5 h-5 text-text-tertiary group-hover:text-text-primary transition-colors" />
       </div>
 
       <div className="flex-1 py-4 overflow-hidden">
         <div className="space-y-1 h-full">
           {navItems.map((item) => (
-            item.path ? (
-              <Link
-                key={item.id}
-                to={item.path}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                className={`w-full flex items-center py-2.5 h-10 transition-all ${
-                  isActive(item.id)
-                    ? 'bg-primary text-white'
-                    : hoveredItem === item.id
-                      ? 'bg-background-tertiary text-text-primary'
-                      : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
-                }`}
-                title={item.label}
-              >
-                <span className="w-16 flex justify-center flex-shrink-0">
-                  <item.icon className={`w-5 h-5 transition-colors ${
-                    isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
-                  }`} />
-                </span>
-                <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 max-w-36 overflow-hidden">
-                  {item.label}
-                </span>
-              </Link>
-            ) : (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                className={`w-full flex items-center py-2.5 h-10 transition-all ${
-                  isActive(item.id)
-                    ? 'bg-primary text-white'
-                    : hoveredItem === item.id
-                      ? 'bg-background-tertiary text-text-primary'
-                      : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
-                }`}
-                title={item.label}
-              >
-                <span className="w-16 flex justify-center flex-shrink-0">
-                  <item.icon className={`w-5 h-5 transition-colors ${
-                    isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
-                  }`} />
-                </span>
-                <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 max-w-36 overflow-hidden">
-                  {item.label}
-                </span>
-              </button>
-            )
+          <Link
+            key={item.id}
+            to={item.path}
+            onMouseEnter={() => setHoveredItem(item.id)}
+            onMouseLeave={() => setHoveredItem(null)}
+            className={`w-full flex items-center py-2.5 h-10 transition-all ${
+              isActive(item.id)
+                ? 'bg-primary text-white'
+                : hoveredItem === item.id
+                  ? 'bg-background-tertiary text-text-primary'
+                  : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
+            }`}
+            title={item.label}
+          >
+            <span className="w-16 flex justify-center flex-shrink-0">
+              <item.icon className={`w-5 h-5 transition-colors ${
+                isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
+              }`} />
+            </span>
+            <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 max-w-36 overflow-hidden">
+              {item.label}
+            </span>
+          </Link>
           ))}
         </div>
       </div>
