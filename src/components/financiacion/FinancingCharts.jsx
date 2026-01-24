@@ -35,7 +35,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
     data.forEach(op => {
       const days = op.dias || 0;
       const rate = op.tna_real || 0;
-      const capital = op.capital || 0;
+      const capitalAmount = op.capital || 0;
 
       // Agrupar por tenor
       if (days <= 7) tenorBuckets['1-7 días'].count += 1;
@@ -74,9 +74,9 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         }
         
         monthlyData[monthKey].count += 1;
-        monthlyData[monthKey].capital += capital;
-        monthlyData[monthKey].interes += op.interes || 0;
-        monthlyData[monthKey].totalRateWeight += rate * capital;
+monthlyData[monthKey].capital += capitalAmount;
+        monthlyData[monthKey].interes += (op.interes || 0);
+        monthlyData[monthKey].totalRateWeight += rate * capitalAmount;
       });
 
       // Calcular promedios
