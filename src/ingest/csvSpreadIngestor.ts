@@ -88,11 +88,19 @@ function parseDateSafe(dateStr: string): Date | null {
 
 /** Validate that required headers exist in the first row */
 function validateHeaders(headers: string[]): boolean {
+  console.log('Headers encontrados:', headers);
+  
   const required = [
     'fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real'
   ];
-  const lower = headers.map(h => h.trim());
-  return required.every(r => lower.includes(r));
+  const lower = headers.map(h => h.trim().toLowerCase());
+  console.log('Headers en minúsculas:', lower);
+  console.log('Headers requeridos:', required);
+  
+  const missing = required.filter(r => !lower.includes(r.toLowerCase()));
+  console.log('Headers faltantes:', missing);
+  
+  return required.every(r => lower.includes(r.toLowerCase()));
 }
 
 /** Helpers to safely convert to number */
@@ -109,7 +117,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
   }
   const headers = rows[0] as string[];
   if (!validateHeaders(headers)) {
-    throw new Error('CSV headers invalid. Expected: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real');
+    throw new Error(`CSV headers inválidos. Se esperaban: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real. Encontrados: [${headers.join(', ')}]`);
   }
 
   const idx: Record<string, number> = {

@@ -16,12 +16,16 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
       setResult(null);
       setLoading(true);
       try {
+        console.log('Procesando CSV... Text length:', text.length);
+        console.log('Primeras 200 chars:', text.substring(0, 200));
         const res = await processCsvClient(text);
+        console.log('Resultado del procesamiento:', res);
         setResult(res);
         if (onFilesParsed) {
           onFilesParsed(res);
         }
       } catch (err) {
+        console.error('Error procesando CSV:', err);
         setError(err?.message || 'Error procesando CSV');
       } finally {
         setLoading(false);
