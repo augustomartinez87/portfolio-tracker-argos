@@ -528,32 +528,22 @@ export default function Dashboard() {
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
         {/* Header mobile top */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <PortfolioSelector />
-                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
-                <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
-              </div>
-                <button
-                  onClick={() => refetchPrices()}
-                  disabled={isPricesLoading}
-                  className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  title="Actualizar"
-                  aria-label="Actualizar"
-                >
-                  <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
-                </button>
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <PortfolioSelector />
+              <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+              <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
             </div>
-          </div>
-          {/* Mobile Portfolio Tabs */}
-          <div className="px-0">
-            <PortfolioTabs 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              currentPortfolio={currentPortfolio}
-            />
+              <button
+                onClick={() => refetchPrices()}
+                disabled={isPricesLoading}
+                className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                title="Actualizar"
+                aria-label="Actualizar"
+              >
+                <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
+              </button>
           </div>
         </div>
 
@@ -566,15 +556,15 @@ export default function Dashboard() {
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-          {/* Desktop Portfolio Tabs */}
-          <div className="hidden lg:block">
-            <PortfolioTabs 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              currentPortfolio={currentPortfolio}
-            />
-          </div>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+            {/* Portfolio Tabs - positioned below header and above summary cards */}
+            <div className="hidden lg:block">
+              <PortfolioTabs 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab} 
+                currentPortfolio={currentPortfolio}
+              />
+            </div>
             <DashboardHeader
               mepRate={mepRate}
               lastUpdate={lastUpdate}
@@ -828,6 +818,14 @@ export default function Dashboard() {
 
             {activeTab === 'dashboard' && (
               <>
+                {/* Portfolio Tabs - positioned below header and above summary cards for mobile */}
+                <div className="lg:hidden">
+                  <PortfolioTabs 
+                    activeTab={activeTab} 
+                    setActiveTab={setActiveTab} 
+                    currentPortfolio={currentPortfolio}
+                  />
+                </div>
                 <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
                 {/* Tabla de Posiciones - contenedor separado */}
