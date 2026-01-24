@@ -10,6 +10,10 @@ export const financingService = {
   // 1. Parsear CSV y persistir en DB (core de la persistencia)
   async ingestFromCsv(userId, csvText, portfolioId) {
     try {
+      if (!userId || !portfolioId) {
+        throw new Error('Se requieren userId y portfolioId para la persistencia');
+      }
+
       console.log('🔄 Parseando CSV para user:', userId, 'portfolio:', portfolioId);
       
       // Parsear CSV usando lógica existente

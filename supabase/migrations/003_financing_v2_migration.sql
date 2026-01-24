@@ -3,24 +3,26 @@
 -- Ejecutar en Supabase SQL Editor
 -- ============================================================================
 
--- 1. Eliminar columnas relacionadas con PDF (si existen)
+-- 1. Eliminar vistas y reglas que dependen de la tabla antes de alterar
+DROP VIEW IF EXISTS cauciones_resumen;
+
+-- 2. Eliminar columnas relacionadas con PDF (si existen)
 ALTER TABLE cauciones DROP COLUMN IF EXISTS pdf_filename;
 ALTER TABLE cauciones DROP COLUMN IF EXISTS pdf_url;
 ALTER TABLE cauciones DROP COLUMN IF EXISTS pdf_storage_path;
 ALTER TABLE cauciones DROP COLUMN IF EXISTS boleto;
 ALTER TABLE cauciones DROP COLUMN IF EXISTS raw_text;
 
--- 2. Agregar columnas para soporte CSV
+-- 3. Agregar columnas para soporte CSV
 ALTER TABLE cauciones ADD COLUMN IF NOT EXISTS archivo VARCHAR(100);
 ALTER TABLE cauciones ADD COLUMN IF NOT EXISTS portfolio_id UUID REFERENCES portfolios(id);
 
--- 3. Actualizar columna tna_real para almacenar como porcentaje directo (ej: 33.08)
+-- 4. Actualizar columna tna_real para almacenar como porcentaje directo (ej: 33.08)
 -- La columna existente está bien, pero aseguremos que el cálculo sea correcto
 ALTER TABLE cauciones ALTER COLUMN tna_real TYPE NUMERIC(10, 4);
 
--- 4. Actualizar vista de resumen para incluir portfolio_id
-DROP VIEW IF EXISTS cauciones_resumen;
-CREATE OR REPLACE VIEW cauciones_resumen AS
+-- 5. Recrear vista de resumen para incluir portfolio_id (sin OR REPLACE ya que dropeamos arriba)
+CREATE VIEW cauciones_resumen AS
 SELECT
   user_id,
   portfolio_id,

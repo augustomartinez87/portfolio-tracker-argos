@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { BarChart3, TrendingUp, Clock, DollarSign } from 'lucide-react';
 
-const FinancingCharts = ({ cauciones, csvData, loading }) => {
+const FinancingCharts = ({ operations, csvData, loading }) => {
   // Procesamiento de datos para visualizaciones
   const chartData = useMemo(() => {
-    const data = csvData && csvData.operaciones ? csvData.operaciones : cauciones || [];
+    const data = csvData && csvData.operaciones ? csvData.operaciones : operations || [];
     
     if (data.length === 0) {
       return {
@@ -105,7 +105,7 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
           interes: m.interes
         }))
       };
-  }, [cauciones, csvData]);
+  }, [operations, csvData]);
 
   if (loading) {
     return (
@@ -122,7 +122,7 @@ const FinancingCharts = ({ cauciones, csvData, loading }) => {
     );
   }
 
-  if (cauciones.length === 0 && !csvData) {
+  if (operations.length === 0 && !csvData) {
     return (
       <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
         <div className="text-center py-12">

@@ -87,7 +87,7 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
           <div>
             <h2 className="text-lg font-semibold text-text-primary">Cargar Archivo CSV</h2>
             <p className="text-text-tertiary text-sm">
-              Sube tu archivo de cauciones para actualizar las métricas y análisis
+              Sube tu archivo CSV para actualizar las métricas y análisis
             </p>
           </div>
         </div>

@@ -57,7 +57,7 @@ MetricCard.displayName = 'MetricCard';
 
 const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
   // Agregar logging para debugging
-  console.log('FinancingKPIs render - csvData:', csvData, 'cauciones:', cauciones, 'metrics:', metrics);
+  console.log('FinancingKPIs render - csvData:', csvData, 'operations:', operations, 'metrics:', metrics);
 
   // Calcula KPIs avanzados usando datos del CSV y métricas existentes
   const kpiData = useMemo(() => {
