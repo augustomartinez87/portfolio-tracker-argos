@@ -17,8 +17,14 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
     
     // Actualizar kpisData inmediatamente con los datos del CSV
     if (processedData && processedData.summary) {
+      console.log('FinancingDashboard - ANTES de setKpisData');
       setKpisData(processedData);
-      console.log('FinancingDashboard - setKpisData llamado con datos válidos');
+      console.log('FinancingDashboard - DESPUÉS de setKpisData');
+      
+      // Pequeño timeout para verificar que el estado se mantiene
+      setTimeout(() => {
+        console.log('FinancingDashboard - Verificación timeout kpisData:', kpisData);
+      }, 100);
     } else {
       console.error('FinancingDashboard - processedData no tiene estructura esperada:', processedData);
     }
@@ -32,6 +38,7 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
   // Agregar useEffect para monitorear cambios en kpisData
   useEffect(() => {
     console.log('FinancingDashboard - kpisData cambió a:', kpisData);
+    console.log('FinancingDashboard - stack trace de cambio:', new Error().stack?.substring(0, 200));
   }, [kpisData]);
 
   const viewOptions = [
@@ -64,7 +71,6 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
 
       {/* KPIs Cards - Always visible */}
       <FinancingKPIs 
-        key={`kpis-${kpisData?.summary?.totalRecords || 0}-${metrics?.capitalTotal || 0}`}
         metrics={metrics} 
         csvData={kpisData} 
         cauciones={cauciones}
