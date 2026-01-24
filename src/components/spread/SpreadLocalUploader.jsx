@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { processCsvClient } from '../ingest/csvSpreadClient';
+import { processCsvClient } from '../../ingest/csvSpreadClient';
 
 const SpreadLocalUploader = () => {
   const [loading, setLoading] = useState(false);
