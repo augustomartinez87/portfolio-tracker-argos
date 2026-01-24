@@ -55,7 +55,7 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
 
 MetricCard.displayName = 'MetricCard';
 
-const FinancingKPIs = ({ metrics, csvData, loading }) => {
+const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
   // Calcula KPIs avanzados usando datos del CSV y métricas existentes
   const kpiData = useMemo(() => {
     if (csvData && csvData.summary) {
@@ -80,7 +80,7 @@ const FinancingKPIs = ({ metrics, csvData, loading }) => {
         desviacionTasa: metrics.desviacionTasa || 0,
         eficiencia: metrics.eficiencia || 0,
         spreadBADLAR: metrics.spreadBADLAR || 0,
-        operaciones: metrics.totalOperaciones || cauciones?.length || 0,
+        operaciones: metrics.totalOperaciones || 0,
       };
     }
     

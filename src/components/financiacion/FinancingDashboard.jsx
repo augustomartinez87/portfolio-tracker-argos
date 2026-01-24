@@ -47,6 +47,7 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
       <FinancingKPIs 
         metrics={metrics} 
         csvData={kpisData} 
+        cauciones={cauciones}
         loading={loading} 
       />
 
