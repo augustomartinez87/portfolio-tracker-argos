@@ -6,6 +6,8 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
+  console.log('SpreadLocalUploader render - result:', result, 'loading:', loading, 'error:', error);
+
   const onFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -20,7 +22,9 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
         console.log('Primeras 200 chars:', text.substring(0, 200));
         const res = await processCsvClient(text);
         console.log('Resultado del procesamiento:', res);
+        console.log('Estableciendo resultado en estado...');
         setResult(res);
+        console.log('Llamando a onFilesParsed callback...');
         if (onFilesParsed) {
           onFilesParsed(res);
         }
@@ -39,24 +43,45 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
       <input className="block w-full" type="file" accept=".csv" onChange={onFile} />
       {loading && <div className="text-text-tertiary">Procesando CSV local…</div>}
       {error && <div className="text-red-500">{error}</div>}
-      {result ? (
-        <div className="p-3 bg-background-secondary rounded-md border border-border-primary">
-          <div className="text-sm font-medium text-text-primary mb-2">Resultados</div>
-          <ul className="text-sm text-text-tertiary space-y-1">
-            <li>Capital caucionado: {result.summary?.totalCapital?.toLocaleString?.() ?? '—'}</li>
-            <li>Interés total pagado: {result.summary?.totalInteres?.toLocaleString?.() ?? '—'}</li>
-            <li>TNA promedio ponderado: {result.summary?.tnaPromedioPonderado ?? '—'}</li>
-            <li>Total registros: {result.summary?.totalRecords ?? '—'}</li>
+      {result && (
+        <div style={{ 
+          padding: '16px', 
+          backgroundColor: '#0a0a0a', 
+          borderRadius: '8px', 
+          border: '1px solid #1a1a1a',
+          marginTop: '12px'
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff', marginBottom: '8px' }}>
+            ✅ CSV Procesado Exitosamente
+          </div>
+          <ul style={{ fontSize: '14px', color: '#6b6b6b', listStyle: 'none', padding: 0 }}>
+            <li>📊 Capital caucionado: ${result.summary?.totalCapital?.toLocaleString?.() ?? '—'}</li>
+            <li>💰 Interés total pagado: ${result.summary?.totalInteres?.toLocaleString?.() ?? '—'}</li>
+            <li>📈 TNA promedio ponderado: {result.summary?.tnaPromedioPonderado?.toFixed(2) ?? '—'}%</li>
+            <li>📋 Total registros: {result.summary?.totalRecords ?? '—'}</li>
           </ul>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-text-tertiary">Ver detalle completo (JSON)</summary>
-            <pre className="mt-2 text-xs" style={{ maxHeight: '320px', overflow: 'auto' }}>
+          <details style={{ marginTop: '16px' }}>
+            <summary style={{ cursor: 'pointer', color: '#6b6b6b', fontSize: '12px' }}>
+              🔍 Ver detalle completo (JSON)
+            </summary>
+            <pre style={{ 
+              marginTop: '8px', 
+              fontSize: '11px', 
+              maxHeight: '320px', 
+              overflow: 'auto',
+              backgroundColor: '#141414',
+              padding: '8px',
+              borderRadius: '4px'
+            }}>
 {JSON.stringify(result, null, 2)}
             </pre>
           </details>
         </div>
-      ) : (
-        <div className="text-text-tertiary">Carga de CSV no realizada aún o no válida.</div>
+      )}
+      {!result && !loading && (
+        <div style={{ color: '#6b6b6b' }}>
+          📁 Carga de CSV no realizada aún o no válida.
+        </div>
       )}
     </div>
   );
