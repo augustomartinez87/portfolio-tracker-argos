@@ -16,6 +16,7 @@ const Financiacion = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('financiacion'); // Estado para navegación del sidebar
 
   const loadCauciones = useCallback(async () => {
     if (!user) return;
@@ -49,8 +50,8 @@ const Financiacion = () => {
         <DashboardSidebar
           user={user}
           signOut={signOut}
-          activeTab="financiacion"
-          setActiveTab={() => {}} // No necesitamos tab switching en financiación
+          activeTab={activeTab}
+          setActiveTab={setActiveTab} // Ahora el sidebar funciona correctamente
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
         />

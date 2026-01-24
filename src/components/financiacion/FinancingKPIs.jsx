@@ -56,10 +56,19 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
 MetricCard.displayName = 'MetricCard';
 
 const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
+  // Agregar logging para debugging
+  console.log('FinancingKPIs render - csvData:', csvData, 'cauciones:', cauciones, 'metrics:', metrics);
+
   // Calcula KPIs avanzados usando datos del CSV y métricas existentes
   const kpiData = useMemo(() => {
+    console.log('FinancingKPIs useMemo recalculando...');
+    console.log('FinancingKPIs - csvData en useMemo:', csvData);
+    console.log('FinancingKPIs - metrics en useMemo:', metrics);
+    
+    // Si hay datos CSV (prioridad alta - datos del upload)
     if (csvData && csvData.summary) {
-      return {
+      console.log('FinancingKPIs - Usando datos CSV');
+      const result = {
         capitalTotal: csvData.summary.totalCapital || 0,
         costoTotal: csvData.summary.totalInteres || 0,
         tnaPromedio: csvData.summary.tnaPromedioPonderado || 0,
@@ -69,10 +78,14 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
         spreadBADLAR: csvData.summary.spreadBADLAR || 0,
         operaciones: csvData.summary.totalRecords || 0,
       };
+      console.log('FinancingKPIs - Resultado desde CSV:', result);
+      return result;
     }
     
+    // Si hay métricas de la base de datos (fallback)
     if (metrics) {
-      return {
+      console.log('FinancingKPIs - Usando métricas de DB');
+      const result = {
         capitalTotal: metrics.capitalTotal || 0,
         costoTotal: metrics.interesTotal || 0,
         tnaPromedio: metrics.tnaPromedioPonderada || 0,
@@ -82,9 +95,13 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
         spreadBADLAR: metrics.spreadBADLAR || 0,
         operaciones: metrics.totalOperaciones || 0,
       };
+      console.log('FinancingKPIs - Resultado desde DB:', result);
+      return result;
     }
     
-    return {
+    // Valores por defecto
+    console.log('FinancingKPIs - Usando valores por defecto');
+    const defaultResult = {
       capitalTotal: 0,
       costoTotal: 0,
       tnaPromedio: 0,
@@ -94,7 +111,10 @@ const FinancingKPIs = ({ metrics, csvData, cauciones, loading }) => {
       spreadBADLAR: 0,
       operaciones: 0,
     };
-  }, [csvData, metrics]);
+    console.log('FinancingKPIs - Resultado por defecto:', defaultResult);
+    return defaultResult;
+  }, [csvData, metrics, cauciones]); // Agregar cauciones a las dependencias
+  console.log('FinancingKPIs kpiData calculado:', kpiData);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">

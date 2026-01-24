@@ -48,6 +48,7 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
 
       {/* KPIs Cards - Always visible */}
       <FinancingKPIs 
+        key={`kpis-${kpisData?.summary?.totalRecords || 0}-${metrics?.capitalTotal || 0}`}
         metrics={metrics} 
         csvData={kpisData} 
         cauciones={cauciones}
