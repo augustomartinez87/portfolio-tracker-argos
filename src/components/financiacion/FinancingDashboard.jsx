@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { TrendingUp, Upload, BarChart3, Filter } from 'lucide-react';
 import FinancingKPIs from './FinancingKPIs';
 import CSVUploadView from './CSVUploadView';
@@ -11,12 +11,20 @@ const FinancingDashboard = ({ cauciones, metrics, loading, onRefresh }) => {
 
   const handleCSVProcessed = useCallback((processedData) => {
     console.log('FinancingDashboard - handleCSVProcessed llamado con:', processedData);
-    console.log('FinancingDashboard - Actualizando kpisData...');
+    console.log('FinancingDashboard - kpisData ANTES de actualizar:', kpisData);
     setKpisData(processedData);
+    setTimeout(() => {
+      console.log('FinancingDashboard - kpisData DESPUÉS de actualizar (setTimeout):', kpisData);
+    }, 100);
     console.log('FinancingDashboard - Llamando a onRefresh...');
     // Refrescar datos principales después del procesamiento
     onRefresh();
-  }, [onRefresh]);
+  }, [onRefresh, kpisData]); // Agregar kpisData a dependencias
+
+  // Agregar useEffect para monitorear cambios en kpisData
+  useEffect(() => {
+    console.log('FinancingDashboard - kpisData cambió a:', kpisData);
+  }, [kpisData]);
 
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
