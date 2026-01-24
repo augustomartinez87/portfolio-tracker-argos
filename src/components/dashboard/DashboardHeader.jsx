@@ -4,10 +4,10 @@ import { PortfolioSelector } from '../PortfolioSelector';
 import logo from '../../assets/logo.png';
 import { formatNumber } from '../../utils/formatters';
 
-export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices }) => {
+export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false }) => {
   return (
-    <header className="hidden lg:flex items-center justify-between">
-      <PortfolioSelector />
+    <header className={`${compact ? 'lg:flex' : 'hidden lg:flex'} items-center justify-between`}>
+      {!compact && <PortfolioSelector />}
 
       <div className="flex items-center gap-3">
         <img src={logo} alt="Argos Capital" className="w-8 h-8" />
