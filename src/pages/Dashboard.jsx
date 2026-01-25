@@ -293,12 +293,25 @@ export default function Dashboard() {
     }).sort((a, b) => b.valuacionActual - a.valuacionActual);
   }, [trades, prices, mepRate]);
 
+  // Filtrar posiciones dinámicamente según búsqueda
+  const filteredPositions = useMemo(() => {
+    if (!searchTerm) return positions;
+    const term = searchTerm.toLowerCase();
+    return positions.filter(p =>
+      p.ticker.toLowerCase().includes(term) ||
+      (p.assetClass && p.assetClass.toLowerCase().includes(term))
+    );
+  }, [positions, searchTerm]);
+
   const totals = useMemo(() => {
-    const invertido = positions.reduce((sum, p) => sum + p.costoTotal, 0);
-    const valuacion = positions.reduce((sum, p) => sum + p.valuacionActual, 0);
+    // Usamos filteredPositions para que los totales sean dinámicos según la búsqueda
+    const sourceData = filteredPositions;
+
+    const invertido = sourceData.reduce((sum, p) => sum + p.costoTotal, 0);
+    const valuacion = sourceData.reduce((sum, p) => sum + p.valuacionActual, 0);
     const resultado = valuacion - invertido;
     const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
-    const resultadoDiario = positions.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
+    const resultadoDiario = sourceData.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
     const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
 
     return {
@@ -313,7 +326,7 @@ export default function Dashboard() {
       resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
       resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
     };
-  }, [positions, mepRate]);
+  }, [filteredPositions, mepRate]);
 
   // Lista de tickers únicos para el filtro
   const uniqueTickers = useMemo(() => {
@@ -894,14 +907,16 @@ export default function Dashboard() {
                           ))}
                         </div>
                       ) : (
-                        <PositionsTable positions={positions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} searchTerm={searchTerm} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                        <PositionsTable positions={filteredPositions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
                       )}
                     </div>
                   </div>
 
                   {/* Total Card - completamente separado de la tabla */}
-                  {positions.length > 0 && (
-                    <TotalCard totals={totals} columnSettings={columnSettings} />
+                  {filteredPositions.length > 0 && (
+                    <div className="mt-6">
+                      <TotalCard totals={totals} columnSettings={columnSettings} />
+                    </div>
                   )}
                 </>
               )}

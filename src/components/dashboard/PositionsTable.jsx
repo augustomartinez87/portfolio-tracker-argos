@@ -100,14 +100,12 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
     saveColumnSettings(newSettings);
   };
 
-  const filteredPositions = useMemo(() => {
-    if (!searchTerm || !searchTerm.trim()) return positions;
-    const term = searchTerm.toLowerCase();
-    return positions.filter(pos =>
-      pos.ticker.toLowerCase().includes(term) ||
-      (pos.assetClass && pos.assetClass.toLowerCase().includes(term))
-    );
-  }, [positions, searchTerm]);
+  /* 
+    Filtered positions are now handled by the parent component (Dashboard.jsx)
+    to enable dynamic calculation of totals.
+    The 'positions' prop received here is already filtered.
+  */
+  const filteredPositions = positions;
 
   const sortedPositions = useMemo(() => {
     return [...filteredPositions].sort((a, b) => {
@@ -153,135 +151,130 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
 
   return (
     <div className="bg-background-secondary flex flex-col h-full overflow-hidden">
-      {searchTerm && searchTerm.trim() && (
-        <div className={`${paddingY} ${paddingX} bg-background-tertiary/50 border-b border-border-primary flex-shrink-0`}>
-          <span className="text-xs text-text-tertiary">
-            {filteredPositions.length} de {positions.length} resultados
-          </span>
-        </div>
-      )}
+      {/* 
+        Search result count removed here as it should be handled by the parent 
+        if needed, or purely relying on the visual filtered list.
+      */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-auto min-h-0">
           <table className="w-full min-w-[900px] table-fixed">
-          <colgroup>
-            <col className="w-[140px]" /> {/* Ticker */}
-            <col className="w-[80px]" />  {/* Cant */}
-            {columnSettings.showPPC && <col className="w-[100px]" />}  {/* PPC */}
-            <col className="w-[100px]" /> {/* P. Actual */}
-            <col className="w-[120px]" /> {/* Valuación */}
-            {columnSettings.showInvertido && <col className="w-[110px]" />} {/* Invertido */}
-            <col className="w-[120px]" /> {/* P&L $ */}
-            <col className="w-[90px]" />  {/* P&L % */}
-            {columnSettings.showDiario && <col className="w-[110px]" />} {/* Diario $ */}
-            {columnSettings.showDiarioPct && <col className="w-[90px]" />} {/* Diario % */}
-          </colgroup>
-          <thead className="sticky top-0 z-10 bg-background-secondary">
-            <tr className="bg-background-tertiary/30 border-b border-border-primary">
-              <th
-                className={`text-left ${paddingX} py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
-                onClick={() => handleSort('ticker')}
-              >
-                <div className="flex items-center gap-1">
-                  <span>Ticker</span>
-                  {currentSort.key === 'ticker' && (
-                    currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-                  )}
-                </div>
-              </th>
-              <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
-              {columnSettings.showPPC && (
-                <SortHeader label="PPC" sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
-              )}
-              <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
-              {columnSettings.showInvertido && (
-                <SortHeader label="Invertido" sortKey="costoTotal" currentSort={currentSort} onSort={handleSort} />
-              )}
-              <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
-              <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} />
-              {columnSettings.showDiario && (
-                <SortHeader label="P&L Diario $" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
-              )}
-              {columnSettings.showDiarioPct && (
-                <SortHeader label="P&L Diario %" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-primary">
-            {positionsWithGroup.map((pos) => (
-              <tr
-                key={pos.ticker}
-                className={`hover:bg-background-tertiary transition-colors cursor-pointer ${pos.isFirstInGroup ? 'border-t border-border-primary/50' : ''}`}
-                onClick={() => onRowClick(pos)}
-              >
-                <td className={`${paddingX} ${paddingY}`}>
-                  <TickerCell
-                    ticker={pos.ticker}
-                    assetClass={pos.assetClass}
-                    isStale={prices[pos.ticker]?.isStale}
-                  />
-                </td>
-                <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
-                  {formatNumber(pos.cantidadTotal)}
-                </td>
+            <colgroup>
+              <col className="w-[140px]" /> {/* Ticker */}
+              <col className="w-[80px]" />  {/* Cant */}
+              {columnSettings.showPPC && <col className="w-[100px]" />}  {/* PPC */}
+              <col className="w-[100px]" /> {/* P. Actual */}
+              <col className="w-[120px]" /> {/* Valuación */}
+              {columnSettings.showInvertido && <col className="w-[110px]" />} {/* Invertido */}
+              <col className="w-[120px]" /> {/* P&L $ */}
+              <col className="w-[90px]" />  {/* P&L % */}
+              {columnSettings.showDiario && <col className="w-[110px]" />} {/* Diario $ */}
+              {columnSettings.showDiarioPct && <col className="w-[90px]" />} {/* Diario % */}
+            </colgroup>
+            <thead className="sticky top-0 z-10 bg-background-secondary">
+              <tr className="bg-background-tertiary/30 border-b border-border-primary">
+                <th
+                  className={`text-left ${paddingX} py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
+                  onClick={() => handleSort('ticker')}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Ticker</span>
+                    {currentSort.key === 'ticker' && (
+                      currentSort.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                    )}
+                  </div>
+                </th>
+                <SortHeader label="Cant." sortKey="cantidadTotal" currentSort={currentSort} onSort={handleSort} />
                 {columnSettings.showPPC && (
-                  <td className={`text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
-                    {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
-                      ? `$${pos.precioPromedio.toFixed(2)}`
-                      : formatARS(pos.precioPromedio)
-                    }
-                  </td>
+                  <SortHeader label="PPC" sortKey="precioPromedio" currentSort={currentSort} onSort={handleSort} />
                 )}
-                <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
-                  {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
-                    ? `$${pos.precioActual.toFixed(2)}`
-                    : formatARS(pos.precioActual)
-                  }
-                </td>
-                <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
-                  {formatARS(pos.valuacionActual)}
-                </td>
+                <SortHeader label="P. Actual" sortKey="precioActual" currentSort={currentSort} onSort={handleSort} />
+                <SortHeader label="Valuación" sortKey="valuacionActual" currentSort={currentSort} onSort={handleSort} />
                 {columnSettings.showInvertido && (
-                  <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
-                    {formatARS(pos.costoTotal)}
-                  </td>
+                  <SortHeader label="Invertido" sortKey="costoTotal" currentSort={currentSort} onSort={handleSort} />
                 )}
-                <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                  <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {formatARS(pos.resultado)}
-                  </span>
-                </td>
-                <td className={`text-center ${paddingX} ${paddingY}`}>
-                  <span className={`font-medium px-1.5 py-0.5 rounded text-sm ${
-                    pos.resultadoPct >= 0
-                      ? 'bg-success/10 text-success'
-                      : 'bg-danger/10 text-danger'
-                  }`}>
-                    {formatPercent(pos.resultadoPct)}
-                  </span>
-                </td>
+                <SortHeader label="P&L $" sortKey="resultado" currentSort={currentSort} onSort={handleSort} />
+                <SortHeader label="P&L %" sortKey="resultadoPct" currentSort={currentSort} onSort={handleSort} />
                 {columnSettings.showDiario && (
-                  <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                    <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
-                      {formatARS(pos.resultadoDiario || 0)}
-                    </span>
-                  </td>
+                  <SortHeader label="P&L Diario $" sortKey="resultadoDiario" currentSort={currentSort} onSort={handleSort} />
                 )}
                 {columnSettings.showDiarioPct && (
-                  <td className={`text-center ${paddingX} ${paddingY}`}>
-                    <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
-                      pos.resultadoDiarioPct >= 0
-                        ? 'bg-success/10 text-success'
-                        : 'bg-danger/10 text-danger'
-                    }`}>
-                      {formatPercent(pos.resultadoDiarioPct || 0)}
-                    </span>
-                  </td>
+                  <SortHeader label="P&L Diario %" sortKey="resultadoDiarioPct" currentSort={currentSort} onSort={handleSort} />
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-primary">
+              {positionsWithGroup.map((pos) => (
+                <tr
+                  key={pos.ticker}
+                  className={`hover:bg-background-tertiary transition-colors cursor-pointer ${pos.isFirstInGroup ? 'border-t border-border-primary/50' : ''}`}
+                  onClick={() => onRowClick(pos)}
+                >
+                  <td className={`${paddingX} ${paddingY}`}>
+                    <TickerCell
+                      ticker={pos.ticker}
+                      assetClass={pos.assetClass}
+                      isStale={prices[pos.ticker]?.isStale}
+                    />
+                  </td>
+                  <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                    {formatNumber(pos.cantidadTotal)}
+                  </td>
+                  {columnSettings.showPPC && (
+                    <td className={`text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
+                      {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
+                        ? `$${pos.precioPromedio.toFixed(2)}`
+                        : formatARS(pos.precioPromedio)
+                      }
+                    </td>
+                  )}
+                  <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
+                    {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
+                      ? `$${pos.precioActual.toFixed(2)}`
+                      : formatARS(pos.precioActual)
+                    }
+                  </td>
+                  <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
+                    {formatARS(pos.valuacionActual)}
+                  </td>
+                  {columnSettings.showInvertido && (
+                    <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                      {formatARS(pos.costoTotal)}
+                    </td>
+                  )}
+                  <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                    <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {formatARS(pos.resultado)}
+                    </span>
+                  </td>
+                  <td className={`text-center ${paddingX} ${paddingY}`}>
+                    <span className={`font-medium px-1.5 py-0.5 rounded text-sm ${pos.resultadoPct >= 0
+                      ? 'bg-success/10 text-success'
+                      : 'bg-danger/10 text-danger'
+                      }`}>
+                      {formatPercent(pos.resultadoPct)}
+                    </span>
+                  </td>
+                  {columnSettings.showDiario && (
+                    <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                      <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatARS(pos.resultadoDiario || 0)}
+                      </span>
+                    </td>
+                  )}
+                  {columnSettings.showDiarioPct && (
+                    <td className={`text-center ${paddingX} ${paddingY}`}>
+                      <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${pos.resultadoDiarioPct >= 0
+                        ? 'bg-success/10 text-success'
+                        : 'bg-danger/10 text-danger'
+                        }`}>
+                        {formatPercent(pos.resultadoDiarioPct || 0)}
+                      </span>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         {positionsWithGroup.length === 0 && (
           <div className="text-center py-8">
