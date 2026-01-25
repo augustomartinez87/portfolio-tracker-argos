@@ -25,7 +25,10 @@ import logo from '../assets/logo.png';
 const PositionDetailModal = lazy(() => import('../components/PositionDetailModal'));
 const TradeModal = lazy(() => import('../components/modals/TradeModal'));
 const DeleteModal = lazy(() => import('../components/modals/DeleteModal'));
+const FciTransactionModal = lazy(() => import('../components/modals/FciTransactionModal'));
 import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
+import { useFciEngine } from '../hooks/useFciEngine';
+import FciTable from '../components/dashboard/FciTable';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -137,6 +140,57 @@ export default function Dashboard() {
 
   // Portfolio Engine - replaces local calculations
   const { positions, totals: allTotals, calculateTotals } = usePortfolioEngine(trades, prices, mepRate);
+
+  // FCI Engine
+  const {
+    positions: fciPositions,
+    totals: fciTotals,
+    addTransaction: addFciTransaction,
+    loading: fciLoading
+  } = useFciEngine(currentPortfolio?.id);
+
+  const [fciModalOpen, setFciModalOpen] = useState(false);
+  const [fciModalType, setFciModalType] = useState('SUBSCRIPTION');
+  const [selectedFciForModal, setSelectedFciForModal] = useState(null);
+
+  const handleOpenFciSubscription = (fci = null) => {
+    setFciModalType('SUBSCRIPTION');
+    setSelectedFciForModal(fci);
+    setFciModalOpen(true);
+  };
+
+  const handleOpenFciRedemption = (fci = null) => {
+    setFciModalType('REDEMPTION');
+    setSelectedFciForModal(fci);
+    setFciModalOpen(true);
+  };
+
+  const handleSaveFciTransaction = async (transaction) => {
+    try {
+      // Add user_id to transaction (needed for RLS/Schema)
+      const txWithUser = { ...transaction, user_id: user.id };
+      await addFciTransaction(txWithUser);
+      // Success? Close modal
+      setFciModalOpen(false);
+    } catch (e) {
+      console.error("Error saving FCI tx", e);
+      throw e; // Modal handles alert
+    }
+  };
+
+  // Combine totals for Summary Cards
+  const combinedTotals = useMemo(() => {
+    // Si allTotals es null/undefined, inicializar en cero
+    const safeTotals = allTotals || { invested: 0, valuation: 0, pnl: 0, dayPnl: 0 };
+
+    return {
+      ...safeTotals,
+      invested: safeTotals.invested + (fciTotals?.invested || 0),
+      valuation: safeTotals.valuation + (fciTotals?.valuation || 0),
+      pnl: safeTotals.pnl + (fciTotals?.pnl || 0),
+      // dayPnl no lo tenemos en FCI aun, asumimos 0 por ahora
+    };
+  }, [allTotals, fciTotals]);
 
   // Filtrar posiciones dinámicamente según búsqueda
   const filteredPositions = useMemo(() => {
@@ -699,7 +753,30 @@ export default function Dashboard() {
                       currentPortfolio={currentPortfolio}
                     />
                   </div>
-                  <DashboardSummaryCards totals={allTotals} lastUpdate={lastUpdate} />
+                  <DashboardSummaryCards totals={combinedTotals} lastUpdate={lastUpdate} />
+
+                  {/* Sección de FCIs (Liquidez) */}
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col mt-3 overflow-hidden">
+                    <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm lg:text-base font-semibold text-text-primary">Fondos Comunes (Liquidez)</h2>
+                        <span className="text-[10px] text-text-tertiary bg-background-tertiary px-1.5 py-0.5 rounded-full">{fciPositions.length}</span>
+                      </div>
+                      <button onClick={() => handleOpenFciSubscription()} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-primary border border-border-secondary rounded-lg hover:bg-background-tertiary/80 transition-all text-xs font-medium">
+                        <Plus className="w-3.5 h-3.5" />
+                        Suscribir/Rescatar
+                      </button>
+                    </div>
+                    {fciLoading ? (
+                      <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                    ) : (
+                      <FciTable
+                        positions={fciPositions}
+                        onSubscribe={handleOpenFciSubscription}
+                        onRedeem={handleOpenFciRedemption}
+                      />
+                    )}
+                  </div>
 
                   {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col flex-1 min-h-0 mt-3">
@@ -763,6 +840,16 @@ export default function Dashboard() {
 
         <Suspense fallback={<LoadingFallback />}>
           <PositionDetailModal open={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} />
+        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>
+          <FciTransactionModal
+            isOpen={fciModalOpen}
+            onClose={() => setFciModalOpen(false)}
+            onSave={handleSaveFciTransaction}
+            portfolioId={currentPortfolio?.id}
+            initialType={fciModalType}
+            initialFci={selectedFciForModal}
+          />
         </Suspense>
       </div >
     </ErrorBoundary >
