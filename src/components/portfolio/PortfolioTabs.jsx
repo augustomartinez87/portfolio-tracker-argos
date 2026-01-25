@@ -38,23 +38,20 @@ export const PortfolioTabs = ({ activeTab, setActiveTab, currentPortfolio }) => 
   ];
 
   return (
-    <div className="bg-background-secondary border-b border-border-primary">
-      <div className="flex space-x-1 px-4 lg:px-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 border-b-2 ${
-              activeTab === tab.id
-                ? 'text-primary border-primary'
-                : 'text-text-tertiary border-transparent hover:text-text-primary hover:border-border-primary'
+    <div className="flex flex-wrap gap-2">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeTab === tab.id
+            ? 'bg-primary text-white'
+            : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
+        >
+          <tab.icon className="w-4 h-4" />
+          <span>{tab.label}</span>
+        </button>
+      ))}
     </div>
   );
 };

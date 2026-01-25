@@ -560,13 +560,20 @@ export default function Dashboard() {
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
 
             {/* Page Header with Actions (matching Financiacion structure) */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
               <div>
                 <h1 className="text-xl lg:text-2xl font-semibold text-text-primary">Portfolio</h1>
                 <p className="text-text-tertiary text-sm mt-1">
                   Resumen general y posiciones
                 </p>
               </div>
+
+              {/* Centered Logo (Desktop) */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
+                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+                <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
+              </div>
+
               <div className="flex items-center gap-2">
                 <DashboardHeader
                   mepRate={mepRate}
@@ -574,6 +581,7 @@ export default function Dashboard() {
                   isPricesLoading={isPricesLoading}
                   refetchPrices={refetchPrices}
                   compact={true}
+                  showLogo={false}
                 />
               </div>
             </div>
@@ -852,7 +860,7 @@ export default function Dashboard() {
                   <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
                   {/* Tabla de Posiciones - contenedor separado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[calc(100vh-360px)] min-h-[280px]">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[calc(100vh-360px)] min-h-[280px] mt-6">
                     <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-3 items-center justify-between flex-shrink-0">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
