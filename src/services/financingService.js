@@ -179,7 +179,62 @@ export const financingService = {
     }
   },
 
-  // 5. Verificar si CSV ya fue procesado (duplicados)
+  // 5. Obtener cauciones (wrapper para compatibilidad)
+  async getCauciones(userId, portfolioId) {
+    return this.getOperations(userId, portfolioId);
+  },
+
+  // 6. Obtener resumen global (para SpreadPage)
+  async getResumen(userId) {
+    try {
+      console.log('📊 Obteniendo resumen global para user:', userId);
+
+      const { data, error } = await supabase
+        .from('cauciones')
+        .select('capital, monto_devolver, interes, dias, tna_real, fecha_inicio, fecha_fin')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return {
+          capitalTotal: 0,
+          interesTotal: 0,
+          montoDevolverTotal: 0,
+          tnaPromedioPonderada: 0,
+          diasPromedio: 0,
+          totalOperaciones: 0
+        };
+      }
+
+      const capitalTotal = data.reduce((sum, c) => sum + Number(c.capital || 0), 0);
+      const montoDevolverTotal = data.reduce((sum, c) => sum + Number(c.monto_devolver || 0), 0);
+      const interesTotal = data.reduce((sum, c) => sum + Number(c.interes || 0), 0);
+      
+      const tnaPromedioPonderada = capitalTotal > 0 
+        ? data.reduce((sum, c) => sum + (Number(c.capital || 0) * Number(c.tna_real || 0)), 0) / capitalTotal
+        : 0;
+
+      const diasPromedio = data.length > 0 
+        ? data.reduce((sum, c) => sum + Number(c.dias || 0), 0) / data.length 
+        : 0;
+
+      return {
+        capitalTotal,
+        montoDevolverTotal,
+        interesTotal,
+        tnaPromedioPonderada,
+        diasPromedio,
+        totalOperaciones: data.length
+      };
+
+    } catch (error) {
+      console.error('❌ Error obteniendo resumen:', error);
+      throw error;
+    }
+  },
+
+  // 7. Verificar si CSV ya fue procesado (duplicados)
   async checkDuplicateOperations(userId, portfolioId, csvRecords) {
     try {
       // Buscar operaciones con misma fecha_inicio y capital en mismo período

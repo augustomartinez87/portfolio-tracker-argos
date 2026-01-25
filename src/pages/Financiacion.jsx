@@ -7,7 +7,7 @@ import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
 import FinancingDashboard from '../components/financiacion/FinancingDashboard';
-import { financingService } from '../services/financingService';
+import financingService from '../services/financingService';
 
 const Financiacion = () => {
   const { user, signOut } = useAuth();

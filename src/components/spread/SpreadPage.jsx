@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { caucionService } from '../../services/caucionService';
+import financingService from '../../services/financingService';
 import SpreadTable from './SpreadTable';
 import SpreadLocalUploader from './SpreadLocalUploader';
 import SpreadCards from './SpreadCards';
@@ -18,8 +18,8 @@ const SpreadPage = () => {
     setLoading(true);
     try {
       const [data, resumen] = await Promise.all([
-        caucionService.getCauciones(user.id),
-        caucionService.getResumen(user.id)
+        financingService.getCauciones(user.id),
+        financingService.getResumen(user.id)
       ]);
       setCauciones(data);
       setMetrics(resumen);
@@ -49,7 +49,7 @@ const SpreadPage = () => {
     if (!user || !confirm('Eliminar esta operación?')) return;
 
     try {
-      await caucionService.deleteCaucion(user.id, id);
+      await financingService.deleteOperation(user.id, id);
       await loadCauciones();
     } catch (err) {
       console.error('Error eliminando:', err);

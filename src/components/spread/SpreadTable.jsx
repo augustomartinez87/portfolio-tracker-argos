@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import financingService from '../../services/financingService';
 import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { formatARS, formatPercent } from '../../utils/formatters';
 
@@ -75,8 +76,6 @@ const SpreadTable = ({ userId, portfolioId, onDelete, loading }) => {
       }
 
       try {
-        // Import FinancingService dynamically to avoid circular imports
-        const { financingService } = await import('../../services/financingService');
         const result = await financingService.getCauciones(userId, portfolioId);
         
         if (result.success) {

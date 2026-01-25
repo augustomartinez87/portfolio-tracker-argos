@@ -5,7 +5,7 @@ import CSVUploadView from './CSVUploadView';
 import FinancingCharts from './FinancingCharts';
 import CaucionesTable from '../cauciones/CaucionesTable';
 import SummaryCard from '../common/SummaryCard';
-import { financingService } from '../../services/financingService';
+import financingService from '../../services/financingService';
 
 const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClient, userId, portfolioId }) => {
   const [activeView, setActiveView] = useState('dashboard');
