@@ -151,7 +151,7 @@ class FundingCarryEngine:
             # Include cauciones that expire TODAY as still active (rollover strategy)
             active_cauciones = cauciones[
                 (cauciones['fecha_inicio_str'] <= d_str) & 
-                (cauciones['fecha_fin_str'] >= d_str)  # >= includes same-day expiry
+                (cauciones['fecha_fin_str'] > d_str)  # > excludes maturity date (settled during day)
             ]
             
             total_debt = float(active_cauciones['capital'].sum()) if not active_cauciones.empty else 0.0
