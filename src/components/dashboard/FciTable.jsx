@@ -62,7 +62,7 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
                                         </span>
                                         <span className={`text-xs font-mono flex items-center ${isPositive ? 'text-profit' : 'text-loss'}`}>
                                             {isPositive ? <ChevronUp className="w-3 h-3 mr-0.5" /> : <ChevronDown className="w-3 h-3 mr-0.5" />}
-                                            {formatPercent(Math.abs(pos.pnlPct))}
+                                            {formatPercent(pos.pnlPct)}
                                         </span>
                                     </div>
                                 </td>

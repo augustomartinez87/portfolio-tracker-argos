@@ -779,7 +779,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col flex-1 min-h-0 mt-3">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[400px] lg:h-[calc(100vh-450px)] min-h-[300px] mt-3">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
