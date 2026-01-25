@@ -21,17 +21,20 @@ const Financiacion = () => {
   const { data: operations = [], isLoading: loadingOps, error: opsError, refetch: refetchOps } = useQuery({
     queryKey: ['financing-operations', user?.id, currentPortfolio?.id],
     queryFn: () => financingService.getCauciones(user.id, currentPortfolio.id),
+    select: (result) => result.success ? result.data : [],
     enabled: !!user && !!currentPortfolio,
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos
     retry: 2,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    placeholderData: []  // Ensure it's always an array initially
   });
 
   // React Query para obtener métricas (calculadas desde DB)
   const { data: metrics, isLoading: loadingMetrics, error: metricsError, refetch: refetchMetrics } = useQuery({
     queryKey: ['financing-metrics', user?.id, currentPortfolio?.id],
     queryFn: () => financingService.getMetrics(user.id, currentPortfolio.id),
+    select: (result) => result.success ? result.data : null,
     enabled: !!user && !!currentPortfolio,
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos
@@ -122,9 +125,8 @@ const Financiacion = () => {
         </div>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${
-          sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'
-        }`}>
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'
+          }`}>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -143,7 +145,7 @@ const Financiacion = () => {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Actualizar
                 </button>
-                
+
                 {process.env.NODE_ENV === 'development' && (
                   <>
                     <button
@@ -161,16 +163,16 @@ const Financiacion = () => {
                                 alert('Error en limpieza total. Por favor intenta nuevamente.');
                               }
                             });
-                        });
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-sm font-medium"
-                    title="Limpiar todos los datos (solo desarrollo)"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Limpiar Datos
-                  </button>
-                    
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-sm font-medium"
+                      title="Limpiar todos los datos (solo desarrollo)"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Limpiar Datos
+                    </button>
+
                     <button
                       onClick={() => {
                         if (window.confirm('🚨 EMERGENCIA\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS los usuarios?\n\n⚠️ ESTA ACCIÓN AFECTA A TODOS LOS USUARIOS DEL SISTEMA.')) {
@@ -186,15 +188,15 @@ const Financiacion = () => {
                                 alert('Error en emergencia total. Por favor intenta nuevamente.');
                               }
                             });
-                        });
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-bold animate-pulse"
-                    title="EMERGENCIA: Borrar TODAS las cauciones (solo desarrollo)"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    🚨 BORRAR TODO
-                  </button>
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-bold animate-pulse"
+                      title="EMERGENCIA: Borrar TODAS las cauciones (solo desarrollo)"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      🚨 BORRAR TODO
+                    </button>
                   </>
                 )}
               </div>

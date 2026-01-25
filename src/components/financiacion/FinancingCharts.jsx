@@ -6,7 +6,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
   const chartData = useMemo(() => {
     const data = csvData && csvData.records ? csvData.records : operations || [];
 
-    if (data.length === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
       return {
         tenorDistribution: [],
         rateDistribution: [],
