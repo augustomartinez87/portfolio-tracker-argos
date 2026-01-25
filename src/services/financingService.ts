@@ -312,6 +312,50 @@ export class FinancingService {
   }
 
   /**
+   * Delete all cauciones for a user and portfolio
+   * @param userId - User ID for authorization
+   * @param portfolioId - Portfolio ID for data isolation
+   * @returns Result with number of deleted operations
+   */
+  async deleteAllOperations(
+    userId: string, 
+    portfolioId: string
+  ): Promise<Result<{ deletedCount: number }>> {
+    try {
+      // Input validation
+      if (!userId || !portfolioId) {
+        return { 
+          success: false, 
+          error: new Error('Se requieren userId y portfolioId') 
+        };
+      }
+
+      console.log('🗑️  Eliminando todas las cauciones para usuario:', userId, 'portfolio:', portfolioId);
+
+      const { error, count } = await supabase
+        .from('cauciones')
+        .delete({ count: 'exact' })
+        .eq('user_id', userId)
+        .eq('portfolio_id', portfolioId);
+
+      if (error) throw error;
+
+      console.log('✅ Todas las cauciones eliminadas:', count);
+      return { 
+        success: true, 
+        data: { deletedCount: count || 0 } 
+      };
+
+    } catch (error) {
+      console.error('❌ Error eliminando todas las cauciones:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error : new Error(String(error)) 
+      };
+    }
+  }
+
+  /**
    * Check for duplicate operations with improved logic
    * @param userId - User ID for scoping
    * @param portfolioId - Portfolio ID for data isolation

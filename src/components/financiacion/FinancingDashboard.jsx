@@ -1,14 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, Upload, BarChart3, Filter } from 'lucide-react';
+import { TrendingUp, Upload, BarChart3, Filter, List } from 'lucide-react';
 import FinancingKPIs from './FinancingKPIs';
 import CSVUploadView from './CSVUploadView';
 import FinancingCharts from './FinancingCharts';
+import CaucionesTable from '../cauciones/CaucionesTable';
 import SummaryCard from '../common/SummaryCard';
+import { financingService } from '../../services/financingService';
 
 const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClient, userId, portfolioId }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [kpisData, setKpisData] = useState(null);
   const csvDataRef = useRef(null); // Ref persistente para datos CSV
+  const [cauciones, setCauciones] = useState([]);
+  const [caucionesLoading, setCaucionesLoading] = useState(false);
 
   const handleCSVProcessed = useCallback((processedData) => {
     console.log('✅ CSV procesado - registros:', processedData?.records?.length);
@@ -39,9 +43,89 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
     }
   }, [kpisData]);
 
+  // Función para cargar cauciones desde el servicio
+  const loadCauciones = useCallback(async () => {
+    if (!userId || !portfolioId) return;
+    
+    setCaucionesLoading(true);
+    try {
+      const result = await financingService.getCaucionesWithCalculations(userId, portfolioId);
+      if (result.success) {
+        setCauciones(result.data || []);
+        console.log('✅ Cargadas cauciones:', result.data?.length);
+      } else {
+        console.error('Error cargando cauciones:', result.error);
+        setCauciones([]);
+      }
+    } catch (error) {
+      console.error('Error cargando cauciones:', error);
+      setCauciones([]);
+    } finally {
+      setCaucionesLoading(false);
+    }
+  }, [userId, portfolioId]);
+
+  // Cargar cauciones cuando se cambia a esa vista
+  useEffect(() => {
+    if (activeView === 'cauciones') {
+      loadCauciones();
+    }
+  }, [activeView, loadCauciones]);
+
+  // Función para eliminar caución individual
+  const handleDeleteCaucion = useCallback(async (caucionId) => {
+    if (!userId || !caucionId) return;
+    
+    try {
+      const result = await financingService.deleteOperation(userId, caucionId);
+      if (result.success) {
+        // Recargar lista de cauciones
+        await loadCauciones();
+        // Invalidar queries para actualizar otros componentes
+        if (queryClient) {
+          queryClient.invalidateQueries(['financing-operations']);
+          queryClient.invalidateQueries(['financing-metrics']);
+        }
+        console.log('✅ Caución eliminada:', caucionId);
+      } else {
+        console.error('Error eliminando caución:', result.error);
+        alert('Error al eliminar caución. Por favor intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error eliminando caución:', error);
+      alert('Error al eliminar caución. Por favor intenta nuevamente.');
+    }
+  }, [userId, loadCauciones, queryClient]);
+
+  // Función para eliminar todas las cauciones
+  const handleDeleteAllCauciones = useCallback(async () => {
+    if (!userId || !portfolioId) return;
+    
+    try {
+      const result = await financingService.deleteAllOperations(userId, portfolioId);
+      if (result.success) {
+        // Recargar lista de cauciones
+        await loadCauciones();
+        // Invalidar queries para actualizar otros componentes
+        if (queryClient) {
+          queryClient.invalidateQueries(['financing-operations']);
+          queryClient.invalidateQueries(['financing-metrics']);
+        }
+        console.log('✅ Todas las cauciones eliminadas:', result.data?.deletedCount);
+      } else {
+        console.error('Error eliminando todas las cauciones:', result.error);
+        alert('Error al eliminar todas las cauciones. Por favor intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error eliminando todas las cauciones:', error);
+      alert('Error al eliminar todas las cauciones. Por favor intenta nuevamente.');
+    }
+  }, [userId, portfolioId, loadCauciones, queryClient]);
+
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'upload', label: 'Cargar CSV', icon: Upload },
+    { id: 'cauciones', label: 'Cauciones', icon: List },
     { id: 'charts', label: 'Análisis', icon: TrendingUp },
   ];
 
@@ -121,6 +205,15 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
             userId={userId}
             portfolioId={portfolioId}
             queryClient={queryClient}
+          />
+        )}
+
+        {activeView === 'cauciones' && (
+          <CaucionesTable
+            cauciones={cauciones}
+            onDelete={handleDeleteCaucion}
+            onDeleteAll={handleDeleteAllCauciones}
+            loading={caucionesLoading || loading}
           />
         )}
 
