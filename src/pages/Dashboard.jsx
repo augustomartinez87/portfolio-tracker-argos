@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info } from 'lucide-react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
-import { parseARSNumber, parseDateDMY } from '../utils/parsers';
 import { usePrices } from '../services/priceService';
+import { downloadTemplate, parseAndImportTrades } from '../services/importExportService';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
 import PositionsTable from '../components/dashboard/PositionsTable';
@@ -25,6 +25,7 @@ import logo from '../assets/logo.png';
 const PositionDetailModal = lazy(() => import('../components/PositionDetailModal'));
 const TradeModal = lazy(() => import('../components/modals/TradeModal'));
 const DeleteModal = lazy(() => import('../components/modals/DeleteModal'));
+import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -87,22 +88,8 @@ export default function Dashboard() {
     loadTrades();
   }, [loadTrades]);
 
-  const downloadTemplate = useCallback(() => {
-    const csvContent = `Fecha,Ticker,Cantidad,Precio
-23/12/2024,MELI,10,17220
-03/04/2025,MSFT,31,16075
-07/04/2025,SPY,15,33800`;
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'portfolio_trades_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadTemplate = useCallback(() => {
+    downloadTemplate();
   }, []);
 
   const importFromCSV = useCallback(async (event) => {
@@ -119,86 +106,23 @@ export default function Dashboard() {
     setIsLoading(true);
     setImportStatus('Importando...');
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target.result;
-        const lines = text.split('\n').slice(1);
-        const newTrades = [];
+    try {
+      const result = await parseAndImportTrades(file, currentPortfolio.id, user.id);
+      setImportStatus(result.message);
 
-        lines.forEach((line) => {
-          if (!line.trim()) return;
-
-          const cols = line.split(',').map(col => col.trim());
-          const fecha = cols[0];
-          const ticker = cols[1];
-          const cantidad = cols[2];
-          const precio = cols[3];
-
-          if (!fecha || !ticker || ticker === 'Ticker') return;
-
-          const parsedDate = parseDateDMY(fecha);
-          const parsedCantidad = parseARSNumber(cantidad);
-          const parsedPrecio = parseARSNumber(precio);
-
-          if (parsedDate && ticker && parsedCantidad > 0) {
-            newTrades.push({
-              ticker: ticker.trim().toUpperCase(),
-              quantity: parsedCantidad,
-              price: parsedPrecio,
-              trade_date: parsedDate,
-              trade_type: 'buy',
-              total_amount: parsedCantidad * parsedPrecio,
-              currency: 'ARS'
-            });
-          }
-        });
-
-        if (newTrades.length > 0) {
-          let savedCount = 0;
-          let errorCount = 0;
-          let lastError = null;
-
-          for (const trade of newTrades) {
-            try {
-              await tradeService.createTrade(currentPortfolio.id, user.id, trade);
-              savedCount++;
-            } catch (err) {
-              console.error('Error saving trade:', trade.ticker, err);
-              lastError = err;
-              errorCount++;
-            }
-          }
-
-          if (savedCount > 0) {
-            setImportStatus(`✓ ${savedCount} transacciones importadas${errorCount > 0 ? ` (${errorCount} fallidas: ${lastError?.message || 'error'})` : ''}`);
-            loadTrades();
-            setTimeout(() => setImportStatus(null), 5000);
-          } else {
-            setImportStatus(`Error al guardar transacciones: ${lastError?.message || 'Error desconocido'}`);
-            setTimeout(() => setImportStatus(null), 5000);
-          }
-        } else {
-          setImportStatus('No se encontraron transacciones válidas');
-          setTimeout(() => setImportStatus(null), 3000);
-        }
-      } catch (error) {
-        console.error('Error importing CSV:', error);
-        setImportStatus('Error al importar archivo');
+      if (result.success) {
+        loadTrades();
+        setTimeout(() => setImportStatus(null), 5000);
+      } else {
         setTimeout(() => setImportStatus(null), 3000);
-      } finally {
-        setIsLoading(false);
-        event.target.value = null;
       }
-    };
-
-    reader.onerror = () => {
-      setImportStatus('Error al leer archivo');
+    } catch (error) {
+      setImportStatus('Error inesperado al importar');
       setTimeout(() => setImportStatus(null), 3000);
+    } finally {
       setIsLoading(false);
-    };
-
-    reader.readAsText(file);
+      event.target.value = null;
+    }
   }, [currentPortfolio, user, loadTrades]);
 
   useEffect(() => {
@@ -211,87 +135,8 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFormatHelp]);
 
-  const positions = useMemo(() => {
-    const grouped = {};
-
-    // Ordenar trades por fecha para procesar en orden cronológico
-    const sortedTrades = [...trades].sort((a, b) => {
-      const dateA = new Date(a.trade_date || a.fecha);
-      const dateB = new Date(b.trade_date || b.fecha);
-      return dateA - dateB;
-    });
-
-    sortedTrades.forEach(trade => {
-      if (!grouped[trade.ticker]) {
-        grouped[trade.ticker] = {
-          ticker: trade.ticker,
-          trades: [],
-          cantidadTotal: 0,
-          costoTotal: 0
-        };
-      }
-      grouped[trade.ticker].trades.push(trade);
-
-      const cantidad = Math.abs(trade.quantity || trade.cantidad || 0);
-      const precio = trade.price || trade.precioCompra || 0;
-      const isSell = trade.trade_type === 'sell' || trade.tipo === 'venta';
-
-      if (isSell) {
-        // Venta: reducir cantidad y costo proporcionalmente (método promedio ponderado)
-        const pos = grouped[trade.ticker];
-        const precioPromedioActual = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
-        const cantidadAVender = Math.min(cantidad, pos.cantidadTotal); // No vender más de lo que hay
-
-        pos.cantidadTotal -= cantidadAVender;
-        pos.costoTotal -= cantidadAVender * precioPromedioActual;
-
-        // Evitar valores negativos por errores de redondeo
-        if (pos.cantidadTotal < 0.0001) {
-          pos.cantidadTotal = 0;
-          pos.costoTotal = 0;
-        }
-      } else {
-        // Compra: sumar cantidad y costo
-        grouped[trade.ticker].cantidadTotal += cantidad;
-        grouped[trade.ticker].costoTotal += cantidad * precio;
-      }
-    });
-
-    // Filtrar posiciones con cantidad 0 (completamente vendidas)
-    return Object.values(grouped).filter(pos => pos.cantidadTotal > 0).map(pos => {
-      const priceData = prices[pos.ticker];
-      const precioActual = priceData?.precio || 0;
-      const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
-      const valuacionActual = pos.cantidadTotal * precioActual;
-      const resultado = valuacionActual - pos.costoTotal;
-      const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
-
-      const dailyReturnPct = priceData?.pctChange || 0;
-      const resultadoDiario = (dailyReturnPct / 100) * valuacionActual;
-      const resultadoDiarioPct = dailyReturnPct;
-
-      const assetClass = priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel);
-
-      return {
-        ...pos,
-        precioPromedio,
-        precioActual,
-        valuacionActual,
-        resultado,
-        resultadoPct,
-        resultadoDiario,
-        resultadoDiarioPct,
-        assetClass,
-        pctChange: priceData?.pctChange,
-        isBonoPesos: priceData?.isBonoPesos || isBonoPesos(pos.ticker),
-        isBonoHD: priceData?.isBonoHD || isBonoHardDollar(pos.ticker),
-        costoUSD: mepRate > 0 ? pos.costoTotal / mepRate : 0,
-        valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
-        resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
-        resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
-      };
-    }).sort((a, b) => b.valuacionActual - a.valuacionActual);
-  }, [trades, prices, mepRate]);
+  // Portfolio Engine - replaces local calculations
+  const { positions, totals: allTotals, calculateTotals } = usePortfolioEngine(trades, prices, mepRate);
 
   // Filtrar posiciones dinámicamente según búsqueda
   const filteredPositions = useMemo(() => {
@@ -303,54 +148,9 @@ export default function Dashboard() {
     );
   }, [positions, searchTerm]);
 
-  const allTotals = useMemo(() => {
-    const sourceData = positions;
-
-    const invertido = sourceData.reduce((sum, p) => sum + p.costoTotal, 0);
-    const valuacion = sourceData.reduce((sum, p) => sum + p.valuacionActual, 0);
-    const resultado = valuacion - invertido;
-    const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
-    const resultadoDiario = sourceData.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
-    const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
-
-    return {
-      invertido,
-      valuacion,
-      resultado,
-      resultadoPct,
-      resultadoDiario,
-      resultadoDiarioPct,
-      invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
-      valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
-      resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
-      resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
-    };
-  }, [positions, mepRate]);
-
   const filteredTotals = useMemo(() => {
-    // Usamos filteredPositions para que los totales sean dinámicos según la búsqueda
-    const sourceData = filteredPositions;
-
-    const invertido = sourceData.reduce((sum, p) => sum + p.costoTotal, 0);
-    const valuacion = sourceData.reduce((sum, p) => sum + p.valuacionActual, 0);
-    const resultado = valuacion - invertido;
-    const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
-    const resultadoDiario = sourceData.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
-    const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
-
-    return {
-      invertido,
-      valuacion,
-      resultado,
-      resultadoPct,
-      resultadoDiario,
-      resultadoDiarioPct,
-      invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
-      valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
-      resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
-      resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
-    };
-  }, [filteredPositions, mepRate]);
+    return calculateTotals(filteredPositions, mepRate);
+  }, [filteredPositions, mepRate, calculateTotals]);
 
   // Lista de tickers únicos para el filtro
   const uniqueTickers = useMemo(() => {
@@ -651,8 +451,8 @@ export default function Dashboard() {
                   <div className="bg-background-secondary border border-border-primary rounded-xl p-6 lg:p-8">
                     <h2 className="text-xl font-bold text-text-primary mb-6">Guía de Uso</h2>
                     <div className="space-y-6 text-text-secondary">
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                        <p className="text-amber-400 text-sm">
+                      <div className="p-4 bg-warning-muted border border-warning/30 rounded-lg">
+                        <p className="text-warning text-sm">
                           <strong>Nota:</strong> Los precios de CEDEARs y bonos mostrados en la app están expresados en pesos argentinos (ARS).
                           Los bonos hard dollar (AL30, GD30, etc.) muestran su precio en pesos, representando el valor de cada lamina de USD 100.
                         </p>
@@ -809,7 +609,7 @@ export default function Dashboard() {
                             </div>
                           )}
                         </div>
-                        <button onClick={downloadTemplate} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary" title="Descargar plantilla">
+                        <button onClick={handleDownloadTemplate} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary" title="Descargar plantilla">
                           <Download className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="hidden sm:inline">Plantilla</span>
                         </button>
@@ -818,7 +618,7 @@ export default function Dashboard() {
                           <span className="hidden sm:inline">Importar</span>
                           <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
                         </label>
-                        <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-4 py-1.5 h-8 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all text-xs font-medium shadow-lg shadow-emerald-600/20" title="Nueva transacción">
+                        <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-4 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20" title="Nueva transacción">
                           <Plus className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="hidden sm:inline">Nuevo</span>
                         </button>
@@ -902,7 +702,7 @@ export default function Dashboard() {
                   <DashboardSummaryCards totals={allTotals} lastUpdate={lastUpdate} />
 
                   {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col max-h-[600px] min-h-[200px] mt-3">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col flex-1 min-h-0 mt-3">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
@@ -917,7 +717,7 @@ export default function Dashboard() {
                           <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
                         </div>
                       </div>
-                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-2 px-4 py-1.5 h-8 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all text-xs font-medium shadow-lg shadow-emerald-600/20">
+                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-2 px-4 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20">
                         <Plus className="w-3.5 h-3.5" />
                         Nueva Transacción
                       </button>

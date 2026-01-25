@@ -23,8 +23,14 @@ export default {
         },
         success: '#10b981',
         danger: '#ef4444',
+        warning: '#f59e0b', // Amber 500
+        profit: '#10b981',   // Alias for success
+        loss: '#ef4444',     // Alias for danger
         'success-muted': 'rgba(16, 185, 129, 0.1)',
         'danger-muted': 'rgba(239, 68, 68, 0.1)',
+        'warning-muted': 'rgba(245, 158, 11, 0.1)',
+        'profit-muted': 'rgba(16, 185, 129, 0.1)',
+        'loss-muted': 'rgba(239, 68, 68, 0.1)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

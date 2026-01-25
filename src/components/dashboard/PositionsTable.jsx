@@ -72,7 +72,7 @@ const TickerCell = ({ ticker, assetClass, isStale }) => {
       <div className="flex items-center gap-2">
         <span className="font-semibold text-text-primary font-mono text-base">{ticker}</span>
         {isStale && (
-          <span className="text-[10px] text-amber-500" title="Precio desactualizado">!</span>
+          <span className="text-[10px] text-warning" title="Precio desactualizado">!</span>
         )}
       </div>
       <span className="text-[11px] text-text-tertiary font-normal">{assetClass}</span>
@@ -242,21 +242,21 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </td>
                   )}
                   <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                    <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {formatARS(pos.resultado)}
                     </span>
                   </td>
                   <td className={`text-center ${paddingX} ${paddingY}`}>
                     <span className={`font-medium px-1.5 py-0.5 rounded text-sm ${pos.resultadoPct >= 0
-                      ? 'bg-success/10 text-success'
-                      : 'bg-danger/10 text-danger'
+                      ? 'bg-profit-muted text-profit'
+                      : 'bg-loss-muted text-loss'
                       }`}>
                       {formatPercent(pos.resultadoPct)}
                     </span>
                   </td>
                   {columnSettings.showDiario && (
                     <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
-                      <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
+                      <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {formatARS(pos.resultadoDiario || 0)}
                       </span>
                     </td>
@@ -264,8 +264,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   {columnSettings.showDiarioPct && (
                     <td className={`text-center ${paddingX} ${paddingY}`}>
                       <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${pos.resultadoDiarioPct >= 0
-                        ? 'bg-success/10 text-success'
-                        : 'bg-danger/10 text-danger'
+                        ? 'bg-profit-muted text-profit'
+                        : 'bg-loss-muted text-loss'
                         }`}>
                         {formatPercent(pos.resultadoDiarioPct || 0)}
                       </span>
