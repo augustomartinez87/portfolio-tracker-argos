@@ -49,45 +49,6 @@ def create_mock_cauciones():
     return pd.DataFrame(cauciones)
 
 
-def create_mock_fci_data():
-    """Creates mock FCI data for demo/testing"""
-    start_date = date.today() - timedelta(days=30)
-    
-    # VCP History (40% TNA growth)
-    vcp_data = []
-    curr = start_date
-    vcp = 100.0
-    daily_rate = 0.40 / 365
-    while curr <= date.today():
-        vcp_data.append({'fecha': curr.isoformat(), 'vcp': vcp, 'fci_id': 1})
-        vcp *= (1 + daily_rate)
-        curr += timedelta(days=1)
-    
-    precios = pd.DataFrame(vcp_data)
-    
-    # Movements
-    movimientos = pd.DataFrame([
-        {
-            'fci_id': 1,
-            'fecha': datetime.combine(start_date, datetime.min.time()).isoformat(),
-            'tipo': 'SUSCRIPCION',
-            'monto': 20_000_000.0,
-            'cuotas': 20_000_000.0 / 100.0,
-            'motivo': 'funding_caucion'
-        },
-        {
-            'fci_id': 1,
-            'fecha': datetime.combine(date.today() - timedelta(days=5), datetime.min.time()).isoformat(),
-            'tipo': 'RESCATE',
-            'monto': 2_000_000.0,
-            'cuotas': 2_000_000.0 / 105.0,
-            'motivo': 'retiro_activos'
-        }
-    ])
-    
-    return precios, movimientos
-
-
 class FundingCarryEngine:
     def __init__(self, use_mock=True, user_id=None):
         self.use_mock = use_mock
@@ -122,8 +83,8 @@ class FundingCarryEngine:
                 if portfolio_ids:
                     return portfolio_ids
             
-            # If no data from real DB (likely RLS issue), fall back to mock for demo
-            print("⚠️ No portfolios found in DB (RLS may be blocking). Using mock data for demo.")
+            # If no data from real DB, fall back to mock for demo
+            print("⚠️ No portfolios found in DB. Using mock data for demo.")
             mock_data = create_mock_cauciones()
             return mock_data['portfolio_id'].unique().tolist()
         except Exception as e:
@@ -161,18 +122,16 @@ class FundingCarryEngine:
     def calculate_metrics(self, portfolio_id=None, start_date=None, end_date=None):
         """
         Main calculation engine.
-        Reconstructs daily state of Debt vs Assets.
+        Currently shows only DEBT side (Interest Cost).
+        FCI/Carry calculations pending until FCI module is implemented.
         """
         if not end_date:
             end_date = date.today()
         if not start_date:
             start_date = end_date - timedelta(days=30)
         
-        # Fetch Data
+        # Fetch Cauciones Data
         cauciones = self._fetch_cauciones(portfolio_id)
-        
-        # For now, FCI data is always mocked (until we add FCI tables to Supabase)
-        precios, movimientos = create_mock_fci_data()
         
         if cauciones.empty:
             return pd.DataFrame(), {}
@@ -180,19 +139,15 @@ class FundingCarryEngine:
         # Convert date columns
         cauciones['fecha_inicio'] = pd.to_datetime(cauciones['fecha_inicio']).dt.date
         cauciones['fecha_fin'] = pd.to_datetime(cauciones['fecha_fin']).dt.date
-        precios['fecha'] = pd.to_datetime(precios['fecha']).dt.date
-        movimientos['fecha'] = pd.to_datetime(movimientos['fecha'])
         
         # Process Daily Timeline
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         daily_stats = []
         
-        current_holdings = {}
-        
         for d in date_range:
             d_date = d.date()
             
-            # A. Calculate Debt State
+            # Calculate Debt State
             active_cauciones = cauciones[
                 (cauciones['fecha_inicio'] <= d_date) & 
                 (cauciones['fecha_fin'] > d_date)
@@ -209,65 +164,27 @@ class FundingCarryEngine:
                 )
                 daily_interest_cost = (total_debt * (weighted_tna / 100)) / 365
             
-            # B. Calculate Asset State
-            todays_movs = movimientos[movimientos['fecha'].dt.date == d_date]
-            for _, mov in todays_movs.iterrows():
-                fid = mov['fci_id']
-                if mov['tipo'] == 'SUSCRIPCION':
-                    current_holdings[fid] = current_holdings.get(fid, 0.0) + mov['cuotas']
-                elif mov['tipo'] == 'RESCATE':
-                    current_holdings[fid] = current_holdings.get(fid, 0.0) - mov['cuotas']
-            
-            # Valuation
-            total_asset_value = 0.0
-            gross_carry_day = 0.0
-            
-            for fid, quotas in current_holdings.items():
-                price_row = precios[(precios['fci_id'] == fid) & (precios['fecha'] == d_date)]
-                
-                if not price_row.empty:
-                    vcp_today = price_row.iloc[0]['vcp']
-                    asset_val = quotas * vcp_today
-                    total_asset_value += asset_val
-                    
-                    yesterday = d_date - timedelta(days=1)
-                    price_prev = precios[(precios['fci_id'] == fid) & (precios['fecha'] == yesterday)]
-                    
-                    if not price_prev.empty:
-                        vcp_prev = price_prev.iloc[0]['vcp']
-                        daily_gain = quotas * (vcp_today - vcp_prev)
-                        gross_carry_day += daily_gain
-            
-            net_carry = gross_carry_day - daily_interest_cost
-            utilization = (total_asset_value / total_debt) if total_debt > 0 else 0.0
-            
             daily_stats.append({
                 'date': d_date,
                 'total_debt': total_debt,
-                'total_asset_value': total_asset_value,
-                'utilization': utilization,
                 'weighted_tna': weighted_tna,
                 'daily_interest_cost': daily_interest_cost,
-                'gross_carry': gross_carry_day,
-                'net_carry': net_carry
             })
 
         df_daily = pd.DataFrame(daily_stats)
         
-        # Summary KPIs
+        # Summary KPIs (Debt Only)
         if not df_daily.empty:
             avg_debt = df_daily['total_debt'].mean()
-            total_net_carry = df_daily['net_carry'].sum()
-            robc_period = (total_net_carry / avg_debt) if avg_debt > 0 else 0.0
-            days = (end_date - start_date).days
-            robc_annual = robc_period * (365/days) if days > 0 else 0.0
+            total_interest = df_daily['daily_interest_cost'].sum()
+            avg_tna = df_daily['weighted_tna'].mean()
+            current_debt = df_daily.iloc[-1]['total_debt']
             
             kpis = {
                 'avg_debt': avg_debt,
-                'avg_assets': df_daily['total_asset_value'].mean(),
-                'net_carry_accum': total_net_carry,
-                'robc_annual': robc_annual * 100,
-                'current_utilization': df_daily.iloc[-1]['utilization'] * 100
+                'total_interest': total_interest,
+                'avg_tna': avg_tna,
+                'current_debt': current_debt,
             }
         else:
             kpis = {}

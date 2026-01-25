@@ -49,7 +49,6 @@ st.markdown("""
 
 # --- INITIALIZATION ---
 # Query Params for Integration
-# e.g. /?portfolio_id=uuid&theme=dark&embedded=true&token=SECRET&date_from=2024-01-01
 query_params = st.query_params
 portfolio_param = query_params.get("portfolio_id", None)
 embedded_mode = query_params.get("embedded", "false").lower() == "true"
@@ -68,7 +67,6 @@ if embedded_mode:
     """, unsafe_allow_html=True)
 
 # 1. Determine MOCK State FIRST
-# Default: Mock is TRUE unless embedded mode forces it off (assuming dev want real data there)
 default_mock = True
 
 if not embedded_mode:
@@ -76,15 +74,11 @@ if not embedded_mode:
     use_mock = st.sidebar.checkbox("Use Mock Data", value=default_mock, help="Toggle between Real Supabase DB and Local Mock DB")
 else:
     # In embedded mode, default to Real DB.
-    # We can assume if they go to the trouble of embedding, they want production data.
     use_mock = False 
 
 # 2. SECURITY CHECK
-# Now we can safely use `use_mock`
 REQUIRED_TOKEN = "argos-access" 
 if auth_token != REQUIRED_TOKEN and not use_mock: 
-    # If trying to access Real Data without token => Block
-    # But if Mock is active (local dev or demo), we allow it.
     st.error("⛔ Acceso Denegado: Token inválido.")
     st.stop()
 
@@ -104,7 +98,7 @@ if not portfolios:
 if portfolio_param and portfolio_param in portfolios:
     selected_portfolio = portfolio_param
 elif 'all' in portfolios or portfolios:
-    selected_portfolio = 'all' # Default
+    selected_portfolio = 'all'
     if not embedded_mode:
         selected_portfolio = st.sidebar.selectbox("Seleccionar Portfolio", ['all'] + portfolios, index=0)
 else:
@@ -120,6 +114,7 @@ if url_date_from:
         default_start = datetime.strptime(url_date_from, "%Y-%m-%d").date()
     except:
         pass
+
 if url_date_to:
     try:
         today = datetime.strptime(url_date_to, "%Y-%m-%d").date()
@@ -131,7 +126,6 @@ if not embedded_mode:
     start_date = col1.date_input("Inicio", default_start)
     end_date = col2.date_input("Fin", today)
 else:
-    # In embedded mode, use the params directly (calculated above)
     start_date = default_start
     end_date = today
 
@@ -140,10 +134,11 @@ if start_date >= end_date:
     st.stop()
 
 # --- MAIN LOGIC ---
-st.title("💸 Funding & Carry Engine")
-st.markdown("Monitor real-time **Net Carry** and **ROBC** from your Cauciones implementation.")
+st.title("💸 Funding Engine")
+st.markdown("Monitoreo de **Costo de Financiamiento** de tus Cauciones Tomadoras.")
+st.info("💡 **Módulo FCI pendiente**: actualmente solo se muestra el costo de interés. Próximamente agregaremos la valuación de FCIs para calcular el Carry Neto completo.")
 
-with st.spinner("Calculating metrics..."):
+with st.spinner("Calculando métricas..."):
     df_daily, kpis = engine.calculate_metrics(
         portfolio_id=selected_portfolio,
         start_date=start_date,
@@ -151,101 +146,86 @@ with st.spinner("Calculating metrics..."):
     )
 
 if df_daily.empty:
-    st.warning("No data found for this period.")
+    st.warning("No hay datos para este período.")
     st.stop()
 
 # --- KPI ROW ---
 k1, k2, k3, k4 = st.columns(4)
 
-def fmt_money(val):
-    color = "money-pos" if val >= 0 else "money-neg"
-    return f"{val:,.0f}"
-
 k1.metric("Capital Financiado (Avg)", f"${kpis['avg_debt']:,.0f}")
 k1.caption("Deuda Promedio Diaria")
 
-k2.metric("Carry Neto Acumulado", f"${kpis['net_carry_accum']:,.0f}", delta_color="normal")
-k2.caption(f"Ganancia real (FCI - Interés)")
+k2.metric("Costo Interés (Período)", f"${kpis['total_interest']:,.0f}")
+k2.caption(f"Interés acumulado ({(end_date - start_date).days} días)")
 
-robc_val = kpis['robc_annual']
-k3.metric("ROBC (Anualizado)", f"{robc_val:.2f}%", delta=f"{robc_val - 32:.2f}% vs Benchmark") # Assumed 32% benchmark
-k3.caption("Return on Borrowed Capital")
+k3.metric("TNA Promedio Ponderada", f"{kpis['avg_tna']:.2f}%")
+k3.caption("Costo del Funding")
 
-util_val = kpis['current_utilization']
-k4.metric("Utilización Funding", f"{util_val:.1f}%")
-k4.caption("Activos / Deuda (Hoy)")
+k4.metric("Deuda Actual", f"${kpis['current_debt']:,.0f}")
+k4.caption("Capital activo hoy")
 
 # --- CHARTS ---
 
-# 1. Evolution Chart (Dual Axis)
-st.subheader("📈 Deuda vs. Activos")
-fig_evol = go.Figure()
+# 1. Debt Evolution Chart
+st.subheader("📈 Evolución del Capital Financiado")
+fig_debt = go.Figure()
 
-fig_evol.add_trace(go.Scatter(
+fig_debt.add_trace(go.Scatter(
     x=df_daily['date'], y=df_daily['total_debt'],
-    name="Deuda (Funding)",
-    line=dict(color="#ff4b4b", width=2)
-))
-
-fig_evol.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['total_asset_value'],
-    name="FCI (Activos)",
-    line=dict(color="#00eb88", width=2),
+    name="Capital Financiado",
+    line=dict(color="#ff4b4b", width=2),
     fill='tozeroy',
-    fillcolor='rgba(0, 235, 136, 0.1)' 
+    fillcolor='rgba(255, 75, 75, 0.1)'
 ))
 
-fig_evol.update_layout(
+fig_debt.update_layout(
     template="plotly_dark",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     hovermode="x unified",
-    margin=dict(l=0, r=0, t=30, b=0)
+    margin=dict(l=0, r=0, t=30, b=0),
+    yaxis_title="ARS",
 )
-st.plotly_chart(fig_evol, use_container_width=True)
+st.plotly_chart(fig_debt, use_container_width=True)
 
-# 2. Daily Carry Components
-st.subheader("📊 Composición del Carry Diario")
-fig_carry = go.Figure()
+# 2. Daily Interest Cost
+st.subheader("📊 Costo de Interés Diario")
+fig_interest = go.Figure()
 
-fig_carry.add_trace(go.Bar(
-    x=df_daily['date'], y=df_daily['gross_carry'],
-    name="Ganancia FCI (+)",
-    marker_color="#00eb88"
-))
-
-fig_carry.add_trace(go.Bar(
-    x=df_daily['date'], y=-df_daily['daily_interest_cost'],
-    name="Costo Interés (-)",
+fig_interest.add_trace(go.Bar(
+    x=df_daily['date'], y=df_daily['daily_interest_cost'],
+    name="Costo Interés",
     marker_color="#ff4b4b"
 ))
 
-# Net Curve
-fig_carry.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['net_carry'],
-    name="Carry Neto",
-    line=dict(color="white", width=2, dash='dot')
+# Add TNA line on secondary axis
+fig_interest.add_trace(go.Scatter(
+    x=df_daily['date'], y=df_daily['weighted_tna'],
+    name="TNA (%)",
+    line=dict(color="#00eb88", width=2, dash='dot'),
+    yaxis="y2"
 ))
 
-fig_carry.update_layout(
-    barmode='overlay',
+fig_interest.update_layout(
     template="plotly_dark",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    title="P&L Diario: Costo vs Rendimiento",
-    margin=dict(l=0, r=0, t=30, b=0)
+    margin=dict(l=0, r=0, t=30, b=0),
+    yaxis_title="Interés Diario (ARS)",
+    yaxis2=dict(
+        title="TNA (%)",
+        overlaying="y",
+        side="right"
+    )
 )
-st.plotly_chart(fig_carry, use_container_width=True)
+st.plotly_chart(fig_interest, use_container_width=True)
 
 # --- DETAILS TABLE ---
 with st.expander("🔎 Ver Datos Detallados"):
     st.dataframe(
         df_daily.style.format({
             "total_debt": "${:,.0f}",
-            "total_asset_value": "${:,.0f}",
-            "utilization": "{:.1%}",
-            "gross_carry": "${:,.0f}",
-            "net_carry": "${:,.0f}",
+            "daily_interest_cost": "${:,.0f}",
             "weighted_tna": "{:.2f}%"
         }),
         use_container_width=True
