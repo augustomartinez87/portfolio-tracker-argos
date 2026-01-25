@@ -183,11 +183,9 @@ export class FinancingService {
     fecha_fin: string;
     capital: number;
     monto_devolver: number;
-    interes: number;
     dias: number;
     tna_real: number;
     archivo?: string;
-    pdf_filename?: string;
   }>>> {
     try {
       if (!userId) {
@@ -736,8 +734,7 @@ export class FinancingService {
           interes: interes.toNumber(),
           dias,
           tna_real: row.tna_real,
-          archivo: row.archivo,
-          pdf_filename: row.pdf_filename
+          archivo: row.archivo
         };
       });
 

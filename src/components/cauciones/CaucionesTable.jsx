@@ -39,7 +39,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
 
   const sortedData = useMemo(() => {
     if (!cauciones || cauciones.length === 0) return [];
-    
+
     return [...cauciones].sort((a, b) => {
       let aVal, bVal;
 
@@ -75,8 +75,8 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
   }, [cauciones, sortConfig]);
 
   const handleSelectForDelete = (id) => {
-    setSelectedForDelete(prev => 
-      prev.includes(id) 
+    setSelectedForDelete(prev =>
+      prev.includes(id)
         ? prev.filter(item => item !== id)
         : [...prev, id]
     );
@@ -92,7 +92,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
 
   const handleDeleteSelected = async () => {
     if (selectedForDelete.length === 0) return;
-    
+
     if (window.confirm(`¿Estás seguro que deseas eliminar ${selectedForDelete.length} cauciones? Esta acción no se puede deshacer.`)) {
       try {
         await Promise.all(selectedForDelete.map(id => onDelete(id)));
@@ -107,7 +107,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
 
   const handleDeleteAll = async () => {
     if (cauciones.length === 0) return;
-    
+
     if (window.confirm(`¿Estás seguro que deseas eliminar TODAS las cauciones (${cauciones.length})? Esta acción no se puede deshacer.`)) {
       try {
         await onDeleteAll();
@@ -145,7 +145,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
               {sortedData.length}{sortedData.length !== cauciones.length && `/${cauciones.length}`}
             </span>
           </div>
-          
+
           <div className="flex gap-2">
             {selectedForDelete.length > 0 && (
               <button
@@ -156,7 +156,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
                 <span className="hidden sm:inline">Eliminar ({selectedForDelete.length})</span>
               </button>
             )}
-            
+
             {cauciones.length > 0 && (
               <button
                 onClick={handleDeleteAll}
@@ -240,8 +240,8 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
               {sortedData.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-4 py-8 text-center text-text-tertiary text-sm">
-                    {cauciones.length === 0 
-                      ? 'No hay operaciones de caución registradas' 
+                    {cauciones.length === 0
+                      ? 'No hay operaciones de caución registradas'
                       : 'No hay cauciones que coincidan con los filtros'
                     }
                   </td>
@@ -262,7 +262,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-text-secondary text-xs font-mono truncate max-w-[150px] block">
-                        {c.pdf_filename || c.archivo || '-'}
+                        {c.archivo || '-'}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-text-primary text-sm font-mono tabular-nums">

@@ -17,7 +17,7 @@ export type Database = {
         Insert: Omit<DatabaseCaucion, 'id' | 'created_at'>;
         Update: Partial<DatabaseCaucion>;
       };
-      
+
       // Portfolios table (from existing system)
       portfolios: {
         Row: {
@@ -33,7 +33,7 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['portfolios']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['portfolios']['Row']>;
       };
-      
+
       // Trades table (from existing system)
       trades: {
         Row: {
@@ -55,7 +55,7 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['trades']['Row']>;
       };
     };
-    
+
     Views: {
       // Summary view for cauciones - pre-calculated aggregates
       cauciones_resumen: {
@@ -72,7 +72,7 @@ export type Database = {
         };
       };
     };
-    
+
     Functions: {
       // Database functions if any
     };
@@ -84,19 +84,19 @@ export type Database = {
 // ============================================================================
 
 // Helper type for table rows
-export type TableRow<T extends keyof Database['public']['Tables']> = 
+export type TableRow<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];
 
 // Helper type for table inserts
-export type TableInsert<T extends keyof Database['public']['Tables']> = 
+export type TableInsert<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Insert'];
 
 // Helper type for table updates
-export type TableUpdate<T extends keyof Database['public']['Tables']> = 
+export type TableUpdate<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Update'];
 
 // Helper type for view rows
-export type ViewRow<V extends keyof Database['public']['Views']> = 
+export type ViewRow<V extends keyof Database['public']['Views']> =
   Database['public']['Views'][V]['Row'];
 
 // ============================================================================

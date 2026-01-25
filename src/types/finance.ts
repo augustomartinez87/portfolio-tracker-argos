@@ -8,7 +8,7 @@ import Decimal from 'decimal.js';
 // RESULT PATTERN - Robust error handling throughout the system
 // ============================================================================
 
-export type Result<T, E = Error> = 
+export type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
 
@@ -43,8 +43,8 @@ export interface DatabaseCaucion {
   monto_devolver: number;    // Numeric value from DB
   interes: number;           // Numeric value from DB
   dias: number;              // Integer from DB
-  tna_real: number;          // TNA as decimal (0.3308) from DB - NO CONVERSION
-  archivo: string;           // Source file name
+  tna_real: number;          // TNA as decimal (e.g. 33.08) from DB - NO CONVERSION
+  archivo: string | null;    // Source file name
   created_at?: string;       // Creation timestamp (optional)
 }
 
@@ -195,7 +195,7 @@ export function isCauccion(obj: unknown): obj is Caucion {
   if (typeof obj !== 'object' || obj === null) {
     return false;
   }
-  
+
   const cast = obj as Record<string, unknown>;
   return 'id' in cast && 'portfolioId' in cast &&
     cast['capital'] instanceof Decimal &&
