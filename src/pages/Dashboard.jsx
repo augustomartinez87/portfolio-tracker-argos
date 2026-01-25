@@ -573,7 +573,7 @@ export default function Dashboard() {
           <div className="p-2 lg:p-3 space-y-2 lg:space-y-3">
 
             {/* Page Header with Actions (matching Financiacion structure) */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative min-h-[48px]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative min-h-[48px] z-20">
               <div className="flex items-center gap-3">
                 <div>
                   <h1 className="text-lg lg:text-xl font-bold text-text-primary leading-tight">Portfolio</h1>
@@ -605,7 +605,7 @@ export default function Dashboard() {
             </div>
 
             {/* Mobile Selector Only */}
-            <div className="lg:hidden">
+            <div className="lg:hidden relative z-30">
               <PortfolioSelector />
             </div>
 
@@ -794,7 +794,7 @@ export default function Dashboard() {
                           <span className="hidden sm:inline">Importar</span>
                           <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
                         </label>
-                        <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs font-medium" title="Nueva transacción">
+                        <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-4 py-1.5 h-8 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all text-xs font-medium shadow-lg shadow-emerald-600/20" title="Nueva transacción">
                           <Plus className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="hidden sm:inline">Nuevo</span>
                         </button>
