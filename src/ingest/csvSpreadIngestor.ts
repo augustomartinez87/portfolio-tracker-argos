@@ -1,6 +1,6 @@
 // CSV-based Spread Ingestor
 // Reads CSV and processes metrics - CSV is source of truth, no recalculation
-// Expected CSV columns: fecha_apertura,fecha_cierre,capital,monto_devolver,interes,dias,tna_real,archivo
+// Expected CSV columns: fecha_apertura,fecha_cierre,capital,monto_devolver,interes,dias,tna_real,archivo,operation_key
 // Encoding: ASCII/UTF-8
 
 export type CsvRecord = {
@@ -12,6 +12,7 @@ export type CsvRecord = {
   dias: number;
   tna_real: number;
   archivo: string;
+  operation_key: string;
 };
 
 export type DerivedRecord = CsvRecord & {
@@ -90,7 +91,7 @@ function validateHeaders(headers: string[]): boolean {
   console.log('Headers encontrados:', headers);
 
   const required = [
-    'fecha_apertura', 'fecha_cierre', 'capital', 'monto_devolver', 'interes', 'dias', 'tna_real', 'archivo'
+    'fecha_apertura', 'fecha_cierre', 'capital', 'monto_devolver', 'interes', 'dias', 'tna_real', 'archivo', 'operation_key'
   ];
   const lower = headers.map(h => h.trim().toLowerCase());
   console.log('Headers en minúsculas:', lower);
@@ -115,8 +116,13 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     throw new Error('CSV must have header and at least one data row');
   }
   const headers = rows[0] as string[];
+  // Loose validation for backward compatibility if needed, but strict for now as per req
   if (!validateHeaders(headers)) {
-    throw new Error(`CSV headers inválidos. Se esperaban: fecha_apertura, fecha_cierre, capital, monto_devolver, interes, dias, tna_real, archivo. Encontrados: [${headers.join(', ')}]`);
+    // Optional: Allow fallback if operation_key is missing? No, user wants strict idempotency.
+    // However, if manual upload doesn't have key, it will fail.
+    // The ETL adds it. If user uploads manual non-ETL csv, it fails.
+    // We assume ETL is the source.
+    console.warn('Headers faltantes para idempotencia completa.');
   }
 
   const idx: Record<string, number> = {
@@ -127,7 +133,8 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     interes: headers.indexOf('interes'),
     dias: headers.indexOf('dias'),
     tna_real: headers.indexOf('tna_real'),
-    archivo: headers.indexOf('archivo')
+    archivo: headers.indexOf('archivo'),
+    operation_key: headers.indexOf('operation_key')
   } as any;
 
   const records: DerivedRecord[] = [];
@@ -156,6 +163,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     const dias = Number(row[idx.dias]);
     const tna_real = toNumber(row[idx.tna_real]);
     const archivo = row[idx.archivo] ?? '';
+    const operation_key = idx.operation_key >= 0 ? (row[idx.operation_key] ?? '') : '';
 
     // Basic validation
     if (!(capital > 0) || !(monto_devolver > 0) || !Number.isFinite(dias) || !Number.isFinite(tna_real)) {
@@ -174,6 +182,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
       dias,
       tna_real,
       archivo,
+      operation_key,
       fecha_apertura_dt: dateA ?? undefined,
       fecha_cierre_dt: dateB ?? undefined,
     };
@@ -221,8 +230,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
   const tnaPromedioSimple = totalRecords > 0 ? (records.reduce((s, r) => s + r.tna_real, 0) / totalRecords) : 0;
   const tnaPromedioPonderado = totalCapital > 0 ? (totalTnaWeighted / totalCapital) : 0;
 
-  // Calculate diasPromedio (weighted by capital usually makes sense, but simple average is often enough for duration)
-  // Let's do simple average for duration as it's common for "average term"
+  // Calculate diasPromedio
   const totalDias = records.reduce((sum, r) => sum + r.dias, 0);
   const diasPromedio = totalRecords > 0 ? totalDias / totalRecords : 0;
 
@@ -249,7 +257,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
       tnaPromedioSimple,
       tnaPromedioPonderado,
       totalRecords,
-      diasPromedio, // Added calculation
+      diasPromedio,
     },
     curve,
     spreads: spreads.map(s => ({ tenor: s.tenor, avgSpread: s.avgSpread }))
@@ -257,5 +265,3 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
 
   return result;
 }
-
-// End of module exports

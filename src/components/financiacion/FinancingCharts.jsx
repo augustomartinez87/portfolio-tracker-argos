@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { BarChart3, TrendingUp, Clock, DollarSign } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const FinancingCharts = ({ operations, csvData, loading }) => {
   // Procesamiento de datos para visualizaciones
@@ -11,7 +12,8 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         tenorDistribution: [],
         rateDistribution: [],
         monthlyTrends: [],
-        capitalFlow: []
+        capitalFlow: [],
+        tnaEvolution: []
       };
     }
 
@@ -30,6 +32,22 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
       '100-150%': { count: 0, capital: 0 },
       '150%+': { count: 0, capital: 0 }
     };
+
+    // Evolución TNA (Serie Temporal)
+    // Ordenar por fecha para el gráfico de líneas
+    const sortedByDate = [...data].sort((a, b) => {
+      const dateA = new Date(a.fecha_apertura || a.fecha_inicio || 0);
+      const dateB = new Date(b.fecha_apertura || b.fecha_inicio || 0);
+      return dateA - dateB;
+    });
+
+    const tnaEvolution = sortedByDate
+      .filter(op => (op.fecha_apertura || op.fecha_inicio) && op.tna_real)
+      .map(op => ({
+        dateStr: op.fecha_apertura || op.fecha_inicio,
+        tna: op.tna_real,
+        capital: op.capital
+      }));
 
     // Procesar datos usando campos del CSV
     data.forEach(op => {
@@ -105,7 +123,8 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         month: m.month,
         capital: m.capital,
         interes: m.interes
-      }))
+      })),
+      tnaEvolution
     };
   }, [operations, csvData]);
 
@@ -193,9 +212,54 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         />
       </div>
 
+      {/* Evolución TNA (Line Chart) */}
+      <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary col-span-1 lg:col-span-2">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-5 h-5 text-text-tertiary" />
+          <h3 className="text-sm font-medium text-text-primary">Evolución TNA Real</h3>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData.tnaEvolution}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+              <XAxis
+                dataKey="dateStr"
+                stroke="#666"
+                fontSize={12}
+                tickMargin={10}
+                tickFormatter={(value) => {
+                  const d = new Date(value);
+                  return `${d.getDate()}/${d.getMonth() + 1}`;
+                }}
+              />
+              <YAxis
+                stroke="#666"
+                fontSize={12}
+                width={40}
+                tickFormatter={(val) => `${val}%`}
+              />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
+                formatter={(value) => [`${value.toFixed(2)}%`, 'TNA Real']}
+                labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
+              />
+              <Line
+                type="monotone"
+                dataKey="tna"
+                stroke="#10b981"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#10b981' }}
+                activeDot={{ r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Tendencias Mensuales usando fechas del CSV */}
       {chartData.monthlyTrends.length > 0 && (
-        <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary">
+        <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary col-span-1 lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-text-tertiary" />
             <h3 className="text-sm font-medium text-text-primary">Evolución Mensual (por fecha_apertura)</h3>
@@ -219,7 +283,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
       )}
 
       {/* Resumen de Métricas */}
-      <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary">
+      <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary col-span-1 lg:col-span-2">
         <div className="flex items-center gap-2 mb-4">
           <DollarSign className="w-5 h-5 text-text-tertiary" />
           <h3 className="text-sm font-medium text-text-primary">Resumen de Operaciones</h3>
@@ -250,17 +314,6 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
               {chartData.rateDistribution.find(d => d.label === '0-50%')?.count || 0}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Placeholder para futuros gráficos */}
-      <div className="bg-background-tertiary rounded-lg p-4 border border-border-primary">
-        <h3 className="text-sm font-medium text-text-primary mb-2">Próximamente</h3>
-        <div className="text-xs text-text-tertiary space-y-1">
-          <p>• Evolución histórica de tasas</p>
-          <p>• Proyecciones y escenarios</p>
-          <p>• Comparación con benchmarks (BADLAR, tasas de política)</p>
-          <p>• Análisis de correlación con mercado</p>
         </div>
       </div>
     </div>

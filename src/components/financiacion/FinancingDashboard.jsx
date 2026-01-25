@@ -17,7 +17,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
   const handleCSVProcessed = useCallback((processedData) => {
     console.log('✅ CSV procesado - registros:', processedData?.records?.length);
     console.log('✅ CSV procesado - summary:', processedData?.summary);
-    
+
     // Guardar en ref persistente Y en estado
     if (processedData && processedData.summary) {
       csvDataRef.current = processedData;
@@ -46,7 +46,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
   // Función para cargar cauciones desde el servicio
   const loadCauciones = useCallback(async () => {
     if (!userId || !portfolioId) return;
-    
+
     setCaucionesLoading(true);
     try {
       const result = await financingService.getCauciones(userId, portfolioId);
@@ -75,7 +75,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
   // Función para eliminar caución individual
   const handleDeleteCaucion = useCallback(async (caucionId) => {
     if (!userId || !caucionId) return;
-    
+
     try {
       const result = await financingService.deleteOperation(userId, caucionId);
       if (result.success) {
@@ -100,7 +100,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
   // Función para eliminar todas las cauciones
   const handleDeleteAllCauciones = useCallback(async () => {
     if (!userId || !portfolioId) return;
-    
+
     try {
       const result = await financingService.deleteAllOperations(userId, portfolioId);
       if (result.success) {
@@ -125,7 +125,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
   // Función para LIMPIAR TODOS los datos del usuario (solo desarrollo)
   const handleClearAllData = useCallback(async () => {
     if (!userId) return;
-    
+
     if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
       try {
         const result = await financingService.clearAllUserCauciones(userId);
@@ -166,11 +166,10 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
             <button
               key={option.id}
               onClick={() => setActiveView(option.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${
-                activeView === option.id
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeView === option.id
                   ? 'bg-primary text-white'
                   : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
-              }`}
+                }`}
             >
               <option.icon className="w-4 h-4" />
               {option.label}
@@ -179,13 +178,15 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
         </div>
       </div>
 
-      {/* KPIs Cards - Always visible */}
-      <FinancingKPIs 
-        metrics={metrics} 
-        csvData={kpisData} 
-        operations={operations}
-        loading={loading} 
-      />
+      {/* KPIs Cards - Visible only in Dashboard */}
+      {activeView === 'dashboard' && (
+        <FinancingKPIs
+          metrics={metrics}
+          csvData={kpisData}
+          operations={operations}
+          loading={loading}
+        />
+      )}
 
       {/* Dynamic Content Area */}
       <div className="min-h-[400px]">
@@ -210,7 +211,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
                   icon={BarChart3}
                 />
                 <div className="text-text-tertiary">
-                  <p>• Capital promedio por operación: ${metrics?.capitalTotal ? (metrics.capitalTotal / operations.length).toLocaleString('es-AR', {minimumFractionDigits: 2}) : '—'}</p>
+                  <p>• Capital promedio por operación: ${metrics?.capitalTotal ? (metrics.capitalTotal / operations.length).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '—'}</p>
                   <p>• Tasa promedio: {metrics?.tnaPromedioPonderada?.toFixed?.(2) || '—'}%</p>
                   <p>• Duración promedio: {metrics?.diasPromedio?.toFixed?.(0) || '—'} días</p>
                 </div>
@@ -228,8 +229,8 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
         )}
 
         {activeView === 'upload' && (
-          <CSVUploadView 
-            onProcessed={handleCSVProcessed} 
+          <CSVUploadView
+            onProcessed={handleCSVProcessed}
             userId={userId}
             portfolioId={portfolioId}
             queryClient={queryClient}
@@ -246,10 +247,10 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
         )}
 
         {activeView === 'charts' && (
-          <FinancingCharts 
-            operations={operations} 
+          <FinancingCharts
+            operations={operations}
             csvData={kpisData}
-            loading={loading} 
+            loading={loading}
           />
         )}
       </div>

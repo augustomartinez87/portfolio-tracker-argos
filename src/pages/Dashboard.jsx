@@ -612,7 +612,7 @@ export default function Dashboard() {
                       />
                     </div>
                     <div className="lg:col-span-1 space-y-6">
-                      <TotalCard totals={totals} mepRate={mepRate} />
+                      <TotalCard totals={totals} mepRate={mepRate} columnSettings={columnSettings} />
                       <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
                         <h3 className="text-lg font-semibold text-text-primary mb-4">Distribución</h3>
                         <DistributionChart positions={positions} />
@@ -840,8 +840,8 @@ export default function Dashboard() {
                               <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
                               <td className="px-3 sm:px-4 py-3">
                                 <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.tipo === 'compra'
-                                    ? 'bg-success/15 text-success border-success/20'
-                                    : 'bg-danger/15 text-danger border-danger/20'
+                                  ? 'bg-success/15 text-success border-success/20'
+                                  : 'bg-danger/15 text-danger border-danger/20'
                                   }`}>
                                   {trade.tipo === 'compra' ? 'Compra' : 'Venta'}
                                 </span>

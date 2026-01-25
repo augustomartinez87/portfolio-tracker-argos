@@ -59,30 +59,35 @@ export class FinancingService {
         interes: r.interes,
         dias: r.dias,
         tna_real: r.tna_real,
-        archivo: r.archivo
+        archivo: r.archivo,
+        // Use provided key or generate a deterministic backup if missing (for safety)
+        operation_key: r.operation_key || `${r.fecha_apertura}_${r.capital}_${r.monto_devolver}_${r.interes}`
       }));
 
-      console.log('📝 Insertando', dbRecords.length, 'registros en Supabase...');
+      console.log('📝 Upserting', dbRecords.length, 'registros en Supabase (Idempotency Active)...');
 
-      // Insert in batch for better performance
+      // Use UPSERT instead of INSERT to handle duplicates effectively
+      // On conflict (user_id, portfolio_id, operation_key), update the fields to keep them fresh
       const { data, error } = await supabase
         .from('cauciones')
-        .insert(dbRecords)
+        .upsert(dbRecords, {
+          onConflict: 'user_id, portfolio_id, operation_key' // MUST match the unique index
+        })
         .select();
 
       if (error) {
-        console.error('❌ Error inserting records:', error);
+        console.error('❌ Error upserting records:', error);
         return {
           success: false,
           error: new Error(`Error guardando en base de datos: ${error.message}`)
         };
       }
 
-      console.log('✅', data?.length || 0, 'registros guardados exitosamente');
+      console.log('✅', data?.length || 0, 'registros procesados (insertados/actualizados)');
 
       // Convert CSV records to typed Caucion for return
-      const typedRecords: Caucion[] = parsed.records.map(record => ({
-        id: '', // Will be filled by database
+      const typedRecords: Caucion[] = parsed.records.map((record, i) => ({
+        id: data && data[i] ? data[i].id : '', // Try to map ID from response
         portfolioId,
         capital: new Decimal(record.capital),
         montoDevolver: new Decimal(record.monto_devolver),
