@@ -10,7 +10,7 @@ export default function FundingEngine() {
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
     // Reemplaza con TU URL final de Streamlit Cloud
-    const APP_URL = "https://portfolio-tracker-argos-jypyagz.streamlit.app";
+    const APP_URL = "https://portfolio-tracker-argos.streamlit.app";
 
     const token = "argos-access";
     const endDate = new Date().toISOString().split('T')[0];
