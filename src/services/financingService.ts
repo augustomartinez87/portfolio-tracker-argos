@@ -312,6 +312,45 @@ export class FinancingService {
   }
 
   /**
+   * Clear all cauciones for all portfolios (debug/admin function)
+   * @param userId - User ID for authorization
+   * @returns Result with number of deleted operations
+   */
+  async clearAllUserCauciones(userId: string): Promise<Result<{ deletedCount: number }>> {
+    try {
+      // Input validation
+      if (!userId) {
+        return { 
+          success: false, 
+          error: new Error('Se requiere userId') 
+        };
+      }
+
+      console.log('🗑️  LIMPIEZA TOTAL - Eliminando TODAS las cauciones para usuario:', userId);
+
+      const { error, count } = await supabase
+        .from('cauciones')
+        .delete({ count: 'exact' })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      console.log('✅ LIMPIEZA TOTAL - Todas las cauciones eliminadas:', count);
+      return { 
+        success: true, 
+        data: { deletedCount: count || 0 } 
+      };
+
+    } catch (error) {
+      console.error('❌ Error en limpieza total:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error : new Error(String(error)) 
+      };
+    }
+  }
+
+  /**
    * Delete all cauciones for a user and portfolio
    * @param userId - User ID for authorization
    * @param portfolioId - Portfolio ID for data isolation
@@ -463,6 +502,7 @@ export class FinancingService {
       }
 
       // Fetch raw data
+      console.log('🔍 Querying cauciones for userId:', userId, 'portfolioId:', portfolioId);
       const { data, error } = await supabase
         .from('cauciones')
         .select('*')
@@ -470,7 +510,16 @@ export class FinancingService {
         .eq('portfolio_id', portfolioId)
         .order('fecha_fin', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('📊 Raw cauciones data:', data.length, 'records');
+      if (data.length > 0) {
+        console.log('📝 Sample record:', data[0]);
+      }
+      
       if (!data || data.length === 0) {
         return { success: true, data: [] };
       }

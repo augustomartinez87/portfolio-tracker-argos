@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter } from 'lucide-react';
+import { TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -143,6 +143,33 @@ const Financiacion = () => {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Actualizar
                 </button>
+                
+                {process.env.NODE_ENV === 'development' && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
+                        // Importar y llamar al método de limpieza
+                        import('../services/financingService').then(({ financingService }) => {
+                          financingService.clearAllUserCauciones(user.id).then(result => {
+                            if (result.success) {
+                              // Refrescar queries
+                              queryClient.invalidateQueries(['financing-operations']);
+                              queryClient.invalidateQueries(['financing-metrics']);
+                              alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas. Puedes empezar desde 0.`);
+                            } else {
+                              alert('Error en limpieza total. Por favor intenta nuevamente.');
+                            }
+                          });
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-sm font-medium"
+                    title="Limpiar todos los datos (solo desarrollo)"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Limpiar Datos
+                  </button>
+                )}
               </div>
             </div>
 

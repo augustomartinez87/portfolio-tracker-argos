@@ -122,11 +122,39 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
     }
   }, [userId, portfolioId, loadCauciones, queryClient]);
 
+  // Función para LIMPIAR TODOS los datos del usuario (solo desarrollo)
+  const handleClearAllData = useCallback(async () => {
+    if (!userId) return;
+    
+    if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
+      try {
+        const result = await financingService.clearAllUserCauciones(userId);
+        if (result.success) {
+          // Recargar cauciones
+          await loadCauciones();
+          // Invalidar todo
+          if (queryClient) {
+            queryClient.invalidateQueries(['financing-operations']);
+            queryClient.invalidateQueries(['financing-metrics']);
+          }
+          alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas. Puedes empezar desde 0.`);
+          console.log('✅ LIMPIEZA TOTAL - Eliminadas:', result.data?.deletedCount);
+        } else {
+          console.error('Error en limpieza total:', result.error);
+          alert('Error en limpieza total. Por favor intenta nuevamente.');
+        }
+      } catch (error) {
+        console.error('Error en limpieza total:', error);
+        alert('Error en limpieza total. Por favor intenta nuevamente.');
+      }
+    }
+  }, [userId, loadCauciones, queryClient]);
+
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'upload', label: 'Cargar CSV', icon: Upload },
-    { id: 'cauciones', label: 'Cauciones', icon: List },
     { id: 'charts', label: 'Análisis', icon: TrendingUp },
+    { id: 'cauciones', label: 'Cauciones', icon: List },
+    { id: 'upload', label: 'Cargar CSV', icon: Upload },
   ];
 
   return (
