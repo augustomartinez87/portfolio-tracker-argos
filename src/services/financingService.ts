@@ -6,13 +6,14 @@
 import { supabase } from '../lib/supabase';
 import { ingestFromCsv } from '../ingest/csvSpreadIngestor';
 import { Caucion, Result, FinancingMetrics } from '../types/finance';
+import Decimal from 'decimal.js';
 
 // ============================================================================
 // MAIN SERVICE CLASS - Single source of truth for financing operations
 // ============================================================================
 
 export class FinancingService {
-  
+
   /**
    * Parse CSV and persist in database with full type safety
    * @param userId - User ID for scoping
@@ -21,32 +22,32 @@ export class FinancingService {
    * @returns Result with ingestion results
    */
   async ingestFromCsv(
-    userId: string, 
-    csvText: string, 
+    userId: string,
+    csvText: string,
     portfolioId: string
-  ): Promise<Result<{ success: true; records: Caucion[]; totalInserted: number } | { success: false; error: Error }>> {
+  ): Promise<Result<{ success: true; records: Caucion[]; totalInserted: number; summary: any }>> {
     try {
       // Input validation
       if (!userId || !portfolioId) {
-        return { 
-          success: false, 
-          error: new Error('Se requieren userId y portfolioId para la persistencia') 
+        return {
+          success: false,
+          error: new Error('Se requieren userId y portfolioId para la persistencia')
         };
       }
 
       console.log('🔄 Parseando CSV para user:', userId, 'portfolio:', portfolioId);
-      
+
       // Parse CSV using existing TypeScript logic
       const parsed = await ingestFromCsv(csvText);
       console.log('✅ CSV parseado - registros:', parsed.records.length);
-      
+
       if (parsed.records.length === 0) {
-        return { 
-          success: false, 
-          error: new Error('CSV no contiene registros válidos') 
+        return {
+          success: false,
+          error: new Error('CSV no contiene registros válidos')
         };
       }
-      
+
       // Map CSV records to database insert format
       const dbRecords = parsed.records.map(r => ({
         user_id: userId,
@@ -71,9 +72,9 @@ export class FinancingService {
 
       if (error) {
         console.error('❌ Error inserting records:', error);
-        return { 
-          success: false, 
-          error: new Error(`Error guardando en base de datos: ${error.message}`) 
+        return {
+          success: false,
+          error: new Error(`Error guardando en base de datos: ${error.message}`)
         };
       }
 
@@ -96,16 +97,18 @@ export class FinancingService {
       return {
         success: true,
         data: {
+          success: true,
           records: typedRecords,
-          totalInserted: data?.length || 0
-        } as { success: true; records: Caucion[]; totalInserted: number }
+          totalInserted: data?.length || 0,
+          summary: parsed.summary
+        }
       };
 
     } catch (error) {
       console.error('❌ Error en ingestFromCsv:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -117,9 +120,9 @@ export class FinancingService {
    * @returns Result with array of typed cauciones
    */
   async getOperations(
-    userId: string, 
+    userId: string,
     portfolioId: string
-      ): Promise<Result<Caucion[]>> {
+  ): Promise<Result<Caucion[]>> {
     try {
       console.log('📋 Obteniendo operaciones para user:', userId, 'portfolio:', portfolioId);
 
@@ -133,7 +136,7 @@ export class FinancingService {
       if (error) throw error;
 
       console.log('✅', data?.length || 0, 'operaciones obtenidas');
-      
+
       if (!data || data.length === 0) {
         return { success: true, data: [] };
       }
@@ -156,9 +159,9 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error obteniendo operaciones:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -215,7 +218,7 @@ export class FinancingService {
           capital: row.capital,
           monto_devolver: row.monto_devolver,
           interes: interes.toNumber(),
-          dias,
+          dias: row.dias || dias, // Prefer DB days if available
           tna_real: row.tna_real,
           archivo: row.archivo,
           pdf_filename: row.pdf_filename
@@ -267,12 +270,18 @@ export class FinancingService {
       const tnaWeightedNumerator = records.reduce((sum: any, r: any) => {
         const cap = Number(r.capital || 0);
         const t = Number(r.tna_real || 0);
-        const dias = Number(r.dias || 0);
-        // weight by capital * dias * tna
-        return sum + (isNaN(cap) ? 0 : cap) * (isNaN(t) ? 0 : t) * (isNaN(dias) ? 0 : dias);
+        // weight by capital * tna
+        return sum + (isNaN(cap) ? 0 : cap) * (isNaN(t) ? 0 : t);
       }, 0);
-      const totalDias = records.reduce((sum: any, r: any) => sum + Number(r.dias || 0), 0);
-      const tnaPromedioPonderada = totalDias > 0 ? tnaWeightedNumerator / totalDias : 0;
+
+      const totalDiasWeighted = records.reduce((sum: any, r: any) => {
+        const cap = Number(r.capital || 0);
+        const d = Number(r.dias || 0);
+        return sum + (isNaN(cap) ? 0 : cap) * (isNaN(d) ? 0 : d);
+      }, 0);
+
+      const tnaPromedioPonderada = capitalTotal > 0 ? tnaWeightedNumerator / capitalTotal : 0;
+      const diasPromedio = capitalTotal > 0 ? totalDiasWeighted / capitalTotal : 0;
 
       const primeraOperacion = records
         .map((r: any) => new Date(r.fecha_inicio))
@@ -286,7 +295,7 @@ export class FinancingService {
         interesTotal: interesTotal,
         montoDevolverTotal: montoDevolverTotal,
         tnaPromedioPonderada: tnaPromedioPonderada,
-        diasPromedio: totalDias / (records.length || 1),
+        diasPromedio: diasPromedio,
         totalOperaciones: records.length,
         primeraOperacion,
         ultimaOperacion
@@ -313,7 +322,7 @@ export class FinancingService {
    * @returns Result with FinancingMetrics using proper weighted TNA
    */
   async getMetrics(
-    userId: string, 
+    userId: string,
     portfolioId: string
   ): Promise<Result<FinancingMetrics>> {
     try {
@@ -329,7 +338,7 @@ export class FinancingService {
 
       if (!data || data.length === 0) {
         console.log('📭 No hay operaciones, retornando métricas vacías');
-        
+
         const emptyMetrics: FinancingMetrics = {
           capitalTotal: new Decimal(0),
           interesTotal: new Decimal(0),
@@ -340,7 +349,7 @@ export class FinancingService {
           primeraOperacion: null,
           ultimaOperacion: null
         };
-        
+
         return { success: true, data: emptyMetrics };
       }
 
@@ -361,27 +370,32 @@ export class FinancingService {
       }));
 
       // Calculate weighted TNA properly
+      // TNA weighted by Capital (Standard)
+      // Duration weighted by Capital
+      let capitalTotal = new Decimal(0);
       let totalWeightedTna = new Decimal(0);
-      let totalCapitalDays = new Decimal(0);
-      
-      for (const c of typedRecords) {
-        const weighted = c.capital.times(c.tna).times(c.dias);
-        const capitalDays = c.capital.times(c.dias);
-        totalWeightedTna = totalWeightedTna.plus(weighted);
-        totalCapitalDays = totalCapitalDays.plus(capitalDays);
-      }
-      
-      const tnaPromedioPonderada = totalCapitalDays.isZero() 
-        ? new Decimal(0) 
-        : totalWeightedTna.div(totalCapitalDays);
+      let totalWeightedDays = new Decimal(0);
 
-      const capitalTotal = typedRecords.reduce((sum, c) => sum.plus(c.capital), new Decimal(0));
+      for (const c of typedRecords) {
+        capitalTotal = capitalTotal.plus(c.capital);
+
+        // Weight TNA by capital
+        totalWeightedTna = totalWeightedTna.plus(c.capital.times(c.tna));
+
+        // Weight Days by capital
+        totalWeightedDays = totalWeightedDays.plus(c.capital.times(c.dias));
+      }
+
+      const tnaPromedioPonderada = capitalTotal.isZero()
+        ? new Decimal(0)
+        : totalWeightedTna.div(capitalTotal);
+
+      const diasPromedio = capitalTotal.isZero()
+        ? 0
+        : totalWeightedDays.div(capitalTotal).toNumber();
+
       const interesTotal = typedRecords.reduce((sum, c) => sum.plus(c.interes), new Decimal(0));
       const montoDevolverTotal = typedRecords.reduce((sum, c) => sum.plus(c.montoDevolver), new Decimal(0));
-      
-      const diasPromedio = typedRecords.length > 0 
-        ? typedRecords.reduce((sum, c) => sum + c.dias, 0) / typedRecords.length 
-        : 0;
 
       const fechas = typedRecords.map(c => c.fechaInicio).sort((a, b) => a.getTime() - b.getTime());
       const primeraOperacion = fechas.length > 0 ? fechas[0] : null;
@@ -400,7 +414,8 @@ export class FinancingService {
 
       console.log('✅ Métricas calculadas:', {
         capitalTotal: metrics.capitalTotal.toString(),
-        tnaPromedioPonderada: metrics.tnaPromedioPonderada.times(100).toFixed(4) + '%',
+        tnaPromedioPonderada: metrics.tnaPromedioPonderada.toString(),
+        diasPromedio: metrics.diasPromedio,
         totalOperaciones: metrics.totalOperaciones
       });
 
@@ -408,9 +423,9 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error calculando métricas:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -422,15 +437,15 @@ export class FinancingService {
    * @returns Result indicating success or error
    */
   async deleteOperation(
-    userId: string, 
+    userId: string,
     operationId: string
   ): Promise<Result<{ success: true }>> {
     try {
       // Input validation
       if (!userId || !operationId) {
-        return { 
-          success: false, 
-          error: new Error('Se requieren userId y operationId') 
+        return {
+          success: false,
+          error: new Error('Se requieren userId y operationId')
         };
       }
 
@@ -447,9 +462,9 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error eliminando operación:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -463,9 +478,9 @@ export class FinancingService {
     try {
       // Input validation
       if (!userId) {
-        return { 
-          success: false, 
-          error: new Error('Se requiere userId') 
+        return {
+          success: false,
+          error: new Error('Se requiere userId')
         };
       }
 
@@ -479,16 +494,16 @@ export class FinancingService {
       if (error) throw error;
 
       console.log('✅ LIMPIEZA TOTAL - Todas las cauciones eliminadas:', count);
-      return { 
-        success: true, 
-        data: { deletedCount: count || 0 } 
+      return {
+        success: true,
+        data: { deletedCount: count || 0 }
       };
 
     } catch (error) {
       console.error('❌ Error en limpieza total:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -512,26 +527,26 @@ export class FinancingService {
         // Try alternative method
         const { error: altError, count: altCount } = await supabase
           .rpc('clear_all_cauciones'); // If RPC function exists
-        
+
         if (altError) {
           throw altError;
         }
-        
+
         console.log('✅ LIMPIEZA EMERGENCIA por RPC:', altCount);
         return { success: true, data: { deletedCount: altCount || 0 } };
       }
 
       console.log('✅ LIMPIEZA EMERGENCIA exitosa:', count);
-      return { 
-        success: true, 
-        data: { deletedCount: count || 0 } 
+      return {
+        success: true,
+        data: { deletedCount: count || 0 }
       };
 
     } catch (error) {
       console.error('❌ Error en limpieza emergencia:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -543,15 +558,15 @@ export class FinancingService {
    * @returns Result with number of deleted operations
    */
   async deleteAllOperations(
-    userId: string, 
+    userId: string,
     portfolioId: string
   ): Promise<Result<{ deletedCount: number }>> {
     try {
       // Input validation
       if (!userId || !portfolioId) {
-        return { 
-          success: false, 
-          error: new Error('Se requieren userId y portfolioId') 
+        return {
+          success: false,
+          error: new Error('Se requieren userId y portfolioId')
         };
       }
 
@@ -566,16 +581,16 @@ export class FinancingService {
       if (error) throw error;
 
       console.log('✅ Todas las cauciones eliminadas:', count);
-      return { 
-        success: true, 
-        data: { deletedCount: count || 0 } 
+      return {
+        success: true,
+        data: { deletedCount: count || 0 }
       };
 
     } catch (error) {
       console.error('❌ Error eliminando todas las cauciones:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -588,8 +603,8 @@ export class FinancingService {
    * @returns Result with duplicate analysis
    */
   async checkDuplicateOperations(
-    userId: string, 
-    portfolioId: string, 
+    userId: string,
+    portfolioId: string,
     csvRecords: import('../types/finance').CsvRecord[]
   ): Promise<Result<{ duplicates: number; duplicateRecords: import('../types/finance').CsvRecord[] }>> {
     try {
@@ -603,26 +618,26 @@ export class FinancingService {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        return { 
-          success: true, 
-          data: { duplicates: 0, duplicateRecords: [] } 
+        return {
+          success: true,
+          data: { duplicates: 0, duplicateRecords: [] }
         };
       }
 
       // Find potential duplicates with Decimal comparison for precision
       const duplicates: import('../types/finance').CsvRecord[] = [];
-      
+
       csvRecords.forEach(record => {
-        const existing = data.find((existing: any) => 
+        const existing = data.find((existing: any) =>
           existing.fecha_inicio === record.fecha_apertura
         );
-        
+
         if (existing) {
           // Use Decimal comparison for precision (avoid floating point issues)
           const existingCapital = new Decimal(existing.capital);
           const recordCapital = new Decimal(record.capital);
           const difference = existingCapital.minus(recordCapital).abs();
-          
+
           // Consider duplicate if difference is less than 0.01 (1 centavo precision)
           if (difference.lessThan(new Decimal('0.01'))) {
             duplicates.push(record);
@@ -645,9 +660,9 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error verificando duplicados:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -681,9 +696,9 @@ export class FinancingService {
     try {
       // Validate inputs
       if (!userId || !portfolioId) {
-        return { 
-          success: false, 
-          error: new Error('Se requieren userId y portfolioId') 
+        return {
+          success: false,
+          error: new Error('Se requieren userId y portfolioId')
         };
       }
 
@@ -700,12 +715,9 @@ export class FinancingService {
         console.error('❌ Supabase error:', error);
         throw error;
       }
-      
+
       console.log('📊 Raw cauciones data:', data.length, 'records');
-      if (data.length > 0) {
-        console.log('📝 Sample record:', data[0]);
-      }
-      
+
       if (!data || data.length === 0) {
         return { success: true, data: [] };
       }
@@ -733,9 +745,9 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error obteniendo cauciones con cálculos:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error : new Error(String(error)) 
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   }
@@ -773,16 +785,16 @@ export class FinancingService {
     if (capital <= 0 || days <= 0) {
       return 0;
     }
-    
+
     const capitalDecimal = new Decimal(capital);
     const interestDecimal = new Decimal(interest);
     const daysDecimal = new Decimal(days);
-    
+
     const tnaDecimal = interestDecimal
       .div(capitalDecimal)
       .times(new Decimal(365))
       .div(daysDecimal);
-    
+
     return tnaDecimal.toNumber();
   }
 
@@ -797,45 +809,9 @@ export class FinancingService {
     const rate2Decimal = new Decimal(rate2 || 0);
     return rate1Decimal.minus(rate2Decimal).toNumber();
   }
-
-  /**
-   * Convert legacy record to proper calculation format
-   * @param legacyRecord - Legacy database record
-   * @returns Record with all calculated fields
-   */
-  processLegacyRecord(legacyRecord: any): {
-    id: string;
-    fecha_inicio: string;
-    fecha_fin: string;
-    capital: number;
-    monto_devolver: number;
-    interes: number;
-    dias: number;
-    tna_real: number;
-    archivo?: string;
-  } {
-    const dias = this._calculateDaysForRecord(legacyRecord.fecha_inicio, legacyRecord.fecha_fin);
-    const interes = this._calculateInterestForRecord(legacyRecord.capital, legacyRecord.monto_devolver);
-
-    return {
-      id: legacyRecord.id,
-      fecha_inicio: legacyRecord.fecha_inicio,
-      fecha_fin: legacyRecord.fecha_fin,
-      capital: legacyRecord.capital,
-      monto_devolver: legacyRecord.monto_devolver,
-      interes: interes.toNumber(),
-      dias,
-      tna_real: legacyRecord.tna_real,
-      archivo: legacyRecord.archivo
-    };
-  }
 }
 
-// ============================================================================
-// DEFAULT EXPORT - Backward compatibility
-// ============================================================================
-
+// Export singleton instance as default to maintain compatibility with JS imports
+// This allows imports like: import financingService from './financingService'
 export const financingService = new FinancingService();
-
-// Export default for compatibility with existing imports
 export default financingService;

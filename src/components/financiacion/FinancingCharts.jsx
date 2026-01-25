@@ -4,8 +4,8 @@ import { BarChart3, TrendingUp, Clock, DollarSign } from 'lucide-react';
 const FinancingCharts = ({ operations, csvData, loading }) => {
   // Procesamiento de datos para visualizaciones
   const chartData = useMemo(() => {
-    const data = csvData && csvData.operaciones ? csvData.operaciones : operations || [];
-    
+    const data = csvData && csvData.records ? csvData.records : operations || [];
+
     if (data.length === 0) {
       return {
         tenorDistribution: [],
@@ -50,63 +50,63 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
       else rateBuckets['150%+'].count += 1;
     });
 
-      // Agrupar por mes usando fecha_apertura del CSV
-      const monthlyData = {};
-      data.forEach(op => {
-        const fecha = op.fecha_apertura || op.fecha_inicio;
-        if (!fecha) return;
-        
-        // Parsear fecha y agrupar por mes
-        const date = new Date(fecha);
-        if (isNaN(date.getTime())) return;
-        
-        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
-        const capitalAmount = op.capital || 0;
-        const rate = op.tna_real || 0;
-        
-        if (!monthlyData[monthKey]) {
-          monthlyData[monthKey] = {
-            month: monthKey,
-            count: 0,
-            capital: 0,
-            interes: 0,
-            avgRate: 0,
-            totalRateWeight: 0
-          };
-        }
-        
-        monthlyData[monthKey].count += 1;
-        monthlyData[monthKey].capital += capitalAmount;
-        monthlyData[monthKey].interes += (op.interes || 0);
-        monthlyData[monthKey].totalRateWeight += rate * capitalAmount;
-      });
+    // Agrupar por mes usando fecha_apertura del CSV
+    const monthlyData = {};
+    data.forEach(op => {
+      const fecha = op.fecha_apertura || op.fecha_inicio;
+      if (!fecha) return;
 
-      // Calcular promedios
-      Object.values(monthlyData).forEach(month => {
-        month.avgRate = month.capital > 0 ? month.totalRateWeight / month.capital : 0;
-      });
+      // Parsear fecha y agrupar por mes
+      const date = new Date(fecha);
+      if (isNaN(date.getTime())) return;
 
-      const monthlyTrends = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+      const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
+      const capitalAmount = op.capital || 0;
+      const rate = op.tna_real || 0;
 
-      const totalOps = data.length;
-      return {
-        tenorDistribution: Object.entries(tenorBuckets).map(([label, data]) => ({
-          label,
-          count: data.count,
-          percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
-        })),
-        rateDistribution: Object.entries(rateBuckets).map(([label, data]) => ({
-          label,
-          count: data.count,
-          percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
-        })),
-        monthlyTrends,
-        capitalFlow: monthlyTrends.map(m => ({
-          month: m.month,
-          capital: m.capital,
-          interes: m.interes
-        }))
-      };
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          count: 0,
+          capital: 0,
+          interes: 0,
+          avgRate: 0,
+          totalRateWeight: 0
+        };
+      }
+
+      monthlyData[monthKey].count += 1;
+      monthlyData[monthKey].capital += capitalAmount;
+      monthlyData[monthKey].interes += (op.interes || 0);
+      monthlyData[monthKey].totalRateWeight += rate * capitalAmount;
+    });
+
+    // Calcular promedios
+    Object.values(monthlyData).forEach(month => {
+      month.avgRate = month.capital > 0 ? month.totalRateWeight / month.capital : 0;
+    });
+
+    const monthlyTrends = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+
+    const totalOps = data.length;
+    return {
+      tenorDistribution: Object.entries(tenorBuckets).map(([label, data]) => ({
+        label,
+        count: data.count,
+        percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
+      })),
+      rateDistribution: Object.entries(rateBuckets).map(([label, data]) => ({
+        label,
+        count: data.count,
+        percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
+      })),
+      monthlyTrends,
+      capitalFlow: monthlyTrends.map(m => ({
+        month: m.month,
+        capital: m.capital,
+        interes: m.interes
+      }))
+    };
   }, [operations, csvData]);
 
   if (loading) {
@@ -147,7 +147,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
           <Icon className="w-5 h-5 text-text-tertiary" />
           <h3 className="text-sm font-medium text-text-primary">{title}</h3>
         </div>
-        
+
         <div className="space-y-2">
           {data.map((item, index) => {
             const percentage = maxValue > 0 ? (item.count / maxValue) * 100 : 0;
@@ -160,7 +160,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
                   </span>
                 </div>
                 <div className="h-6 bg-background-secondary rounded-sm overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full transition-all duration-500 ${colorClass}`}
                     style={{ width: `${percentage}%` }}
                   />
@@ -176,7 +176,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-text-primary mb-4">Análisis Visual</h2>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SimpleBarChart
           title="Distribución por Plazo"
@@ -184,7 +184,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
           icon={Clock}
           colorClass="bg-blue-500"
         />
-        
+
         <SimpleBarChart
           title="Distribución por Tasa"
           data={chartData.rateDistribution}
@@ -200,7 +200,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
             <TrendingUp className="w-5 h-5 text-text-tertiary" />
             <h3 className="text-sm font-medium text-text-primary">Evolución Mensual (por fecha_apertura)</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {chartData.monthlyTrends.slice(-6).map((trend, index) => (
               <div key={index} className="bg-background-secondary rounded p-3">
@@ -224,7 +224,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
           <DollarSign className="w-5 h-5 text-text-tertiary" />
           <h3 className="text-sm font-medium text-text-primary">Resumen de Operaciones</h3>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className="text-xs text-text-tertiary">Operaciones Cortas (&lt;=7d)</p>

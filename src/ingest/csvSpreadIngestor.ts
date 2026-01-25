@@ -36,6 +36,7 @@ export type IngestResult = {
     tnaPromedioSimple: number;
     tnaPromedioPonderado: number;
     totalRecords: number;
+    diasPromedio: number;
   };
   curve: TenorCurvePoint[];
   spreads?: { tenor: number; avgSpread: number; }[];
@@ -87,17 +88,17 @@ function parseDateSafe(dateStr: string): Date | null {
 /** Validate that required headers exist in the first row */
 function validateHeaders(headers: string[]): boolean {
   console.log('Headers encontrados:', headers);
-  
+
   const required = [
-    'fecha_apertura','fecha_cierre','capital','monto_devolver','interes','dias','tna_real','archivo'
+    'fecha_apertura', 'fecha_cierre', 'capital', 'monto_devolver', 'interes', 'dias', 'tna_real', 'archivo'
   ];
   const lower = headers.map(h => h.trim().toLowerCase());
   console.log('Headers en minúsculas:', lower);
   console.log('Headers requeridos:', required);
-  
+
   const missing = required.filter(r => !lower.includes(r.toLowerCase()));
   console.log('Headers faltantes:', missing);
-  
+
   return required.every(r => lower.includes(r.toLowerCase()));
 }
 
@@ -220,8 +221,13 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
   const tnaPromedioSimple = totalRecords > 0 ? (records.reduce((s, r) => s + r.tna_real, 0) / totalRecords) : 0;
   const tnaPromedioPonderado = totalCapital > 0 ? (totalTnaWeighted / totalCapital) : 0;
 
+  // Calculate diasPromedio (weighted by capital usually makes sense, but simple average is often enough for duration)
+  // Let's do simple average for duration as it's common for "average term"
+  const totalDias = records.reduce((sum, r) => sum + r.dias, 0);
+  const diasPromedio = totalRecords > 0 ? totalDias / totalRecords : 0;
+
   // Spreads by tenor (optional)
-  const spreadsByTenor: Map<number, { sumSpread: number; count: number; }>= new Map();
+  const spreadsByTenor: Map<number, { sumSpread: number; count: number; }> = new Map();
   for (const r of records) {
     const found = curve.find(c => c.tenor === r.dias);
     const tenorTna = found?.curveTnaProm ?? 0;
@@ -243,6 +249,7 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
       tnaPromedioSimple,
       tnaPromedioPonderado,
       totalRecords,
+      diasPromedio, // Added calculation
     },
     curve,
     spreads: spreads.map(s => ({ tenor: s.tenor, avgSpread: s.avgSpread }))

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { processCsvClient } from '../../ingest/csvSpreadClient';
 
-const SpreadLocalUploader = ({ onFilesParsed }) => {
+const LocalCsvUploader = ({ onFilesParsed }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  console.log('SpreadLocalUploader render - result:', result, 'loading:', loading, 'error:', error);
+  console.log('LocalCsvUploader render - result:', result, 'loading:', loading, 'error:', error);
 
   const onFile = (e) => {
     const file = e.target.files?.[0];
@@ -49,10 +49,10 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
       {loading && <div className="text-text-tertiary">Procesando CSV local…</div>}
       {error && <div className="text-red-500">{error}</div>}
       {result && (
-        <div style={{ 
-          padding: '16px', 
-          backgroundColor: '#0a0a0a', 
-          borderRadius: '8px', 
+        <div style={{
+          padding: '16px',
+          backgroundColor: '#0a0a0a',
+          borderRadius: '8px',
           border: '1px solid #1a1a1a',
           marginTop: '12px'
         }}>
@@ -69,16 +69,16 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
             <summary style={{ cursor: 'pointer', color: '#6b6b6b', fontSize: '12px' }}>
               🔍 Ver detalle completo (JSON)
             </summary>
-            <pre style={{ 
-              marginTop: '8px', 
-              fontSize: '11px', 
-              maxHeight: '320px', 
+            <pre style={{
+              marginTop: '8px',
+              fontSize: '11px',
+              maxHeight: '320px',
               overflow: 'auto',
               backgroundColor: '#141414',
               padding: '8px',
               borderRadius: '4px'
             }}>
-{JSON.stringify(result, null, 2)}
+              {JSON.stringify(result, null, 2)}
             </pre>
           </details>
         </div>
@@ -92,4 +92,4 @@ const SpreadLocalUploader = ({ onFilesParsed }) => {
   );
 };
 
-export default SpreadLocalUploader;
+export default LocalCsvUploader;

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
-import SpreadLocalUploader from '../spread/SpreadLocalUploader';
+import LocalCsvUploader from './LocalCsvUploader';
 import { financingService } from '../../services/financingService';
 
 const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
@@ -10,15 +10,15 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
 
   // React Query mutation para persistir CSV
   const uploadCsvMutation = useMutation({
-    mutationFn: ({ csvText }) => 
+    mutationFn: ({ csvText }) =>
       financingService.ingestFromCsv(userId, csvText, portfolioId),
     onSuccess: (data) => {
       console.log('✅ CSV persistido exitosamente:', data);
-      
+
       // Invalidar queries para refrescar datos automáticamente
       queryClient.invalidateQueries(['financing-operations']);
       queryClient.invalidateQueries(['financing-metrics']);
-      
+
       // Agregar al historial local para feedback visual
       const fileEntry = {
         id: Date.now(),
@@ -27,9 +27,9 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
         operations: data.records || [],
         details: data
       };
-      
+
       setProcessedFiles(prev => [...prev, fileEntry]);
-      
+
       // Llamar al callback del padre
       if (onProcessed) {
         onProcessed(data);
@@ -50,7 +50,7 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
 
   const handleFilesProcessed = useCallback(async (result) => {
     console.log('🔄 CSVUploadView - procesando archivo para persistencia...');
-    
+
     // Obtener texto CSV del resultado (necesitamos pasarlo desde el uploader)
     if (result.csvText) {
       uploadCsvMutation.mutate({ csvText: result.csvText });
@@ -92,8 +92,8 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
           </div>
         </div>
 
-        <SpreadLocalUploader onFilesParsed={handleFilesProcessed} />
-        
+        <LocalCsvUploader onFilesParsed={handleFilesProcessed} />
+
         {isProcessing && (
           <div className="mt-4 p-3 bg-background-tertiary rounded-lg border border-border-primary">
             <div className="flex items-center gap-2">
@@ -156,17 +156,16 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
 
           <div className="space-y-3">
             {processedFiles.map((file) => (
-              <div 
+              <div
                 key={file.id}
-                className={`bg-background-tertiary rounded-lg border overflow-hidden ${
-                  file.isError 
-                    ? 'border-red-300 dark:border-red-800' 
-                    : 'border-border-primary'
-                }`}
+                className={`bg-background-tertiary rounded-lg border overflow-hidden ${file.isError
+                  ? 'border-red-300 dark:border-red-800'
+                  : 'border-border-primary'
+                  }`}
               >
                 <div className="p-4">
-                  <div className="flex items-center justify-between cursor-pointer" 
-                       onClick={() => toggleExpanded(file.id)}>
+                  <div className="flex items-center justify-between cursor-pointer"
+                    onClick={() => toggleExpanded(file.id)}>
                     <div className="flex items-center gap-3">
                       {file.isError ? (
                         <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -188,8 +187,8 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
                         </p>
                       </div>
                     </div>
-                    {expandedFile === file.id ? 
-                      <ChevronUp className="w-4 h-4 text-text-tertiary" /> : 
+                    {expandedFile === file.id ?
+                      <ChevronUp className="w-4 h-4 text-text-tertiary" /> :
                       <ChevronDown className="w-4 h-4 text-text-tertiary" />
                     }
                   </div>
@@ -224,7 +223,7 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
                           </div>
                         </div>
                       )}
-                      
+
                       <details className="mt-3">
                         <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-primary">
                           Ver detalles técnicos (JSON)
