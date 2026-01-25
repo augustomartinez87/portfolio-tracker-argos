@@ -573,7 +573,7 @@ export default function Dashboard() {
                   lastUpdate={lastUpdate}
                   isPricesLoading={isPricesLoading}
                   refetchPrices={refetchPrices}
-                  simpleMode={true}
+                  compact={true}
                 />
               </div>
             </div>
@@ -595,35 +595,7 @@ export default function Dashboard() {
 
             {/* Dynamic Content */}
             <div className="min-h-[400px]">
-              {activeTab === 'dashboard' && (
-                <div className="space-y-6">
-                  <DashboardSummaryCards
-                    totals={totals}
-                    trades={trades}
-                    lastUpdate={lastUpdateFull}
-                  />
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2">
-                      <PositionsTable
-                        positions={positions}
-                        prices={prices}
-                        mepRate={mepRate}
-                        columnSettings={columnSettings}
-                        sortConfig={positionsSort}
-                        onSort={(key) => setPositionsSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }))}
-                        onRowClick={handleOpenPositionDetail}
-                      />
-                    </div>
-                    <div className="lg:col-span-1 space-y-6">
-                      <TotalCard totals={totals} mepRate={mepRate} columnSettings={columnSettings} />
-                      <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-text-primary mb-4">Distribución</h3>
-                        <DistributionChart positions={positions} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
               {activeTab === 'help' && (
                 <div className="max-w-3xl mx-auto">
                   <div className="bg-background-secondary border border-border-primary rounded-xl p-6 lg:p-8">
