@@ -136,22 +136,22 @@ class FundingCarryEngine:
         if cauciones.empty:
             return pd.DataFrame(), {}
         
-        # Convert date columns
-        cauciones['fecha_inicio'] = pd.to_datetime(cauciones['fecha_inicio']).dt.date
-        cauciones['fecha_fin'] = pd.to_datetime(cauciones['fecha_fin']).dt.date
+        # Convert date columns to ISO strings for reliable comparison
+        cauciones['fecha_inicio_str'] = pd.to_datetime(cauciones['fecha_inicio']).dt.strftime('%Y-%m-%d')
+        cauciones['fecha_fin_str'] = pd.to_datetime(cauciones['fecha_fin']).dt.strftime('%Y-%m-%d')
         
         # Process Daily Timeline
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         daily_stats = []
         
         for d in date_range:
-            d_date = d.date()
+            d_str = d.strftime('%Y-%m-%d')
             
             # Calculate Debt State
             # Include cauciones that expire TODAY as still active (rollover strategy)
             active_cauciones = cauciones[
-                (cauciones['fecha_inicio'] <= d_date) & 
-                (cauciones['fecha_fin'] >= d_date)  # >= includes same-day expiry
+                (cauciones['fecha_inicio_str'] <= d_str) & 
+                (cauciones['fecha_fin_str'] >= d_str)  # >= includes same-day expiry
             ]
             
             total_debt = float(active_cauciones['capital'].sum()) if not active_cauciones.empty else 0.0
@@ -166,7 +166,7 @@ class FundingCarryEngine:
                 daily_interest_cost = (total_debt * (weighted_tna / 100)) / 365
             
             daily_stats.append({
-                'date': d_date,
+                'date': d_str,
                 'total_debt': total_debt,
                 'weighted_tna': weighted_tna,
                 'daily_interest_cost': daily_interest_cost,
