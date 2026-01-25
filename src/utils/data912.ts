@@ -70,6 +70,10 @@ function getEndpointForTicker(ticker: string, assetTag?: string): string {
   return '/live/arg_stocks';
 }
 
+// Small no-op to appease TS noUnusedLocals when this helper is not used in build env
+const _debugEndpoint = getEndpointForTicker; // eslint-disable-line @typescript-eslint/no-unused-vars
+void _debugEndpoint;
+
 // ============================================
 // CLASE PRINCIPAL
 // ============================================
@@ -311,6 +315,8 @@ class Data912Helper {
   async getBatchPrices(tickers: TickerInfo[]): Promise<Record<string, number>> {
     // TODO: Implementar fetching de precios por batch
     // Por ahora retorna objeto vacío
+    // Silence unused parameter in some builds
+    void tickers;
     console.warn('[data912] getBatchPrices not fully implemented');
     return {};
   }
@@ -319,6 +325,8 @@ class Data912Helper {
    * Obtiene retornos diarios en batch (placeholder - necesita implementación)
    */
   async getBatchDailyReturns(tickers: TickerInfo[]): Promise<Record<string, number | null>> {
+    // Silence unused parameter in some builds
+    void tickers;
     // TODO: Implementar fetching de retornos diarios
     // Por ahora retorna objeto vacío
     console.warn('[data912] getBatchDailyReturns not fully implemented');

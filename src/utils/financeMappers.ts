@@ -33,7 +33,7 @@ class ValidationErrorImpl extends Error implements ValidationError {
  * @param row - Database row object from Supabase
  * @returns Result with typed Caucion or validation error
  */
-export function mapRowToCauccion(row: DatabaseCauccion): Result<Cauccion, ValidationError> {
+export function mapRowToCauccion(row: DatabaseCaucion): Result<Caucion, ValidationError> {
   try {
     // Validate row is an object with required fields
     if (!row || typeof row !== 'object') {
@@ -134,7 +134,7 @@ export function mapRowToCauccion(row: DatabaseCauccion): Result<Cauccion, Valida
  * @param rows - Array of database rows from Supabase
  * @returns Result with array of typed cauciones or first error encountered
  */
-export function mapRowsToCaucciones(rows: DatabaseCauccion[]): Result<Cauccion[], ValidationError> {
+export function mapRowsToCauciones(rows: DatabaseCaucion[]): Result<Caucion[], ValidationError> {
   if (!Array.isArray(rows)) {
     return { 
       success: false, 
@@ -167,7 +167,7 @@ export function mapRowsToCaucciones(rows: DatabaseCauccion[]): Result<Cauccion[]
  * @param userId - User ID for database record
  * @returns Database insert object
  */
-export function mapCauccionToDatabaseInsert(caucion: Caucion, userId: string): CauccionInsert {
+export function mapCaucionToDatabaseInsert(caucion: Caucion, userId: string): CauccionInsert {
   return {
     user_id: userId,
     portfolio_id: caucion.portfolioId,
@@ -219,11 +219,11 @@ export function mapCsvRecordToDatabaseInsert(
  * @param id - ID for caucion (optional)
  * @returns Result with typed Caucion or validation error
  */
-export function mapCsvRecordToCauccion(
+ export function mapCsvRecordToCauccion(
   record: import('../types/finance').CsvRecord,
   portfolioId: string,
   id?: string
-): Result<Cauccion, ValidationError> {
+ ): Result<Caucion, ValidationError> {
   try {
     // Validate numeric fields
     const capitalResult = safeToDecimal(record.capital, 'capital');
@@ -296,11 +296,11 @@ export function mapCsvRecordToCauccion(
 // ============================================================================
 
 /**
- * Validate that an object is a proper DatabaseCauccion row
+ * Validate that an object is a proper DatabaseCaucion row
  * @param obj - Object to validate
- * @returns Result with DatabaseCauccion or validation error
+ * @returns Result with DatabaseCaucion or validation error
  */
-export function validateDatabaseRow(obj: unknown): Result<DatabaseCauccion, ValidationError> {
+export function validateDatabaseRow(obj: unknown): Result<DatabaseCaucion, ValidationError> {
   if (!obj || typeof obj !== 'object') {
     return { 
       success: false, 
@@ -339,7 +339,8 @@ export function validateDatabaseRow(obj: unknown): Result<DatabaseCauccion, Vali
     }
   }
 
-  return { success: true, data: row as DatabaseCauccion };
+  // Cast to any to satisfy strict type constraints; runtime data is validated above
+  return { success: true, data: row as any };
 }
 
 // ============================================================================
