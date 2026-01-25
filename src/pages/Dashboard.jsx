@@ -303,7 +303,31 @@ export default function Dashboard() {
     );
   }, [positions, searchTerm]);
 
-  const totals = useMemo(() => {
+  const allTotals = useMemo(() => {
+    const sourceData = positions;
+
+    const invertido = sourceData.reduce((sum, p) => sum + p.costoTotal, 0);
+    const valuacion = sourceData.reduce((sum, p) => sum + p.valuacionActual, 0);
+    const resultado = valuacion - invertido;
+    const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
+    const resultadoDiario = sourceData.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
+    const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
+
+    return {
+      invertido,
+      valuacion,
+      resultado,
+      resultadoPct,
+      resultadoDiario,
+      resultadoDiarioPct,
+      invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
+      valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
+      resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
+      resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
+    };
+  }, [positions, mepRate]);
+
+  const filteredTotals = useMemo(() => {
     // Usamos filteredPositions para que los totales sean dinámicos según la búsqueda
     const sourceData = filteredPositions;
 
@@ -875,7 +899,7 @@ export default function Dashboard() {
                       currentPortfolio={currentPortfolio}
                     />
                   </div>
-                  <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
+                  <DashboardSummaryCards totals={allTotals} lastUpdate={lastUpdate} />
 
                   {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col max-h-[600px] min-h-[200px] mt-3">
@@ -920,7 +944,7 @@ export default function Dashboard() {
                   {/* Total Card - completamente separado de la tabla */}
                   {filteredPositions.length > 0 && (
                     <div className="mt-2">
-                      <TotalCard totals={totals} columnSettings={columnSettings} />
+                      <TotalCard totals={filteredTotals} columnSettings={columnSettings} />
                     </div>
                   )}
                 </>
