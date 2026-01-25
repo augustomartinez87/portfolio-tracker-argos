@@ -188,10 +188,13 @@ class FundingCarryEngine:
             # We need to look at the cauciones involved in this period to get the true cost of funding
             # TNA_Funding = Sum(Capital * TNA * Days) / Sum(Capital * Days)
             
-            # Filter cauciones that intersect with the period
+            # Filter cauciones that intersect with the period (using ISO strings)
+            start_iso = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+            end_iso = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+            
             period_cauciones = cauciones[
-                (cauciones['fecha_fin'] >= pd.to_datetime(start_date).date()) & 
-                (cauciones['fecha_inicio'] <= pd.to_datetime(end_date).date())
+                (cauciones['fecha_fin_str'] >= start_iso) & 
+                (cauciones['fecha_inicio_str'] <= end_iso)
             ]
             
             if not period_cauciones.empty:
