@@ -557,37 +557,70 @@ export default function Dashboard() {
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            {/* Desktop Portfolio Selector and Tabs */}
-            <div className="hidden lg:block space-y-4">
-              <PortfolioSelector />
-              <PortfolioTabs 
+            
+            {/* Page Header with Actions (matching Financiacion structure) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl lg:text-2xl font-semibold text-text-primary">Portfolio</h1>
+                <p className="text-text-tertiary text-sm mt-1">
+                  Resumen general y posiciones
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <DashboardHeader
+                  mepRate={mepRate}
+                  lastUpdate={lastUpdate}
+                  isPricesLoading={isPricesLoading}
+                  refetchPrices={refetchPrices}
+                  simpleMode={true} 
+                />
+              </div>
+            </div>
+
+            {/* Selector de Portfolio (Desktop only) */}
+            <div className="hidden lg:block">
+               <PortfolioSelector />
+            </div>
+
+            {/* Sub-navigation (Tabs) */}
+            <div className="bg-background-secondary border border-border-primary rounded-xl p-2">
+               <PortfolioTabs 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
                 currentPortfolio={currentPortfolio}
-              />
-            </div>
-            
-            {/* Desktop Header */}
-            <DashboardHeader
-              mepRate={mepRate}
-              lastUpdate={lastUpdate}
-              isPricesLoading={isPricesLoading}
-              refetchPrices={refetchPrices}
-            />
-
-            {/* Mobile Header */}
-            <div className="lg:hidden">
-              <DashboardHeader
-                mepRate={mepRate}
-                lastUpdate={lastUpdate}
-                isPricesLoading={isPricesLoading}
-                refetchPrices={refetchPrices}
+                variant="pills"
               />
             </div>
 
-            {activeTab === 'help' && (
-              <div className="max-w-3xl mx-auto">
-                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 lg:p-8">
+            {/* Dynamic Content */}
+            <div className="min-h-[400px]">
+                {activeTab === 'dashboard' && (
+                  <div className="space-y-6">
+                    <DashboardSummaryCards 
+                      totals={totals} 
+                      trades={trades} 
+                      lastUpdate={lastUpdateFull}
+                    />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2">
+                        <PositionsTable 
+                          positions={positions} 
+                          columnSettings={columnSettings}
+                          sortConfig={positionsSort}
+                          onSort={(key) => setPositionsSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }))}
+                          onRowClick={handleOpenPositionDetail}
+                        />
+                      </div>
+                      <div className="lg:col-span-1 space-y-6">
+                        <TotalCard totals={totals} mepRate={mepRate} />
+                        <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-text-primary mb-4">Distribución</h3>
+                          <DistributionChart positions={positions} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                   <h2 className="text-xl font-bold text-text-primary mb-6">Guía de Uso</h2>
                   <div className="space-y-6 text-text-secondary">
                     <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
@@ -901,7 +934,7 @@ export default function Dashboard() {
         <Suspense fallback={<LoadingFallback />}>
           <PositionDetailModal open={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} />
         </Suspense>
-      </div>
-    </ErrorBoundary>
+      </div >
+    </ErrorBoundary >
   );
 }

@@ -20,12 +20,14 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
       queryClient.invalidateQueries(['financing-metrics']);
 
       // Agregar al historial local para feedback visual
+      // Data viene envuelto en Result: { success: true, data: { ... } }
+      const resultData = data.data || {};
       const fileEntry = {
         id: Date.now(),
         timestamp: new Date(),
-        summary: data.summary || {},
-        operations: data.records || [],
-        details: data
+        summary: resultData.summary || {},
+        operations: resultData.records || [],
+        details: resultData
       };
 
       setProcessedFiles(prev => [...prev, fileEntry]);
@@ -121,7 +123,7 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
               <span className="text-green-700 dark:text-green-300 text-sm">
-                ¡Archivo guardado exitosamente! ({uploadCsvMutation.data?.totalInserted || 0} operaciones)
+                ¡Archivo guardado exitosamente! ({uploadCsvMutation.data?.data?.totalInserted || 0} operaciones)
               </span>
             </div>
           </div>
