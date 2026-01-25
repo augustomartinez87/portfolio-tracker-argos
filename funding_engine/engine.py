@@ -8,10 +8,14 @@ from models import Base, Caucion, InstrumentoFCI, SerieVCP, MovimientoFCI, Activ
 import uuid
 
 # Configuration
-# Prefer standard env vars, fallback to placeholders or VITE_ prefixed if manually injected
-SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY")
-DB_CONNECTION_STRING = f"postgresql://postgres:[PASSWORD]@{SUPABASE_URL.split('://')[1] if SUPABASE_URL else 'localhost'}:5432/postgres" if SUPABASE_URL else "sqlite:///funding_local.db"
+# For production (Streamlit Cloud), we need the full PostgreSQL Connection String (URI)
+# Get this from Supabase -> Project Settings -> Database -> Connection String -> URI
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Fallback for local dev (Mock) or if URL is missing
+if not DATABASE_URL:
+    # Check if we are in mock mode implicitly by missing URL
+    pass 
 
 # Mock Data Generator
 def create_mock_data(session):
@@ -92,7 +96,7 @@ def create_mock_data(session):
     print("Mock Data Created.")
 
 class FundingCarryEngine:
-    def __init__(self, use_mock=True, db_url=None):
+    def __init__(self, use_mock=True):
         self.use_mock = use_mock
         if use_mock:
             self.engine = create_engine("sqlite:///funding_local.db")
@@ -102,9 +106,11 @@ class FundingCarryEngine:
             create_mock_data(self.session)
         else:
             # Production connection
-            if not db_url:
-                raise ValueError("DB URL required for production mode")
-            self.engine = create_engine(db_url)
+            if not DATABASE_URL:
+                # If no URL provided but not in Mock mode, raise clear error
+                raise ValueError("DATABASE_URL environment variable is missing. Check Streamlit Secrets.")
+            
+            self.engine = create_engine(DATABASE_URL)
             Session = sessionmaker(bind=self.engine)
             self.session = Session()
 

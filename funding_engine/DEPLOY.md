@@ -15,10 +15,16 @@ Since this module is integrated into your GitHub repository, the easiest way to 
 
 3.  **Advanced Settings (Environment Variables)**:
     - Click "Advanced settings" before deploying.
-    - Add your Supabase secrets here so the app can connect to the real DB:
-        - `SUPABASE_URL`: `your_supabase_url`
-        - `SUPABASE_KEY`: `your_supabase_anon_key`
-        - `STREAMLIT_TOKEN`: `argos-access` (Optional, for token auth if implemented)
+    - Verás un cuadro de texto grande. Copia y pega lo siguiente:
+
+    ```toml
+    # Ve a Supabase -> Project Settings -> Database -> Connection String -> URI (Mode: Transaction Mode)
+    # Copia esa cadena que empieza con "postgresql://..."
+    DATABASE_URL = "tu_connection_string_de_supabase_aqui"
+    
+    # Token para seguridad (opcional pero recomendado)
+    STREAMLIT_TOKEN = "argos-access"
+    ``` (Optional, for token auth if implemented)
 
 4.  **Deploy**:
     - Click **"Deploy!"**.
