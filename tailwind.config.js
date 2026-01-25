@@ -4,33 +4,34 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         background: {
-          primary: '#000000',
-          secondary: '#0a0a0a',
-          tertiary: '#141414',
+          primary: 'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          tertiary: 'var(--bg-tertiary)',
         },
         border: {
-          primary: '#1a1a1a',
-          secondary: '#2a2a2a',
+          primary: 'var(--border-primary)',
+          secondary: 'var(--border-secondary)',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#a1a1a1',
-          tertiary: '#6b6b6b',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
         },
-        success: '#10b981',
-        danger: '#ef4444',
-        warning: '#f59e0b', // Amber 500
-        profit: '#10b981',   // Alias for success
-        loss: '#ef4444',     // Alias for danger
-        'success-muted': 'rgba(16, 185, 129, 0.1)',
-        'danger-muted': 'rgba(239, 68, 68, 0.1)',
-        'warning-muted': 'rgba(245, 158, 11, 0.1)',
-        'profit-muted': 'rgba(16, 185, 129, 0.1)',
-        'loss-muted': 'rgba(239, 68, 68, 0.1)',
+        success: 'var(--color-success)',
+        danger: 'var(--color-danger)',
+        warning: 'var(--color-warning)',
+        profit: 'var(--color-success)',
+        loss: 'var(--color-danger)',
+        'success-muted': 'var(--color-success-muted)',
+        'danger-muted': 'var(--color-danger-muted)',
+        'warning-muted': 'var(--color-warning-muted)',
+        'profit-muted': 'var(--color-success-muted)',
+        'loss-muted': 'var(--color-danger-muted)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

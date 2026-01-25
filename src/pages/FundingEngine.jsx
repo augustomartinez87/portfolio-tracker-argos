@@ -22,14 +22,14 @@ export default function FundingEngine() {
 
     if (!currentPortfolio || !user) {
         return (
-            <div className="min-h-screen bg-[#0E1117] flex items-center justify-center text-white">
+            <div className="min-h-screen bg-background-primary flex items-center justify-center text-text-primary">
                 <p>Cargando...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#0E1117] flex">
+        <div className="min-h-screen bg-background-primary flex">
             {/* Sidebar reuse */}
             <DashboardSidebar
                 user={user}

@@ -29,7 +29,7 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
                     {positions.map((pos) => {
                         const isPositive = pos.pnl >= 0;
                         return (
-                            <tr key={pos.fciId} className="hover:bg-[#151515] transition-all duration-200 group">
+                            <tr key={pos.fciId} className="hover:bg-background-tertiary transition-all duration-200 group">
                                 <td className="px-4 py-3">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-text-primary text-sm">{pos.nombre}</span>

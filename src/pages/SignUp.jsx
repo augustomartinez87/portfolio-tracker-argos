@@ -48,7 +48,7 @@ export const SignUp = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0A0A0A]">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background-primary">
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -74,7 +74,7 @@ export const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0A0A0A]">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background-primary">
       <div
         className="absolute inset-0 z-0"
         style={{

@@ -714,7 +714,7 @@ export default function Dashboard() {
                               {trades.length === 0 ? 'No hay transacciones registradas' : 'No hay transacciones que coincidan con los filtros'}
                             </td></tr>
                           ) : sortedTrades.map((trade, idx) => (
-                            <tr key={trade.id || idx} className="hover:bg-[#151515] transition-all duration-200">
+                            <tr key={trade.id || idx} className="hover:bg-background-tertiary transition-all duration-200">
                               <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.fechaFormatted}</td>
                               <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
                               <td className="px-3 sm:px-4 py-3">

@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+
+:root {
+  /* Light Mode (Vercel-like) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  /* gray-50 */
+  --bg-tertiary: #f3f4f6;
+  /* gray-100 */
+
+  --border-primary: #e5e7eb;
+  /* gray-200 */
+  --border-secondary: #d1d5db;
+  /* gray-300 */
+
+  --text-primary: #111827;
+  /* gray-900 */
+  --text-secondary: #4b5563;
+  /* gray-600 */
+  --text-tertiary: #9ca3af;
+  /* gray-400 */
+
+  --color-success: #059669;
+  /* emerald-600 (slightly darker for contrast on white) */
+  --color-danger: #dc2626;
+  /* red-600 */
+  --color-warning: #d97706;
+  /* amber-600 */
+
+  --color-success-muted: rgba(5, 150, 105, 0.1);
+  --color-danger-muted: rgba(220, 38, 38, 0.1);
+  --color-warning-muted: rgba(217, 119, 6, 0.1);
+}
+
+.dark {
+  /* Dark Mode (Original) */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
+
+  --border-primary: #1a1a1a;
+  --border-secondary: #2a2a2a;
+
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1a1;
+  --text-tertiary: #6b6b6b;
+
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  --color-success-muted: rgba(16, 185, 129, 0.1);
+  --color-danger-muted: rgba(239, 68, 68, 0.1);
+  --color-warning-muted: rgba(245, 158, 11, 0.1);
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -11,35 +66,37 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .font-mono {
   font-family: 'DM Sans', 'DM Sans Medium', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
 }
 
-/* Custom scrollbar - tema oscuro */
+/* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: var(--text-tertiary);
   border-radius: 4px;
-  border: 2px solid #1a1a1a;
+  border: 2px solid var(--bg-tertiary);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: var(--text-secondary);
 }
 
 .custom-scrollbar::-webkit-scrollbar-corner {
-  background: #1a1a1a;
+  background: var(--bg-tertiary);
 }
 
 .custom-scrollbar::-webkit-scrollbar-button {
@@ -51,5 +108,5 @@ body {
 /* Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 #1a1a1a;
+  scrollbar-color: var(--text-tertiary) var(--bg-tertiary);
 }
