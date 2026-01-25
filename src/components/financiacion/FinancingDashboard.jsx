@@ -49,7 +49,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
     
     setCaucionesLoading(true);
     try {
-      const result = await financingService.getCaucionesWithCalculations(userId, portfolioId);
+      const result = await financingService.getCauciones(userId, portfolioId);
       if (result.success) {
         setCauciones(result.data || []);
         console.log('✅ Cargadas cauciones:', result.data?.length);

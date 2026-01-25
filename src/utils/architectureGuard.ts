@@ -47,6 +47,9 @@ if (process.env.NODE_ENV === 'development') {
  * Any component that needs financial calculations must use these methods
  */
 export interface ProperFinancialService {
+  // Canonical cauciones retrieval (single source of truth)
+  getCauciones(userId: string, portfolioId: string): Promise<any>;
+  // Backward compatibility: keep old path for existing wrappers until fully migrated
   getCaucionesWithCalculations(userId: string, portfolioId: string): Promise<any>;
   getMetrics(userId: string, portfolioId: string): Promise<any>;
   calculateTnaForRecord(capital: number, interest: number, days: number): number;
@@ -58,7 +61,7 @@ export interface ProperFinancialService {
  * Runtime validation function to verify a service implements the proper interface
  * @param service - Service object to validate
  */
-export function validateProperFinancialService(service: any): asserts service is ProperFinancialService {
+  export function validateProperFinancialService(service: any): asserts service is ProperFinancialService {
   const requiredMethods = [
     'getCaucionesWithCalculations',
     'getMetrics', 

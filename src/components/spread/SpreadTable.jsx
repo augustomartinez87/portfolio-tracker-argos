@@ -65,7 +65,7 @@ const SpreadTable = ({ userId, portfolioId, onDelete, loading }) => {
   const [cauciones, setCauciones] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // Load data using FinancingService
+  // Load data using FinancingService (canonical path)
   React.useEffect(() => {
     const loadData = async () => {
       if (!userId || !portfolioId) {
@@ -77,7 +77,7 @@ const SpreadTable = ({ userId, portfolioId, onDelete, loading }) => {
       try {
         // Import FinancingService dynamically to avoid circular imports
         const { financingService } = await import('../../services/financingService');
-        const result = await financingService.getCaucionesWithCalculations(userId, portfolioId);
+        const result = await financingService.getCauciones(userId, portfolioId);
         
         if (result.success) {
           setCauciones(result.data);

@@ -20,7 +20,7 @@ const Financiacion = () => {
   // React Query para obtener operaciones (persistencia real)
   const { data: operations = [], isLoading: loadingOps, error: opsError, refetch: refetchOps } = useQuery({
     queryKey: ['financing-operations', user?.id, currentPortfolio?.id],
-    queryFn: () => financingService.getOperations(user.id, currentPortfolio.id),
+    queryFn: () => financingService.getCauciones(user.id, currentPortfolio.id),
     enabled: !!user && !!currentPortfolio,
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 5 * 60 * 1000, // 5 minutos

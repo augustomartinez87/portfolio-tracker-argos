@@ -163,6 +163,149 @@ export class FinancingService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Canonical API surface (Single Source of Truth)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Canonical read: fetch cauciones for a user, optionally scoped to a portfolio.
+   * This replaces legacy read paths and is the single source of truth for UI reads.
+   */
+  async getCauciones(
+    userId: string,
+    portfolioId?: string
+  ): Promise<Result<Array<{
+    id: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    capital: number;
+    monto_devolver: number;
+    interes: number;
+    dias: number;
+    tna_real: number;
+    archivo?: string;
+    pdf_filename?: string;
+  }>>> {
+    try {
+      if (!userId) {
+        return { success: false, error: new Error('Se requiere userId') };
+      }
+
+      // Build query: across all portfolios if no portfolioId provided, else scoped
+      let query = supabase.from('cauciones').select('*').eq('user_id', userId);
+      if (portfolioId) {
+        query = query.eq('portfolio_id', portfolioId);
+      }
+      query = query.order('fecha_inicio', { ascending: false });
+
+      const { data, error } = await query as any;
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      const processed = data.map((row: any) => {
+        const dias = this._calculateDaysForRecord(row.fecha_inicio, row.fecha_fin);
+        const interes = this._calculateInterestForRecord(row.capital, row.monto_devolver);
+        return {
+          id: row.id,
+          fecha_inicio: row.fecha_inicio,
+          fecha_fin: row.fecha_fin,
+          capital: row.capital,
+          monto_devolver: row.monto_devolver,
+          interes: interes.toNumber(),
+          dias,
+          tna_real: row.tna_real,
+          archivo: row.archivo,
+          pdf_filename: row.pdf_filename
+        };
+      });
+
+      return { success: true, data: processed };
+    } catch (error) {
+      console.error('❌ Error obteniendo cauciones (getCauciones):', error);
+      return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
+    }
+  }
+
+  /**
+   * Canonical metrics across all cauciones for a user (no portfolio scope).
+   * This is used by UI dashboards where a global view is required.
+   */
+  async getResumen(userId: string): Promise<any> {
+    try {
+      if (!userId) {
+        return { success: false, error: new Error('Se requiere userId') };
+      }
+
+      const { data, error } = await (supabase.from('cauciones')
+        .select('capital, monto_devolver, interes, dias, tna_real, fecha_inicio')
+        .eq('user_id', userId));
+
+      if (error) throw error;
+      const records = data || [];
+
+      if (records.length === 0) {
+        return {
+          capitalTotal: 0,
+          interesTotal: 0,
+          montoDevolverTotal: 0,
+          tnaPromedioPonderada: 0,
+          diasPromedio: 0,
+          totalOperaciones: 0,
+          primeraOperacion: null,
+          ultimaOperacion: null
+        };
+      }
+
+      // Compute metrics similar to getMetrics, but over all portfolios/records for the user
+      const capitalTotal = records.reduce((sum: any, r: any) => sum + Number(r.capital || 0), 0);
+      const montoDevolverTotal = records.reduce((sum: any, r: any) => sum + Number(r.monto_devolver || 0), 0);
+      const interesTotal = records.reduce((sum: any, r: any) => sum + Number(r.interes || 0), 0);
+
+      const tnaWeightedNumerator = records.reduce((sum: any, r: any) => {
+        const cap = Number(r.capital || 0);
+        const t = Number(r.tna_real || 0);
+        const dias = Number(r.dias || 0);
+        // weight by capital * dias * tna
+        return sum + (isNaN(cap) ? 0 : cap) * (isNaN(t) ? 0 : t) * (isNaN(dias) ? 0 : dias);
+      }, 0);
+      const totalDias = records.reduce((sum: any, r: any) => sum + Number(r.dias || 0), 0);
+      const tnaPromedioPonderada = totalDias > 0 ? tnaWeightedNumerator / totalDias : 0;
+
+      const primeraOperacion = records
+        .map((r: any) => new Date(r.fecha_inicio))
+        .sort((a: Date, b: Date) => a.getTime() - b.getTime())[0] || null;
+      const ultimaOperacion = records
+        .map((r: any) => new Date(r.fecha_inicio))
+        .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0] || null;
+
+      return {
+        capitalTotal: capitalTotal,
+        interesTotal: interesTotal,
+        montoDevolverTotal: montoDevolverTotal,
+        tnaPromedioPonderada: tnaPromedioPonderada,
+        diasPromedio: totalDias / (records.length || 1),
+        totalOperaciones: records.length,
+        primeraOperacion,
+        ultimaOperacion
+      };
+    } catch (error) {
+      console.error('❌ Error calculando resumen (getResumen):', error);
+      return { error: error instanceof Error ? error : new Error(String(error)) };
+    }
+  }
+
+  // Existing methods kept for backward compatibility
+  async deleteCaucion(userId: string, operationId: string) {
+    return this.deleteOperation(userId, operationId);
+  }
+
+  async deleteAllCauciones(userId: string, portfolioId: string) {
+    return this.deleteAllOperations(userId, portfolioId);
+  }
+
   /**
    * Calculate comprehensive metrics with corrected TNA formula
    * @param userId - User ID for scoping
