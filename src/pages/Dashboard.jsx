@@ -606,6 +606,8 @@ export default function Dashboard() {
                     <div className="lg:col-span-2">
                       <PositionsTable
                         positions={positions}
+                        prices={prices}
+                        mepRate={mepRate}
                         columnSettings={columnSettings}
                         sortConfig={positionsSort}
                         onSort={(key) => setPositionsSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }))}
