@@ -22,13 +22,16 @@ if not DATABASE_URL:
 # Fallback for local dev (Mock) or if URL is missing
     pass
 else:
-    # Fix scheme for SQLAlchemy
+    # Fix scheme for SQLAlchemy: Use pg8000 (Pure Python driver) for better serverless compatibility
     if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
+    elif DATABASE_URL.startswith("postgresql+psycopg2://"):
+        # If user explicitly set psycopg2 but it fails, force switch to pg8000
+        DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+pg8000://", 1)
 
     # Supabase (and many cloud Postgres) requires SSL. 
-    # If using Transaction Pooler (port 6543) or Session mode (5432), explicit SSL is safer.
     if "sslmode" not in DATABASE_URL:
+        # pg8000 uses slightly different SSL args sometimes, but SQLAlchemy handles sslmode=require
         separator = "&" if "?" in DATABASE_URL else "?"
         DATABASE_URL += f"{separator}sslmode=require" 
 

@@ -4,3 +4,4 @@ numpy
 sqlalchemy
 plotly
 psycopg2-binary
+pg8000
