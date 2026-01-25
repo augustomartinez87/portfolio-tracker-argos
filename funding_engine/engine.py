@@ -8,13 +8,19 @@ from models import Base, Caucion, InstrumentoFCI, SerieVCP, MovimientoFCI, Activ
 import uuid
 
 # Configuration
-# For production (Streamlit Cloud), we need the full PostgreSQL Connection String (URI)
-# Get this from Supabase -> Project Settings -> Database -> Connection String -> URI
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Try to get from st.secrets if missing (Streamlit Cloud often doesn't populate os.environ automatically)
+if not DATABASE_URL:
+    try:
+        import streamlit as st
+        if "DATABASE_URL" in st.secrets:
+            DATABASE_URL = st.secrets["DATABASE_URL"]
+    except:
+        pass
 
 # Fallback for local dev (Mock) or if URL is missing
 if not DATABASE_URL:
-    # Check if we are in mock mode implicitly by missing URL
     pass 
 
 # Mock Data Generator
