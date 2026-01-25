@@ -159,11 +159,16 @@ class FundingCarryEngine:
             weighted_tna = 0.0
             
             if total_debt > 0 and not active_cauciones.empty:
-                weighted_tna = np.average(
-                    active_cauciones['tna_real'].astype(float), 
-                    weights=active_cauciones['capital'].astype(float)
-                )
-                daily_interest_cost = (total_debt * (weighted_tna / 100)) / 365
+                # Ensure properly typed series for calculation
+                capitals = pd.to_numeric(active_cauciones['capital'], errors='coerce').fillna(0)
+                tnas = pd.to_numeric(active_cauciones['tna_real'], errors='coerce').fillna(0)
+                
+                # Check if we have valid TNA data
+                if tnas.sum() > 0:
+                    weighted_tna = np.average(tnas, weights=capitals)
+                    daily_interest_cost = (total_debt * (weighted_tna / 100.0)) / 365.0
+                else:
+                    print(f"Warning: Zero TNA found for date {d_str}")
             
             daily_stats.append({
                 'date': d_str,
