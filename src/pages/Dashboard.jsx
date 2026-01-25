@@ -570,21 +570,26 @@ export default function Dashboard() {
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+          <div className="p-2 lg:p-3 space-y-2 lg:space-y-3">
 
             {/* Page Header with Actions (matching Financiacion structure) */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
-              <div>
-                <h1 className="text-xl lg:text-2xl font-semibold text-text-primary">Portfolio</h1>
-                <p className="text-text-tertiary text-sm mt-1">
-                  Resumen general y posiciones
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative min-h-[48px]">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h1 className="text-lg lg:text-xl font-bold text-text-primary leading-tight">Portfolio</h1>
+                  <p className="text-text-tertiary text-[10px] uppercase font-semibold tracking-wider">Resumen</p>
+                </div>
+                <div className="hidden lg:block border-l border-border-primary h-8 mx-1"></div>
+                {/* Selector de Portfolio (Merged into Header) */}
+                <div className="hidden lg:block scale-90 origin-left">
+                  <PortfolioSelector />
+                </div>
               </div>
 
-              {/* Centered Logo (Desktop) */}
-              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
-                <img src={logo} alt="Argos Capital" className="w-8 h-8" />
-                <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
+              {/* Centered Logo (Desktop) - Smaller size */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                <img src={logo} alt="Argos Capital" className="w-6 h-6" />
+                <h1 className="text-lg font-bold text-text-primary tracking-tight">Argos Capital</h1>
               </div>
 
               <div className="flex items-center gap-2">
@@ -599,13 +604,13 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Selector de Portfolio (Desktop only) */}
-            <div className="hidden lg:block">
+            {/* Mobile Selector Only */}
+            <div className="lg:hidden">
               <PortfolioSelector />
             </div>
 
             {/* Sub-navigation (Tabs) */}
-            <div className="bg-background-secondary border border-border-primary rounded-xl p-2">
+            <div className="bg-background-secondary/50 border border-border-primary/50 rounded-lg p-1">
               <PortfolioTabs
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -615,10 +620,10 @@ export default function Dashboard() {
             </div>
 
             {/* Dynamic Content */}
-            <div className="min-h-[400px]">
+            <div className="min-h-0">
 
               {activeTab === 'help' && (
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-3xl mx-auto py-4">
                   <div className="bg-background-secondary border border-border-primary rounded-xl p-6 lg:p-8">
                     <h2 className="text-xl font-bold text-text-primary mb-6">Guía de Uso</h2>
                     <div className="space-y-6 text-text-secondary">
@@ -873,23 +878,23 @@ export default function Dashboard() {
                   <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
                   {/* Tabla de Posiciones - contenedor separado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[calc(100vh-360px)] min-h-[280px] mt-6">
-                    <div className="p-3 lg:p-4 border-b border-border-primary flex flex-wrap gap-3 items-center justify-between flex-shrink-0">
-                      <div className="flex flex-col gap-2">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[calc(100vh-230px)] min-h-[200px] mt-3">
+                    <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
+                      <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-base lg:text-lg font-semibold text-text-primary">Posiciones</h2>
-                          <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">{positions.length}</span>
+                          <h2 className="text-sm lg:text-base font-semibold text-text-primary">Posiciones</h2>
+                          <span className="text-[10px] text-text-tertiary bg-background-tertiary px-1.5 py-0.5 rounded-full">{positions.length}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                            <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1.5 h-8 bg-background-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-48" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
+                            <input type="text" placeholder="Buscar" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8 pr-3 py-1 h-7 bg-background-tertiary border border-border-primary rounded text-xs text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary w-40" />
                           </div>
                           <ColumnSelector settings={columnSettings} onSettingsChange={setColumnSettings} />
                         </div>
                       </div>
-                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-2 px-5 py-2 h-9 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 transition-all text-sm font-medium shadow-lg shadow-emerald-600/20">
-                        <Plus className="w-4 h-4" />
+                      <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center gap-2 px-4 py-1.5 h-8 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all text-xs font-medium shadow-lg shadow-emerald-600/20">
+                        <Plus className="w-3.5 h-3.5" />
                         Nueva Transacción
                       </button>
                     </div>
@@ -914,7 +919,7 @@ export default function Dashboard() {
 
                   {/* Total Card - completamente separado de la tabla */}
                   {filteredPositions.length > 0 && (
-                    <div className="mt-6">
+                    <div className="mt-2">
                       <TotalCard totals={totals} columnSettings={columnSettings} />
                     </div>
                   )}
