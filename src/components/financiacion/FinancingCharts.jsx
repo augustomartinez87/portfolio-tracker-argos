@@ -61,6 +61,8 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         if (isNaN(date.getTime())) return;
         
         const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
+        const capitalAmount = op.capital || 0;
+        const rate = op.tna_real || 0;
         
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = {
@@ -74,7 +76,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         }
         
         monthlyData[monthKey].count += 1;
-monthlyData[monthKey].capital += capitalAmount;
+        monthlyData[monthKey].capital += capitalAmount;
         monthlyData[monthKey].interes += (op.interes || 0);
         monthlyData[monthKey].totalRateWeight += rate * capitalAmount;
       });

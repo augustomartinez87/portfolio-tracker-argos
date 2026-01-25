@@ -382,6 +382,174 @@ export class FinancingService {
       };
     }
   }
+
+  // ============================================================================
+  // UI CALCULATION METHODS - Expose calculations for UI components
+  // These are the ONLY methods UI components should use for calculations
+  // ============================================================================
+
+  /**
+   * Get cauciones with all calculated fields for UI display
+   * @param userId - User ID for authorization
+   * @param portfolioId - Portfolio ID for data isolation
+   * @returns Result with cauciones array including calculated fields
+   */
+  async getCaucionesWithCalculations(
+    userId: string,
+    portfolioId: string
+  ): Promise<Result<Array<{
+    id: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    capital: number;
+    monto_devolver: number;
+    interes: number;
+    dias: number;
+    tna_real: number;
+    archivo?: string;
+    pdf_filename?: string;
+  }>>> {
+    try {
+      // Validate inputs
+      if (!userId || !portfolioId) {
+        return { 
+          success: false, 
+          error: new Error('Se requieren userId y portfolioId') 
+        };
+      }
+
+      // Fetch raw data
+      const { data, error } = await supabase
+        .from('cauciones')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('portfolio_id', portfolioId)
+        .order('fecha_fin', { ascending: false });
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      // Process each record with calculations using internal financialCalculations
+      const processedData = data.map((row: any) => {
+        const dias = this._calculateDaysForRecord(row.fecha_inicio, row.fecha_fin);
+        const interes = this._calculateInterestForRecord(row.capital, row.monto_devolver);
+
+        return {
+          id: row.id,
+          fecha_inicio: row.fecha_inicio,
+          fecha_fin: row.fecha_fin,
+          capital: row.capital,
+          monto_devolver: row.monto_devolver,
+          interes: interes.toNumber(),
+          dias,
+          tna_real: row.tna_real,
+          archivo: row.archivo,
+          pdf_filename: row.pdf_filename
+        };
+      });
+
+      return { success: true, data: processedData };
+
+    } catch (error) {
+      console.error('❌ Error obteniendo cauciones con cálculos:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error : new Error(String(error)) 
+      };
+    }
+  }
+
+  /**
+   * Calculate days between dates (internal method)
+   * Only FinancingService can call this
+   */
+  private _calculateDaysForRecord(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  }
+
+  /**
+   * Calculate interest from capital and monto_devolver (internal method)
+   * Only FinancingService can call this
+   */
+  private _calculateInterestForRecord(capital: number, montoDevolver: number): InstanceType<typeof Decimal> {
+    const capitalDecimal = new Decimal(capital || 0);
+    const montoDevolverDecimal = new Decimal(montoDevolver || 0);
+    return montoDevolverDecimal.minus(capitalDecimal);
+  }
+
+  /**
+   * Get calculated TNA for a single record
+   * @param capital - Principal amount
+   * @param interest - Interest amount
+   * @param days - Number of days
+   * @returns TNA as decimal (0.3308)
+   */
+  calculateTnaForRecord(capital: number, interest: number, days: number): number {
+    if (capital <= 0 || days <= 0) {
+      return 0;
+    }
+    
+    const capitalDecimal = new Decimal(capital);
+    const interestDecimal = new Decimal(interest);
+    const daysDecimal = new Decimal(days);
+    
+    const tnaDecimal = interestDecimal
+      .div(capitalDecimal)
+      .times(new Decimal(365))
+      .div(daysDecimal);
+    
+    return tnaDecimal.toNumber();
+  }
+
+  /**
+   * Calculate spread between two rates
+   * @param rate1 - First rate (as decimal: 0.3308)
+   * @param rate2 - Second rate (as decimal: 0.2500)
+   * @returns Spread as decimal (0.0808)
+   */
+  calculateSpread(rate1: number, rate2: number): number {
+    const rate1Decimal = new Decimal(rate1 || 0);
+    const rate2Decimal = new Decimal(rate2 || 0);
+    return rate1Decimal.minus(rate2Decimal).toNumber();
+  }
+
+  /**
+   * Convert legacy record to proper calculation format
+   * @param legacyRecord - Legacy database record
+   * @returns Record with all calculated fields
+   */
+  processLegacyRecord(legacyRecord: any): {
+    id: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    capital: number;
+    monto_devolver: number;
+    interes: number;
+    dias: number;
+    tna_real: number;
+    archivo?: string;
+  } {
+    const dias = this._calculateDaysForRecord(legacyRecord.fecha_inicio, legacyRecord.fecha_fin);
+    const interes = this._calculateInterestForRecord(legacyRecord.capital, legacyRecord.monto_devolver);
+
+    return {
+      id: legacyRecord.id,
+      fecha_inicio: legacyRecord.fecha_inicio,
+      fecha_fin: legacyRecord.fecha_fin,
+      capital: legacyRecord.capital,
+      monto_devolver: legacyRecord.monto_devolver,
+      interes: interes.toNumber(),
+      dias,
+      tna_real: legacyRecord.tna_real,
+      archivo: legacyRecord.archivo
+    };
+  }
 }
 
 // ============================================================================

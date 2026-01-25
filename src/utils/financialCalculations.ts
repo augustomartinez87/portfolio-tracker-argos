@@ -312,3 +312,98 @@ export function calculateYieldRate(
   
   return { success: true, data: interest.div(capital) };
 }
+
+// ============================================================================
+// LEGACY COMPATIBILITY LAYER - For UI components still using old data format
+// These functions bridge the gap between legacy Number-based data and Decimal calculations
+// ============================================================================
+
+/**
+ * Calculate days between dates using precise calculation (legacy format)
+ * @param startDate - Start date string or Date object
+ * @param endDate - End date string or Date object
+ * @returns Number of days (always positive integer)
+ */
+export function calculateDaysPrecise(
+  startDate: string | Date, 
+  endDate: string | Date
+): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  const diffMs = end.getTime() - start.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  return diffDays > 0 ? diffDays : 0;
+}
+
+/**
+ * Calculate interest from legacy data format using Decimal precision
+ * @param capital - Capital amount (Number, will be converted to Decimal)
+ * @param montoDevolver - Total amount to return (Number, will be converted to Decimal)
+ * @returns Interest as Decimal
+ */
+export function calculateInterestFromLegacy(
+  capital: number, 
+  montoDevolver: number
+): DecimalValue {
+  const capitalDecimal = new Decimal(capital || 0);
+  const montoDevolverDecimal = new Decimal(montoDevolver || 0);
+  
+  return montoDevolverDecimal.minus(capitalDecimal);
+}
+
+/**
+ * Convert legacy record to proper Caucion format for calculations
+ * @param legacyRecord - Legacy record with capital, monto_devolver, fecha_inicio, fecha_fin, tna_real
+ * @returns Proper Caucion object with Decimal values
+ */
+export function convertLegacyToCaucion(legacyRecord: any): Caucion {
+  const dias = calculateDaysPrecise(
+    legacyRecord.fecha_inicio, 
+    legacyRecord.fecha_fin
+  );
+  
+  return {
+    id: legacyRecord.id,
+    portfolioId: legacyRecord.portfolioId || 'legacy',
+    capital: new Decimal(legacyRecord.capital || 0),
+    montoDevolver: new Decimal(legacyRecord.monto_devolver || 0),
+    interes: calculateInterestFromLegacy(
+      legacyRecord.capital, 
+      legacyRecord.monto_devolver
+    ),
+    dias,
+    tna: new Decimal(legacyRecord.tna_real || 0),
+    fechaInicio: new Date(legacyRecord.fecha_inicio),
+    fechaFin: new Date(legacyRecord.fecha_fin),
+    archivo: legacyRecord.archivo || legacyRecord.pdf_filename
+  };
+}
+
+/**
+ * Calculate TNA from legacy data using Decimal precision
+ * Formula: (interes/capital) * (365/dias)
+ * @param capital - Principal amount
+ * @param interest - Interest amount  
+ * @param days - Number of days
+ * @returns TNA as Decimal (decimal format: 0.3308)
+ */
+export function calculateTnaFromLegacy(
+  capital: number, 
+  interest: number, 
+  days: number
+): DecimalValue {
+  if (capital <= 0 || days <= 0) {
+    return new Decimal(0);
+  }
+  
+  const capitalDecimal = new Decimal(capital);
+  const interestDecimal = new Decimal(interest);
+  const daysDecimal = new Decimal(days);
+  
+  return interestDecimal
+    .div(capitalDecimal)
+    .times(new Decimal(365))
+    .div(daysDecimal);
+}

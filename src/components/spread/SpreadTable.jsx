@@ -17,16 +17,16 @@ const sortCauciones = (data, config) => {
       case 'capital':
       case 'monto_devolver':
       case 'interes':
-        aVal = a[config.key] || (a.monto_devolver - a.capital);
-        bVal = b[config.key] || (b.monto_devolver - b.capital);
+        aVal = a[config.key] || a.interes; // Use pre-calculated interest from service
+        bVal = b[config.key] || b.interes; // Use pre-calculated interest from service
         break;
       case 'tna_real':
         aVal = a.tna_real || 0;
         bVal = b.tna_real || 0;
         break;
       case 'dias':
-        aVal = Math.ceil((new Date(a.fecha_fin) - new Date(a.fecha_inicio)) / (1000 * 60 * 60 * 24));
-        bVal = Math.ceil((new Date(b.fecha_fin) - new Date(b.fecha_inicio)) / (1000 * 60 * 60 * 24));
+        aVal = a.dias || 0; // Use pre-calculated days from service
+        bVal = b.dias || 0; // Use pre-calculated days from service
         break;
       default:
         aVal = a[config.key];
@@ -60,8 +60,41 @@ const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
   );
 };
 
-const SpreadTable = ({ cauciones, onDelete, loading }) => {
+const SpreadTable = ({ userId, portfolioId, onDelete, loading }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'fecha_fin', direction: 'desc' });
+  const [cauciones, setCauciones] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Load data using FinancingService
+  React.useEffect(() => {
+    const loadData = async () => {
+      if (!userId || !portfolioId) {
+        setCauciones([]);
+        setDataLoading(false);
+        return;
+      }
+
+      try {
+        // Import FinancingService dynamically to avoid circular imports
+        const { financingService } = await import('../../services/financingService');
+        const result = await financingService.getCaucionesWithCalculations(userId, portfolioId);
+        
+        if (result.success) {
+          setCauciones(result.data);
+        } else {
+          console.error('Error loading cauciones:', result.error);
+          setCauciones([]);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setCauciones([]);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    loadData();
+  }, [userId, portfolioId]);
 
   const handleSort = (key) => {
     setSortConfig(prev => {
@@ -76,16 +109,7 @@ const SpreadTable = ({ cauciones, onDelete, loading }) => {
     return sortCauciones(cauciones, sortConfig);
   }, [cauciones, sortConfig]);
 
-  const calculateDias = (c) => {
-    const dias = Math.ceil((new Date(c.fecha_fin) - new Date(c.fecha_inicio)) / (1000 * 60 * 60 * 24));
-    return dias > 0 ? dias : 0;
-  };
-
-  const calculateInteres = (c) => {
-    return (c.monto_devolver || 0) - (c.capital || 0);
-  };
-
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
         <div className="animate-pulse p-8">
@@ -161,8 +185,9 @@ const SpreadTable = ({ cauciones, onDelete, loading }) => {
           </thead>
           <tbody className="divide-y divide-border-primary">
             {sortedData.map((c) => {
-              const dias = calculateDias(c);
-              const interes = calculateInteres(c);
+              // All calculations are now done by FinancingService
+              const dias = c.dias;
+              const interes = c.interes;
 
               return (
                 <tr
@@ -183,11 +208,11 @@ const SpreadTable = ({ cauciones, onDelete, loading }) => {
                   <td className="px-3 py-3 text-text-primary text-sm font-mono tabular-nums">
                     {formatARS(c.capital)}
                   </td>
-                  <td className="px-3 py-3">
-                    <span className="text-success font-mono text-sm font-medium tabular-nums">
-                      +{formatARS(interes)}
-                    </span>
-                  </td>
+                   <td className="px-3 py-3">
+                     <span className="text-success font-mono text-sm font-medium tabular-nums">
+                       +{formatARS(interes)}
+                     </span>
+                   </td>
                   <td className="px-3 py-3 text-text-secondary text-sm font-mono tabular-nums text-center">
                     {dias}
                   </td>
