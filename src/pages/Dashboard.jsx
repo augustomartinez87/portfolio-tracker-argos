@@ -878,7 +878,7 @@ export default function Dashboard() {
                   <DashboardSummaryCards totals={totals} lastUpdate={lastUpdate} />
 
                   {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col max-h-[480px] min-h-[200px] mt-3">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col max-h-[600px] min-h-[200px] mt-3">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
