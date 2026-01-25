@@ -21,19 +21,28 @@ if not DATABASE_URL:
 
 # Fallback for local dev (Mock) or if URL is missing
     pass
-else:
+
+# Flag to indicate if we should use SSL (for pg8000)
+USE_SSL = False
+
+if DATABASE_URL:
     # Fix scheme for SQLAlchemy: Use pg8000 (Pure Python driver) for better serverless compatibility
     if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
     elif DATABASE_URL.startswith("postgresql+psycopg2://"):
         # If user explicitly set psycopg2 but it fails, force switch to pg8000
         DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+pg8000://", 1)
-
-    # Supabase (and many cloud Postgres) requires SSL. 
-    if "sslmode" not in DATABASE_URL:
-        # pg8000 uses slightly different SSL args sometimes, but SQLAlchemy handles sslmode=require
-        separator = "&" if "?" in DATABASE_URL else "?"
-        DATABASE_URL += f"{separator}sslmode=require" 
+    
+    # Remove any sslmode from URL (pg8000 doesn't support it as query param)
+    if "sslmode" in DATABASE_URL:
+        # Strip it out - we'll handle SSL via connect_args
+        import re
+        DATABASE_URL = re.sub(r'[?&]sslmode=[^&]*', '', DATABASE_URL)
+        # Clean up potential double ? or trailing ? or &
+        DATABASE_URL = DATABASE_URL.rstrip('?&')
+    
+    # Supabase requires SSL - we'll enable this for pg8000 via connect_args
+    USE_SSL = True 
 
 # Mock Data Generator
 def create_mock_data(session):
@@ -128,7 +137,17 @@ class FundingCarryEngine:
                 # If no URL provided but not in Mock mode, raise clear error
                 raise ValueError("DATABASE_URL environment variable is missing. Check Streamlit Secrets.")
             
-            self.engine = create_engine(DATABASE_URL)
+            # For pg8000, SSL is passed via connect_args
+            import ssl
+            connect_args = {}
+            if USE_SSL:
+                # Create a default SSL context
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE  # Supabase uses self-signed certs sometimes
+                connect_args['ssl_context'] = ssl_context
+            
+            self.engine = create_engine(DATABASE_URL, connect_args=connect_args)
             Session = sessionmaker(bind=self.engine)
             self.session = Session()
 
