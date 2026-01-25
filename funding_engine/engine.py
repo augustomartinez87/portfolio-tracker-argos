@@ -179,17 +179,57 @@ class FundingCarryEngine:
 
         df_daily = pd.DataFrame(daily_stats)
         
-        # Summary KPIs (Debt Only)
+        # Summary KPIs (Canonical Definition)
         if not df_daily.empty:
             avg_debt = df_daily['total_debt'].mean()
             total_interest = df_daily['daily_interest_cost'].sum()
-            avg_tna = df_daily['weighted_tna'].mean()
-            current_debt = df_daily.iloc[-1]['total_debt']
+            
+            # 1. Calculate TNA Funding (Canonical: Weighted by Capital * Days)
+            # We need to look at the cauciones involved in this period to get the true cost of funding
+            # TNA_Funding = Sum(Capital * TNA * Days) / Sum(Capital * Days)
+            
+            # Filter cauciones that intersect with the period
+            period_cauciones = cauciones[
+                (cauciones['fecha_fin'] >= pd.to_datetime(start_date).date()) & 
+                (cauciones['fecha_inicio'] <= pd.to_datetime(end_date).date())
+            ]
+            
+            if not period_cauciones.empty:
+                # Ensure numeric types
+                p_cap = pd.to_numeric(period_cauciones['capital'], errors='coerce').fillna(0)
+                p_tna = pd.to_numeric(period_cauciones['tna_real'], errors='coerce').fillna(0)
+                p_days = pd.to_numeric(period_cauciones['dias'], errors='coerce').fillna(0) # Use contractual days for weighting
+                # Or calculate overlapping days if we want period-specific cost, 
+                # but "TNA Funding" usually refers to the contracted rate of the funding mix.
+                # Let's use the contracted weighted average as requested.
+                
+                numerator = (p_cap * p_tna * p_days).sum()
+                denominator = (p_cap * p_days).sum()
+                
+                canonical_tna = numerator / denominator if denominator > 0 else 0.0
+            else:
+                canonical_tna = 0.0
+
+            # 2. Current Debt (Canonical: Capital + Accrued Interest / Monto Devolver)
+            # For "Deuda Actual", we take the last day's active cauciones
+            last_date_str = df_daily.iloc[-1]['date']
+            
+            current_active = cauciones[
+                (cauciones['fecha_inicio_str'] <= last_date_str) & 
+                (cauciones['fecha_fin_str'] >= last_date_str)
+            ]
+            
+            current_debt = 0.0
+            if not current_active.empty:
+                # Deuda = Sum(Monto Devolver) -> This assumes full interest is owed if active
+                # For "Settlement value" this is correct.
+                monto_dev = pd.to_numeric(current_active['monto_devolver'], errors='coerce').fillna(0)
+                current_debt = monto_dev.sum()
             
             kpis = {
                 'avg_debt': avg_debt,
                 'total_interest': total_interest,
-                'avg_tna': avg_tna,
+                'avg_tna': canonical_tna,
                 'current_debt': current_debt,
             }
         else:
