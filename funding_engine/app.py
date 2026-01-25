@@ -82,7 +82,7 @@ if auth_token != REQUIRED_TOKEN and not use_mock:
     st.error("⛔ Acceso Denegado: Token inválido.")
     st.stop()
 
-@st.cache_resource
+# @st.cache_resource  <-- Disabled to prevent signature collision during dev
 def get_engine(use_mock, _user_id=None):
     return FundingCarryEngine(use_mock=use_mock, user_id=_user_id)
 
