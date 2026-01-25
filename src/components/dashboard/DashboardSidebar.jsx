@@ -1,5 +1,6 @@
+```
 import React, { useState } from 'react';
-import { Briefcase, TrendingUp, LogOut } from 'lucide-react';
+import { LayoutDashboard, LogOut, ChevronRight, ChevronLeft, Wallet, Coins } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
@@ -38,19 +39,19 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
             to={item.path}
             onMouseEnter={() => setHoveredItem(item.id)}
             onMouseLeave={() => setHoveredItem(null)}
-            className={`w-full flex items-center py-2.5 h-10 transition-all ${
-              isActive(item.id)
-                ? 'bg-primary text-white'
-                : hoveredItem === item.id
-                  ? 'bg-background-tertiary text-text-primary'
-                  : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
-            }`}
+            className={`w - full flex items - center py - 2.5 h - 10 transition - all ${
+  isActive(item.id)
+    ? 'bg-primary text-white'
+    : hoveredItem === item.id
+      ? 'bg-background-tertiary text-text-primary'
+      : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
+} `}
             title={item.label}
           >
             <span className="w-16 flex justify-center flex-shrink-0">
-              <item.icon className={`w-5 h-5 transition-colors ${
-                isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
-              }`} />
+              <item.icon className={`w - 5 h - 5 transition - colors ${
+  isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
+} `} />
             </span>
             <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 max-w-36 overflow-hidden">
               {item.label}

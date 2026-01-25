@@ -9,6 +9,7 @@ import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
+import FundingEngine from './pages/FundingEngine'
 
 // Configuración de React Query
 const queryClient = new QueryClient({
@@ -55,7 +56,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
+            <Route
+              path="/funding-engine"
+              element={
+                <ProtectedRoute>
+                  <PortfolioProvider>
+                    <FundingEngine />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Redirect old spread route to new financing route */}
             <Route
               path="/spread"
