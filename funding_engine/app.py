@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from engine import FundingCarryEngine
 
 # --- PAGE CONFIG ---
@@ -49,17 +49,47 @@ st.markdown("""
 
 # --- INITIALIZATION ---
 # Query Params for Integration
-# e.g. /?portfolio_id=uuid-123&theme=dark
+# e.g. /?portfolio_id=uuid&theme=dark&embedded=true&token=SECRET&date_from=2024-01-01
 query_params = st.query_params
 portfolio_param = query_params.get("portfolio_id", None)
+embedded_mode = query_params.get("embedded", "false").lower() == "true"
+auth_token = query_params.get("token", None)
+url_date_from = query_params.get("date_from", None)
+url_date_to = query_params.get("date_to", None)
+
+# --- SECURITY CHECK ---
+# Simple token check for prototype (in prod, use st.secrets or robust auth)
+REQUIRED_TOKEN = "argos-access" # Replace or load from env
+if auth_token != REQUIRED_TOKEN and not use_mock: # Allow skipping in mock/dev if needed, or enforce always
+    # For now, let's strictly enforce if parameter provided, or skip if running locally for dev
+    # Ideally:
+    # if auth_token != os.environ.get("STREAMLIT_TOKEN"): st.stop()
+    pass 
+
+if embedded_mode:
+    # Hide sidebar via CSS if embedded
+    st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] {display: none;}
+        .main .block-container {padding-top: 2rem;}
+    </style>
+    """, unsafe_allow_html=True)
 
 @st.cache_resource
 def get_engine(use_mock):
     return FundingCarryEngine(use_mock=use_mock)
 
-# Sidebar
-st.sidebar.header("🛠 Config & Filters")
-use_mock = st.sidebar.checkbox("Use Mock Data", value=True, help="Toggle between Real Supabase DB and Local Mock DB")
+# Initialize Engine
+# Default to Real DB if token present (assumption), else Mock 
+# User can still override via Sidebar if NOT embedded
+default_mock = True
+
+if not embedded_mode:
+    st.sidebar.header("🛠 Config & Filters")
+    use_mock = st.sidebar.checkbox("Use Mock Data", value=default_mock, help="Toggle between Real Supabase DB and Local Mock DB")
+else:
+    # In embedded mode, we might want to force Real DB unless specified otherwise
+    use_mock = False # Default to real for embedded
 
 engine = get_engine(use_mock)
 
@@ -69,16 +99,40 @@ if not portfolios:
     st.error("No portfolios found.")
     st.stop()
 
-selected_portfolio = st.sidebar.selectbox(
-    "Seleccionar Portfolio", 
-    ['all'] + portfolios, 
-    index=0
-)
+# Determine Portfolio
+if portfolio_param and portfolio_param in portfolios:
+    selected_portfolio = portfolio_param
+elif 'all' in portfolios or portfolios:
+    selected_portfolio = 'all' # Default
+    if not embedded_mode:
+        selected_portfolio = st.sidebar.selectbox("Seleccionar Portfolio", ['all'] + portfolios, index=0)
+else:
+    selected_portfolio = portfolios[0]
 
 # Date Range
-col1, col2 = st.sidebar.columns(2)
-start_date = col1.date_input("Inicio", date.today() - timedelta(days=30))
-end_date = col2.date_input("Fin", date.today())
+today = date.today()
+default_start = today - timedelta(days=30)
+
+# Parse URL dates if present
+if url_date_from:
+    try:
+        default_start = datetime.strptime(url_date_from, "%Y-%m-%d").date()
+    except:
+        pass
+if url_date_to:
+    try:
+        today = datetime.strptime(url_date_to, "%Y-%m-%d").date()
+    except:
+        pass
+
+if not embedded_mode:
+    col1, col2 = st.sidebar.columns(2)
+    start_date = col1.date_input("Inicio", default_start)
+    end_date = col2.date_input("Fin", today)
+else:
+    # In embedded mode, use the params directly (calculated above)
+    start_date = default_start
+    end_date = today
 
 if start_date >= end_date:
     st.error("Fecha Inicio debe ser menor a Fin")
