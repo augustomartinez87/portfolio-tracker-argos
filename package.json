@@ -21,6 +21,7 @@
     "recharts": "^2.10.0"
   },
   "devDependencies": {
+    "@types/decimal.js": "^0.0.32",
     "@types/node": "^25.0.10",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",

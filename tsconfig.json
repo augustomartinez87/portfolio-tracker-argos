@@ -34,5 +34,6 @@
     }
   },
   "include": ["src"],
+  "typeRoot": ["./src/types"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
