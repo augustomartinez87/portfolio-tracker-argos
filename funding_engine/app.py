@@ -57,15 +57,6 @@ auth_token = query_params.get("token", None)
 url_date_from = query_params.get("date_from", None)
 url_date_to = query_params.get("date_to", None)
 
-# --- SECURITY CHECK ---
-# Simple token check for prototype (in prod, use st.secrets or robust auth)
-REQUIRED_TOKEN = "argos-access" # Replace or load from env
-if auth_token != REQUIRED_TOKEN and not use_mock: # Allow skipping in mock/dev if needed, or enforce always
-    # For now, let's strictly enforce if parameter provided, or skip if running locally for dev
-    # Ideally:
-    # if auth_token != os.environ.get("STREAMLIT_TOKEN"): st.stop()
-    pass 
-
 if embedded_mode:
     # Hide sidebar via CSS if embedded
     st.markdown("""
@@ -75,21 +66,32 @@ if embedded_mode:
     </style>
     """, unsafe_allow_html=True)
 
-@st.cache_resource
-def get_engine(use_mock):
-    return FundingCarryEngine(use_mock=use_mock)
-
-# Initialize Engine
-# Default to Real DB if token present (assumption), else Mock 
-# User can still override via Sidebar if NOT embedded
+# 1. Determine MOCK State FIRST
+# Default: Mock is TRUE unless embedded mode forces it off (assuming dev want real data there)
 default_mock = True
 
 if not embedded_mode:
     st.sidebar.header("🛠 Config & Filters")
     use_mock = st.sidebar.checkbox("Use Mock Data", value=default_mock, help="Toggle between Real Supabase DB and Local Mock DB")
 else:
-    # In embedded mode, we might want to force Real DB unless specified otherwise
-    use_mock = False # Default to real for embedded
+    # In embedded mode, default to Real DB.
+    # We can assume if they go to the trouble of embedding, they want production data.
+    use_mock = False 
+
+# 2. SECURITY CHECK
+# Now we can safely use `use_mock`
+REQUIRED_TOKEN = "argos-access" 
+if auth_token != REQUIRED_TOKEN and not use_mock: 
+    # If trying to access Real Data without token => Block
+    # But if Mock is active (local dev or demo), we allow it.
+    st.error("⛔ Acceso Denegado: Token inválido.")
+    st.stop()
+
+@st.cache_resource
+def get_engine(use_mock):
+    return FundingCarryEngine(use_mock=use_mock)
+
+engine = get_engine(use_mock)
 
 engine = get_engine(use_mock)
 
