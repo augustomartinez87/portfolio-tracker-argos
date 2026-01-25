@@ -145,21 +145,22 @@ const Financiacion = () => {
                 </button>
                 
                 {process.env.NODE_ENV === 'development' && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
-                        // Importar y llamar al método de limpieza
-                        import('../services/financingService').then(({ financingService }) => {
-                          financingService.clearAllUserCauciones(user.id).then(result => {
-                            if (result.success) {
-                              // Refrescar queries
-                              queryClient.invalidateQueries(['financing-operations']);
-                              queryClient.invalidateQueries(['financing-metrics']);
-                              alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas. Puedes empezar desde 0.`);
-                            } else {
-                              alert('Error en limpieza total. Por favor intenta nuevamente.');
-                            }
-                          });
+                  <>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
+                          // Importar y llamar al método de limpieza
+                          import('../services/financingService').then(({ financingService }) => {
+                            financingService.clearAllUserCauciones(user.id).then(result => {
+                              if (result.success) {
+                                // Refrescar queries
+                                queryClient.invalidateQueries(['financing-operations']);
+                                queryClient.invalidateQueries(['financing-metrics']);
+                                alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas. Puedes empezar desde 0.`);
+                              } else {
+                                alert('Error en limpieza total. Por favor intenta nuevamente.');
+                              }
+                            });
                         });
                       }
                     }}
@@ -169,6 +170,32 @@ const Financiacion = () => {
                     <Trash2 className="w-4 h-4" />
                     Limpiar Datos
                   </button>
+                    
+                    <button
+                      onClick={() => {
+                        if (window.confirm('🚨 EMERGENCIA\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS los usuarios?\n\n⚠️ ESTA ACCIÓN AFECTA A TODOS LOS USUARIOS DEL SISTEMA.')) {
+                          // Importar y llamar al método de emergencia
+                          import('../services/financingService').then(({ financingService }) => {
+                            financingService.emergencyDeleteAllCauciones().then(result => {
+                              if (result.success) {
+                                // Refrescar queries
+                                queryClient.invalidateQueries(['financing-operations']);
+                                queryClient.invalidateQueries(['financing-metrics']);
+                                alert(`🚨 EMERGENCIA COMPLETA: ${result.data?.deletedCount} cauciones eliminadas de toda la base de datos.`);
+                              } else {
+                                alert('Error en emergencia total. Por favor intenta nuevamente.');
+                              }
+                            });
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-bold animate-pulse"
+                    title="EMERGENCIA: Borrar TODAS las cauciones (solo desarrollo)"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    🚨 BORRAR TODO
+                  </button>
+                  </>
                 )}
               </div>
             </div>

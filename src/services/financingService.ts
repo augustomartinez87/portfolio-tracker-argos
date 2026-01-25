@@ -351,6 +351,49 @@ export class FinancingService {
   }
 
   /**
+   * EMERGENCY: Force delete ALL cauciones from database (admin cleanup)
+   * This method bypasses user_id and portfolio_id restrictions
+   * @returns Result with number of deleted operations
+   */
+  async emergencyDeleteAllCauciones(): Promise<Result<{ deletedCount: number }>> {
+    try {
+      console.log('🚨 EMERGENCY DELETE - Eliminando TODAS las cauciones de la base de datos');
+
+      const { error, count } = await supabase
+        .from('cauciones')
+        .delete({ count: 'exact' })
+        .neq('id', ''); // Delete ALL records (no restriction)
+
+      if (error) {
+        console.error('❌ Error en emergencia:', error);
+        // Try alternative method
+        const { error: altError, count: altCount } = await supabase
+          .rpc('clear_all_cauciones'); // If RPC function exists
+        
+        if (altError) {
+          throw altError;
+        }
+        
+        console.log('✅ LIMPIEZA EMERGENCIA por RPC:', altCount);
+        return { success: true, data: { deletedCount: altCount || 0 } };
+      }
+
+      console.log('✅ LIMPIEZA EMERGENCIA exitosa:', count);
+      return { 
+        success: true, 
+        data: { deletedCount: count || 0 } 
+      };
+
+    } catch (error) {
+      console.error('❌ Error en limpieza emergencia:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error : new Error(String(error)) 
+      };
+    }
+  }
+
+  /**
    * Delete all cauciones for a user and portfolio
    * @param userId - User ID for authorization
    * @param portfolioId - Portfolio ID for data isolation
