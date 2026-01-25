@@ -34,7 +34,11 @@ export const formatUSD = (value: number | null | undefined): string => {
 export const formatPercent = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  const formatted = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+  return `${sign}${formatted}%`;
 };
 
 /**
@@ -84,5 +88,9 @@ export const formatDateTime = (date: Date | string | null | undefined, format: '
  */
 export const formatBondPrice = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return `$${value.toFixed(4)}`;
+  const formatted = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4
+  }).format(value);
+  return `$${formatted}`;
 };
