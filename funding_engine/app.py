@@ -56,6 +56,7 @@ embedded_mode = query_params.get("embedded", "false").lower() == "true"
 auth_token = query_params.get("token", None)
 url_date_from = query_params.get("date_from", None)
 url_date_to = query_params.get("date_to", None)
+user_id_param = query_params.get("user_id", None)  # User ID for RLS bypass
 
 if embedded_mode:
     # Hide sidebar via CSS if embedded
@@ -88,12 +89,10 @@ if auth_token != REQUIRED_TOKEN and not use_mock:
     st.stop()
 
 @st.cache_resource
-def get_engine(use_mock):
-    return FundingCarryEngine(use_mock=use_mock)
+def get_engine(use_mock, _user_id=None):
+    return FundingCarryEngine(use_mock=use_mock, user_id=_user_id)
 
-engine = get_engine(use_mock)
-
-engine = get_engine(use_mock)
+engine = get_engine(use_mock, user_id_param)
 
 # Portfolio Selection
 portfolios = engine.get_portfolio_ids()

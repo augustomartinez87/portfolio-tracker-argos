@@ -89,8 +89,9 @@ def create_mock_fci_data():
 
 
 class FundingCarryEngine:
-    def __init__(self, use_mock=True):
+    def __init__(self, use_mock=True, user_id=None):
         self.use_mock = use_mock
+        self.user_id = user_id  # User ID for filtering data
         self.supabase = None
         
         if not use_mock:
@@ -102,14 +103,20 @@ class FundingCarryEngine:
             self.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     
     def get_portfolio_ids(self):
-        """Returns list of unique portfolio_ids available in Cauciones"""
+        """Returns list of unique portfolio_ids available in Cauciones for the user"""
         if self.use_mock:
             mock_data = create_mock_cauciones()
             return mock_data['portfolio_id'].unique().tolist()
         
-        # Query Supabase for distinct portfolio_ids
+        # Query Supabase for distinct portfolio_ids filtered by user_id
         try:
-            response = self.supabase.table('cauciones').select('portfolio_id').execute()
+            query = self.supabase.table('cauciones').select('portfolio_id')
+            
+            # Filter by user_id if provided
+            if self.user_id:
+                query = query.eq('user_id', self.user_id)
+            
+            response = query.execute()
             if response.data and len(response.data) > 0:
                 portfolio_ids = list(set([row['portfolio_id'] for row in response.data if row.get('portfolio_id')]))
                 if portfolio_ids:
@@ -132,6 +139,11 @@ class FundingCarryEngine:
         
         try:
             query = self.supabase.table('cauciones').select('*')
+            
+            # Filter by user_id if provided
+            if self.user_id:
+                query = query.eq('user_id', self.user_id)
+            
             if portfolio_id and portfolio_id != 'all':
                 query = query.eq('portfolio_id', portfolio_id)
             
@@ -139,12 +151,12 @@ class FundingCarryEngine:
             if response.data and len(response.data) > 0:
                 return pd.DataFrame(response.data)
             
-            # If no data (RLS blocking), use mock for demo
-            print("⚠️ No cauciones found in DB. Using mock data for demo.")
-            return create_mock_cauciones()
+            # If no data, show empty state
+            print("ℹ️ No cauciones found for this user/portfolio.")
+            return pd.DataFrame()
         except Exception as e:
             print(f"Error fetching cauciones: {e}")
-            return create_mock_cauciones()
+            return pd.DataFrame()
 
     def calculate_metrics(self, portfolio_id=None, start_date=None, end_date=None):
         """

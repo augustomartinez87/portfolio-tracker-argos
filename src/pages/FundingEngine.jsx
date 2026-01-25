@@ -16,14 +16,14 @@ export default function FundingEngine() {
     const endDate = new Date().toISOString().split('T')[0];
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const iframeSrc = currentPortfolio
-        ? `${APP_URL}/?embedded=true&token=${token}&portfolio_id=${currentPortfolio.id}&date_from=${startDate}&date_to=${endDate}`
+    const iframeSrc = currentPortfolio && user
+        ? `${APP_URL}/?embedded=true&token=${token}&portfolio_id=${currentPortfolio.id}&user_id=${user.id}&date_from=${startDate}&date_to=${endDate}`
         : null;
 
-    if (!currentPortfolio) {
+    if (!currentPortfolio || !user) {
         return (
             <div className="min-h-screen bg-[#0E1117] flex items-center justify-center text-white">
-                <p>Selecciona un portfolio para continuar.</p>
+                <p>Cargando...</p>
             </div>
         );
     }
