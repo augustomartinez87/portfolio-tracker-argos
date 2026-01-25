@@ -447,8 +447,8 @@ export default function Dashboard() {
           setIsExpanded={setSidebarExpanded}
         />
 
-        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-          <div className="p-2 lg:p-3 space-y-2 lg:space-y-3">
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+          <div className="p-2 lg:p-3 space-y-2 lg:space-y-3 flex flex-col h-full overflow-hidden">
 
             {/* Page Header with Actions (matching Financiacion structure) */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative min-h-[48px] z-20">
@@ -498,7 +498,7 @@ export default function Dashboard() {
             </div>
 
             {/* Dynamic Content */}
-            <div className="min-h-0">
+            <div className="min-h-0 flex-1 flex flex-col overflow-hidden">
 
               {activeTab === 'help' && (
                 <div className="max-w-3xl mx-auto py-4">
@@ -778,8 +778,8 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Tabla de Posiciones - contenedor con scroll interno limitado */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col h-[400px] lg:h-[calc(100vh-450px)] min-h-[300px] mt-3">
+                  {/* Tabla de Posiciones - contenedor con scroll interno limitado - FLEX GROW para llenar espacio */}
+                  <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col flex-1 min-h-0 mt-3 overflow-hidden">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
@@ -818,12 +818,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Total Card - completamente separado de la tabla */}
-                  {filteredPositions.length > 0 && (
-                    <div className="mt-2">
-                      <TotalCard totals={filteredTotals} columnSettings={columnSettings} />
-                    </div>
-                  )}
+
                 </>
               )}
             </div>
