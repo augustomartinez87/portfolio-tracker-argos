@@ -30,7 +30,8 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
 
-  const { prices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
+  const { prices: rawPrices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
+  const prices = rawPrices || {};
 
   const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
   const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : null;

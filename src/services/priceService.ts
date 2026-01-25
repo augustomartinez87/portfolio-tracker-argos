@@ -261,7 +261,7 @@ export function usePrices() {
   }, [queryClient]);
 
   return {
-    prices: query.data?.prices ?? {},
+    prices: (query.data && query.data.prices) ? query.data.prices : {},
     mepRate: query.data?.mepRate ?? CONSTANTS.MEP_DEFAULT,
     tickers: query.data?.tickers ?? [],
     lastUpdate: query.data?.lastUpdate ?? null,
