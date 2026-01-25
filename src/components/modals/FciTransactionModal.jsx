@@ -207,14 +207,20 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                             <span className="font-semibold text-xs uppercase">Valor Cuotaparte</span>
                             {vcpLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                         </div>
-                        {vcp ? (
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-lg font-mono font-bold text-text-primary">{formatNumber(vcp, 6)}</span>
-                                {vcpError && <span className="text-xs opacity-75">({vcpError})</span>}
-                            </div>
-                        ) : (
-                            <span className="italic text-xs">Selecciona fecha y fondo para ver el VCP</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                step="0.000001"
+                                className="bg-transparent border-b border-dashed border-text-secondary/50 text-lg font-mono font-bold text-text-primary focus:outline-none focus:border-primary w-full"
+                                value={vcp || ''}
+                                onChange={(e) => setVcp(e.target.value)}
+                                placeholder="0.000000"
+                            />
+                            {vcpError && <span className="text-xs opacity-75 whitespace-nowrap">({vcpError})</span>}
+                        </div>
+                        <p className="text-[10px] opacity-70 mt-1">
+                            * Puedes editar este valor manualmente si es necesario (ej: cargas históricas).
+                        </p>
                     </div>
 
                     {/* Monto */}
