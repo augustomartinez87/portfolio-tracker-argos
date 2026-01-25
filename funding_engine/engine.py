@@ -2,161 +2,139 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import date, datetime, timedelta
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import Base, Caucion, InstrumentoFCI, SerieVCP, MovimientoFCI, ActivoComprado
 import uuid
 
-# Configuration
-DATABASE_URL = os.environ.get("DATABASE_URL")
+# Configuration: Get Supabase credentials
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-# Try to get from st.secrets if missing (Streamlit Cloud often doesn't populate os.environ automatically)
-if not DATABASE_URL:
+# Try to get from st.secrets if missing (Streamlit Cloud)
+if not SUPABASE_URL or not SUPABASE_KEY:
     try:
         import streamlit as st
-        if "DATABASE_URL" in st.secrets:
-            DATABASE_URL = st.secrets["DATABASE_URL"]
+        if "SUPABASE_URL" in st.secrets:
+            SUPABASE_URL = st.secrets["SUPABASE_URL"]
+        if "SUPABASE_KEY" in st.secrets:
+            SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
     except:
         pass
 
-# Fallback for local dev (Mock) or if URL is missing
-    pass
 
-# Flag to indicate if we should use SSL (for pg8000)
-USE_SSL = False
-
-if DATABASE_URL:
-    # Fix scheme for SQLAlchemy: Use pg8000 (Pure Python driver) for better serverless compatibility
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
-    elif DATABASE_URL.startswith("postgresql+psycopg2://"):
-        # If user explicitly set psycopg2 but it fails, force switch to pg8000
-        DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+pg8000://", 1)
-    
-    # Remove any sslmode from URL (pg8000 doesn't support it as query param)
-    if "sslmode" in DATABASE_URL:
-        # Strip it out - we'll handle SSL via connect_args
-        import re
-        DATABASE_URL = re.sub(r'[?&]sslmode=[^&]*', '', DATABASE_URL)
-        # Clean up potential double ? or trailing ? or &
-        DATABASE_URL = DATABASE_URL.rstrip('?&')
-    
-    # Supabase requires SSL - we'll enable this for pg8000 via connect_args
-    USE_SSL = True 
-
-# Mock Data Generator
-def create_mock_data(session):
-    """Creates initial mock data if database is empty (Local Mode)"""
-    if session.query(InstrumentoFCI).count() > 0:
-        return
-
-    # 1. Create Mock Cauciones (Simulating existing table)
-    # Using a fixed portfolio UUID for demo
-    demo_portfolio_id = uuid.uuid4()
-    
+def create_mock_cauciones():
+    """Creates mock cauciones data for demo/testing"""
+    demo_portfolio_id = str(uuid.uuid4())
     start_date = date.today() - timedelta(days=30)
     
     cauciones = []
-    # Rolling 7-day cauciones
     curr_date = start_date
     while curr_date < date.today():
-        capital = 20_000_000.0 # 20M ARS constant debt
-        tna = 0.32 # 32% TNA
+        capital = 20_000_000.0
+        tna = 32.0  # Stored as percentage
         dias = 7
-        interes = (capital * tna * dias) / 365
+        interes = (capital * (tna/100) * dias) / 365
         
-        c = Caucion(
-            id=uuid.uuid4(),
-            portfolio_id=demo_portfolio_id,
-            fecha_inicio=curr_date,
-            fecha_fin=curr_date + timedelta(days=dias),
-            capital=capital,
-            monto_devolver=capital + interes,
-            interes=interes,
-            dias=dias,
-            tna_real=tna * 100 # Store as 32.0
-        )
-        cauciones.append(c)
+        cauciones.append({
+            'id': str(uuid.uuid4()),
+            'portfolio_id': demo_portfolio_id,
+            'fecha_inicio': curr_date.isoformat(),
+            'fecha_fin': (curr_date + timedelta(days=dias)).isoformat(),
+            'capital': capital,
+            'monto_devolver': capital + interes,
+            'interes': interes,
+            'dias': dias,
+            'tna_real': tna
+        })
         curr_date += timedelta(days=dias)
-        
-    session.add_all(cauciones)
     
-    # 2. Create FCI
-    fci = InstrumentoFCI(nombre="Galileo Premium A", ticker="GALPA", tipo="money_market")
-    session.add(fci)
-    session.commit()
+    return pd.DataFrame(cauciones)
+
+
+def create_mock_fci_data():
+    """Creates mock FCI data for demo/testing"""
+    start_date = date.today() - timedelta(days=30)
     
-    # 3. Create Movements
-    # Initial subscription matching first caucion
-    mov1 = MovimientoFCI(
-        fci_id=fci.id,
-        fecha=datetime.combine(start_date, datetime.min.time()),
-        tipo='SUSCRIPCION',
-        monto=20_000_000.0,
-        cuotas=20_000_000.0 / 100.0, # Assumed VCP=100
-        motivo='funding_caucion'
-    )
-    
-    # Partial redemption 5 days ago (Scenario: Buy Asset)
-    redemption_date = date.today() - timedelta(days=5)
-    mov2 = MovimientoFCI(
-        fci_id=fci.id,
-        fecha=datetime.combine(redemption_date, datetime.min.time()),
-        tipo='RESCATE',
-        monto=2_000_000.0,
-        cuotas=2_000_000.0 / 105.0, # Assumed VCP=105
-        motivo='retiro_activos'
-    )
-    session.add_all([mov1, mov2])
-    
-    # 4. Create VCP History (Steady growth ~40% TNA)
+    # VCP History (40% TNA growth)
+    vcp_data = []
     curr = start_date
     vcp = 100.0
-    daily_rate = (0.40) / 365
+    daily_rate = 0.40 / 365
     while curr <= date.today():
-        s = SerieVCP(fci_id=fci.id, fecha=curr, vcp=vcp)
-        session.add(s)
+        vcp_data.append({'fecha': curr.isoformat(), 'vcp': vcp, 'fci_id': 1})
         vcp *= (1 + daily_rate)
         curr += timedelta(days=1)
-        
-    session.commit()
-    print("Mock Data Created.")
+    
+    precios = pd.DataFrame(vcp_data)
+    
+    # Movements
+    movimientos = pd.DataFrame([
+        {
+            'fci_id': 1,
+            'fecha': datetime.combine(start_date, datetime.min.time()).isoformat(),
+            'tipo': 'SUSCRIPCION',
+            'monto': 20_000_000.0,
+            'cuotas': 20_000_000.0 / 100.0,
+            'motivo': 'funding_caucion'
+        },
+        {
+            'fci_id': 1,
+            'fecha': datetime.combine(date.today() - timedelta(days=5), datetime.min.time()).isoformat(),
+            'tipo': 'RESCATE',
+            'monto': 2_000_000.0,
+            'cuotas': 2_000_000.0 / 105.0,
+            'motivo': 'retiro_activos'
+        }
+    ])
+    
+    return precios, movimientos
+
 
 class FundingCarryEngine:
     def __init__(self, use_mock=True):
         self.use_mock = use_mock
-        if use_mock:
-            self.engine = create_engine("sqlite:///funding_local.db")
-            Base.metadata.create_all(self.engine)
-            Session = sessionmaker(bind=self.engine)
-            self.session = Session()
-            create_mock_data(self.session)
-        else:
-            # Production connection
-            if not DATABASE_URL:
-                # If no URL provided but not in Mock mode, raise clear error
-                raise ValueError("DATABASE_URL environment variable is missing. Check Streamlit Secrets.")
+        self.supabase = None
+        
+        if not use_mock:
+            if not SUPABASE_URL or not SUPABASE_KEY:
+                raise ValueError("SUPABASE_URL and SUPABASE_KEY are required. Check Streamlit Secrets.")
             
-            # For pg8000, SSL is passed via connect_args
-            import ssl
-            connect_args = {}
-            if USE_SSL:
-                # Create a default SSL context
-                ssl_context = ssl.create_default_context()
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE  # Supabase uses self-signed certs sometimes
-                connect_args['ssl_context'] = ssl_context
-            
-            self.engine = create_engine(DATABASE_URL, connect_args=connect_args)
-            Session = sessionmaker(bind=self.engine)
-            self.session = Session()
-
+            # Initialize Supabase client
+            from supabase import create_client
+            self.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    
     def get_portfolio_ids(self):
         """Returns list of unique portfolio_ids available in Cauciones"""
-        # In a real app with 1000s of rows, distinct query is better
-        # For prototype, simple query
-        rows = self.session.query(Caucion.portfolio_id).distinct().all()
-        return [str(r[0]) for r in rows]
+        if self.use_mock:
+            mock_data = create_mock_cauciones()
+            return mock_data['portfolio_id'].unique().tolist()
+        
+        # Query Supabase for distinct portfolio_ids
+        try:
+            response = self.supabase.table('cauciones').select('portfolio_id').execute()
+            if response.data:
+                portfolio_ids = list(set([row['portfolio_id'] for row in response.data]))
+                return portfolio_ids
+            return []
+        except Exception as e:
+            print(f"Error fetching portfolio_ids: {e}")
+            return []
+
+    def _fetch_cauciones(self, portfolio_id=None):
+        """Fetches cauciones from Supabase or mock"""
+        if self.use_mock:
+            return create_mock_cauciones()
+        
+        try:
+            query = self.supabase.table('cauciones').select('*')
+            if portfolio_id and portfolio_id != 'all':
+                query = query.eq('portfolio_id', portfolio_id)
+            
+            response = query.execute()
+            if response.data:
+                return pd.DataFrame(response.data)
+            return pd.DataFrame()
+        except Exception as e:
+            print(f"Error fetching cauciones: {e}")
+            return pd.DataFrame()
 
     def calculate_metrics(self, portfolio_id=None, start_date=None, end_date=None):
         """
@@ -167,62 +145,49 @@ class FundingCarryEngine:
             end_date = date.today()
         if not start_date:
             start_date = end_date - timedelta(days=30)
-            
-        # 1. Fetch Data
-        # Filters
-        caucion_query = self.session.query(Caucion)
-        if portfolio_id and portfolio_id != 'all':
-             caucion_query = caucion_query.filter(Caucion.portfolio_id == uuid.UUID(portfolio_id))
         
-        cauciones = pd.read_sql(caucion_query.statement, self.session.bind)
+        # Fetch Data
+        cauciones = self._fetch_cauciones(portfolio_id)
         
-        # FCIs (Aggregated for pool)
-        movimientos = pd.read_sql(self.session.query(MovimientoFCI).statement, self.session.bind)
-        precios = pd.read_sql(self.session.query(SerieVCP).statement, self.session.bind)
+        # For now, FCI data is always mocked (until we add FCI tables to Supabase)
+        precios, movimientos = create_mock_fci_data()
         
         if cauciones.empty:
             return pd.DataFrame(), {}
-
-        # 2. Process Daily Timeline
+        
+        # Convert date columns
+        cauciones['fecha_inicio'] = pd.to_datetime(cauciones['fecha_inicio']).dt.date
+        cauciones['fecha_fin'] = pd.to_datetime(cauciones['fecha_fin']).dt.date
+        precios['fecha'] = pd.to_datetime(precios['fecha']).dt.date
+        movimientos['fecha'] = pd.to_datetime(movimientos['fecha'])
+        
+        # Process Daily Timeline
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         daily_stats = []
         
-        # Sort movements
-        movimientos['fecha'] = pd.to_datetime(movimientos['fecha'])
-        
-        # Pre-process VCPs: Pivot to have columns per FCI
-        # Assume single pricing for simplicity in prototype, or use specific FCI logic
-        # Here we take average VCP growth for the pool or sum specific logic.
-        # Let's do distinct FCI handling if needed, but for "Pool" we sum market values.
-        
-        current_holdings = {} # {fci_id: cuotas}
+        current_holdings = {}
         
         for d in date_range:
             d_date = d.date()
             
             # A. Calculate Debt State
-            # Active cauciones on this day
             active_cauciones = cauciones[
                 (cauciones['fecha_inicio'] <= d_date) & 
-                (cauciones['fecha_fin'] > d_date) # Active until maturity (exclusive or inclusive depending on settlement logic, usually inclusive start, exclusive end)
+                (cauciones['fecha_fin'] > d_date)
             ]
             
-            total_debt = active_cauciones['capital'].sum()
-            # Daily interest cost approximation (Capital * TNA / 365)
-            # Or sum of daily interest of each operation
+            total_debt = float(active_cauciones['capital'].sum()) if not active_cauciones.empty else 0.0
             daily_interest_cost = 0.0
             weighted_tna = 0.0
             
-            if total_debt > 0:
-                # Weighted TNA
-                weighted_tna = np.average(active_cauciones['tna_real'], weights=active_cauciones['capital'])
+            if total_debt > 0 and not active_cauciones.empty:
+                weighted_tna = np.average(
+                    active_cauciones['tna_real'].astype(float), 
+                    weights=active_cauciones['capital'].astype(float)
+                )
                 daily_interest_cost = (total_debt * (weighted_tna / 100)) / 365
             
             # B. Calculate Asset State
-            # Process movements up to this day (end of day)
-            # Ideally we process movements ON the day.
-            
-            # Filter movements equal to current day
             todays_movs = movimientos[movimientos['fecha'].dt.date == d_date]
             for _, mov in todays_movs.iterrows():
                 fid = mov['fci_id']
@@ -236,20 +201,13 @@ class FundingCarryEngine:
             gross_carry_day = 0.0
             
             for fid, quotas in current_holdings.items():
-                # Find VCP for this day
-                # Try exact match, else bfill/ffill or interpolation
-                # In prototype, assume we have data or perform lookup
                 price_row = precios[(precios['fci_id'] == fid) & (precios['fecha'] == d_date)]
                 
                 if not price_row.empty:
                     vcp_today = price_row.iloc[0]['vcp']
-                    
-                    # Calculate Asset Value
                     asset_val = quotas * vcp_today
                     total_asset_value += asset_val
                     
-                    # Calculate Daily Gain (Carry)
-                    # Need yesterday's VCP
                     yesterday = d_date - timedelta(days=1)
                     price_prev = precios[(precios['fci_id'] == fid) & (precios['fecha'] == yesterday)]
                     
@@ -258,7 +216,6 @@ class FundingCarryEngine:
                         daily_gain = quotas * (vcp_today - vcp_prev)
                         gross_carry_day += daily_gain
             
-            # Metrics
             net_carry = gross_carry_day - daily_interest_cost
             utilization = (total_asset_value / total_debt) if total_debt > 0 else 0.0
             
@@ -280,7 +237,6 @@ class FundingCarryEngine:
             avg_debt = df_daily['total_debt'].mean()
             total_net_carry = df_daily['net_carry'].sum()
             robc_period = (total_net_carry / avg_debt) if avg_debt > 0 else 0.0
-            # Annualize ROBC (simple)
             days = (end_date - start_date).days
             robc_annual = robc_period * (365/days) if days > 0 else 0.0
             
@@ -288,7 +244,7 @@ class FundingCarryEngine:
                 'avg_debt': avg_debt,
                 'avg_assets': df_daily['total_asset_value'].mean(),
                 'net_carry_accum': total_net_carry,
-                'robc_annual': robc_annual * 100, # %
+                'robc_annual': robc_annual * 100,
                 'current_utilization': df_daily.iloc[-1]['utilization'] * 100
             }
         else:
