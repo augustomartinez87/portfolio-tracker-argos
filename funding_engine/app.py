@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Argos Funding Engine",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # --- STYLING (Dark Mode + Brand Colors) ---
@@ -58,11 +58,10 @@ url_date_to = query_params.get("date_to", None)
 user_id_param = query_params.get("user_id", None)  # User ID for RLS bypass
 
 if embedded_mode:
-    # Hide sidebar via CSS if embedded
+    # Adjust layout for iframe but keep sidebar accessible
     st.markdown("""
     <style>
-        section[data-testid="stSidebar"] {display: none;}
-        .main .block-container {padding-top: 2rem;}
+        .main .block-container {padding-top: 1rem;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -121,13 +120,11 @@ if url_date_to:
     except:
         pass
 
-if not embedded_mode:
-    col1, col2 = st.sidebar.columns(2)
-    start_date = col1.date_input("Inicio", default_start)
-    end_date = col2.date_input("Fin", today)
-else:
-    start_date = default_start
-    end_date = today
+# Date Range Controls (Always Visible in Sidebar)
+st.sidebar.header("📅 Rango de Fechas")
+col1, col2 = st.sidebar.columns(2)
+start_date = col1.date_input("Inicio", default_start)
+end_date = col2.date_input("Fin", today)
 
 if start_date >= end_date:
     st.error("Fecha Inicio debe ser menor a Fin")
