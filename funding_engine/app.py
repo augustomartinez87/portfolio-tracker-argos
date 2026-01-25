@@ -152,16 +152,21 @@ if df_daily.empty:
 # --- KPI ROW ---
 k1, k2, k3, k4 = st.columns(4)
 
-k1.metric("Capital Financiado (Avg)", f"${kpis['avg_debt']:,.0f}")
+avg_debt = kpis.get('avg_debt', 0)
+total_interest = kpis.get('total_interest', 0)
+avg_tna = kpis.get('avg_tna', 0)
+current_debt = kpis.get('current_debt', 0)
+
+k1.metric("Capital Financiado (Avg)", f"${avg_debt:,.0f}")
 k1.caption("Deuda Promedio Diaria")
 
-k2.metric("Costo Interés (Período)", f"${kpis['total_interest']:,.0f}")
+k2.metric("Costo Interés (Período)", f"${total_interest:,.0f}")
 k2.caption(f"Interés acumulado ({(end_date - start_date).days} días)")
 
-k3.metric("TNA Promedio Ponderada", f"{kpis['avg_tna']:.2f}%")
+k3.metric("TNA Promedio Ponderada", f"{avg_tna:.2f}%")
 k3.caption("Costo del Funding")
 
-k4.metric("Deuda Actual", f"${kpis['current_debt']:,.0f}")
+k4.metric("Deuda Actual", f"${current_debt:,.0f}")
 k4.caption("Capital activo hoy")
 
 # --- CHARTS ---
