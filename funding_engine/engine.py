@@ -21,7 +21,13 @@ if not DATABASE_URL:
 
 # Fallback for local dev (Mock) or if URL is missing
 if not DATABASE_URL:
-    pass 
+    pass
+else:
+    # Supabase (and many cloud Postgres) requires SSL. 
+    # If using Transaction Pooler (port 6543) or Session mode (5432), explicit SSL is safer.
+    if "sslmode" not in DATABASE_URL:
+        separator = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL += f"{separator}sslmode=require" 
 
 # Mock Data Generator
 def create_mock_data(session):
