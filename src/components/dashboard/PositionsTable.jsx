@@ -3,6 +3,7 @@ import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/f
 import { isBonoPesos, isBonoHardDollar } from '../../hooks/useBondPrices';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import ColumnSelector from './ColumnSelector';
+import { PercentageDisplay } from '../common/PercentageDisplay';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },
@@ -247,11 +248,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className={`text-center ${paddingX} ${paddingY}`}>
-                    <span className={`font-medium px-1.5 py-0.5 rounded text-sm ${pos.resultadoPct >= 0
+                    <span className={`font-medium px-1.5 py-0.5 rounded text-sm inline-block ${pos.resultadoPct >= 0
                       ? 'bg-profit-muted text-profit'
                       : 'bg-loss-muted text-loss'
                       }`}>
-                      {formatPercent(pos.resultadoPct)}
+                      <PercentageDisplay value={pos.resultadoPct} className="!text-current" iconSize="w-3 h-3" />
                     </span>
                   </td>
                   {columnSettings.showDiario && (
@@ -263,11 +264,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   )}
                   {columnSettings.showDiarioPct && (
                     <td className={`text-center ${paddingX} ${paddingY}`}>
-                      <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${pos.resultadoDiarioPct >= 0
+                      <span className={`font-medium px-1.5 py-0.5 rounded text-xs inline-block ${pos.resultadoDiarioPct >= 0
                         ? 'bg-profit-muted text-profit'
                         : 'bg-loss-muted text-loss'
                         }`}>
-                        {formatPercent(pos.resultadoDiarioPct || 0)}
+                        <PercentageDisplay value={pos.resultadoDiarioPct || 0} className="!text-current" iconSize="w-3 h-3" />
                       </span>
                     </td>
                   )}

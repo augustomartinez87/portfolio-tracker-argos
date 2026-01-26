@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChartIcon, X } from 'lucide-react';
 import { calculateAssetDistribution, formatCurrency, formatPercentage } from '../utils/portfolioHelpers';
+import { PercentageDisplay } from './common/PercentageDisplay';
 
 export const DistributionChart = ({ positions }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -30,7 +31,7 @@ export const DistributionChart = ({ positions }) => {
         <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
           <p className="text-text-primary font-semibold text-xs mb-1">{data.name}</p>
           <p className="text-text-secondary text-xs">{formatCurrency(data.value)}</p>
-          <p className="success text-xs">{formatPercentage(data.percentage)}</p>
+          <PercentageDisplay value={data.percentage} iconSize="w-3 h-3" className="text-xs" />
         </div>
       );
     }
@@ -67,8 +68,8 @@ export const DistributionChart = ({ positions }) => {
               cursor="pointer"
             >
               {distribution.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
+                <Cell
+                  key={`cell-${index}`}
                   fill={entry.color}
                   stroke={entry.color}
                   strokeWidth={hoveredIndex === index ? 2 : 0}
@@ -98,11 +99,10 @@ export const DistributionChart = ({ positions }) => {
           <button
             key={index}
             onClick={() => setSelectedCategory(selectedCategory === item.name ? null : item.name)}
-            className={`w-full flex justify-between items-center py-1.5 px-3 rounded border transition-all ${
-              selectedCategory === item.name 
-                ? 'bg-background-tertiary border-primary/40' 
-                : 'bg-background-secondary/30 border-border-primary/30 hover:bg-background-tertiary'
-            }`}
+            className={`w-full flex justify-between items-center py-1.5 px-3 rounded border transition-all ${selectedCategory === item.name
+              ? 'bg-background-tertiary border-primary/40'
+              : 'bg-background-secondary/30 border-border-primary/30 hover:bg-background-tertiary'
+              }`}
           >
             <div className="flex items-center gap-2">
               <div
@@ -111,9 +111,7 @@ export const DistributionChart = ({ positions }) => {
               />
               <span className="text-sm text-text-primary font-medium">{item.name}</span>
             </div>
-            <span className="text-sm text-success font-mono font-semibold">
-              {formatPercentage(item.percentage)}
-            </span>
+            <PercentageDisplay value={item.percentage} iconSize="w-3 h-3" className="text-sm font-mono font-semibold" showArrow={false} />
           </button>
         ))}
       </div>
@@ -138,7 +136,7 @@ export const DistributionChart = ({ positions }) => {
                 className="flex justify-between items-center py-1.5 px-2 rounded bg-background-tertiary"
               >
                 <span className="text-sm font-mono text-text-primary">{asset.ticker}</span>
-                <span className="text-sm text-primary font-mono">{formatPercentage(asset.percentage)}</span>
+                <PercentageDisplay value={asset.percentage} iconSize="w-3 h-3" className="text-sm font-mono" showArrow={false} />
               </div>
             ))}
           </div>

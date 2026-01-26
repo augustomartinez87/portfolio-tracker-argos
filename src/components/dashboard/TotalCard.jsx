@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatARS, formatPercent } from '../../utils/formatters';
+import { PercentageDisplay } from '../common/PercentageDisplay';
 
 export const TotalCard = ({ totals, columnSettings = { density: 'compact', showPPC: true, showInvertido: true, showDiario: true, showDiarioPct: true } }) => {
   const paddingY = columnSettings.density === 'compact' ? 'py-3' : 'py-3.5';
@@ -83,11 +84,11 @@ export const TotalCard = ({ totals, columnSettings = { density: 'compact', showP
             </td>
             {/* P&L % */}
             <td className={`text-center ${paddingX} ${paddingY}`}>
-              <span className={`font-medium px-1.5 py-0.5 rounded text-sm tabular-nums ${totals.resultadoPct >= 0
-                  ? 'bg-success/10 text-success'
-                  : 'bg-danger/10 text-danger'
+              <span className={`font-medium px-1.5 py-0.5 rounded text-sm tabular-nums inline-block ${totals.resultadoPct >= 0
+                ? 'bg-success/10 text-success'
+                : 'bg-danger/10 text-danger'
                 }`}>
-                {formatPercent(totals.resultadoPct)}
+                <PercentageDisplay value={totals.resultadoPct} className="!text-current" iconSize="w-3 h-3" />
               </span>
             </td>
             {/* P&L Diario $ */}
@@ -101,11 +102,11 @@ export const TotalCard = ({ totals, columnSettings = { density: 'compact', showP
             {/* P&L Diario % */}
             {columnSettings.showDiarioPct && (
               <td className={`text-center ${paddingX} ${paddingY}`}>
-                <span className={`font-medium px-1.5 py-0.5 rounded text-xs tabular-nums ${totals.resultadoDiarioPct >= 0
-                    ? 'bg-success/10 text-success'
-                    : 'bg-danger/10 text-danger'
+                <span className={`font-medium px-1.5 py-0.5 rounded text-xs tabular-nums inline-block ${totals.resultadoDiarioPct >= 0
+                  ? 'bg-success/10 text-success'
+                  : 'bg-danger/10 text-danger'
                   }`}>
-                  {formatPercent(totals.resultadoDiarioPct)}
+                  <PercentageDisplay value={totals.resultadoDiarioPct} className="!text-current" iconSize="w-3 h-3" />
                 </span>
               </td>
             )}

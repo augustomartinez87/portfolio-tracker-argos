@@ -1,6 +1,7 @@
 import React from 'react';
 import SummaryCard from '../common/SummaryCard';
 import { formatARS, formatPercent } from '../../utils/formatters';
+import { PercentageDisplay } from '../common/PercentageDisplay';
 
 export const DashboardSummaryCards = ({ totals, lastUpdate }) => {
   return (
@@ -20,14 +21,14 @@ export const DashboardSummaryCards = ({ totals, lastUpdate }) => {
         value={formatARS(totals.resultado)}
         trend={totals.resultado}
         showBadge
-        badgeValue={formatPercent(totals.resultadoPct)}
+        badgeValue={<PercentageDisplay value={totals.resultadoPct} className="!text-current" iconSize="w-2.5 h-2.5" />}
       />
       <SummaryCard
         title="P&L Hoy"
         value={formatARS(totals.resultadoDiario)}
         trend={totals.resultadoDiario}
         showBadge
-        badgeValue={formatPercent(totals.resultadoDiarioPct)}
+        badgeValue={<PercentageDisplay value={totals.resultadoDiarioPct} className="!text-current" iconSize="w-2.5 h-2.5" />}
       />
     </div>
   );
