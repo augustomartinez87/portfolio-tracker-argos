@@ -31,7 +31,7 @@ const BOND_METADATA = {
 };
 
 // Helper functions para cálculos de carry trade
-function calcularRetornoTotal(precioActual, valorRescate) {
+function calcularRetornoDirecto(precioActual, valorRescate) {
     return ((valorRescate / precioActual) - 1) * 100; // en porcentaje
 }
 
@@ -46,20 +46,24 @@ function calcularSpreadVsTC(retornoTotalAnual, diasAlVencimiento) {
     return retornoTotalAnual - INFLACION_ANUAL;
 }
 
-function calcularBandasBreakeven(valorRescate, precioActual, diasAlVencimiento, tcActual) {
-    // TC donde el retorno en USD es cero
-    // TC_breakeven = tcActual * (valorRescate / precioActual)
+function calcularBandaSuperior(valorRescate, precioActual, tcActual) {
+    // Banda superior = tcActual * (valorRescate / precioActual) * 1.05
     const tcBase = tcActual * (valorRescate / precioActual);
+    return tcBase * 1.05;
+}
+
+function calcularCarryParaTC(precioActual, valorRescate, diasAlVencimiento, tcProyectado) {
+    // Calcular retorno en USD para un tipo de cambio proyectado
+    if (diasAlVencimiento <= 0) return 0;
     
-    // Bandas con variación de inflación (±0.5% mensual aprox)
-    const variacionSup = 0.05; // 5% superior
-    const variacionInf = 0.10; // 10% inferior
+    const years = diasAlVencimiento / 365;
+    const retornoTotalPesos = (valorRescate / precioActual) - 1;
+    const devaluacionAnual = Math.pow(tcProyectado / TC_ACTUAL, 1/years) - 1;
     
-    return {
-        superior: tcBase * (1 + variacionSup),
-        base: tcBase,
-        inferior: tcBase * (1 - variacionInf)
-    };
+    // Carry = Retorno ARS - Devaluación proyectada
+    const carryAnual = (retornoTotalPesos / years) - devaluacionAnual;
+    
+    return carryAnual * 100; // convertir a porcentaje
 }
 
 function calcularTIRusd(precioActual, valorRescate, diasAlVencimiento) {
@@ -106,13 +110,21 @@ export class MacroCarryEngine {
                     const daysToMaturity = Math.ceil((maturity.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
                     if (daysToMaturity > 0) {
-                        // Cálculos principales
-                        const retornoTotal = calcularRetornoTotal(marketPrice, metadata.redemptionValue);
-                        const retornoTotalAnual = retornoTotal * (365 / daysToMaturity);
-                        const maxVarPosible = calcularMaxVarPosible(retornoTotal);
+                        // Cálculos principales (estilo Docta)
+                        const retornoDirecto = calcularRetornoDirecto(marketPrice, metadata.redemptionValue);
+                        const retornoTotalAnual = retornoDirecto * (365 / daysToMaturity);
+                        const maxVarPosible = calcularMaxVarPosible(retornoDirecto);
                         const spreadVsTC = calcularSpreadVsTC(retornoTotalAnual, daysToMaturity);
-                        const bandasBreakeven = calcularBandasBreakeven(metadata.redemptionValue, marketPrice, daysToMaturity, tcActual);
+                        const bandaSuperior = calcularBandaSuperior(metadata.redemptionValue, marketPrice, tcActual);
                         const tirUsd = calcularTIRusd(marketPrice, metadata.redemptionValue, daysToMaturity);
+
+                        // Cálculos de Carry para diferentes escenarios de TC
+                        const carry1000 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1000);
+                        const carry1100 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1100);
+                        const carry1200 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1200);
+                        const carry1250 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1250);
+                        const carry1300 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1300);
+                        const carry1400 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1400);
 
                         // Net Carry (Stable FX) - legacy compatibility
                         const netCarry = retornoTotalAnual / 100; // convertir a decimal
@@ -130,17 +142,23 @@ export class MacroCarryEngine {
                             daysToMaturity: daysToMaturity,
                             maturity: maturity,
                             
-                            // Métricas de Docta
-                            retornoTotal: retornoTotal, // en %
+                            // Métricas principales de Docta
+                            retornoDirecto: retornoDirecto, // en %
                             maxVarPosible: maxVarPosible, // en %
                             spreadVsTC: spreadVsTC, // en puntos porcentuales
                             tirUsd: tirUsd, // en decimal
+                            bandaSuperior: bandaSuperior, // en ARS
                             
-                            // Bandas de breakeven
-                            bandaSuperior: bandasBreakeven.superior,
-                            bandaInferior: bandasBreakeven.inferior,
+                            // Cálculos de Carry para diferentes escenarios
+                            carry1000: carry1000, // en %
+                            carry1100: carry1100, // en %
+                            carry1200: carry1200, // en %
+                            carry1250: carry1250, // en %
+                            carry1300: carry1300, // en %
+                            carry1400: carry1400, // en %
                             
                             // Legacy compatibility
+                            retornoTotal: retornoDirecto,
                             impliedYieldArs: retornoTotalAnual / 100,
                             impliedYieldUsd: netCarry,
                             carryScore: score
