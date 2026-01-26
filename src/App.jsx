@@ -69,6 +69,17 @@ function App() {
               }
             />
 
+            <Route
+              path="/carry-trade"
+              element={
+                <ProtectedRoute>
+                  <PortfolioProvider>
+                    <CarryTrade />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Redirect old spread route to new financing route */}
             <Route
               path="/spread"
