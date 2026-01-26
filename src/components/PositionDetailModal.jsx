@@ -278,6 +278,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
 
   // Valores bimonetarios calculados del objeto position
   const displayValues = useMemo(() => {
+    if (!position) return null;
     const isARS = currency === 'ARS';
     return {
       price: isARS ? position.precioActual : (position.precioActual / mepRate),
@@ -293,7 +294,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
 
   if (!open) return null;
 
-  if (!position) {
+  if (!position || !displayValues) {
     console.error('Position is null or undefined');
     return null;
   }
