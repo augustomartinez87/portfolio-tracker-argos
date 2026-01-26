@@ -11,26 +11,48 @@ const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="bg-background-secondary border border-border-primary p-3 rounded-lg shadow-xl text-xs z-50">
+            <div className="bg-background-secondary border border-border-primary p-3 rounded-lg shadow-xl text-xs z-50 min-w-[200px]">
                 <p className="font-bold text-text-primary mb-2 text-sm">{data.ticker} <span className="text-text-tertiary font-normal">({data.instrumentType})</span></p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                     <div className="flex justify-between gap-4">
-                        <span className="text-text-tertiary">Precio (ARS):</span>
+                        <span className="text-text-tertiary">Precio:</span>
                         <span className="font-mono text-text-primary">{formatARS(data.marketPrice)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
-                        <span className="text-text-tertiary">Tasa Implícita (ARS):</span>
-                        <span className="font-mono text-text-primary">{formatPercent(data.impliedYieldArs * 100)}</span>
+                        <span className="text-text-tertiary">Vencimiento:</span>
+                        <span className="font-mono text-text-primary">{data.daysToMaturity} días</span>
                     </div>
-                    <div className="border-t border-border-primary my-1 pt-1 flex justify-between gap-4 font-bold">
-                        <span>Carry USD (Stable FX):</span>
-                        <span className={`font-mono ${data.impliedYieldUsd >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {formatPercent(data.impliedYieldUsd * 100)}
-                        </span>
+                    <div className="border-t border-border-primary pt-2 space-y-1">
+                        <div className="flex justify-between gap-4 font-bold">
+                            <span>Retorno Total:</span>
+                            <span className={`font-mono ${data.retornoTotal >= 0 ? 'text-success' : 'text-danger'}`}>
+                                {formatPercent(data.retornoTotal / 100)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <span className="text-text-tertiary">Máx. Var. Posible:</span>
+                            <span className="font-mono text-text-primary">{formatPercent(data.maxVarPosible / 100)}</span>
+                        </div>
+                        <div className="flex justify-between gap-4 font-bold">
+                            <span>Spread vs T.C:</span>
+                            <span className={`font-mono ${data.spreadVsTC >= 0 ? 'text-success' : 'text-danger'}`}>
+                                {data.spreadVsTC >= 0 ? '+' : ''}{data.spreadVsTC.toFixed(2)} pp
+                            </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <span className="text-text-tertiary">TIR USD:</span>
+                            <span className="font-mono text-text-primary">{formatPercent(data.tirUsd * 100)}</span>
+                        </div>
                     </div>
-                    <div className="flex justify-between gap-4">
-                        <span className="text-text-tertiary">Score:</span>
-                        <span className="font-mono text-text-primary">{Math.round(data.carryScore)}/100</span>
+                    <div className="border-t border-border-primary pt-2 space-y-1">
+                        <div className="flex justify-between gap-4">
+                            <span className="text-text-tertiary">Banda Sup.:</span>
+                            <span className="font-mono text-text-tertiary">${data.bandaSuperior.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <span className="text-text-tertiary">Banda Inf.:</span>
+                            <span className="font-mono text-text-tertiary">${data.bandaInferior.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -158,14 +180,14 @@ export const CarryTradeHeatmap = ({ positions }) => {
                 <div className="p-3 bg-background-tertiary rounded-full mb-4">
                     <TrendingUp className="w-8 h-8 text-text-tertiary" />
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary mb-2">No se encontraron instrumentos</h3>
+                <h3 className="text-lg font-semibold text-text-primary mb-2">No se encontraron bonos para Carry Trade</h3>
                 <p className="text-sm text-text-secondary max-w-md">
-                    No se detectaron Bonos del Tesoro en Pesos (S.../T...) en la data de mercado actual.
+                    No se detectaron bonos del Tesoro (LETES/LECAPS) con precios válidos en la data actual.
                     <br /><br />
-                    Intente recargar precios o verifique la conexión con Data912.
+                    Los tickers buscados incluyen: T30E6, T13F6, S27F6, S17A6, S30A6, S29Y6, T30J6, S31G6, S30O6, S30N6, T15E7, T30A7, T31Y7
                 </p>
                 <div className="mt-4 text-xs font-mono text-text-tertiary bg-background-tertiary p-2 rounded">
-                    Total Precios: {Object.keys(prices || {}).length}
+                    Total Precios: {Object.keys(prices || {}).length} | MEP Rate: {mepRate}
                 </div>
             </div>
         );
@@ -179,51 +201,75 @@ export const CarryTradeHeatmap = ({ positions }) => {
                         <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-text-primary">Macro Carry (USD)</h3>
-                        <p className="text-[10px] text-text-tertiary">Implícito a FX Estable</p>
+                        <h3 className="text-sm font-bold text-text-primary">Carry Trade - Bonos del Tesoro</h3>
+                        <p className="text-[10px] text-text-tertiary">Retorno total vs devaluación proyectada (inflación 1% mensual)</p>
                     </div>
                 </div>
                 <div className="flex text-xs gap-3">
                     <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-success"></div>
-                        <span className="text-text-tertiary">Rend. +</span>
+                        <span className="text-text-tertiary">Spread +</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-danger"></div>
-                        <span className="text-text-tertiary">Rend. -</span>
+                        <span className="text-text-tertiary">Spread -</span>
                     </div>
                 </div>
             </div>
 
             <div className="flex-1 min-h-[160px]">
-                {/* Temporal: Simple table para debuggear el Treemap */}
+                {/* Tabla completa estilo Docta */}
                 <div className="overflow-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border-primary">
-                                <th className="text-left p-2 text-text-primary">Ticker</th>
-                                <th className="text-right p-2 text-text-primary">Precio</th>
-                                <th className="text-right p-2 text-text-primary">Carry USD</th>
-                                <th className="text-right p-2 text-text-primary">Score</th>
+                    <table className="w-full text-xs">
+                        <thead className="bg-background-tertiary sticky top-0">
+                            <tr>
+                                <th className="text-left p-2 font-bold text-text-primary">Ticker</th>
+                                <th className="text-center p-2 font-bold text-text-primary">Vto.</th>
+                                <th className="text-center p-2 font-bold text-text-primary">Días</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Retorno Total</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Máx. Var. Posible</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Spread vs T.C</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Precio</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Banda Sup.</th>
+                                <th className="text-right p-2 font-bold text-text-primary">Banda Inf.</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.map((item, index) => (
-                                <tr key={index} className="border-b border-border-primary/50">
-                                    <td className="p-2 font-mono text-text-primary">{item.name}</td>
+                                <tr key={index} className="border-b border-border-primary/30 hover:bg-background-tertiary/50 transition-colors">
+                                    <td className="p-2 font-mono font-bold text-text-primary">{item.name}</td>
+                                    <td className="p-2 text-center text-text-secondary">
+                                        {new Date(item.maturity).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                    </td>
+                                    <td className="p-2 text-center text-text-secondary">{item.daysToMaturity}</td>
+                                    <td className={`p-2 text-right font-mono font-semibold ${item.retornoTotal >= 0 ? 'text-success' : 'text-danger'}`}>
+                                        {formatPercent(item.retornoTotal / 100)}
+                                    </td>
+                                    <td className="p-2 text-right font-mono text-text-secondary">
+                                        {formatPercent(item.maxVarPosible / 100)}
+                                    </td>
+                                    <td className={`p-2 text-right font-mono font-semibold ${item.spreadVsTC >= 0 ? 'text-success' : 'text-danger'}`}>
+                                        {item.spreadVsTC >= 0 ? '+' : ''}{item.spreadVsTC.toFixed(2)} pp
+                                    </td>
                                     <td className="p-2 text-right font-mono text-text-secondary">
                                         {formatARS(item.marketPrice)}
                                     </td>
-                                    <td className={`p-2 text-right font-mono ${item.impliedYieldUsd >= 0 ? 'text-success' : 'text-danger'}`}>
-                                        {formatPercent(item.impliedYieldUsd * 100)}
+                                    <td className="p-2 text-right font-mono text-text-tertiary">
+                                        $ {item.bandaSuperior.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
                                     </td>
-                                    <td className="p-2 text-right font-mono text-text-secondary">
-                                        {Math.round(item.carryScore)}/100
+                                    <td className="p-2 text-right font-mono text-text-tertiary">
+                                        $ {item.bandaInferior.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    
+                    {data.length === 0 && (
+                        <div className="text-center py-8 text-text-tertiary">
+                            <p>No se encontraron bonos con precios válidos</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
