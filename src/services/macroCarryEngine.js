@@ -1,7 +1,23 @@
-
 // ============================================================================
 // MACRO CARRY ENGINE
 // ============================================================================
+
+// User Provided Metadata (Tickers + Maturity + Redemption Value "Pr. finish")
+const BOND_METADATA = {
+    'T30E6': { maturity: '2026-01-30', redemptionValue: 142.22 },
+    'T13F6': { maturity: '2026-02-13', redemptionValue: 144.97 },
+    'S27F6': { maturity: '2026-02-27', redemptionValue: 125.84 },
+    'S17A6': { maturity: '2026-04-17', redemptionValue: 109.94 },
+    'S30A6': { maturity: '2026-04-30', redemptionValue: 127.49 },
+    'S29Y6': { maturity: '2026-05-29', redemptionValue: 132.04 }, // Y=May
+    'T30J6': { maturity: '2026-06-30', redemptionValue: 144.90 },
+    'S31G6': { maturity: '2026-08-31', redemptionValue: 127.06 }, // G=Aug
+    'S30O6': { maturity: '2026-10-30', redemptionValue: 135.28 },
+    'S30N6': { maturity: '2026-11-30', redemptionValue: 129.89 },
+    'T15E7': { maturity: '2027-01-15', redemptionValue: 161.10 },
+    'T30A7': { maturity: '2027-04-30', redemptionValue: 157.34 },
+    'T31Y7': { maturity: '2027-05-31', redemptionValue: 152.18 },
+};
 
 export class MacroCarryEngine {
 
@@ -81,25 +97,5 @@ export class MacroCarryEngine {
         }
     }
 }
-
-// User Provided Metadata (Tickers + Maturity + Redemption Value "Pr. finish")
-// Note: "Pr. finish" is likely the value at maturity.
-// parsed from user request:
-const BOND_METADATA = {
-    'T30E6': { maturity: '2026-01-30', redemptionValue: 142.22 },
-    'T13F6': { maturity: '2026-02-13', redemptionValue: 144.97 },
-    'S27F6': { maturity: '2026-02-27', redemptionValue: 125.84 },
-    'S17A6': { maturity: '2026-04-17', redemptionValue: 109.94 },
-    'S30A6': { maturity: '2026-04-30', redemptionValue: 127.49 },
-    'S29Y6': { maturity: '2026-05-29', redemptionValue: 132.04 }, // Y=May
-    'T30J6': { maturity: '2026-06-30', redemptionValue: 144.90 },
-    'S31G6': { maturity: '2026-08-31', redemptionValue: 127.06 }, // G=Aug
-    'S30O6': { maturity: '2026-10-30', redemptionValue: 135.28 },
-    'S30N6': { maturity: '2026-11-30', redemptionValue: 129.89 },
-    'T15E7': { maturity: '2027-01-15', redemptionValue: 161.10 },
-    'T30A7': { maturity: '2027-04-30', redemptionValue: 157.34 },
-    'T31Y7': { maturity: '2027-05-31', redemptionValue: 152.18 },
-    // T30J7 was listed but cut off. Adding placeholder if exists.
-};
 
 export const macroCarryEngine = new MacroCarryEngine();
