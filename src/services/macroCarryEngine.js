@@ -19,83 +19,56 @@ export class MacroCarryEngine {
     ) {
         try {
             const metrics = [];
-            // Dynamic Scan of the entire Market provided by 'prices'
-            const watchlist = this.scanMarket(prices);
+            const now = new Date();
 
-            for (const item of watchlist) {
-                if (item.marketPrice <= 0) continue;
+            // 1. Iterate over explicit BOND_METADATA (Priority)
+            Object.keys(BOND_METADATA).forEach(ticker => {
+                const metadata = BOND_METADATA[ticker];
+                const priceData = prices[ticker];
 
-                // 1. Calculate ARS Implied Yield (TNA)
-                // Assumption: LECAP/BONCAP (S...) are zero-coupon styled or capitalizable.
-                // We estimate TNA = ((Redemption / Price) - 1) * 365 / Days
-                // Where Redemption is assumed ~1.00 (or 100% of nominal) per unit for calculation 
-                // IF the price is raw. BUT typically prices are ~130.00.
-                // If we don't know the exact "Technical Value", we can't calculate precision yield.
-                // HOWEVER, for a Heatmap, we can use the TNA derived from the "Tasa" if available,
-                // or infer it if the price is a discount.
-                // Let's assume standard Zero Coupon logic: Redemption = 100 (or inferred from standard issues).
-                // WARNING: Some are Monthly Capitalizing. 
-                // If we can't be precise, we will use a Generic Projection based on typical rates (e.g. 3-4% monthly).
+                // Use live price if available, otherwise 0 (exclude)
+                // Some tickers might be in 'bonds' panel.
+                const marketPrice = priceData ? (priceData.precio || priceData.close || 0) : 0;
 
-                let impliedTna = 0;
+                if (marketPrice > 0) {
+                    const maturity = new Date(metadata.maturity);
+                    const daysToMaturity = Math.ceil((maturity.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
-                if (item.maturity) {
-                    const now = new Date();
-                    const daysToMaturity = Math.ceil((item.maturity.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                    let impliedTna = 0;
+                    let directReturn = 0;
 
                     if (daysToMaturity > 0) {
-                        // Heuristic: If Price > 1, assume Price is per 100 nominals?
-                        // Most S... tickers are > 100.
-                        // We need the Technical Value (Val Tech) to calculate true Yield.
-                        // Without Val Tech, we can try to guess or use a Proxy.
-                        // Proxy: Use a base rate curve (e.g. 45% TNA) adjusted by duration?
-                        // BETTER: If we don't have yield, we show it but mark as 'Est'.
-                        // LET'S TRY: Redemption Value Model.
-                        // Many S-bills pay 100% + Capitalized Interest.
-                        // If we don't have the terms, we can't calculate exact yield.
-                        // FALLBACK: Use a Mock Curve purely for visualization if real metadata is missing,
-                        // OR calculate simply Price Change vs FX?
-                        // User wants "Colab Logic". Colab usually imports a Yield Curve.
-                        // As we lack a Yield Curve feed, we will calculate yield assuming a generic 
-                        // "Par Value at Maturity" model which is flawed for Capitalizing bonds.
-
-                        // REVISION: Use a simplified "Monthly Yield" estimation based on market consensus (approx 3.5%).
-                        // This is a placeholder until we have a real Yield Feed.
-                        // BUT, to make the heatmap "Alive", we can add random noise or variation based on Duration?
-                        // No, fake data is bad.
-
-                        // STRATEGY: Try to fetch "TIR" or "Yield" if Data912 provides it?
-                        // Data912 prices map usually has { bid, ask, last }. Not Yield.
-                        // CRITICAL VALIDATION: We will calculate (MaturityValue - Price) / Price.
-                        // Only possible if we know MaturityValue.
-                        // For "S" letters (Lecaps), they capitalize.
-                        // For "O" or "Y" (Bopreals), complex.
-
-                        // FORCE LOGIC: Assume Implied Monthly Rate of ~3.0% to 4.0% is the baseline,
-                        // and show that. This is better than "Nothing".
-                        impliedTna = 0.45; // 45% TNA Baseline
+                        // Direct Return = (Redemption / Price) - 1
+                        directReturn = (metadata.redemptionValue / marketPrice) - 1;
+                        // Annualized TNA = DirectReturn * (365 / Days)
+                        impliedTna = directReturn * (365 / daysToMaturity);
                     }
+
+                    // Net Carry (Stable FX)
+                    const netCarry = impliedTna;
+
+                    // Score
+                    let score = 50 + (netCarry * 100 * 2);
+                    score = Math.max(0, Math.min(100, score));
+
+                    metrics.push({
+                        ticker: ticker,
+                        instrumentType: ticker.startsWith('T') ? 'BONO TESORO' : 'LECAP',
+                        marketPrice: marketPrice,
+                        redemptionValue: metadata.redemptionValue,
+                        daysToMaturity: daysToMaturity,
+                        impliedYieldArs: impliedTna,
+                        impliedYieldUsd: netCarry,
+                        carryScore: score,
+                        maturity: maturity
+                    });
                 }
+            });
 
-                // 2. Calculate USD Implied Return
-                // Stable FX Assumption: Entry MEP = Exit MEP.
-                // Carry = ARS Yield.
-                const netCarry = impliedTna;
-
-                // 3. Score
-                let score = 50 + (netCarry * 100 * 2);
-                score = Math.max(0, Math.min(100, score));
-
-                metrics.push({
-                    ticker: item.ticker,
-                    instrumentType: item.type,
-                    marketPrice: item.marketPrice,
-                    impliedYieldArs: impliedTna,
-                    impliedYieldUsd: netCarry,
-                    carryScore: score,
-                    maturity: item.maturity
-                });
-            }
+            // 2. Dynamic Scan (Fallback for new instruments not in metadata yet, optional)
+            // For now, let's prioritize the user's specific list to keep it clean, 
+            // but we can append others if they are clearly S/T bills.
+            // (Skipping dynamic scan to focus on the User's "Truth Table" first).
 
             // Sort by best carry
             metrics.sort((a, b) => b.impliedYieldUsd - a.impliedYieldUsd);
@@ -107,80 +80,26 @@ export class MacroCarryEngine {
             return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
         }
     }
-
-    /**
-     * Scans the live prices map to find LECAPs/BONCAPs
-     * derived from Ticker naming conventions.
-     */
-    scanMarket(prices) {
-        const watchlist = [];
-        const now = new Date();
-
-        Object.keys(prices).forEach(ticker => {
-            const p = prices[ticker];
-
-            // Filter: Must be Bond/Bill (usually 'bonds' panel or manually identified)
-            // Rule: Starts with 'S' (Lecap/Boncap) or 'T' (Treasury) followed by Number/Letter
-            // Regex: ^[S|T][0-9]{2}[A-Z][0-9]$ (e.g. S31M5)
-            // Or ^[S|T][A-Z0-9]+$
-
-            const isPotentialBill = /^[S|T][0-9]{2}[A-Z][0-9]$/.test(ticker);
-
-            if (isPotentialBill || p.assetClass === 'BONOS PESOS') {
-                const matDate = this.parseMaturity(ticker);
-                // Only include if future maturity
-                if (matDate && matDate > now) {
-                    watchlist.push({
-                        ticker,
-                        type: 'LECAP/BONCAP',
-                        marketPrice: p.precio || p.close || 0,
-                        maturity: matDate
-                    });
-                }
-            }
-        });
-
-        return watchlist;
-    }
-
-    /**
-     * Parses standard Argentine ticker format: S31M5
-     * S = Type
-     * 31 = Day
-     * M = Month Code (E,F,M,A,Y,J,L,G,S,O,N,D)
-     * 5 = Year (2025)
-     */
-    parseMaturity(ticker) {
-        try {
-            // Check format Length 5: S31M5
-            if (ticker.length !== 5) return null;
-
-            const dayStr = ticker.substring(1, 3); // 31
-            const monthCode = ticker.substring(3, 4); // M
-            const yearDigit = ticker.substring(4, 5); // 5 (2025) or 6 (2026)
-
-            const day = parseInt(dayStr, 10);
-            if (isNaN(day)) return null;
-
-            const months = {
-                'E': 0, 'F': 1, 'M': 2, 'A': 3, 'Y': 4, 'J': 5, // E=Jan, Y=May
-                'L': 6, 'G': 7, 'S': 8, 'O': 9, 'N': 10, 'D': 11  // L=Jul, G=Aug
-            };
-
-            const month = months[monthCode.toUpperCase()];
-            if (month === undefined) return null;
-
-            // Estimate year: 2020s. 
-            // 4=2024, 5=2025, 6=2026, 7=2027...
-            // If digit is 9 -> 2029. 0 -> 2030.
-            // Let's assume 2020 baseline for now.
-            const year = 2020 + parseInt(yearDigit, 10);
-
-            return new Date(year, month, day);
-        } catch (e) {
-            return null;
-        }
-    }
 }
+
+// User Provided Metadata (Tickers + Maturity + Redemption Value "Pr. finish")
+// Note: "Pr. finish" is likely the value at maturity.
+// parsed from user request:
+const BOND_METADATA = {
+    'T30E6': { maturity: '2026-01-30', redemptionValue: 142.22 },
+    'T13F6': { maturity: '2026-02-13', redemptionValue: 144.97 },
+    'S27F6': { maturity: '2026-02-27', redemptionValue: 125.84 },
+    'S17A6': { maturity: '2026-04-17', redemptionValue: 109.94 },
+    'S30A6': { maturity: '2026-04-30', redemptionValue: 127.49 },
+    'S29Y6': { maturity: '2026-05-29', redemptionValue: 132.04 }, // Y=May
+    'T30J6': { maturity: '2026-06-30', redemptionValue: 144.90 },
+    'S31G6': { maturity: '2026-08-31', redemptionValue: 127.06 }, // G=Aug
+    'S30O6': { maturity: '2026-10-30', redemptionValue: 135.28 },
+    'S30N6': { maturity: '2026-11-30', redemptionValue: 129.89 },
+    'T15E7': { maturity: '2027-01-15', redemptionValue: 161.10 },
+    'T30A7': { maturity: '2027-04-30', redemptionValue: 157.34 },
+    'T31Y7': { maturity: '2027-05-31', redemptionValue: 152.18 },
+    // T30J7 was listed but cut off. Adding placeholder if exists.
+};
 
 export const macroCarryEngine = new MacroCarryEngine();
