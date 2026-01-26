@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { RefreshCw, Coins } from 'lucide-react';
 
 export default function FundingEngine() {
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
+    const { theme } = useTheme();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
     // Reemplaza con TU URL final de Streamlit Cloud
@@ -17,7 +19,7 @@ export default function FundingEngine() {
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const iframeSrc = currentPortfolio && user
-        ? `${APP_URL}/?embedded=true&token=${token}&portfolio_id=${currentPortfolio.id}&user_id=${user.id}&date_from=${startDate}&date_to=${endDate}`
+        ? `${APP_URL}/?embedded=true&token=${token}&portfolio_id=${currentPortfolio.id}&user_id=${user.id}&date_from=${startDate}&date_to=${endDate}&theme=${theme}`
         : null;
 
     if (!currentPortfolio || !user) {

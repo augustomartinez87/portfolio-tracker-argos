@@ -16,13 +16,13 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
             <table className="w-full min-w-[800px]">
                 <thead>
                     <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
-                        <th className="px-4 py-3 cursor-pointer hover:text-text-primary transition-colors">Fondo</th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-text-primary transition-colors">Cuotapartes</th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-text-primary transition-colors">VCP Actual</th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-text-primary transition-colors">Valuación</th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-text-primary transition-colors">Invertido</th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-text-primary transition-colors">Resultado</th>
-                        <th className="px-4 py-3 text-center">Acciones</th>
+                        <th className="px-4 py-2 cursor-pointer hover:text-text-primary transition-colors">Fondo</th>
+                        <th className="px-4 py-2 text-right cursor-pointer hover:text-text-primary transition-colors">Cuotapartes</th>
+                        <th className="px-4 py-2 text-right cursor-pointer hover:text-text-primary transition-colors">VCP Actual</th>
+                        <th className="px-4 py-2 text-right cursor-pointer hover:text-text-primary transition-colors">Valuación</th>
+                        <th className="px-4 py-2 text-right cursor-pointer hover:text-text-primary transition-colors">Invertido</th>
+                        <th className="px-4 py-2 text-right cursor-pointer hover:text-text-primary transition-colors">Resultado</th>
+                        <th className="px-4 py-2 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border-primary">

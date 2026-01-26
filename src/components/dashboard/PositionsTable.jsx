@@ -172,7 +172,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
               {columnSettings.showDiarioPct && <col className="w-[90px]" />} {/* Diario % */}
             </colgroup>
             <thead className="sticky top-0 z-10 bg-background-secondary">
-              <tr className="bg-background-tertiary/30 border-b border-border-primary">
+              <tr className="bg-background-tertiary border-b border-border-primary">
                 <th
                   className={`text-left ${paddingX} py-2 text-xs font-medium text-text-tertiary cursor-pointer select-none hover:text-text-primary transition-colors`}
                   onClick={() => handleSort('ticker')}

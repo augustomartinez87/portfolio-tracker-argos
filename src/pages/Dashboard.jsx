@@ -488,7 +488,7 @@ export default function Dashboard() {
             </div>
 
             {/* Sub-navigation (Tabs) */}
-            <div className="bg-background-secondary/50 border border-border-primary/50 rounded-lg p-1">
+            <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
               <PortfolioTabs
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
