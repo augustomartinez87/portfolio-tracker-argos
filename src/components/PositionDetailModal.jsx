@@ -482,11 +482,15 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                 <div className="flex gap-4 text-sm">
                   <div>
                     <p className="text-text-tertiary text-xs">Máximo</p>
-                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
+                    <p className="text-text-primary font-mono font-medium">
+                      {formatGenericCurrency(currency === 'ARS' ? stats.high : stats.high / mepRate, currency)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-text-tertiary text-xs">Mínimo</p>
-                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
+                    <p className="text-text-primary font-mono font-medium">
+                      {formatGenericCurrency(currency === 'ARS' ? stats.low : stats.low / mepRate, currency)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-text-tertiary text-xs">Variación {selectedDays === 99999 ? 'MAX' : `${selectedDays}d`}</p>
