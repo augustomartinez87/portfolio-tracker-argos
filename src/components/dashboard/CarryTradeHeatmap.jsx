@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Treemap, Tooltip, ResponsiveContainer } from 'recharts';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { usePrices } from '../../services/priceService';
-import { macroCarryEngine, MacroCarryMetrics } from '../../services/macroCarryEngine';
+import { macroCarryEngine } from '../../services/macroCarryEngine';
 import { formatPercent, formatCurrency } from '../../utils/formatters';
 import { Loader2, TrendingUp } from 'lucide-react';
 

@@ -1,27 +1,26 @@
 
-import Decimal from 'decimal.js';
-import { Result } from '../types/finance';
-
 // ============================================================================
-// TYPES
+// TYPES (JSDoc)
 // ============================================================================
 
-export interface CarryInstrument {
-    ticker: string;
-    type: 'LECAP' | 'BONCAP' | 'BOTE' | 'CER' | 'OTHER';
-    marketPrice: number;
-    redemptionValue?: number; // Estimated redemption value (100 + interest?)
-    maturityDate?: Date;
-}
+/**
+ * @typedef {Object} CarryInstrument
+ * @property {string} ticker
+ * @property {string} type
+ * @property {number} marketPrice
+ * @property {number} [redemptionValue]
+ * @property {Date} [maturityDate]
+ */
 
-export interface MacroCarryMetrics {
-    ticker: string;
-    instrumentType: string;
-    marketPrice: number;
-    impliedYieldArs: number;  // TNA in ARS
-    impliedYieldUsd: number;  // Effective USD Return (assuming stable FX)
-    carryScore: number;       // 0-100 Score
-}
+/**
+ * @typedef {Object} MacroCarryMetrics
+ * @property {string} ticker
+ * @property {string} instrumentType
+ * @property {number} marketPrice
+ * @property {number} impliedYieldArs
+ * @property {number} impliedYieldUsd
+ * @property {number} carryScore
+ */
 
 // ============================================================================
 // MACRO CARRY ENGINE
@@ -31,37 +30,24 @@ export class MacroCarryEngine {
 
     /**
      * Calculate Carry Metrics using Live Prices and MEP
-     * @param userPositions - List of user positions (for highlighting/inclusion)
-     * @param prices - Live price map from priceService
-     * @param mepRate - Current MEP rate
+     * @param {Array} userPositions - List of user positions (for highlighting/inclusion)
+     * @param {Object} prices - Live price map from priceService
+     * @param {number} mepRate - Current MEP rate
+     * @returns {Promise<{success: boolean, data: MacroCarryMetrics[] | null, error?: Error}>}
      */
     async calculateMacroCarry(
-        userPositions: any[] = [],
-        prices: Record<string, any> = {},
-        mepRate: number = 1
-    ): Promise<Result<MacroCarryMetrics[]>> {
+        userPositions = [],
+        prices = {},
+        mepRate = 1
+    ) {
         try {
-            const metrics: MacroCarryMetrics[] = [];
+            const metrics = [];
             const watchlist = this.getWatchlist(userPositions, prices);
 
             for (const item of watchlist) {
                 if (item.marketPrice <= 0) continue;
 
                 // 1. Calculate ARS Implied Yield (TNA)
-                // Simplification: For LECAPs, Price = 100 / (1 + TNA * Days/365)? 
-                // Or usually they quote price per 100 nominals.
-                // Let's assume standard bullet bond logic if maturity is known.
-                // Since we don't have full contract details in the price map, we use an estimator or fallback.
-                // Ideally, Datan912 provides 'yield' or 'tna'. Check price map structure?
-                // priceService map has { precio, raw, bid, ask... }. Not TNA.
-                // We will need to estimate TNA based on a known Redemption Value (e.g. 100 or indexed).
-                // For LECAPs (Capitalizables), they tend to pay 100 at end? Or Capital + Interest?
-                // S31M5 -> Vence 31 Mar 2025. 
-                // If we don't have metadata, we might have to use the MOCK yields but adjusted by price drift?
-                // User said "Use Datan912 to get live prices".
-                // Let's assume we calculate Yield = (Redemption / Price)^(365/Days) - 1.
-                // We need a metadata table for Redemption Values / Maturities of this Watchlist.
-
                 const contract = KNOWN_CONTRACTS[item.ticker];
                 let impliedTna = 0;
 
@@ -82,11 +68,6 @@ export class MacroCarryEngine {
                 }
 
                 // 2. Calculate USD Implied Return
-                // Model: USD -> ARS @ MEP -> Instrument -> Maturity ARS -> USD @ MEP (Stable FX Assumption)
-                // If Entry FX = Exit FX, then USD Return = ARS Return.
-                // If user wanted "Real Implied USD Return", usually it means "Assuming Market Rofex Deval".
-                // But user said "NOT assumed devaluation paths... convert back to USD at MEP (or cached last)".
-                // This explicitly asks for the "Static Return".
                 const netCarry = impliedTna;
 
                 // 3. Score
@@ -117,21 +98,20 @@ export class MacroCarryEngine {
     /**
      * Helper to build watchlist with Live Prices
      */
-    private getWatchlist(userPositions: any[], prices: Record<string, any>): CarryInstrument[] {
-        const watchlist: CarryInstrument[] = [];
-        const seen = new Set<string>();
+    getWatchlist(userPositions, prices) {
+        const watchlist = [];
+        const seen = new Set();
 
-        const getPrice = (ticker: string) => prices[ticker]?.precio || 0;
+        const getPrice = (ticker) => prices[ticker]?.precio || 0;
 
         // 1. Defined Assets
         Object.keys(KNOWN_CONTRACTS).forEach(ticker => {
             const price = getPrice(ticker);
-            if (price > 0 || KNOWN_CONTRACTS[ticker].type === 'LECAP') { // include even if price 0 if key asset? No, need price.
-                // If price missing in live map, maybe use fallback?
+            if (price > 0 || KNOWN_CONTRACTS[ticker].type === 'LECAP') {
                 watchlist.push({
                     ticker,
-                    type: KNOWN_CONTRACTS[ticker].type as any,
-                    marketPrice: price > 0 ? price : 100, // Fallback purely for demo if market closed
+                    type: KNOWN_CONTRACTS[ticker].type,
+                    marketPrice: price > 0 ? price : 100,
                 });
                 seen.add(ticker);
             }
@@ -154,7 +134,7 @@ export class MacroCarryEngine {
 }
 
 // Minimal Metadata for Calculation
-const KNOWN_CONTRACTS: Record<string, { type: string, maturity: string, redemptionValue: number }> = {
+const KNOWN_CONTRACTS = {
     'S31M5': { type: 'LECAP', maturity: '2025-03-31', redemptionValue: 145.50 }, // Est redemption (Example)
     'S30J5': { type: 'LECAP', maturity: '2025-06-30', redemptionValue: 162.00 },
     'S29N4': { type: 'LECAP', maturity: '2024-11-29', redemptionValue: 130.00 }, // Expired? Just example.

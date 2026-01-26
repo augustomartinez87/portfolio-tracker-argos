@@ -29,10 +29,10 @@ const FciTransactionModal = lazy(() => import('../components/modals/FciTransacti
 import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
 import { useFciEngine } from '../hooks/useFciEngine';
 import FciTable from '../components/dashboard/FciTable';
-import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector';
-import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap';
+import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector.jsx';
+import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap.jsx';
 import { useSearch } from '../hooks/useSearch';
-import { MarketStatus } from '../components/dashboard/MarketStatus';
+import { MarketStatus } from '../components/dashboard/MarketStatus.jsx';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
