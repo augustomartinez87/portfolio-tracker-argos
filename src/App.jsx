@@ -10,6 +10,7 @@ import { ResetPassword } from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
+import CarryTrade from './pages/CarryTrade'
 
 // Configuración de React Query
 const queryClient = new QueryClient({

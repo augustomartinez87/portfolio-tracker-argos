@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, TrendingUp, LogOut, Coins } from 'lucide-react';
+import { Briefcase, TrendingUp, LogOut, Coins, Activity } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
@@ -15,6 +15,7 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
     { id: 'portfolio', label: 'Portafolio', icon: Briefcase, path: '/dashboard' },
     { id: 'financiacion', label: 'Financiación', icon: TrendingUp, path: '/financiacion' },
     { id: 'funding', label: 'Funding & Carry', icon: Coins, path: '/funding-engine' },
+    { id: 'carry', label: 'Carry Trade', icon: Activity, path: '/carry-trade' },
   ];
 
   const isActive = (id) => {

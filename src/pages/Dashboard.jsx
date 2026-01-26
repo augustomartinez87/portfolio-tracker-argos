@@ -30,9 +30,7 @@ import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
 import { useFciEngine } from '../hooks/useFciEngine';
 import FciTable from '../components/dashboard/FciTable';
 import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector.jsx';
-import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap.jsx';
 import { useSearch } from '../hooks/useSearch';
-import { MarketStatus } from '../components/dashboard/MarketStatus.jsx';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -732,30 +730,7 @@ export default function Dashboard() {
                   </div>
                   <DashboardSummaryCards totals={combinedTotals} lastUpdate={lastUpdate} />
 
-                  {/* Carry Trade Heatmap Section */}
-                  <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3 h-[300px]">
-                    {/* Left: Heatmap */}
-                    <div className="h-full">
-                      <CarryTradeHeatmap positions={positions} />
-                    </div>
 
-                    {/* Right: Market Context */}
-                    <div className="h-full bg-background-secondary border border-border-primary rounded-xl p-4">
-                      <h3 className="text-sm font-bold text-text-primary mb-2">Contexto de Mercado</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <MarketStatus market="MERVAL" sentiment="bullish" />
-                        <MarketStatus market="SPY" sentiment="neutral" />
-                        <MarketStatus market="BTC" sentiment="bullish" />
-                        <MarketStatus market="USDT" sentiment="neutral" />
-                      </div>
-                      <div className="mt-4 p-3 bg-background-tertiary rounded-lg">
-                        <p className="text-xs text-text-secondary">
-                          <strong>Global Funding Cost:</strong> {formatPercent(0.32)} (Ref)<br />
-                          El mapa muestra el retorno en USD asumiendo FX estable.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Sección de FCIs (Liquidez) */}
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col mt-3 overflow-hidden">
