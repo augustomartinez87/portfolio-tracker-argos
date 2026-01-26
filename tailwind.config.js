@@ -34,8 +34,8 @@ export default {
         'loss-muted': 'var(--color-danger-muted)',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['DM Sans', 'sans-serif'],
+        mono: ['DM Sans', 'monospace'],
       },
     },
   },
