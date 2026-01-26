@@ -42,6 +42,9 @@ const CustomTooltip = ({ active, payload }) => {
 const CustomizedContent = (props) => {
     const { root, depth, x, y, width, height, index, payload, colors, rank, name } = props;
 
+    // Safety check to prevent "Cannot read properties of undefined (reading 'fill')"
+    if (!payload) return null;
+
     return (
         <g>
             <rect
