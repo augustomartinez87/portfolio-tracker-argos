@@ -31,6 +31,22 @@ CREATE TABLE IF NOT EXISTS trades (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tabla fci_transactions (Existing in DB with Spanish columns)
+CREATE TABLE IF NOT EXISTS fci_transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE NOT NULL,
+  fci_id UUID REFERENCES fci_master(id) ON DELETE RESTRICT NOT NULL,
+  fecha DATE NOT NULL,
+  tipo TEXT NOT NULL CHECK (tipo IN ('SUBSCRIPTION', 'REDEMPTION')),
+  monto NUMERIC(18, 2) NOT NULL,
+  vcp_operado NUMERIC(18, 8) NOT NULL,
+  cuotapartes NUMERIC(18, 8) NOT NULL, -- Calculado como monto / vcp_operado
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE portfolios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trades ENABLE ROW LEVEL SECURITY;
@@ -61,11 +77,28 @@ CREATE POLICY "Users can update their own trades" ON trades
 CREATE POLICY "Users can delete their own trades" ON trades
   FOR DELETE USING (auth.uid() = user_id);
 
+-- Políticas RLS para fci_transactions
+ALTER TABLE fci_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own fci transactions" ON fci_transactions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own fci transactions" ON fci_transactions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own fci transactions" ON fci_transactions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own fci transactions" ON fci_transactions
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Crear índices para mejor rendimiento
 CREATE INDEX IF NOT EXISTS idx_trades_portfolio_id ON trades(portfolio_id);
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);
 CREATE INDEX IF NOT EXISTS idx_trades_ticker ON trades(ticker);
 CREATE INDEX IF NOT EXISTS idx_trades_trade_date ON trades(trade_date);
+CREATE INDEX IF NOT EXISTS idx_fci_transactions_user_id ON fci_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_fci_transactions_date ON fci_transactions(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios(user_id);
 
 -- Trigger para updated_at

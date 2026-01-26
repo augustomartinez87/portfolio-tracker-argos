@@ -2,6 +2,11 @@ import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '../utils/bondUtils';
 import { mepService, MepHistoryItem } from '../services/mepService';
 import { AssetClass } from '../types';
+import Decimal from 'decimal.js';
+
+// Configuration for Decimal.js
+// Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP }); 
+// Note: Default precision is 20, sufficient for this use case. Removed to avoid type error with IDecimalStatic.
 
 // Interfaces
 export interface Trade {
@@ -68,40 +73,47 @@ export interface PortfolioTotals {
     resultadoDiarioPctUSD: number;
 }
 
-
-
-
-
-
-
 // Pure calculation functions
-export const calculateTotals = (positions: Position[], mepRate: number): PortfolioTotals => {
-    const invertido = positions.reduce((sum, p) => sum + p.costoTotal, 0);
-    const valuacion = positions.reduce((sum, p) => sum + p.valuacionActual, 0);
-    const resultado = valuacion - invertido;
-    const resultadoPct = invertido > 0 ? (resultado / invertido) * 100 : 0;
-    const resultadoDiario = positions.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
-    const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
+export const calculateTotals = (positions: Position[]): PortfolioTotals => {
+    // Initialize Decimals
+    let invertido = new Decimal(0);
+    let valuacion = new Decimal(0);
+    let resultadoDiario = new Decimal(0);
+    let invertidoUSD = new Decimal(0);
+    let valuacionUSD = new Decimal(0);
+    let resultadoDiarioUSD = new Decimal(0);
 
-    // Use historical accumulated USD costs for accurate percentages
-    const invertidoUSD = positions.reduce((sum, p) => sum + (p.costoUSD || 0), 0);
-    const valuacionUSD = positions.reduce((sum, p) => sum + (p.valuacionUSD || 0), 0);
-    const resultadoUSD = valuacionUSD - invertidoUSD;
-    const resultadoDiarioUSD = positions.reduce((sum, p) => sum + (p.resultadoDiarioUSD || 0), 0);
+    for (const p of positions) {
+        invertido = invertido.plus(p.costoTotal);
+        valuacion = valuacion.plus(p.valuacionActual);
+        resultadoDiario = resultadoDiario.plus(p.resultadoDiario || 0);
+
+        invertidoUSD = invertidoUSD.plus(p.costoUSD || 0);
+        valuacionUSD = valuacionUSD.plus(p.valuacionUSD || 0);
+        resultadoDiarioUSD = resultadoDiarioUSD.plus(p.resultadoDiarioUSD || 0);
+    }
+
+    const resultado = valuacion.minus(invertido);
+    const resultadoPct = invertido.gt(0) ? resultado.dividedBy(invertido).times(100) : new Decimal(0);
+    const resultadoDiarioPct = invertido.gt(0) ? resultadoDiario.dividedBy(invertido).times(100) : new Decimal(0);
+
+    const resultadoUSD = valuacionUSD.minus(invertidoUSD);
+    const resultadoPctUSD = invertidoUSD.gt(0) ? resultadoUSD.dividedBy(invertidoUSD).times(100) : new Decimal(0);
+    const resultadoDiarioPctUSD = invertidoUSD.gt(0) ? resultadoDiarioUSD.dividedBy(invertidoUSD).times(100) : new Decimal(0);
 
     return {
-        invertido,
-        valuacion,
-        resultado,
-        resultadoPct,
-        resultadoDiario,
-        resultadoDiarioPct,
-        invertidoUSD,
-        valuacionUSD,
-        resultadoUSD,
-        resultadoPctUSD: invertidoUSD > 0 ? (resultadoUSD / invertidoUSD) * 100 : 0,
-        resultadoDiarioUSD,
-        resultadoDiarioPctUSD: invertidoUSD > 0 ? (resultadoDiarioUSD / invertidoUSD) * 100 : 0
+        invertido: invertido.toNumber(),
+        valuacion: valuacion.toNumber(),
+        resultado: resultado.toNumber(),
+        resultadoPct: resultadoPct.toNumber(),
+        resultadoDiario: resultadoDiario.toNumber(),
+        resultadoDiarioPct: resultadoDiarioPct.toNumber(),
+        invertidoUSD: invertidoUSD.toNumber(),
+        valuacionUSD: valuacionUSD.toNumber(),
+        resultadoUSD: resultadoUSD.toNumber(),
+        resultadoPctUSD: resultadoPctUSD.toNumber(),
+        resultadoDiarioUSD: resultadoDiarioUSD.toNumber(),
+        resultadoDiarioPctUSD: resultadoDiarioPctUSD.toNumber()
     };
 };
 
@@ -111,10 +123,20 @@ export const usePortfolioEngine = (
     mepRate: number,
     mepHistory: MepHistoryItem[] = []
 ) => {
+    // 1. Prepare MEP Map for O(1) lookups
+    const mepMap = useMemo(() => {
+        // If external history is passed, prioritize it, otherwise let service handle it
+        if (mepHistory.length > 0) {
+            const map = new Map<string, number>();
+            mepHistory.forEach(h => map.set(h.date, h.price));
+            return map;
+        }
+        return mepService.getMepMap();
+    }, [mepHistory]);
+
     const positions = useMemo(() => {
         const grouped: Record<string, any> = {};
 
-        // Ordenar trades por fecha para procesar en orden cronológico
         // Make a shallow copy to sort
         const sortedTrades = [...trades].sort((a, b) => {
             const dateA = new Date(a.trade_date || a.fecha || 0).getTime();
@@ -128,42 +150,51 @@ export const usePortfolioEngine = (
                 grouped[ticker] = {
                     ticker: ticker,
                     trades: [],
-                    cantidadTotal: 0,
-                    costoTotal: 0,
-                    costoTotalUSD: 0
+                    cantidadTotal: new Decimal(0),
+                    costoTotal: new Decimal(0),
+                    costoTotalUSD: new Decimal(0)
                 };
             }
             grouped[ticker].trades.push(trade);
 
-            const quantity = trade.quantity ?? trade.cantidad ?? 0;
-            const price = trade.price ?? trade.precioCompra ?? 0;
+            const quantity = new Decimal(trade.quantity ?? trade.cantidad ?? 0);
+            const price = new Decimal(trade.price ?? trade.precioCompra ?? 0);
             const tType = trade.trade_type ?? trade.tipo ?? '';
 
-            const cantidad = Math.abs(quantity);
+            const cantidadAbs = quantity.abs();
             const isSell = tType === 'sell' || tType === 'venta';
 
             if (isSell) {
-                // Venta: reducir cantidad y costo proporcionalmente (método promedio ponderado)
+                // Venta: reducir cantidad y costo proporcionalmente (WAC)
                 const pos = grouped[ticker];
-                const precioPromedioActual = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
-                const precioPromedioUSDActual = pos.cantidadTotal > 0 ? pos.costoTotalUSD / pos.cantidadTotal : 0;
 
-                const cantidadAVender = Math.min(cantidad, pos.cantidadTotal); // No vender más de lo que hay
+                // Avoid division by zero
+                const precioPromedioActual = pos.cantidadTotal.gt(0)
+                    ? pos.costoTotal.dividedBy(pos.cantidadTotal)
+                    : new Decimal(0);
 
-                pos.cantidadTotal -= cantidadAVender;
-                pos.costoTotal -= cantidadAVender * precioPromedioActual;
-                pos.costoTotalUSD -= cantidadAVender * precioPromedioUSDActual;
+                const precioPromedioUSDActual = pos.cantidadTotal.gt(0)
+                    ? pos.costoTotalUSD.dividedBy(pos.cantidadTotal)
+                    : new Decimal(0);
 
-                // Evitar valores negativos por errores de redondeo
-                if (pos.cantidadTotal < 0.0001) {
-                    pos.cantidadTotal = 0;
-                    pos.costoTotal = 0;
-                    pos.costoTotalUSD = 0;
+                // No vender más de lo que hay
+                const cantidadAVender = Decimal.min(cantidadAbs, pos.cantidadTotal);
+
+                pos.cantidadTotal = pos.cantidadTotal.minus(cantidadAVender);
+                pos.costoTotal = pos.costoTotal.minus(cantidadAVender.times(precioPromedioActual));
+                pos.costoTotalUSD = pos.costoTotalUSD.minus(cantidadAVender.times(precioPromedioUSDActual));
+
+                // Clean up small dust
+                if (pos.cantidadTotal.lt(new Decimal(0.0001))) {
+                    pos.cantidadTotal = new Decimal(0);
+                    pos.costoTotal = new Decimal(0);
+                    pos.costoTotalUSD = new Decimal(0);
                 }
             } else {
                 // Compra: sumar cantidad y costo
-                grouped[ticker].cantidadTotal += cantidad;
-                grouped[ticker].costoTotal += cantidad * price;
+                const pos = grouped[ticker];
+                pos.cantidadTotal = pos.cantidadTotal.plus(cantidadAbs);
+                pos.costoTotal = pos.costoTotal.plus(cantidadAbs.times(price));
 
                 // Cálculo USD con precisión histórica
                 const dateStr = trade.trade_date || trade.fecha;
@@ -171,54 +202,71 @@ export const usePortfolioEngine = (
                     ? dateStr.toISOString().split('T')[0]
                     : String(dateStr).split('T')[0];
 
-                const historicalMep = mepService.findClosestRate(formattedDate, mepHistory) || mepRate;
-                grouped[ticker].costoTotalUSD += (cantidad * price) / historicalMep;
+                // Optimizado: O(1) lookup
+                const historicalMepVal = mepService.findClosestRate(formattedDate, mepMap) || mepRate;
+                const historicalMep = new Decimal(historicalMepVal > 0 ? historicalMepVal : 1);
+
+                pos.costoTotalUSD = pos.costoTotalUSD.plus(
+                    cantidadAbs.times(price).dividedBy(historicalMep)
+                );
             }
         });
 
-        // Filtrar posiciones con cantidad 0 (completamente vendidas) y calcular métricas
+        // Filtrar posiciones y convertir a números finales
         return Object.values(grouped)
-            .filter((pos: any) => pos.cantidadTotal > 0.0001) // Filter almost zero
+            .filter((pos: any) => pos.cantidadTotal.gt(0.0001))
             .map((pos: any): Position => {
                 const priceData = prices[pos.ticker];
                 const isPositionON = isON(pos.ticker);
 
+                // Convert BigNums to numbers for display/interface compat
+                const cantidadTotalNum = pos.cantidadTotal.toNumber();
+                const costoTotalNum = pos.costoTotal.toNumber();
+                const costoTotalUSDNum = pos.costoTotalUSD.toNumber();
+
                 // Calcular precio actual y valuación con conversión de ONs si es necesario
                 let precioActual = priceData?.precio || 0;
-                let valuacionActual = pos.cantidadTotal * precioActual;
+                let valuacionActual = cantidadTotalNum * precioActual;
                 let usesONConversion = false;
 
-                // Solo aplicar conversión ON si es ON D/C y tenemos datos de precios
                 if (isPositionON && !pos.ticker.endsWith('O') && priceData && (priceData.precio || 0) > 0) {
                     try {
-                        const onValue = calculateONValueInARS(pos.ticker, pos.cantidadTotal, prices, mepRate);
+                        const onValue = calculateONValueInARS(pos.ticker, cantidadTotalNum, prices, mepRate);
                         precioActual = onValue.priceInARS;
                         valuacionActual = onValue.value;
                         usesONConversion = onValue.usesConversion;
                     } catch (error) {
-                        // No existe equivalente O, mantener precio original con warning
                         console.warn('Error en conversión ON:', error instanceof Error ? error.message : 'Unknown error');
                         usesONConversion = false;
                     }
                 }
 
-                const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
-                const resultado = valuacionActual - pos.costoTotal;
-                const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
+                const precioPromedio = cantidadTotalNum > 0 ? costoTotalNum / cantidadTotalNum : 0;
+                const resultado = valuacionActual - costoTotalNum;
+                const resultadoPct = costoTotalNum > 0 ? (resultado / costoTotalNum) * 100 : 0;
 
                 const dailyReturnPct = priceData?.pctChange || 0;
                 const resultadoDiario = (dailyReturnPct / 100) * valuacionActual;
                 const resultadoDiarioPct = dailyReturnPct;
 
-                // Determine asset class properly from price data (most accurate) or fallback
+                // Asset Class Logic
                 const assetClass = (priceData?.assetClass as AssetClass) || getAssetClass(pos.ticker, priceData?.panel);
-
-                // Check bond types from price data or helpers
                 const isBP = priceData?.isBonoPesos ?? isBonoPesos(pos.ticker);
                 const isBHD = priceData?.isBonoHD ?? isBonoHardDollar(pos.ticker);
 
+                // USD Calculations
+                const valuacionUSD = mepRate > 0 ? valuacionActual / mepRate : 0;
+                const resultadoUSD = valuacionUSD - costoTotalUSDNum;
+                // Avoid historical division by zero
+                const resultadoPctUSD = costoTotalUSDNum > 0 ? (resultadoUSD / costoTotalUSDNum) * 100 : 0;
+                const resultadoDiarioUSD = mepRate > 0 ? resultadoDiario / mepRate : 0;
+
                 return {
-                    ...pos,
+                    ticker: pos.ticker,
+                    trades: pos.trades,
+                    cantidadTotal: cantidadTotalNum,
+                    costoTotal: costoTotalNum,
+                    costoUSD: costoTotalUSDNum,
                     precioPromedio,
                     precioActual,
                     valuacionActual,
@@ -227,23 +275,22 @@ export const usePortfolioEngine = (
                     resultadoDiario,
                     resultadoDiarioPct,
                     assetClass,
-                    pctChange: priceData?.pctChange || 0,
+                    pctChange: dailyReturnPct,
                     isBonoPesos: isBP,
                     isBonoHD: isBHD,
                     isON: isPositionON,
                     usesONConversion,
-                    costoUSD: pos.costoTotalUSD, // Usar el acumulado histórico
-                    valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
-                    resultadoUSD: (mepRate > 0 ? valuacionActual / mepRate : 0) - pos.costoTotalUSD,
-                    resultadoPctUSD: pos.costoTotalUSD > 0 ? (((mepRate > 0 ? valuacionActual / mepRate : 0) - pos.costoTotalUSD) / pos.costoTotalUSD) * 100 : 0,
-                    resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0,
-                    resultadoDiarioPctUSD: dailyReturnPct // Daily % is same since it's intraday relative
+                    valuacionUSD,
+                    resultadoUSD,
+                    resultadoPctUSD,
+                    resultadoDiarioUSD,
+                    resultadoDiarioPctUSD: dailyReturnPct
                 };
             })
             .sort((a, b) => b.valuacionActual - a.valuacionActual);
-    }, [trades, prices, mepRate]);
+    }, [trades, prices, mepRate, mepMap]);
 
-    const totals = useMemo(() => calculateTotals(positions, mepRate), [positions, mepRate]);
+    const totals = useMemo(() => calculateTotals(positions), [positions]);
 
     const isPricesReady = Object.keys(prices).length > 0;
 

@@ -6,11 +6,20 @@ export interface MepHistoryItem {
     price: number;
 }
 
-// Inicializar con datos locales embebidos
-const localHistory: MepHistoryItem[] = mepHistoryData;
+// Inicializar con datos locales, ordenados cronológicamente inverso (más reciente primero) para consistencia
+const localHistory: MepHistoryItem[] = mepHistoryData.length > 0
+    ? [...mepHistoryData].sort((a, b) => b.date.localeCompare(a.date))
+    : [];
+
+// Cache para O(1) lookups
+let mepMapCache: Map<string, number> | null = null;
+let cachedHistory: MepHistoryItem[] | null = null;
+let lastUpdate = 0;
+const CACHE_TTL = 1000 * 60 * 60; // 1 hora
 
 /**
  * Servicio para gestionar el historial del Dólar MEP
+ * Optimizado para O(1) lookups
  */
 export const mepService = {
     /**
@@ -18,6 +27,11 @@ export const mepService = {
      * Combina datos locales con actualizaciones de la BD si existen
      */
     async getHistory(): Promise<MepHistoryItem[]> {
+        const now = Date.now();
+        if (cachedHistory && (now - lastUpdate < CACHE_TTL)) {
+            return cachedHistory;
+        }
+
         try {
             const { data, error } = await supabase
                 .from('mep_history')
@@ -26,17 +40,54 @@ export const mepService = {
 
             if (error) {
                 console.warn('Error fetching MEP history from DB, using local data only:', error.message);
-                return localHistory;
+                cachedHistory = localHistory;
+                this._refreshCache(cachedHistory);
+                return cachedHistory;
             }
 
             // Mezclar y de-duplicar (prioridad a la BD para días recientes)
-            const combined = [...(data || []), ...localHistory];
-            const unique = Array.from(new Map(combined.map(item => [item.date, item])).values());
+            // Usar Map para deduplicación eficiente O(N)
+            const combinedMap = new Map<string, MepHistoryItem>();
 
-            return unique.sort((a, b) => b.date.localeCompare(a.date));
+            // Primero insertar local (base)
+            localHistory.forEach(item => combinedMap.set(item.date, item));
+
+            // Luego sobreescribir con DB (más reciente/confiable)
+            if (data) {
+                data.forEach(item => combinedMap.set(item.date, item));
+            }
+
+            // Convertir a array y ordenar
+            const unique = Array.from(combinedMap.values());
+            cachedHistory = unique.sort((a, b) => b.date.localeCompare(a.date));
+            this._refreshCache(cachedHistory);
+            lastUpdate = now;
+
+            return cachedHistory;
         } catch (e) {
+            console.error('Exception in getHistory:', e);
             return localHistory;
         }
+    },
+
+    /**
+     * Actualiza el cache interno Map para O(1) lookups
+     */
+    _refreshCache(history: MepHistoryItem[]) {
+        mepMapCache = new Map<string, number>();
+        history.forEach(h => mepMapCache!.set(h.date, h.price));
+    },
+
+    /**
+     * Devuelve un Map<DateString, Price> para lookups O(1)
+     * Si no está inicializado, lo genera sincrónicamente desde localHistory
+     */
+    getMepMap(): Map<string, number> {
+        if (!mepMapCache) {
+            // Fallback síncrono si no se ha llamado a getHistory aún
+            this._refreshCache(localHistory);
+        }
+        return mepMapCache!;
     },
 
     /**
@@ -54,6 +105,9 @@ export const mepService = {
 
             if (error) {
                 console.error('Error recording daily MEP:', error);
+            } else {
+                // Invalidate cache to force refresh on next read
+                cachedHistory = null;
             }
         } catch (e) {
             console.error('Exception recording daily MEP:', e);
@@ -61,22 +115,42 @@ export const mepService = {
     },
 
     /**
-     * Busca el MEP más cercano a una fecha específica
-     * @param targetDate - Fecha en formato YYYY-MM-DD
-     * @param history - Lista de historial opcional (si no se provee, usa local)
+     * Busca el precio MEP para una fecha especifica O(1) o O(log N) apros
+     * Versión optimizada que usa Map si está disponible
      */
-    findClosestRate(targetDate: string, history: MepHistoryItem[] = []): number {
-        const source = history.length > 0 ? history : localHistory;
-        if (!source.length) return 0;
+    findClosestRate(targetDate: string, mapArg?: Map<string, number>): number {
+        const map = mapArg || this.getMepMap();
 
-        // Intentar encontrar coincidencia exacta primero
-        const exact = source.find(h => h.date === targetDate);
-        if (exact) return exact.price;
+        // 1. Exact Match O(1)
+        if (map.has(targetDate)) {
+            return map.get(targetDate)!;
+        }
 
-        // Si no hay exacta, buscar la fecha anterior más cercana
-        const sorted = [...source].sort((a, b) => b.date.localeCompare(a.date));
-        const older = sorted.find(h => h.date < targetDate);
+        // 2. Fallback: buscar fecha anterior más cercana.
+        // Como esto es raro (solo feriados/findes), iterar hacia atrás unos días es más rápido 
+        // que sortear todo el array cada vez.
 
-        return older ? older.price : sorted[sorted.length - 1].price;
+        // Probar hasta 7 días hacia atrás (cubre fin de semana largo y feriados)
+        const dateObj = new Date(targetDate);
+        for (let i = 1; i <= 10; i++) {
+            dateObj.setDate(dateObj.getDate() - 1);
+            const prevDate = dateObj.toISOString().split('T')[0];
+            if (map.has(prevDate)) {
+                return map.get(prevDate)!;
+            }
+        }
+
+        // 3. Last Resort: Si no hay nada en 10 días, devolver el último precio conocido (el más reciente globalmente o el más antiguo si la fecha es muy vieja)
+        // En un caso real, esto podría mejorarse, pero para portfolio tracker es suficiente.
+        // Si la fecha es muy vieja (antes del inicio de la historia), devolver el primer precio de la historia.
+        const cached = cachedHistory || localHistory;
+        if (cached.length === 0) return 0;
+
+        // Si la fecha target es menor que la fecha mas vieja que tenemos
+        const oldest = cached[cached.length - 1];
+        if (targetDate < oldest.date) return oldest.price;
+
+        // Devuelve el mas reciente (índice 0) por defecto si falló todo lo demás (futuro?)
+        return cached[0].price;
     }
 };
