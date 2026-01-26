@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { formatPercent } from '../utils/formatters';
+import { formatPercent } from '../../utils/formatters';
 
 export const PercentageDisplay = ({ value, className = '', showArrow = true, iconSize = "w-3 h-3" }) => {
     const isPositive = value >= 0;
