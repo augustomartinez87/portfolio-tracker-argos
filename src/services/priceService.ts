@@ -68,7 +68,7 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
     const assetClass = getAssetClass(ticker, item.panel);
     const rawPrice = item.ars_bid || item.mark || item.close || 0;
-    const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+    const adjustedPrice = adjustBondPrice(ticker, rawPrice, assetClass);
 
     const isValidPrice = adjustedPrice > 0;
     const lastValid = lastValidPricesRef.current[ticker];
@@ -130,7 +130,7 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
         if (!priceMap[ticker]) {
           const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-          const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+          const adjustedPrice = adjustBondPrice(ticker, rawPrice, assetClass);
 
           priceMap[ticker] = {
             precio: adjustedPrice,
@@ -212,7 +212,7 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
         if (!priceMap[ticker]) {
           const rawPrice = item.c || item.px_ask || item.px_bid || 0;
           const assetClass = getAssetClass(ticker, 'bonds');
-          const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+          const adjustedPrice = adjustBondPrice(ticker, rawPrice, assetClass);
 
           priceMap[ticker] = {
             precio: adjustedPrice,

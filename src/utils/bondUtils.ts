@@ -239,27 +239,29 @@ export const getAssetClass = (
 
 /**
  * Ajusta el precio del bono según su tipo.
- * Los precios de data912 vienen multiplicados por 100:
+ * Los precios de data912 vienen multiplicados por 100 para instrumentos de deuda:
  * - Bonos pesos: precio * 100, hay que dividir por 100
  * - Bonos hard dollar: precio * 100, hay que dividir por 100
  *
- * @param ticker - El símbolo del bono
+ * @param ticker - El símbolo del activo
  * @param price - El precio raw de la API
+ * @param assetClass - Clase de activo ya calculada (opcional, permite mayor precisión)
  * @returns Precio ajustado
  */
 export const adjustBondPrice = (
   ticker: string | null | undefined,
-  price: number | null | undefined
+  price: number | null | undefined,
+  assetClass?: AssetClass
 ): number => {
   if (!price || price === 0) return 0;
 
-  // Bonos en pesos: dividir por 100
-  if (isBonoPesos(ticker)) {
+  // Prioridad 1: assetClass explícito (más confiable)
+  if (assetClass === 'BONOS PESOS' || assetClass === 'BONO HARD DOLLAR') {
     return price / 100;
   }
 
-  // Bonos hard dollar: dividir por 100
-  if (isBonoHardDollar(ticker)) {
+  // Prioridad 2: Detección por ticker (fallback)
+  if (isBonoPesos(ticker) || isBonoHardDollar(ticker)) {
     return price / 100;
   }
 
