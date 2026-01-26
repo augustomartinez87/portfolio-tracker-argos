@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Treemap, Tooltip, ResponsiveContainer } from 'recharts';
 import { usePortfolio } from '../../contexts/PortfolioContext';
+import { usePrices } from '../../services/priceService';
 import { macroCarryEngine, MacroCarryMetrics } from '../../services/macroCarryEngine';
 import { formatPercent, formatCurrency } from '../../utils/formatters';
 import { Loader2, TrendingUp } from 'lucide-react';
@@ -14,17 +15,17 @@ const CustomTooltip = ({ active, payload }) => {
                 <p className="font-bold text-text-primary mb-2 text-sm">{data.ticker} <span className="text-text-tertiary font-normal">({data.instrumentType})</span></p>
                 <div className="space-y-1">
                     <div className="flex justify-between gap-4">
-                        <span className="text-text-tertiary">TNA (ARS):</span>
-                        <span className="font-mono text-success">{formatPercent(data.nominalRate * 100)}</span>
+                        <span className="text-text-tertiary">Precio (ARS):</span>
+                        <span className="font-mono text-text-primary">{formatCurrency(data.marketPrice)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
-                        <span className="text-text-tertiary">Devaluación Esp:</span>
-                        <span className="font-mono text-danger">-{formatPercent(data.fxDevaluation * 100)}</span>
+                        <span className="text-text-tertiary">Tasa Implícita (ARS):</span>
+                        <span className="font-mono text-text-primary">{formatPercent(data.impliedYieldArs * 100)}</span>
                     </div>
                     <div className="border-t border-border-primary my-1 pt-1 flex justify-between gap-4 font-bold">
-                        <span>Carry Neto (USD):</span>
-                        <span className={`font-mono ${data.netCarryUsd >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {formatPercent(data.netCarryUsd * 100)}
+                        <span>Carry USD (Stable FX):</span>
+                        <span className={`font-mono ${data.impliedYieldUsd >= 0 ? 'text-success' : 'text-danger'}`}>
+                            {formatPercent(data.impliedYieldUsd * 100)}
                         </span>
                     </div>
                     <div className="flex justify-between gap-4">
@@ -80,7 +81,7 @@ const CustomizedContent = (props) => {
                     opacity={0.9}
                     style={{ textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}
                 >
-                    {formatPercent(payload.netCarryUsd * 100)}
+                    {formatPercent(payload.impliedYieldUsd * 100)}
                 </text>
             )}
         </g>
@@ -89,16 +90,16 @@ const CustomizedContent = (props) => {
 
 export const CarryTradeHeatmap = ({ positions }) => {
     const { currentPortfolio } = usePortfolio();
+    const { prices, mepRate } = usePrices();
     const [metrics, setMetrics] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchMetrics = async () => {
-            // We pass positions to the engine so it can highlight OWNED assets
-            // but it also returns the generic Watchlist.
             setLoading(true);
             try {
-                const result = await macroCarryEngine.calculateMacroCarry(positions || []);
+                // Pass live prices and MEP to engine
+                const result = await macroCarryEngine.calculateMacroCarry(positions || [], prices, mepRate);
                 if (result.success) {
                     setMetrics(result.data);
                 }
@@ -110,13 +111,13 @@ export const CarryTradeHeatmap = ({ positions }) => {
         };
 
         fetchMetrics();
-    }, [positions, currentPortfolio]);
+    }, [positions, currentPortfolio, prices, mepRate]);
 
-    const getColor = (netCarry) => {
-        // USD Carry is usually smaller range than ARS nominals.
-        // > 10% USD real is huge. < -10% is crash.
+    const getColor = (usdYield) => {
+        // USD Carry ranges. > 5% real USD is great.
+        // Normalized: 0.15 max.
         const maxReference = 0.15;
-        const intensity = Math.min(Math.abs(netCarry) / maxReference, 1);
+        const netCarry = usdYield;
 
         if (netCarry >= 0) {
             if (netCarry > 0.10) return '#16a34a'; // green-600
@@ -132,10 +133,10 @@ export const CarryTradeHeatmap = ({ positions }) => {
     const data = useMemo(() => {
         return metrics.map(m => ({
             name: m.ticker,
-            size: 100, // Equal size for Heatmap or weight by Opportunity? Let's use Equal for Watchlist mode.
-            netCarryUsd: m.netCarryUsd,
+            size: 100,
+            impliedYieldUsd: m.impliedYieldUsd,
             ...m,
-            fill: getColor(m.netCarryUsd)
+            fill: getColor(m.impliedYieldUsd)
         }));
     }, [metrics]);
 
@@ -159,17 +160,17 @@ export const CarryTradeHeatmap = ({ positions }) => {
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-text-primary">Macro Carry (USD)</h3>
-                        <p className="text-[10px] text-text-tertiary">Tasa ARS vs Devaluación</p>
+                        <p className="text-[10px] text-text-tertiary">Implícito a FX Estable</p>
                     </div>
                 </div>
                 <div className="flex text-xs gap-3">
                     <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-success"></div>
-                        <span className="text-text-tertiary">Carry +</span>
+                        <span className="text-text-tertiary">Rend. +</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-danger"></div>
-                        <span className="text-text-tertiary">Carry -</span>
+                        <span className="text-text-tertiary">Rend. -</span>
                     </div>
                 </div>
             </div>

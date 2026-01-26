@@ -29,6 +29,10 @@ const FciTransactionModal = lazy(() => import('../components/modals/FciTransacti
 import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
 import { useFciEngine } from '../hooks/useFciEngine';
 import FciTable from '../components/dashboard/FciTable';
+import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector';
+import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap';
+import { useSearch } from '../hooks/useSearch';
+import { MarketStatus } from '../components/dashboard/MarketStatus';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -55,8 +59,9 @@ export default function Dashboard() {
   const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [tradesLoading, setTradesLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm, clearSearch } = useSearch();
   // Filtros de transacciones
+  const [dateRangeValue, setDateRangeValue] = useState('all');
   const [tradesSearchTerm, setTradesSearchTerm] = useState('');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -258,29 +263,13 @@ export default function Dashboard() {
       filtered = filtered.filter(t => t.ticker === tickerFilter);
     }
 
-    // Filtro de período
-    if (periodFilter !== 'all') {
-      const now = new Date();
-      let fromDate = null;
-
-      switch (periodFilter) {
-        case 'last_month':
-          fromDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-          break;
-        case 'last_3_months':
-          fromDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-          break;
-        case 'last_year':
-          fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-          break;
-        default:
-          fromDate = null;
-      }
-
-      if (fromDate) {
+    // Filtro de período (Updated to use DateRangeSelector logic)
+    if (dateRangeValue !== 'all') {
+      const { startDate } = getDateRange(dateRangeValue);
+      if (startDate) {
         filtered = filtered.filter(t => {
           const tradeDate = new Date(t.fecha);
-          return tradeDate >= fromDate;
+          return tradeDate >= startDate;
         });
       }
     }
@@ -469,6 +458,8 @@ export default function Dashboard() {
                   refetchPrices={refetchPrices}
                   compact={true}
                   showLogo={false}
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
                 />
               </div>
             </div>
@@ -564,19 +555,14 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Filtro Período */}
-                      <div className="lg:flex-1">
+                      {/* Filtro Período (Replaced with DateRangeSelector) */}
+                      <div className="lg:flex-[1.5]">
                         <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Período</label>
-                        <select
-                          value={periodFilter}
-                          onChange={(e) => setPeriodFilter(e.target.value)}
-                          className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
-                        >
-                          <option value="all">Todos</option>
-                          <option value="last_month">Último mes</option>
-                          <option value="last_3_months">Últimos 3 meses</option>
-                          <option value="last_year">Último año</option>
-                        </select>
+                        <DateRangeSelector
+                          selectedRange={dateRangeValue}
+                          onChange={setDateRangeValue}
+                          className="w-full justify-between"
+                        />
                       </div>
 
                       {/* Filtro Tipo */}
@@ -745,6 +731,31 @@ export default function Dashboard() {
                     />
                   </div>
                   <DashboardSummaryCards totals={combinedTotals} lastUpdate={lastUpdate} />
+
+                  {/* Carry Trade Heatmap Section */}
+                  <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3 h-[300px]">
+                    {/* Left: Heatmap */}
+                    <div className="h-full">
+                      <CarryTradeHeatmap positions={positions} />
+                    </div>
+
+                    {/* Right: Market Context */}
+                    <div className="h-full bg-background-secondary border border-border-primary rounded-xl p-4">
+                      <h3 className="text-sm font-bold text-text-primary mb-2">Contexto de Mercado</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <MarketStatus market="MERVAL" sentiment="bullish" />
+                        <MarketStatus market="SPY" sentiment="neutral" />
+                        <MarketStatus market="BTC" sentiment="bullish" />
+                        <MarketStatus market="USDT" sentiment="neutral" />
+                      </div>
+                      <div className="mt-4 p-3 bg-background-tertiary rounded-lg">
+                        <p className="text-xs text-text-secondary">
+                          <strong>Global Funding Cost:</strong> {formatPercent(0.32)} (Ref)<br />
+                          El mapa muestra el retorno en USD asumiendo FX estable.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Sección de FCIs (Liquidez) */}
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col mt-3 overflow-hidden">
