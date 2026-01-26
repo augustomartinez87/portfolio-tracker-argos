@@ -196,18 +196,35 @@ export const CarryTradeHeatmap = ({ positions }) => {
             </div>
 
             <div className="flex-1 min-h-[160px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <Treemap
-                        data={data}
-                        dataKey="size"
-                        ratio={4 / 3}
-                        stroke="#fff"
-                        fill="#8884d8"
-                        content={<CustomizedContent />}
-                    >
-                        <Tooltip content={<CustomTooltip />} />
-                    </Treemap>
-                </ResponsiveContainer>
+                {/* Temporal: Simple table para debuggear el Treemap */}
+                <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-border-primary">
+                                <th className="text-left p-2 text-text-primary">Ticker</th>
+                                <th className="text-right p-2 text-text-primary">Precio</th>
+                                <th className="text-right p-2 text-text-primary">Carry USD</th>
+                                <th className="text-right p-2 text-text-primary">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((item, index) => (
+                                <tr key={index} className="border-b border-border-primary/50">
+                                    <td className="p-2 font-mono text-text-primary">{item.name}</td>
+                                    <td className="p-2 text-right font-mono text-text-secondary">
+                                        {formatARS(item.marketPrice)}
+                                    </td>
+                                    <td className={`p-2 text-right font-mono ${item.impliedYieldUsd >= 0 ? 'text-success' : 'text-danger'}`}>
+                                        {formatPercent(item.impliedYieldUsd * 100)}
+                                    </td>
+                                    <td className="p-2 text-right font-mono text-text-secondary">
+                                        {Math.round(item.carryScore)}/100
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
