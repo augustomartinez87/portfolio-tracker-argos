@@ -22,7 +22,7 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
       <div className="flex items-center gap-2">
         <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
         <span className="text-text-tertiary">|</span>
-        <span className="text-sm text-text-tertiary">{lastUpdate || '--:--'}</span>
+        <span className="text-sm text-text-tertiary">Precios: {lastUpdate || '--:--'}</span>
 
         <button
           onClick={toggleTheme}
@@ -31,16 +31,6 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
           aria-label="Cambiar tema"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
-        <button
-          onClick={() => refetchPrices()}
-          disabled={isPricesLoading}
-          className="p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Actualizar"
-          aria-label="Actualizar precios"
-        >
-          <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
     </header>

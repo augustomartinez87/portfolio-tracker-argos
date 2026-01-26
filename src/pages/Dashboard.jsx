@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { prices: rawPrices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const prices = rawPrices || {};
 
-  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
+  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : null;
   const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
 
   const [trades, setTrades] = useState([]);
@@ -427,15 +427,6 @@ export default function Dashboard() {
               <img src={logo} alt="Argos Capital" className="w-8 h-8" />
               <h1 className="text-lg font-bold text-text-primary">Argos Capital</h1>
             </div>
-            <button
-              onClick={() => refetchPrices()}
-              disabled={isPricesLoading}
-              className="p-3 h-12 w-12 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              title="Actualizar"
-              aria-label="Actualizar"
-            >
-              <RefreshCw className={`w-5 h-5 ${isPricesLoading ? 'animate-spin' : ''}`} />
-            </button>
           </div>
         </div>
 

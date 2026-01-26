@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { usePrices } from '../services/priceService';
 import { RefreshCw, Coins } from 'lucide-react';
 
 export default function FundingEngine() {
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
     const { theme } = useTheme();
+    const { mepRate, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, refetch: refetchPrices } = usePrices();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+    const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : null;
 
     // Reemplaza con TU URL final de Streamlit Cloud
     const APP_URL = "https://portfolio-tracker-argos.streamlit.app";
@@ -41,7 +46,19 @@ export default function FundingEngine() {
             />
 
             <main className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-                <div className="h-screen w-full relative">
+                {/* Header */}
+                <div className="p-3 border-b border-border-primary">
+                    <DashboardHeader
+                        mepRate={mepRate}
+                        lastUpdate={lastUpdate}
+                        isPricesLoading={isPricesLoading}
+                        refetchPrices={refetchPrices}
+                        compact={true}
+                        showLogo={true}
+                    />
+                </div>
+
+                <div className="h-[calc(100vh-4rem)] w-full relative">
                     {iframeSrc && (
                         <iframe
                             src={iframeSrc}
@@ -50,7 +67,7 @@ export default function FundingEngine() {
                             frameBorder="0"
                             title="Funding Engine"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            style={{ display: 'block', height: '100vh', width: '100%' }}
+                            style={{ display: 'block', height: '100%', width: '100%' }}
                         />
                     )}
                 </div>

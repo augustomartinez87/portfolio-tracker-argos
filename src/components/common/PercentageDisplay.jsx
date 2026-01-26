@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatPercent } from '../../utils/formatters';
 
-export const PercentageDisplay = ({ value, className = '', showArrow = true, iconSize = "w-3 h-3" }) => {
+export const PercentageDisplay = ({ value, className = '', showArrow = true, iconSize = "w-3 h-3", neutral = false }) => {
     const isPositive = value >= 0;
     const isZero = value === 0;
 
@@ -11,11 +11,12 @@ export const PercentageDisplay = ({ value, className = '', showArrow = true, ico
     // We'll apply text-profit/text-loss unless specific classes are passed that might conflict, 
     // but simpler to just apply them.
 
-    const textColor = isPositive ? 'text-profit' : 'text-loss';
+    // If neutral is true, don't apply profit/loss colors
+    const textColor = neutral ? '' : (isPositive ? 'text-profit' : 'text-loss');
 
     return (
         <span className={`flex items-center font-mono ${textColor} ${className}`}>
-            {showArrow && !isZero && (
+            {showArrow && !isZero && !neutral && (
                 isPositive
                     ? <ChevronUp className={`${iconSize} mr-0.5`} />
                     : <ChevronDown className={`${iconSize} mr-0.5`} />

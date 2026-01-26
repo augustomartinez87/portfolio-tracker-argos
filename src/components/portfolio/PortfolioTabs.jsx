@@ -44,7 +44,7 @@ export const PortfolioTabs = ({ activeTab, setActiveTab, currentPortfolio }) => 
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeTab === tab.id
-            ? 'bg-primary text-white'
+            ? 'bg-text-primary text-background-primary'
             : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
             }`}
         >

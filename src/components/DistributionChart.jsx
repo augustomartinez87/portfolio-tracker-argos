@@ -111,7 +111,7 @@ export const DistributionChart = ({ positions }) => {
               />
               <span className="text-sm text-text-primary font-medium">{item.name}</span>
             </div>
-            <PercentageDisplay value={item.percentage} iconSize="w-3 h-3" className="text-sm font-mono font-semibold" showArrow={false} />
+            <PercentageDisplay value={item.percentage} iconSize="w-3 h-3" className="text-sm font-mono font-semibold text-text-primary" showArrow={false} neutral={true} />
           </button>
         ))}
       </div>
@@ -136,7 +136,7 @@ export const DistributionChart = ({ positions }) => {
                 className="flex justify-between items-center py-1.5 px-2 rounded bg-background-tertiary"
               >
                 <span className="text-sm font-mono text-text-primary">{asset.ticker}</span>
-                <PercentageDisplay value={asset.percentage} iconSize="w-3 h-3" className="text-sm font-mono" showArrow={false} />
+                <PercentageDisplay value={asset.percentage} iconSize="w-3 h-3" className="text-sm font-mono text-text-primary" showArrow={false} neutral={true} />
               </div>
             ))}
           </div>
