@@ -3,32 +3,42 @@ import SummaryCard from '../common/SummaryCard';
 import { formatARS, formatPercent } from '../../utils/formatters';
 import { PercentageDisplay } from '../common/PercentageDisplay';
 
-export const DashboardSummaryCards = ({ totals, lastUpdate }) => {
+export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false }) => {
+  const formatValue = (value) => {
+    if (isLoading) return '---';
+    return formatARS(value);
+  };
+
+  const formatBadgeValue = (value, pct) => {
+    if (isLoading) return '...';
+    return <PercentageDisplay value={pct} className="!text-current" iconSize="w-2.5 h-2.5" />;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
       <SummaryCard
         title="Invertido"
-        value={formatARS(totals.invertido)}
+        value={formatValue(totals.invertido)}
         subtitle="Total invertido"
       />
       <SummaryCard
         title="Valuación"
-        value={formatARS(totals.valuacion)}
-        subtitle={lastUpdate ? `Actualizado: ${lastUpdate}` : ''}
+        value={formatValue(totals.valuacion)}
+        subtitle={isLoading ? 'Actualizando precios...' : (lastUpdate ? `Actualizado: ${lastUpdate}` : '')}
       />
       <SummaryCard
         title="P&L"
-        value={formatARS(totals.resultado)}
-        trend={totals.resultado}
+        value={formatValue(totals.resultado)}
+        trend={isLoading ? 0 : totals.resultado}
         showBadge
-        badgeValue={<PercentageDisplay value={totals.resultadoPct} className="!text-current" iconSize="w-2.5 h-2.5" />}
+        badgeValue={formatBadgeValue(totals.resultado, totals.resultadoPct)}
       />
       <SummaryCard
         title="P&L Hoy"
-        value={formatARS(totals.resultadoDiario)}
-        trend={totals.resultadoDiario}
+        value={formatValue(totals.resultadoDiario)}
+        trend={isLoading ? 0 : totals.resultadoDiario}
         showBadge
-        badgeValue={<PercentageDisplay value={totals.resultadoDiarioPct} className="!text-current" iconSize="w-2.5 h-2.5" />}
+        badgeValue={formatBadgeValue(totals.resultadoDiario, totals.resultadoDiarioPct)}
       />
     </div>
   );

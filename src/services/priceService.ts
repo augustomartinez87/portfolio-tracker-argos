@@ -25,6 +25,14 @@ interface LastValidPrices {
   };
 }
 
+const CACHE_KEY = 'data912_prices_cache';
+
+interface PriceCache {
+  prices: PriceMap;
+  mepRate: number;
+  lastUpdate: string; // ISO string
+}
+
 // ============================================
 // FETCH FUNCTIONS
 // ============================================
@@ -45,6 +53,44 @@ async function fetchWithTimeout<T>(url: string, timeoutMs = 10000): Promise<T> {
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
+  }
+}
+
+/**
+ * Persistencia en localStorage
+ */
+function saveToLocalStorage(data: PriceServiceResult) {
+  try {
+    const cache: PriceCache = {
+      prices: data.prices,
+      mepRate: data.mepRate,
+      lastUpdate: data.lastUpdate.toISOString()
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.warn('Error saving prices to cache:', e);
+  }
+}
+
+function loadFromLocalStorage(): PriceServiceResult | null {
+  try {
+    const stored = localStorage.getItem(CACHE_KEY);
+    if (!stored) return null;
+
+    const cache: PriceCache = JSON.parse(stored);
+    return {
+      prices: cache.prices,
+      mepRate: cache.mepRate,
+      tickers: Object.keys(cache.prices).map(ticker => ({
+        ticker,
+        panel: cache.prices[ticker].panel,
+        assetClass: cache.prices[ticker].assetClass
+      })),
+      lastUpdate: new Date(cache.lastUpdate)
+    };
+  } catch (e) {
+    console.warn('Error loading prices from cache:', e);
+    return null;
   }
 }
 
@@ -288,12 +334,17 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
     console.warn('Error en fetch de ONs:', corpResult.reason);
   }
 
-  return {
+  const result = {
     prices: priceMap,
     mepRate,
     tickers: tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)),
     lastUpdate: new Date(),
   };
+
+  // Guardar en cache para la próxima carga
+  saveToLocalStorage(result);
+
+  return result;
 }
 
 // ============================================
@@ -310,12 +361,13 @@ export function usePrices() {
   const query = useQuery({
     queryKey: ['prices'],
     queryFn: () => fetchAllPrices(lastValidPricesRef),
-    staleTime: 30 * 1000, // 30 segundos
-    refetchInterval: 30 * 1000, // Refetch cada 30 segundos
-    refetchIntervalInBackground: false, // No refetch cuando tab no está activo (se pausa automáticamente)
-    refetchOnWindowFocus: false, // No refetch automático al cambiar tabs - el usuario puede refrescar manualmente
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    initialData: () => loadFromLocalStorage() || undefined,
   });
 
   // Nota: El polling se pausa automáticamente cuando la tab está en background

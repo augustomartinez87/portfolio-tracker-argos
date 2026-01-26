@@ -142,7 +142,7 @@ export default function Dashboard() {
   }, [showFormatHelp]);
 
   // Portfolio Engine - replaces local calculations
-  const { positions, totals: allTotals, calculateTotals } = usePortfolioEngine(trades, prices, mepRate);
+  const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(trades, prices, mepRate);
 
   // FCI Engine
   const {
@@ -714,7 +714,11 @@ export default function Dashboard() {
                       currentPortfolio={currentPortfolio}
                     />
                   </div>
-                  <DashboardSummaryCards totals={allTotals} lastUpdate={lastUpdate} />
+                  <DashboardSummaryCards
+                    totals={allTotals}
+                    lastUpdate={lastUpdate}
+                    isLoading={!isPricesReady || isPricesLoading}
+                  />
 
 
 

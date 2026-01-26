@@ -215,9 +215,12 @@ export const usePortfolioEngine = (
 
     const totals = useMemo(() => calculateTotals(positions, mepRate), [positions, mepRate]);
 
+    const isPricesReady = Object.keys(prices).length > 0;
+
     return {
         positions,
         totals,
+        isPricesReady,
         calculateTotals
     };
 };
