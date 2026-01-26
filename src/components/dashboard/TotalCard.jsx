@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatARS, formatPercent } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent } from '../../utils/formatters';
 import { PercentageDisplay } from '../common/PercentageDisplay';
 
 export const TotalCard = ({ totals, columnSettings = { density: 'compact', showPPC: true, showInvertido: true, showDiario: true, showDiarioPct: true }, currency = 'ARS' }) => {

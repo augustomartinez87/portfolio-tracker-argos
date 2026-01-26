@@ -517,7 +517,7 @@ export default function Dashboard() {
                 <div className="max-w-3xl mx-auto">
                   <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
                     <h2 className="text-lg font-semibold text-text-primary mb-4">Distribución del Portfolio</h2>
-                    <DistributionChart positions={positions} />
+                    <DistributionChart positions={positions} currency={displayCurrency} />
                   </div>
                 </div>
               )}
