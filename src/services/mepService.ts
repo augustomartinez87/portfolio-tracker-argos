@@ -121,36 +121,36 @@ export const mepService = {
     findClosestRate(targetDate: string, mapArg?: Map<string, number>): number {
         const map = mapArg || this.getMepMap();
 
-        // 1. Exact Match O(1)
-        if (map.has(targetDate)) {
-            return map.get(targetDate)!;
-        }
+        // Defensive check: Ensure map is actually a Map (Vercel crash fix)
+        // If mapArg is passed as a plain object or something else, default to fallback
+        if (map && typeof map.has === 'function') {
+            // 1. Exact Match O(1)
+            if (map.has(targetDate)) {
+                return map.get(targetDate)!;
+            }
 
-        // 2. Fallback: buscar fecha anterior más cercana.
-        // Como esto es raro (solo feriados/findes), iterar hacia atrás unos días es más rápido 
-        // que sortear todo el array cada vez.
-
-        // Probar hasta 7 días hacia atrás (cubre fin de semana largo y feriados)
-        const dateObj = new Date(targetDate);
-        for (let i = 1; i <= 10; i++) {
-            dateObj.setDate(dateObj.getDate() - 1);
-            const prevDate = dateObj.toISOString().split('T')[0];
-            if (map.has(prevDate)) {
-                return map.get(prevDate)!;
+            // 2. Fallback: buscar fecha anterior más cercana.
+            const dateObj = new Date(targetDate);
+            for (let i = 1; i <= 10; i++) {
+                dateObj.setDate(dateObj.getDate() - 1);
+                const prevDate = dateObj.toISOString().split('T')[0];
+                if (map.has(prevDate)) {
+                    return map.get(prevDate)!;
+                }
             }
         }
 
-        // 3. Last Resort: Si no hay nada en 10 días, devolver el último precio conocido (el más reciente globalmente o el más antiguo si la fecha es muy vieja)
-        // En un caso real, esto podría mejorarse, pero para portfolio tracker es suficiente.
-        // Si la fecha es muy vieja (antes del inicio de la historia), devolver el primer precio de la historia.
-        const cached = cachedHistory || localHistory;
-        if (cached.length === 0) return 0;
+        // 3. Last Resort (or if Map invalid): Linear/Sort search on array
+        const source = cachedHistory || localHistory;
+        if (!source.length) return 0;
 
-        // Si la fecha target es menor que la fecha mas vieja que tenemos
-        const oldest = cached[cached.length - 1];
-        if (targetDate < oldest.date) return oldest.price;
+        // Intentar encontrar coincidencia exacta primero
+        const exact = source.find(h => h.date === targetDate);
+        if (exact) return exact.price;
 
-        // Devuelve el mas reciente (índice 0) por defecto si falló todo lo demás (futuro?)
-        return cached[0].price;
+        const sorted = [...source].sort((a, b) => b.date.localeCompare(a.date));
+        const older = sorted.find(h => h.date < targetDate);
+
+        return older ? older.price : sorted[sorted.length - 1].price;
     }
 };
