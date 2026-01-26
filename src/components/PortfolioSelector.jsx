@@ -1,15 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { Plus, MoreVertical, Check, Star, Edit2, Trash2, X } from 'lucide-react'
 
 export const PortfolioSelector = () => {
   const { portfolios, currentPortfolio, setCurrentPortfolio, createPortfolio, deletePortfolio, setDefaultPortfolio } = usePortfolio()
   const [showModal, setShowModal] = useState(false)
-  const [showMenu, setShowMenu] = useState(null)
+  const [showMenu, setShowMenu] = useState(false) // Changed from null to boolean for simplicity
   const [newPortfolioName, setNewPortfolioName] = useState('')
   const [newPortfolioDescription, setNewPortfolioDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const menuRef = useRef(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false)
+      }
+    }
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMenu])
 
   const handleCreatePortfolio = async (e) => {
     e.preventDefault()
@@ -53,9 +73,9 @@ export const PortfolioSelector = () => {
 
   return (
     <>
-      <div className="relative">
+      <div className="relative" ref={menuRef}>
         <button
-          onClick={() => setShowMenu(currentPortfolio?.id)}
+          onClick={() => setShowMenu(!showMenu)}
           className="flex items-center gap-2 px-3 py-2 bg-background-tertiary hover:bg-border-primary rounded-lg border border-border-primary transition-all text-text-primary font-medium text-sm"
         >
           <div className="w-2 h-2 rounded-full bg-success"></div>
@@ -73,7 +93,7 @@ export const PortfolioSelector = () => {
                 <button
                   onClick={() => {
                     setCurrentPortfolio(portfolio)
-                    setShowMenu(null)
+                    setShowMenu(false)
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-background-tertiary transition-colors text-left"
                 >
@@ -119,7 +139,7 @@ export const PortfolioSelector = () => {
             <button
               onClick={() => {
                 setShowModal(true)
-                setShowMenu(null)
+                setShowMenu(false)
               }}
               className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-background-tertiary transition-colors text-success font-medium border-t border-border-primary"
             >
@@ -130,8 +150,8 @@ export const PortfolioSelector = () => {
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {showModal && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
           <div className="bg-background-secondary rounded-xl p-6 w-full max-w-md border border-border-primary shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-text-primary">Nuevo Portfolio</h2>
@@ -205,7 +225,8 @@ export const PortfolioSelector = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

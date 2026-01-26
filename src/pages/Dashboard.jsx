@@ -423,7 +423,7 @@ export default function Dashboard() {
                 </div>
                 <div className="hidden lg:block border-l border-border-primary h-8 mx-1"></div>
                 {/* Selector de Portfolio (Merged into Header) */}
-                <div className="hidden lg:block scale-90 origin-left">
+                <div className="hidden lg:block">
                   <PortfolioSelector />
                 </div>
               </div>
