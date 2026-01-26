@@ -90,7 +90,8 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
     // 1. Fetch único y rápido a Supabase
     const { data: rows, error } = await supabase
       .from('market_prices')
-      .select('*');
+      .select('*')
+      .limit(5000); // Override default 1000 row limit
 
     if (error) throw error;
     if (!rows || rows.length === 0) throw new Error('No prices in cache');

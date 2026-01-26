@@ -4,13 +4,13 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Configuración de APIs externas (URLs REALES verificadas)
+// Configuración de APIs externas
 const APIS = {
     MEP: 'https://dolarapi.com/v1/dolares/bolsa',
     STOCKS: 'https://data912.com/live/arg_stocks',
-    CEDEARS: 'https://data912.com/live/arg_cedears', // Verified: uses arg_cedears
+    CEDEARS: 'https://data912.com/live/arg_cedears',
     BONDS: 'https://data912.com/live/arg_bonds',
-    ON: 'https://data912.com/live/arg_corp' // Verified: uses arg_corp
+    ON: 'https://data912.com/live/arg_corp'
 };
 
 const supabase = createClient(
@@ -20,15 +20,17 @@ const supabase = createClient(
 
 Deno.serve(async (req) => {
     try {
-        console.log("Starting price fetch job (v2)...");
+        console.log("Starting price fetch job (v3 - Robust Parsing)...");
         const pricesToUpsert = [];
+        const errors = [];
 
         // 1. Fetch MEP (Crítico - DolarAPI)
         try {
             const mepRes = await fetch(APIS.MEP);
             if (mepRes.ok) {
                 const mepData = await mepRes.json();
-                const price = mepData.venta || mepData.promedio || 0;
+                // DolarAPI devuelve números, pero aseguramos con Number()
+                const price = Number(mepData.venta || mepData.promedio || 0);
                 if (price > 0) {
                     pricesToUpsert.push({
                         ticker: 'MEP',
@@ -41,59 +43,75 @@ Deno.serve(async (req) => {
             }
         } catch (e) {
             console.error("Error fetching MEP:", e);
+            errors.push(`MEP Error: ${e.message}`);
         }
 
         // 2. Fetch Data912 (Parallel)
         const sections = [
             { url: APIS.BONDS, panel: 'bonds' },
             { url: APIS.CEDEARS, panel: 'cedear' },
-            { url: APIS.STOCKS, panel: 'arg_stock' }, // Correct panel name
+            { url: APIS.STOCKS, panel: 'arg_stock' },
             { url: APIS.ON, panel: 'corp' }
         ];
 
         const results = await Promise.allSettled(
-            sections.map(s => fetch(s.url, { signal: AbortSignal.timeout(15000) }).then(r => r.json().then(d => ({ data: d, panel: s.panel }))))
+            sections.map(s => fetch(s.url, { signal: AbortSignal.timeout(20000) }).then(r => r.json().then(d => ({ data: d, panel: s.panel }))))
         );
 
+        let totalFetched = 0;
+
         results.forEach(res => {
-            if (res.status === 'fulfilled' && Array.isArray(res.value.data)) {
-                res.value.data.forEach((item: any) => {
-                    // Mapeo flexible para Data912
+            if (res.status === 'fulfilled') {
+                const items = Array.isArray(res.value.data) ? res.value.data : [];
+                totalFetched += items.length;
+
+                items.forEach((item: any) => {
                     const ticker = item.symbol || item.ticker;
 
-                    // DATA912 return formats:
-                    // Stocks/Cedears: { symbol, c (close), px_bid, px_ask ... }
-                    // Bonds: { symbol, c, ... }
-                    // Need to handle potential differing keys if API changse
-                    const price = item.c || item.px_ask || item.px_bid || item.last || item.price || 0;
+                    // DATA912: Prioridad a px_ask/bid si 'c' es 0 o nulo
+                    // Coerción agresiva a Number() para evitar strings "123.45"
+                    let rawPrice = Number(item.c);
 
-                    const pct = item.pct_change || item.change || 0;
+                    // Si el cierre es 0, intentar con puntas (promedio o una de ellas)
+                    if (!rawPrice || rawPrice === 0) {
+                        const bid = Number(item.px_bid || item.bid);
+                        const ask = Number(item.px_ask || item.ask);
 
-                    if (ticker && price > 0) {
+                        if (bid > 0 && ask > 0) rawPrice = (bid + ask) / 2;
+                        else if (ask > 0) rawPrice = ask; // Peor caso ask (compra)
+                        else if (bid > 0) rawPrice = bid; // Peor caso bid (venta)
+                        else rawPrice = Number(item.last || item.price || 0);
+                    }
+
+                    if (ticker && rawPrice > 0) {
                         pricesToUpsert.push({
                             ticker: ticker,
-                            price: Number(price),
+                            price: rawPrice, // Store RAW price (frontend handles /100 adj)
                             panel: res.value.panel,
                             last_update: new Date(),
                             metadata: {
-                                pct_change: pct,
-                                bid: item.px_bid || item.bid,
-                                ask: item.px_ask || item.ask
+                                pct_change: Number(item.pct_change || item.change || 0),
+                                bid: Number(item.px_bid || item.bid || 0),
+                                ask: Number(item.px_ask || item.ask || 0)
                             }
                         });
                     }
                 });
             } else if (res.status === 'rejected') {
                 console.error("Fetch failed for section:", res.reason);
+                errors.push(`Section failed: ${res.reason}`);
             }
         });
 
         if (pricesToUpsert.length === 0) {
-            return new Response(JSON.stringify({ message: "No prices fetched from any source" }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({
+                message: "No valid prices found",
+                errors,
+                totalFetched
+            }), { status: 500, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // 3. Upsert masivo a Supabase (Batched to avoid timeouts if list is huge)
-        // Batch size 1000 is safe for Supabase
+        // 3. Upsert masivo a Supabase
         const BATCH_SIZE = 1000;
         for (let i = 0; i < pricesToUpsert.length; i += BATCH_SIZE) {
             const batch = pricesToUpsert.slice(i, i + BATCH_SIZE);
@@ -101,14 +119,15 @@ Deno.serve(async (req) => {
                 .from('market_prices')
                 .upsert(batch, { onConflict: 'ticker' });
 
-            if (error) {
-                console.error("Error upserting batch:", error);
-                throw error;
-            }
+            if (error) throw error;
         }
 
         return new Response(
-            JSON.stringify({ message: `Updated ${pricesToUpsert.length} prices`, timestamp: new Date() }),
+            JSON.stringify({
+                message: `Success: Updated ${pricesToUpsert.length} prices`,
+                total_scanned: totalFetched,
+                errors: errors.length > 0 ? errors : undefined
+            }),
             { headers: { 'Content-Type': 'application/json' } }
         )
     } catch (error) {
