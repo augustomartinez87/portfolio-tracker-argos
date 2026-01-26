@@ -126,7 +126,7 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
         if (DOLLAR_SUFFIXES.includes(ticker as typeof DOLLAR_SUFFIXES[number])) return;
         if (ticker.endsWith('.D')) return;
 
-        const assetClass = getAssetClass(ticker, null, true);
+        const assetClass = getAssetClass(ticker, 'arg_stock');
 
         if (!priceMap[ticker]) {
           const rawPrice = item.c || item.px_ask || item.px_bid || 0;
@@ -170,6 +170,7 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
         if (!priceMap[ticker]) {
           const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+          const assetClass = getAssetClass(ticker, 'cedear');
 
           priceMap[ticker] = {
             precio: rawPrice,
@@ -178,13 +179,13 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
             ask: item.px_ask,
             close: item.c,
             panel: 'cedear',
-            assetClass: 'CEDEAR' as AssetClass,
+            assetClass,
             pctChange: item.pct_change ?? null,
             isBonoPesos: false,
             isBonoHD: false,
           };
 
-          tickerList.push({ ticker, panel: 'cedear', assetClass: 'CEDEAR' });
+          tickerList.push({ ticker, panel: 'cedear', assetClass });
         } else if (item.pct_change !== undefined) {
           priceMap[ticker].pctChange = item.pct_change;
         }

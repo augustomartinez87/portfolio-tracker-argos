@@ -16,14 +16,17 @@ import {
 
 /**
  * Detecta si un ticker es una Obligación Negociable (ON).
- * Verifica primero que NO sea un bono soberano/provincial.
+ * Verifica primero que NO sea un bono soberano o una acción argentina conocida.
  */
 export const isON = (ticker: string | null | undefined): boolean => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
-  
+
   // Si es un bono conocido, NO es una ON
   if (isBond(t)) return false;
+
+  // Si es una acción argentina conocida (como YPFD), NO es una ON
+  if (ARGY_TICKERS.includes(t as any)) return false;
 
   // Las ONs suelen terminar en O, D o C
   return t.endsWith('O') || t.endsWith('D') || t.endsWith('C');
@@ -70,7 +73,7 @@ export const calculateONValueInARS = (
   _mepRate: number
 ): { value: number; priceInARS: number; usesConversion: boolean } => {
   const isDirectON = originalTicker.endsWith('O');
-  
+
   if (isDirectON) {
     // Ya está en ARS
     const price = priceMap[originalTicker]?.precio || 0;
@@ -83,12 +86,12 @@ export const calculateONValueInARS = (
     // Convertir D/C a O para obtener precio ARS
     const pesosEquivalent = convertToONPesos(originalTicker);
     const priceInARS = priceMap[pesosEquivalent]?.precio || 0;
-    
+
     if (priceInARS === 0) {
       // No existe equivalente O
       throw new Error(`No existe equivalente en pesos para ${originalTicker}`);
     }
-    
+
     return {
       value: priceInARS * quantity,
       priceInARS,
@@ -120,13 +123,13 @@ export const formatONSelectorPrice = (
   formatUSD: (value: number) => string
 ): string => {
   const currency = getONCurrencyType(ticker);
-  switch(currency) {
-    case 'ARS': 
+  switch (currency) {
+    case 'ARS':
       return formatARS(price);
-    case 'USD': 
-    case 'CABLE': 
+    case 'USD':
+    case 'CABLE':
       return formatUSD(price);
-    default: 
+    default:
       return price.toString();
   }
 };
@@ -176,10 +179,11 @@ export const isBond = (ticker: string | null | undefined): boolean => {
 };
 
 /**
- * Determina la clase de activo de un ticker
+ * Determina la clase de activo de un ticker.
+ * Prioriza el panel de data912 si está disponible para una clasificación 100% precisa.
  *
  * @param ticker - El símbolo del activo
- * @param panel - Panel de data912 (opcional)
+ * @param panel - Panel de data912 (opcional, pero recomendado)
  * @param isArgStock - Flag para forzar ARGY (opcional)
  */
 export const getAssetClass = (
@@ -191,28 +195,29 @@ export const getAssetClass = (
 
   const t = ticker.toUpperCase();
 
-  // ONs primero (prioridad alta)
-  if (isON(t)) return 'ON';
-
-  // Bonos (más específicos)
-  if (isBonoPesos(t)) return 'BONOS PESOS';
-  if (isBonoHardDollar(t)) return 'BONO HARD DOLLAR';
-
-  // Panel de bonds
-  if (panel === 'bonds') return 'BONO HARD DOLLAR';
-
-  // Panel de corp (ONs) - fallback
-  if (panel === 'corp') return 'ON';
-
-  // Acciones argentinas
-  if (isArgStock || ARGY_TICKERS.includes(t as typeof ARGY_TICKERS[number])) {
-    return 'ARGY';
+  // 1. Prioridad absoluta: Panel de la API
+  if (panel) {
+    if (panel === 'bonds') return 'BONO HARD DOLLAR'; // Los bonos de este panel son HD
+    if (panel === 'corp') return 'ON';
+    if (panel === 'arg_stock') return 'ARGY';
+    if (panel === 'cedear') return 'CEDEAR';
+    if (panel === 'mep' && (isBonoPesos(t) || isBonoHardDollar(t))) {
+      return isBonoPesos(t) ? 'BONOS PESOS' : 'BONO HARD DOLLAR';
+    }
   }
 
-  // CEDEARs
-  if (panel === 'cedear') return 'CEDEAR';
+  // 2. Segunda prioridad: Flags explícitos
+  if (isArgStock) return 'ARGY';
 
-  // Default: CEDEAR (mayoría de tickers internacionales)
+  // 3. Tercera prioridad: Detección por patrones/listas (fallback)
+  if (isBonoPesos(t)) return 'BONOS PESOS';
+  if (isBonoHardDollar(t)) return 'BONO HARD DOLLAR';
+  if (ARGY_TICKERS.includes(t as any)) return 'ARGY';
+
+  // ONs suelen terminar en O, D o C y no son bonos/acciones conocidas
+  if (isON(t)) return 'ON';
+
+  // Default para el resto
   return 'CEDEAR';
 };
 

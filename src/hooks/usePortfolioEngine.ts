@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '../utils/bondUtils';
+import { AssetClass } from '../types';
 
 // Interfaces
 export interface Trade {
@@ -153,12 +154,12 @@ export const usePortfolioEngine = (
             .map((pos: any): Position => {
                 const priceData = prices[pos.ticker];
                 const isPositionON = isON(pos.ticker);
-                
+
                 // Calcular precio actual y valuación con conversión de ONs si es necesario
                 let precioActual = priceData?.precio || 0;
                 let valuacionActual = pos.cantidadTotal * precioActual;
                 let usesONConversion = false;
-                
+
                 // Solo aplicar conversión ON si es ON D/C y tenemos datos de precios
                 if (isPositionON && !pos.ticker.endsWith('O') && priceData && (priceData.precio || 0) > 0) {
                     try {
@@ -172,7 +173,7 @@ export const usePortfolioEngine = (
                         usesONConversion = false;
                     }
                 }
-                
+
                 const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
                 const resultado = valuacionActual - pos.costoTotal;
                 const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
@@ -181,8 +182,8 @@ export const usePortfolioEngine = (
                 const resultadoDiario = (dailyReturnPct / 100) * valuacionActual;
                 const resultadoDiarioPct = dailyReturnPct;
 
-                // Determine asset class properly from price data or fallback
-                const assetClass = priceData?.assetClass || getAssetClass(pos.ticker, priceData?.panel);
+                // Determine asset class properly from price data (most accurate) or fallback
+                const assetClass = (priceData?.assetClass as AssetClass) || getAssetClass(pos.ticker, priceData?.panel);
 
                 // Check bond types from price data or helpers
                 const isBP = priceData?.isBonoPesos ?? isBonoPesos(pos.ticker);
