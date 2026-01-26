@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { data912 } from '../utils/data912';
 import { isBonoPesos } from '../hooks/useBondPrices';
 import { API_ENDPOINTS } from '../utils/constants';
+import { formatARS, formatUSD } from '../utils/formatters';
 
 const formatDateSafe = (dateStr) => {
   if (!dateStr) return '-';
@@ -17,23 +18,18 @@ const formatDateSafe = (dateStr) => {
   });
 };
 
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-};
-
 const formatPercentage = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
 };
 
-export default function PositionDetailModal({ open, onClose, position, trades }) {
+const formatGenericCurrency = (value, currency) => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  return currency === 'ARS' ? formatARS(value) : formatUSD(value);
+};
+
+export default function PositionDetailModal({ open, onClose, position, trades, currency = 'ARS', mepRate = 1 }) {
   const [historical, setHistorical] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -131,7 +127,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
           const endpoint = data912.getHistoricalEndpoint(position.ticker, position.panel);
           const url = `${API_ENDPOINTS.BASE}${endpoint}?from=${dateStr}`;
-          
+
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -143,17 +139,17 @@ export default function PositionDetailModal({ open, onClose, position, trades })
           }
 
           const data = await response.json();
-          
+
           if (!Array.isArray(data) || data.length === 0) {
             setHistorical([]);
             setLoading(false);
             return;
           }
 
-          const validData = data.filter(item => 
-            item && 
-            item.date && 
-            typeof item.c === 'number' && 
+          const validData = data.filter(item =>
+            item &&
+            item.date &&
+            typeof item.c === 'number' &&
             item.c > 0
           );
 
@@ -169,21 +165,21 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             return dateA.getTime() - dateB.getTime();
           });
 
-          const cutoffTime = selectedDays !== 99999 
+          const cutoffTime = selectedDays !== 99999
             ? Date.now() - (selectedDays * 24 * 60 * 60 * 1000)
             : 0;
-          
-          const filteredData = selectedDays !== 99999 
+
+          const filteredData = selectedDays !== 99999
             ? sortedData.filter(item => {
-                const itemTime = new Date(item.date).getTime();
-                return itemTime >= cutoffTime;
-              })
+              const itemTime = new Date(item.date).getTime();
+              return itemTime >= cutoffTime;
+            })
             : sortedData;
 
           setHistorical(filteredData);
           setLoading(false);
           return;
-          
+
         } catch (err) {
           lastError = err;
           if (isBonoPesos(position.ticker)) {
@@ -191,7 +187,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             setLoading(false);
             return;
           }
-          
+
           if (attempts < maxAttempts) {
             const delay = Math.min(1000 * Math.pow(2, attempts - 1), 10000);
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -212,7 +208,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     if (!Array.isArray(historical) || historical.length === 0) {
       return [];
     }
-    
+
     return historical.map(day => {
       try {
         const date = new Date(day.date);
@@ -235,7 +231,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
 
     try {
       const prices = historical.map(h => h.c).filter(p => typeof p === 'number' && p > 0);
-      
+
       if (prices.length === 0) return null;
 
       const high = Math.max(...prices);
@@ -255,13 +251,17 @@ export default function PositionDetailModal({ open, onClose, position, trades })
     try {
       if (!position) return positionTrades;
       const currentPrice = position.precioActual || 0;
-      
+
       return positionTrades.map(trade => {
         const investedAmount = (trade.cantidad || 0) * (trade.precioCompra || 0);
         const currentValue = (trade.cantidad || 0) * currentPrice;
         const result = currentValue - investedAmount;
         const resultPct = trade.precioCompra > 0 ? (result / investedAmount) * 100 : 0;
-        
+
+        // Versión USD - El motor no nos pasa el USD individual por trade aquí, pero podemos estimarlo
+        // Pero para consistencia, usaremos lo que ya calculamos en el motor si estuviera disponible.
+        // Dado que position ya tiene costoUSD y valuacionUSD totales, mostraremos esos.
+
         return {
           ...trade,
           investedAmount,
@@ -275,6 +275,21 @@ export default function PositionDetailModal({ open, onClose, position, trades })
       return positionTrades;
     }
   }, [position, positionTrades]);
+
+  // Valores bimonetarios calculados del objeto position
+  const displayValues = useMemo(() => {
+    const isARS = currency === 'ARS';
+    return {
+      price: isARS ? position.precioActual : (position.precioActual / mepRate),
+      avgPrice: isARS ? position.precioPromedio : (position.costoUSD / position.cantidadTotal),
+      invested: isARS ? position.costoTotal : position.costoUSD,
+      valuation: isARS ? position.valuacionActual : position.valuacionUSD,
+      result: isARS ? position.resultado : position.resultadoUSD,
+      resultPct: position.resultadoPct,
+      dailyResult: isARS ? position.resultadoDiario : position.resultadoDiarioUSD,
+      dailyResultPct: position.resultadoDiarioPct
+    };
+  }, [position, currency, mepRate]);
 
   if (!open) return null;
 
@@ -340,9 +355,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
               <p className="text-text-tertiary text-xs mb-1">Precio Prom.</p>
               <p className="text-text-primary font-mono text-lg font-semibold">
-                {isBonoPesos(position.ticker)
-                  ? `$${position.precioPromedio.toFixed(4)}`
-                  : formatCurrency(position.precioPromedio)
+                {currency === 'ARS' && isBonoPesos(position.ticker)
+                  ? `$${displayValues.avgPrice.toFixed(4)}`
+                  : formatGenericCurrency(displayValues.avgPrice, currency)
                 }
               </p>
             </div>
@@ -350,9 +365,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
               <p className="text-text-tertiary text-xs mb-1">Precio Actual</p>
               <p className="text-text-primary font-mono text-lg font-bold">
-                {isBonoPesos(position.ticker)
-                  ? `$${position.precioActual.toFixed(4)}`
-                  : formatCurrency(position.precioActual)
+                {currency === 'ARS' && isBonoPesos(position.ticker)
+                  ? `$${displayValues.price.toFixed(4)}`
+                  : formatGenericCurrency(displayValues.price, currency)
                 }
               </p>
             </div>
@@ -360,45 +375,44 @@ export default function PositionDetailModal({ open, onClose, position, trades })
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
               <p className="text-text-tertiary text-xs mb-1">Invertido</p>
               <p className="text-text-primary font-mono text-lg font-semibold">
-                {formatCurrency(invested)}
+                {formatGenericCurrency(displayValues.invested, currency)}
               </p>
             </div>
 
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary">
               <p className="text-text-tertiary text-xs mb-1">Valuación Actual</p>
               <p className="text-text-primary font-mono text-lg font-bold">
-                {formatCurrency(position.valuacionActual)}
+                {formatGenericCurrency(displayValues.valuation, currency)}
               </p>
             </div>
 
-            <div className={`rounded-lg p-4 border ${
-              position.resultado >= 0
-                ? 'bg-success/10 border-success/30'
-                : 'bg-danger/10 border-danger/30'
-            }`}>
+            <div className={`rounded-lg p-4 border ${displayValues.result >= 0
+              ? 'bg-success/10 border-success/30'
+              : 'bg-danger/10 border-danger/30'
+              }`}>
               <p className="text-text-tertiary text-xs mb-1">P&L Acumulado</p>
-              <p className={`font-mono text-lg font-bold ${getColorClass(position.resultado)}`}>
-                {formatCurrency(position.resultado)}
+              <p className={`font-mono text-lg font-bold ${getColorClass(displayValues.result)}`}>
+                {formatGenericCurrency(displayValues.result, currency)}
               </p>
-              <p className={`text-sm ${getColorClass(position.resultadoPct)}`}>
-                {formatPercentage(position.resultadoPct)}
+              <p className={`text-sm ${getColorClass(displayValues.resultPct)}`}>
+                {formatPercentage(displayValues.resultPct)}
               </p>
             </div>
 
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary col-span-2">
               <p className="text-text-tertiary text-xs mb-1">Variación Diaria</p>
               <div className="flex items-center gap-2">
-                {position.resultadoDiario >= 0 ? (
+                {displayValues.dailyResult >= 0 ? (
                   <TrendingUp className="w-5 h-5 text-success" />
                 ) : (
                   <TrendingDown className="w-5 h-5 text-danger" />
                 )}
-                <p className={`font-mono text-lg font-bold ${getColorClass(position.resultadoDiario)}`}>
-                  {formatCurrency(position.resultadoDiario || 0)}
+                <p className={`font-mono text-lg font-bold ${getColorClass(displayValues.dailyResult)}`}>
+                  {formatGenericCurrency(displayValues.dailyResult, currency)}
                 </p>
               </div>
-              <p className={`text-sm ${getColorClass(position.resultadoDiarioPct)}`}>
-                {formatPercentage(position.resultadoDiarioPct || 0)}
+              <p className={`text-sm ${getColorClass(displayValues.dailyResultPct)}`}>
+                {formatPercentage(displayValues.dailyResultPct || 0)}
               </p>
             </div>
           </div>
@@ -410,7 +424,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                 <div>
                   <p className="text-amber-400 font-medium text-sm">Datos no disponibles</p>
                   <p className="text-amber-300 text-xs mt-1">
-                    El ticker <span className="font-mono font-semibold">{position.ticker}</span> no está disponible en data912.com. 
+                    El ticker <span className="font-mono font-semibold">{position.ticker}</span> no está disponible en data912.com.
                     Los valores mostrados se basan en el precio de compra.
                   </p>
                 </div>
@@ -428,7 +442,7 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </h3>
                   {chartData.length > 0 && (
                     <p className="text-xs text-text-tertiary mt-1">
-                      {selectedDays === 99999 
+                      {selectedDays === 99999
                         ? `Mostrando todos los datos disponibles (${chartData.length} registros)`
                         : `Mostrando ${chartData.length} días de datos`
                       }
@@ -452,11 +466,10 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                       <button
                         key={days}
                         onClick={() => setSelectedDays(days)}
-                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
-                          selectedDays === days
-                            ? 'bg-success text-white'
-                            : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
-                        }`}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${selectedDays === days
+                          ? 'bg-success text-white'
+                          : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
+                          }`}
                       >
                         {label}
                       </button>
@@ -464,24 +477,24 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                   </div>
                 </div>
               </div>
-                {stats && (
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <p className="text-text-tertiary text-xs">Máximo</p>
-                      <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-tertiary text-xs">Mínimo</p>
-                      <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
-                    </div>
-                    <div>
-                      <p className="text-text-tertiary text-xs">Variación {selectedDays === 99999 ? 'MAX' : `${selectedDays}d`}</p>
-                      <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
-                        {formatPercentage(stats.change)}
-                      </p>
-                    </div>
+              {stats && (
+                <div className="flex gap-4 text-sm">
+                  <div>
+                    <p className="text-text-tertiary text-xs">Máximo</p>
+                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.high)}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-text-tertiary text-xs">Mínimo</p>
+                    <p className="text-text-primary font-mono font-medium">{formatCurrency(stats.low)}</p>
+                  </div>
+                  <div>
+                    <p className="text-text-tertiary text-xs">Variación {selectedDays === 99999 ? 'MAX' : `${selectedDays}d`}</p>
+                    <p className={`font-mono font-medium ${getColorClass(stats.change)}`}>
+                      {formatPercentage(stats.change)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -520,7 +533,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                       tick={{ fontSize: 12, fill: '#6b6b6b' }}
                       tickFormatter={(value) => {
                         try {
-                          return `$${Number(value).toFixed(0)}`;
+                          const isARS = currency === 'ARS';
+                          const displayVal = isARS ? value : (value / mepRate);
+                          return isARS ? `$${Number(displayVal).toFixed(0)}` : `u$s ${Number(displayVal).toFixed(0)}`;
                         } catch {
                           return '$0';
                         }
@@ -536,7 +551,9 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                       }}
                       formatter={(value) => {
                         try {
-                          return [formatCurrency(Number(value)), 'Precio'];
+                          const isARS = currency === 'ARS';
+                          const displayVal = isARS ? value : (value / mepRate);
+                          return [formatGenericCurrency(Number(displayVal), currency), 'Precio'];
                         } catch {
                           return ['Error', 'Precio'];
                         }
@@ -597,45 +614,51 @@ export default function PositionDetailModal({ open, onClose, position, trades })
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-primary">
-                    {tradesWithResults.map((trade) => (
-                      <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
-                        <td className="px-3 py-3 text-text-secondary text-sm">
-                          {formatDateSafe(trade.fecha)}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span className="inline-block px-2 py-1 bg-success/20 text-success rounded text-xs font-semibold">
-                            Compra
-                          </span>
-                        </td>
-                        <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.cantidad}</td>
-                        <td className="text-right px-3 py-3 text-text-primary font-mono">
-                          {isBonoPesos(trade.ticker)
-                            ? `$${trade.precioCompra.toFixed(4)}`
-                            : formatCurrency(trade.precioCompra)
-                          }
-                        </td>
-                        <td className="text-right px-3 py-3 text-text-tertiary font-mono text-sm">
-                          {formatCurrency(trade.investedAmount)}
-                        </td>
-                        <td className="text-right px-3 py-3 text-text-primary font-mono">
-                          {formatCurrency(trade.currentValue)}
-                        </td>
-                        <td className="text-right px-3 py-3 font-mono">
-                          <div className={`font-medium ${trade.result >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {formatCurrency(trade.result)}
-                          </div>
-                        </td>
-                        <td className="text-right px-3 py-3 font-mono">
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                            trade.resultPct >= 0
+                    {tradesWithResults.map((trade) => {
+                      const isARS = currency === 'ARS';
+                      const tradeInv = isARS ? trade.investedAmount : (trade.investedAmount / mepRate);
+                      const tradeCurr = isARS ? trade.currentValue : (trade.currentValue / mepRate);
+                      const tradeResult = tradeCurr - tradeInv;
+
+                      return (
+                        <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
+                          <td className="px-3 py-3 text-text-secondary text-sm">
+                            {formatDateSafe(trade.fecha)}
+                          </td>
+                          <td className="px-3 py-3">
+                            <span className="inline-block px-2 py-1 bg-success/20 text-success rounded text-xs font-semibold">
+                              Compra
+                            </span>
+                          </td>
+                          <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.cantidad}</td>
+                          <td className="text-right px-3 py-3 text-text-primary font-mono">
+                            {currency === 'ARS' && isBonoPesos(trade.ticker)
+                              ? `$${trade.precioCompra.toFixed(4)}`
+                              : formatGenericCurrency(isARS ? trade.precioCompra : (trade.precioCompra / mepRate), currency)
+                            }
+                          </td>
+                          <td className="text-right px-3 py-3 text-text-tertiary font-mono text-sm">
+                            {formatGenericCurrency(tradeInv, currency)}
+                          </td>
+                          <td className="text-right px-3 py-3 text-text-primary font-mono">
+                            {formatGenericCurrency(tradeCurr, currency)}
+                          </td>
+                          <td className="text-right px-3 py-3 font-mono">
+                            <div className={`font-medium ${tradeResult >= 0 ? 'text-success' : 'text-danger'}`}>
+                              {formatGenericCurrency(tradeResult, currency)}
+                            </div>
+                          </td>
+                          <td className="text-right px-3 py-3 font-mono">
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${trade.resultPct >= 0
                               ? 'bg-success/20 text-success'
                               : 'bg-danger/20 text-danger'
-                          }`}>
-                            {formatPercentage(trade.resultPct)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                              }`}>
+                              {formatPercentage(trade.resultPct)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

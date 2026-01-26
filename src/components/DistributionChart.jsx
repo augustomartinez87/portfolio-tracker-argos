@@ -1,28 +1,34 @@
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChartIcon, X } from 'lucide-react';
-import { calculateAssetDistribution, formatCurrency, formatPercentage } from '../utils/portfolioHelpers';
+import { calculateAssetDistribution, formatCurrency as legacyFormat, formatPercentage } from '../utils/portfolioHelpers';
 import { PercentageDisplay } from './common/PercentageDisplay';
+import { formatARS, formatUSD } from '../utils/formatters';
 
-export const DistributionChart = ({ positions }) => {
+export const DistributionChart = ({ positions, currency = 'ARS' }) => {
+  const formatCurrency = (val) => currency === 'ARS' ? formatARS(val) : formatUSD(val);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const { distribution, totalValue } = useMemo(
-    () => calculateAssetDistribution(positions),
-    [positions]
+    () => calculateAssetDistribution(positions, currency),
+    [positions, currency]
   );
 
   const categoryAssets = useMemo(() => {
     if (!selectedCategory) return [];
     return positions
       .filter(p => p.assetClass === selectedCategory)
-      .map(p => ({
-        ...p,
-        percentage: totalValue > 0 ? (p.valuacionActual / totalValue) * 100 : 0
-      }))
-      .sort((a, b) => b.valuacionActual - a.valuacionActual);
-  }, [positions, selectedCategory, totalValue]);
+      .map(p => {
+        const val = currency === 'ARS' ? p.valuacionActual : p.valuacionUSD;
+        return {
+          ...p,
+          displayVal: val,
+          percentage: totalValue > 0 ? (val / totalValue) * 100 : 0
+        };
+      })
+      .sort((a, b) => b.displayVal - a.displayVal);
+  }, [positions, selectedCategory, totalValue, currency]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -89,7 +95,9 @@ export const DistributionChart = ({ positions }) => {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <p className="text-xs text-text-tertiary">Total</p>
-            <p className="text-sm font-bold text-text-primary font-mono">{formatCurrency(totalValue).replace('ARS', '').trim()}</p>
+            <p className="text-sm font-bold text-text-primary font-mono">
+              {currency === 'ARS' ? formatARS(totalValue).replace('ARS', '').trim() : formatUSD(totalValue).replace('US$', '').trim()}
+            </p>
           </div>
         </div>
       </div>

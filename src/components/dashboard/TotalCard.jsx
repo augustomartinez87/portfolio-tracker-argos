@@ -2,9 +2,11 @@ import React from 'react';
 import { formatARS, formatPercent } from '../../utils/formatters';
 import { PercentageDisplay } from '../common/PercentageDisplay';
 
-export const TotalCard = ({ totals, columnSettings = { density: 'compact', showPPC: true, showInvertido: true, showDiario: true, showDiarioPct: true } }) => {
+export const TotalCard = ({ totals, columnSettings = { density: 'compact', showPPC: true, showInvertido: true, showDiario: true, showDiarioPct: true }, currency = 'ARS' }) => {
   const paddingY = columnSettings.density === 'compact' ? 'py-3' : 'py-3.5';
   const paddingX = 'px-3';
+
+  const formatVal = (arsVal, usdVal) => currency === 'ARS' ? formatARS(arsVal) : formatUSD(usdVal);
 
   return (
     <div className="bg-background-secondary border border-border-primary rounded-xl shadow-md overflow-x-auto">
@@ -68,18 +70,18 @@ export const TotalCard = ({ totals, columnSettings = { density: 'compact', showP
             </td>
             {/* Valuación */}
             <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
-              {formatARS(totals.valuacion)}
+              {formatVal(totals.valuacion, totals.valuacionUSD)}
             </td>
             {/* Invertido */}
             {columnSettings.showInvertido && (
               <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
-                {formatARS(totals.invertido)}
+                {formatVal(totals.invertido, totals.invertidoUSD)}
               </td>
             )}
             {/* P&L $ */}
             <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
               <span className={`font-mono font-semibold text-base ${totals.resultado >= 0 ? 'text-success' : 'text-danger'}`}>
-                {formatARS(totals.resultado)}
+                {formatVal(totals.resultado, totals.resultadoUSD)}
               </span>
             </td>
             {/* P&L % */}
@@ -95,7 +97,7 @@ export const TotalCard = ({ totals, columnSettings = { density: 'compact', showP
             {columnSettings.showDiario && (
               <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                 <span className={`font-mono text-sm font-medium ${totals.resultadoDiario >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {formatARS(totals.resultadoDiario)}
+                  {formatVal(totals.resultadoDiario, totals.resultadoDiarioUSD)}
                 </span>
               </td>
             )}

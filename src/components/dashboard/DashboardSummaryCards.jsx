@@ -1,6 +1,6 @@
 import React from 'react';
 import SummaryCard from '../common/SummaryCard';
-import { formatARS, formatPercent } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent } from '../../utils/formatters';
 import { PercentageDisplay } from '../common/PercentageDisplay';
 
 export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false, currency = 'ARS' }) => {

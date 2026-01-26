@@ -164,7 +164,7 @@ export default function Dashboard() {
     totals: fciTotals,
     addTransaction: addFciTransaction,
     loading: fciLoading
-  } = useFciEngine(currentPortfolio?.id);
+  } = useFciEngine(currentPortfolio?.id, mepRate, mepHistory);
 
   const [fciModalOpen, setFciModalOpen] = useState(false);
   const [fciModalType, setFciModalType] = useState('SUBSCRIPTION');
@@ -761,6 +761,8 @@ export default function Dashboard() {
                         positions={fciPositions}
                         onSubscribe={handleOpenFciSubscription}
                         onRedeem={handleOpenFciRedemption}
+                        currency={displayCurrency}
+                        mepRate={mepRate}
                       />
                     )}
                   </div>
@@ -821,7 +823,7 @@ export default function Dashboard() {
         </Suspense>
 
         <Suspense fallback={<LoadingFallback />}>
-          <PositionDetailModal open={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} />
+          <PositionDetailModal open={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} currency={displayCurrency} />
         </Suspense>
         <Suspense fallback={<LoadingFallback />}>
           <FciTransactionModal

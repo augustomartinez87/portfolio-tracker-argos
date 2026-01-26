@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fciService } from '../services/fciService';
+import { mepService } from '../services/mepService';
 
 /**
  * Hook para manejar la lógica de negocio de FCIs
  * @param {string} portfolioId - ID del portfolio activo
+ * @param {number} mepRate - Cotización MEP actual
+ * @param {Array} mepHistory - Historial de MEP
  */
-export function useFciEngine(portfolioId) {
+export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
     const [transactions, setTransactions] = useState([]);
     const [pricesCache, setPricesCache] = useState({}); // { fciId: { fecha: vcp } }
     const [latestPrices, setLatestPrices] = useState({}); // { fciId: { fecha, vcp } }
@@ -62,15 +65,29 @@ export function useFciEngine(portfolioId) {
                     nombre: fci_master?.nombre || 'Desconocido',
                     cuotapartes: 0,
                     montoInvertido: 0, // Cash Flow neto (Suscripciones - Rescates)
+                    montoInvertidoUSD: 0
                 };
             }
 
+            const montoNum = Number(monto);
+            const cuotasNum = Number(cuotapartes);
+
             if (tipo === 'SUBSCRIPTION') {
-                posMap[fci_id].cuotapartes += Number(cuotapartes);
-                posMap[fci_id].montoInvertido += Number(monto);
+                posMap[fci_id].cuotapartes += cuotasNum;
+                posMap[fci_id].montoInvertido += montoNum;
+
+                // Cálculo USD con precisión histórica
+                const dateStr = tx.fecha;
+                const historicalMep = mepService.findClosestRate(dateStr, mepHistory) || mepRate;
+                posMap[fci_id].montoInvertidoUSD += montoNum / historicalMep;
             } else if (tipo === 'REDEMPTION') {
-                posMap[fci_id].cuotapartes -= Number(cuotapartes);
-                posMap[fci_id].montoInvertido -= Number(monto);
+                const pos = posMap[fci_id];
+                const avgCostARS = pos.cuotapartes > 0 ? pos.montoInvertido / pos.cuotapartes : 0;
+                const avgCostUSD = pos.cuotapartes > 0 ? pos.montoInvertidoUSD / pos.cuotapartes : 0;
+
+                pos.cuotapartes -= cuotasNum;
+                pos.montoInvertido -= cuotasNum * avgCostARS;
+                pos.montoInvertidoUSD -= cuotasNum * avgCostUSD;
             }
         });
 
@@ -86,13 +103,18 @@ export function useFciEngine(portfolioId) {
                 const pnl = valuacion - p.montoInvertido;
                 const pnlPct = p.montoInvertido !== 0 ? (pnl / p.montoInvertido) * 100 : 0;
 
+                const valuacionUSD = mepRate > 0 ? valuacion / mepRate : 0;
+                const pnlUSD = valuacionUSD - p.montoInvertidoUSD;
+
                 return {
                     ...p,
                     ultimoVcp: vcpActual,
                     fechaPrecios,
                     valuacion,
                     pnl,
-                    pnlPct
+                    pnlPct,
+                    valuacionUSD,
+                    pnlUSD
                 };
             });
     }, [transactions, latestPrices]);
@@ -102,8 +124,11 @@ export function useFciEngine(portfolioId) {
         return positions.reduce((acc, curr) => ({
             invested: acc.invested + curr.montoInvertido,
             valuation: acc.valuation + curr.valuacion,
-            pnl: acc.pnl + curr.pnl
-        }), { invested: 0, valuation: 0, pnl: 0 });
+            pnl: acc.pnl + curr.pnl,
+            investedUSD: acc.investedUSD + curr.montoInvertidoUSD,
+            valuationUSD: acc.valuationUSD + curr.valuacionUSD,
+            pnlUSD: acc.pnlUSD + curr.pnlUSD
+        }), { invested: 0, valuation: 0, pnl: 0, investedUSD: 0, valuationUSD: 0, pnlUSD: 0 });
     }, [positions]);
 
     // 4. Funciones para modificar datos (wrappers del servicio)

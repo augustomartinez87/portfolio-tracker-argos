@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronUp, ChevronDown, Plus, Minus } from 'lucide-react';
 import { formatARS, formatPercent, formatNumber } from '../../utils/formatters';
 
-const FciTable = ({ positions, onSubscribe, onRedeem }) => {
+const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate = 1 }) => {
     if (!positions || positions.length === 0) {
         return (
             <div className="p-8 text-center text-text-tertiary">
@@ -10,6 +10,8 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
             </div>
         );
     }
+
+    const formatVal = (arsVal, usdVal) => currency === 'ARS' ? formatARS(arsVal) : formatUSD(usdVal);
 
     return (
         <div className="overflow-x-auto">
@@ -28,6 +30,8 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
                 <tbody className="divide-y divide-border-primary">
                     {positions.map((pos) => {
                         const isPositive = pos.pnl >= 0;
+                        const vcpDisplay = currency === 'ARS' ? pos.ultimoVcp : (pos.ultimoVcp / mepRate);
+
                         return (
                             <tr key={pos.fciId} className="hover:bg-background-tertiary transition-all duration-200 group">
                                 <td className="px-4 py-3">
@@ -44,21 +48,21 @@ const FciTable = ({ positions, onSubscribe, onRedeem }) => {
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                    {formatNumber(pos.ultimoVcp, 6)}
+                                    {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)}`}
                                 </td>
 
                                 <td className="px-4 py-3 text-right font-mono font-bold text-text-primary">
-                                    {formatARS(pos.valuacion)}
+                                    {formatVal(pos.valuacion, pos.valuacionUSD)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                    {formatARS(pos.montoInvertido)}
+                                    {formatVal(pos.montoInvertido, pos.montoInvertidoUSD)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex flex-col items-end">
                                         <span className={`text-sm font-mono font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
-                                            {formatARS(pos.pnl)}
+                                            {formatVal(pos.pnl, pos.pnlUSD)}
                                         </span>
                                         <span className={`text-xs font-mono flex items-center ${isPositive ? 'text-profit' : 'text-loss'}`}>
                                             {isPositive ? <ChevronUp className="w-3 h-3 mr-0.5" /> : <ChevronDown className="w-3 h-3 mr-0.5" />}

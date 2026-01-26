@@ -134,15 +134,19 @@ export const usePortfolioEngine = (
                 // Venta: reducir cantidad y costo proporcionalmente (método promedio ponderado)
                 const pos = grouped[ticker];
                 const precioPromedioActual = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
+                const precioPromedioUSDActual = pos.cantidadTotal > 0 ? pos.costoTotalUSD / pos.cantidadTotal : 0;
+
                 const cantidadAVender = Math.min(cantidad, pos.cantidadTotal); // No vender más de lo que hay
 
                 pos.cantidadTotal -= cantidadAVender;
                 pos.costoTotal -= cantidadAVender * precioPromedioActual;
+                pos.costoTotalUSD -= cantidadAVender * precioPromedioUSDActual;
 
                 // Evitar valores negativos por errores de redondeo
                 if (pos.cantidadTotal < 0.0001) {
                     pos.cantidadTotal = 0;
                     pos.costoTotal = 0;
+                    pos.costoTotalUSD = 0;
                 }
             } else {
                 // Compra: sumar cantidad y costo
