@@ -152,7 +152,24 @@ export const CarryTradeHeatmap = ({ positions }) => {
         );
     }
 
-    if (!metrics || metrics.length === 0) return null;
+    if (!metrics || metrics.length === 0) {
+        return (
+            <div className="bg-background-secondary border border-border-primary rounded-xl p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
+                <div className="p-3 bg-background-tertiary rounded-full mb-4">
+                    <TrendingUp className="w-8 h-8 text-text-tertiary" />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary mb-2">No se encontraron instrumentos</h3>
+                <p className="text-sm text-text-secondary max-w-md">
+                    No se detectaron Bonos del Tesoro en Pesos (S.../T...) en la data de mercado actual.
+                    <br /><br />
+                    Intente recargar precios o verifique la conexión con Data912.
+                </p>
+                <div className="mt-4 text-xs font-mono text-text-tertiary bg-background-tertiary p-2 rounded">
+                    Total Precios: {Object.keys(prices || {}).length}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-background-secondary border border-border-primary rounded-xl p-4 h-full flex flex-col">
