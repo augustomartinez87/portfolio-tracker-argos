@@ -181,20 +181,6 @@ export default function Dashboard() {
     }
   };
 
-  // Combine totals for Summary Cards
-  const combinedTotals = useMemo(() => {
-    // Si allTotals es null/undefined, inicializar en cero
-    const safeTotals = allTotals || { invertido: 0, valuacion: 0, resultado: 0, resultadoDiario: 0 };
-
-    return {
-      ...safeTotals,
-      invertido: safeTotals.invertido + (fciTotals?.invested || 0),
-      valuacion: safeTotals.valuacion + (fciTotals?.valuation || 0),
-      resultado: safeTotals.resultado + (fciTotals?.pnl || 0),
-      // resultadoDiario no lo tenemos en FCI aun, asumimos el del portfolio por ahora
-    };
-  }, [allTotals, fciTotals]);
-
   // Filtrar posiciones dinámicamente según búsqueda
   const filteredPositions = useMemo(() => {
     if (!searchTerm) return positions;
@@ -728,7 +714,7 @@ export default function Dashboard() {
                       currentPortfolio={currentPortfolio}
                     />
                   </div>
-                  <DashboardSummaryCards totals={combinedTotals} lastUpdate={lastUpdate} />
+                  <DashboardSummaryCards totals={allTotals} lastUpdate={lastUpdate} />
 
 
 
@@ -736,7 +722,7 @@ export default function Dashboard() {
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col mt-3 overflow-hidden">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-sm lg:text-base font-semibold text-text-primary">Fondos Comunes (Liquidez)</h2>
+                        <h2 className="text-sm lg:text-base font-semibold text-text-primary">Posiciones en FCIs</h2>
                         <span className="text-[10px] text-text-tertiary bg-background-tertiary px-1.5 py-0.5 rounded-full">{fciPositions.length}</span>
                       </div>
                       <button onClick={() => handleOpenFciSubscription()} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-primary border border-border-secondary rounded-lg hover:bg-background-tertiary/80 transition-all text-xs font-medium">
