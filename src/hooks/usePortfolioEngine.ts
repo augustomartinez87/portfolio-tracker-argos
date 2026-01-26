@@ -55,6 +55,10 @@ export interface Position {
     resultadoDiarioUSD: number;
     resultadoPctUSD: number;
     resultadoDiarioPctUSD: number;
+    // P&L Attribution
+    mepPromedioPonderado: number;
+    resultadoFX: number; // Ganancia por suba del MEP
+    resultadoPrecio: number; // Ganancia por suba del activo
     trades: Trade[];
 }
 
@@ -247,6 +251,22 @@ export const usePortfolioEngine = (
 
                 const dailyReturnPct = priceData?.pctChange || 0;
                 const resultadoDiario = (dailyReturnPct / 100) * valuacionActual;
+
+                // P&L Attribution Logic (ARS View)
+                // mepPromedio = CostoPesos / CostoDolares (implícito histórico)
+                const mepPromedioPonderado = costoTotalUSDNum > 0 ? costoTotalNum / costoTotalUSDNum : 0;
+
+                // Si mepRate es 0 (error), asumimos sin efecto FX
+                const currentMepSafe = mepRate > 0 ? mepRate : mepPromedioPonderado;
+
+                // FX Result: Cuántos pesos más valen mis dólares originales solo por devaluación
+                // (CostoUSD) * (MEP_Actual - MEP_Original)
+                const resultadoFX = costoTotalUSDNum * (currentMepSafe - mepPromedioPonderado);
+
+                // Price Result: El resto de la ganancia es mérito del activo (o pérdida)
+                // ResultadoTotal = FX + Precio  =>  Precio = Total - FX
+                const resultadoPrecio = resultado - resultadoFX;
+
                 const resultadoDiarioPct = dailyReturnPct;
 
                 // Asset Class Logic
@@ -284,7 +304,11 @@ export const usePortfolioEngine = (
                     resultadoUSD,
                     resultadoPctUSD,
                     resultadoDiarioUSD,
-                    resultadoDiarioPctUSD: dailyReturnPct
+                    resultadoDiarioPctUSD: dailyReturnPct,
+                    // Attribution
+                    mepPromedioPonderado,
+                    resultadoFX,
+                    resultadoPrecio
                 };
             })
             .sort((a, b) => b.valuacionActual - a.valuacionActual);

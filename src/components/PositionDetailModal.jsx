@@ -398,6 +398,24 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
               <p className={`text-sm ${getColorClass(displayValues.resultPct)}`}>
                 {formatPercentage(displayValues.resultPct)}
               </p>
+
+              {/* P&L Attribution Breakdown (Only for ARS view) */}
+              {currency === 'ARS' && position.resultadoFX !== undefined && (
+                <div className="mt-3 pt-3 border-t border-border-secondary text-xs space-y-1">
+                  <div className="flex justify-between items-center text-text-secondary">
+                    <span>Efecto Precio:</span>
+                    <span className={`font-mono ${getColorClass(position.resultadoPrecio)}`}>
+                      {formatGenericCurrency(position.resultadoPrecio, 'ARS')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-text-secondary">
+                    <span>Efecto Dólar:</span>
+                    <span className={`font-mono ${getColorClass(position.resultadoFX)}`}>
+                      {formatGenericCurrency(position.resultadoFX, 'ARS')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-background-tertiary/50 rounded-lg p-4 border border-border-primary col-span-2">

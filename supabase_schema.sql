@@ -47,9 +47,22 @@ CREATE TABLE IF NOT EXISTS fci_transactions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tabla market_prices (Server-side Caching)
+CREATE TABLE IF NOT EXISTS market_prices (
+  ticker TEXT PRIMARY KEY,
+  price NUMERIC(18, 8) NOT NULL, -- ARS standard or native currency
+  last_update TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  panel TEXT, -- 'cedear', 'bonds', 'merval'
+  metadata JSONB DEFAULT '{}'::JSONB -- Extra info (currency, pct_change, etc)
+);
+
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE portfolios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fci_master ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fci_prices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fci_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE market_prices ENABLE ROW LEVEL SECURITY;
 
 -- Políticas RLS para portfolios
 CREATE POLICY "Users can view their own portfolios" ON portfolios
@@ -91,6 +104,14 @@ CREATE POLICY "Users can update their own fci transactions" ON fci_transactions
 
 CREATE POLICY "Users can delete their own fci transactions" ON fci_transactions
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Políticas RLS para market_prices
+-- Lectura pública (authenticated users)
+CREATE POLICY "Enable read access for authenticated users" ON market_prices
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Escritura restringida (Service Role only via Edge Function)
+-- No se crean policies para INSERT/UPDATE públicas. Solo el service_role (admin) puede escribir.
 
 -- Crear índices para mejor rendimiento
 CREATE INDEX IF NOT EXISTS idx_trades_portfolio_id ON trades(portfolio_id);
