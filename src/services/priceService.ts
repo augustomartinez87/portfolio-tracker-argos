@@ -116,150 +116,175 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
   ]);
 
   // Procesar arg_stocks
-  if (stocksResult.status === 'fulfilled') {
-    stocksResult.value.forEach(item => {
-      const ticker = item.symbol;
-      if (!ticker) return;
+  if (stocksResult.status === 'fulfilled' && Array.isArray(stocksResult.value)) {
+    try {
+      stocksResult.value.forEach(item => {
+        const ticker = item.symbol;
+        if (!ticker) return;
 
-      // Filtrar tickers en dólares
-      if (DOLLAR_SUFFIXES.includes(ticker as typeof DOLLAR_SUFFIXES[number])) return;
-      if (ticker.endsWith('.D')) return;
+        // Filtrar tickers en dólares
+        if (DOLLAR_SUFFIXES.includes(ticker as typeof DOLLAR_SUFFIXES[number])) return;
+        if (ticker.endsWith('.D')) return;
 
-      const assetClass = getAssetClass(ticker, null, true);
+        const assetClass = getAssetClass(ticker, null, true);
 
-      if (!priceMap[ticker]) {
-        const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-        const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+        if (!priceMap[ticker]) {
+          const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+          const adjustedPrice = adjustBondPrice(ticker, rawPrice);
 
-        priceMap[ticker] = {
-          precio: adjustedPrice,
-          precioRaw: rawPrice,
-          bid: item.px_bid,
-          ask: item.px_ask,
-          close: item.c,
-          panel: 'arg_stock',
-          assetClass,
-          pctChange: item.pct_change ?? null,
-          isBonoPesos: isBonoPesos(ticker),
-          isBonoHD: isBonoHardDollar(ticker),
-        };
+          priceMap[ticker] = {
+            precio: adjustedPrice,
+            precioRaw: rawPrice,
+            bid: item.px_bid,
+            ask: item.px_ask,
+            close: item.c,
+            panel: 'arg_stock',
+            assetClass,
+            pctChange: item.pct_change ?? null,
+            isBonoPesos: isBonoPesos(ticker),
+            isBonoHD: isBonoHardDollar(ticker),
+          };
 
-        tickerList.push({ ticker, panel: 'arg_stock', assetClass });
-      } else if (item.pct_change !== undefined) {
-        priceMap[ticker].pctChange = item.pct_change;
-      }
-    });
+          tickerList.push({ ticker, panel: 'arg_stock', assetClass });
+        } else if (item.pct_change !== undefined) {
+          priceMap[ticker].pctChange = item.pct_change;
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando arg_stocks:', error);
+    }
   }
 
   // Procesar cedears
-  if (cedearsResult.status === 'fulfilled') {
-    cedearsResult.value.forEach(item => {
-      const ticker = item.symbol;
-      if (!ticker) return;
+  if (cedearsResult.status === 'fulfilled' && Array.isArray(cedearsResult.value)) {
+    try {
+      cedearsResult.value.forEach(item => {
+        const ticker = item.symbol;
+        if (!ticker) return;
 
-      // Filtrar tickers D/C
-      const isDollarOrCable = ticker.length > 3 &&
-        (ticker.endsWith('D') || ticker.endsWith('C')) &&
-        /[A-Z]$/.test(ticker.slice(-2, -1));
-      if (isDollarOrCable) return;
+        // Filtrar tickers D/C
+        const isDollarOrCable = ticker.length > 3 &&
+          (ticker.endsWith('D') || ticker.endsWith('C')) &&
+          /[A-Z]$/.test(ticker.slice(-2, -1));
+        if (isDollarOrCable) return;
 
-      if (!priceMap[ticker]) {
-        const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+        if (!priceMap[ticker]) {
+          const rawPrice = item.c || item.px_ask || item.px_bid || 0;
 
-        priceMap[ticker] = {
-          precio: rawPrice,
-          precioRaw: rawPrice,
-          bid: item.px_bid,
-          ask: item.px_ask,
-          close: item.c,
-          panel: 'cedear',
-          assetClass: 'CEDEAR' as AssetClass,
-          pctChange: item.pct_change ?? null,
-          isBonoPesos: false,
-          isBonoHD: false,
-        };
+          priceMap[ticker] = {
+            precio: rawPrice,
+            precioRaw: rawPrice,
+            bid: item.px_bid,
+            ask: item.px_ask,
+            close: item.c,
+            panel: 'cedear',
+            assetClass: 'CEDEAR' as AssetClass,
+            pctChange: item.pct_change ?? null,
+            isBonoPesos: false,
+            isBonoHD: false,
+          };
 
-        tickerList.push({ ticker, panel: 'cedear', assetClass: 'CEDEAR' });
-      } else if (item.pct_change !== undefined) {
-        priceMap[ticker].pctChange = item.pct_change;
-      }
-    });
+          tickerList.push({ ticker, panel: 'cedear', assetClass: 'CEDEAR' });
+        } else if (item.pct_change !== undefined) {
+          priceMap[ticker].pctChange = item.pct_change;
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando cedears:', error);
+    }
   }
 
   // Procesar bonds
-  if (bondsResult.status === 'fulfilled') {
-    bondsResult.value.forEach(item => {
-      const ticker = item.symbol;
-      if (!ticker) return;
+  if (bondsResult.status === 'fulfilled' && Array.isArray(bondsResult.value)) {
+    try {
+      bondsResult.value.forEach(item => {
+        const ticker = item.symbol;
+        if (!ticker) return;
 
-      // Filtrar tickers D/C que terminan en número
-      const len = ticker.length;
-      if (len > 3 && (ticker.endsWith('D') || ticker.endsWith('C'))) {
-        const prevChar = ticker.charAt(len - 2);
-        if (/[0-9]/.test(prevChar)) return;
-      }
+        // Filtrar tickers D/C que terminan en número
+        const len = ticker.length;
+        if (len > 3 && (ticker.endsWith('D') || ticker.endsWith('C'))) {
+          const prevChar = ticker.charAt(len - 2);
+          if (/[0-9]/.test(prevChar)) return;
+        }
 
-      if (!priceMap[ticker]) {
-        const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-        const assetClass = getAssetClass(ticker, 'bonds');
-        const adjustedPrice = adjustBondPrice(ticker, rawPrice);
+        if (!priceMap[ticker]) {
+          const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+          const assetClass = getAssetClass(ticker, 'bonds');
+          const adjustedPrice = adjustBondPrice(ticker, rawPrice);
 
-        priceMap[ticker] = {
-          precio: adjustedPrice,
-          precioRaw: rawPrice,
-          bid: item.px_bid,
-          ask: item.px_ask,
-          close: item.c,
-          panel: 'bonds',
-          assetClass,
-          pctChange: item.pct_change ?? null,
-          isBonoPesos: isBonoPesos(ticker),
-          isBonoHD: isBonoHardDollar(ticker),
-        };
+          priceMap[ticker] = {
+            precio: adjustedPrice,
+            precioRaw: rawPrice,
+            bid: item.px_bid,
+            ask: item.px_ask,
+            close: item.c,
+            panel: 'bonds',
+            assetClass,
+            pctChange: item.pct_change ?? null,
+            isBonoPesos: isBonoPesos(ticker),
+            isBonoHD: isBonoHardDollar(ticker),
+          };
 
-        tickerList.push({ ticker, panel: 'bonds', assetClass });
-      } else if (item.pct_change !== undefined && item.pct_change !== null) {
-        priceMap[ticker].pctChange = item.pct_change;
-      }
-    });
+          tickerList.push({ ticker, panel: 'bonds', assetClass });
+        } else if (item.pct_change !== undefined && item.pct_change !== null) {
+          priceMap[ticker].pctChange = item.pct_change;
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando bonds:', error);
+    }
   }
 
-  // Procesar ONs (corporate bonds)
-  if (corpResult.status === 'fulfilled') {
-    corpResult.value.forEach(item => {
-      const ticker = item.symbol;
-      if (!ticker) return;
-      
-      if (!priceMap[ticker]) {
+  // Procesar ONs (corporate bonds) - versión segura
+  if (corpResult.status === 'fulfilled' && Array.isArray(corpResult.value)) {
+    try {
+      corpResult.value.forEach(item => {
+        const ticker = item.symbol;
+        if (!ticker) return;
+
         const rawPrice = item.c || item.px_ask || item.px_bid || 0;
-        
-        priceMap[ticker] = {
-          precio: adjustBondPrice(ticker, rawPrice),
-          precioRaw: rawPrice,
-          bid: item.px_bid,
-          ask: item.px_ask,
-          close: item.c,
-          panel: 'corp',
-          assetClass: 'ON' as AssetClass,
-          pctChange: item.pct_change ?? null,
-          isBonoPesos: false,
-          isBonoHD: false,
-          isON: true,
-          isONInPesos: ticker.endsWith('O'),
-          currencyType: getONCurrencyType(ticker),
-        };
-        
-        tickerList.push({ 
-          ticker, 
-          panel: 'corp', 
-          assetClass: 'ON' as AssetClass,
-          originalTicker: ticker,
-          pesosEquivalent: convertToONPesos(ticker)
-        });
-      } else if (item.pct_change !== undefined) {
-        priceMap[ticker].pctChange = item.pct_change;
-      }
-    });
+
+        // Crear price entry para ONs
+        if (!priceMap[ticker]) {
+          priceMap[ticker] = {
+            precio: rawPrice, // ONs no necesitan ajuste como bonos
+            precioRaw: rawPrice,
+            bid: item.px_bid,
+            ask: item.px_ask,
+            close: item.c,
+            panel: 'corp',
+            assetClass: 'ON' as AssetClass,
+            pctChange: item.pct_change ?? null,
+            isBonoPesos: false,
+            isBonoHD: false,
+            isON: true,
+            isONInPesos: ticker.endsWith('O'),
+            currencyType: getONCurrencyType(ticker),
+          };
+        }
+
+        // Agregar a ticker list para que aparezcan en selector
+        if (!tickerList.find(t => t.ticker === ticker)) {
+          tickerList.push({
+            ticker,
+            panel: 'corp',
+            assetClass: 'ON' as AssetClass,
+            originalTicker: ticker,
+            pesosEquivalent: convertToONPesos(ticker)
+          });
+        }
+
+        // Actualizar pctChange si ya existe
+        if (item.pct_change !== undefined) {
+          priceMap[ticker].pctChange = item.pct_change;
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando datos de ONs:', error);
+    }
+  } else if (corpResult?.status === 'rejected') {
+    console.warn('Error en fetch de ONs:', corpResult.reason);
   }
 
   return {

@@ -159,18 +159,16 @@ export const usePortfolioEngine = (
                 let valuacionActual = pos.cantidadTotal * precioActual;
                 let usesONConversion = false;
                 
-                if (isPositionON && !pos.ticker.endsWith('O')) {
-                    // Es ON en dólar/cable, convertir a ARS usando equivalente O
+                // Solo aplicar conversión ON si es ON D/C y tenemos datos de precios
+                if (isPositionON && !pos.ticker.endsWith('O') && priceData && (priceData.precio || 0) > 0) {
                     try {
                         const onValue = calculateONValueInARS(pos.ticker, pos.cantidadTotal, prices, mepRate);
                         precioActual = onValue.priceInARS;
                         valuacionActual = onValue.value;
                         usesONConversion = onValue.usesConversion;
                     } catch (error) {
-                        // No existe equivalente O, mostrar error
-                        console.error('Error en conversión ON:', error instanceof Error ? error.message : 'Unknown error');
-                        precioActual = 0;
-                        valuacionActual = 0;
+                        // No existe equivalente O, mantener precio original con warning
+                        console.warn('Error en conversión ON:', error instanceof Error ? error.message : 'Unknown error');
                         usesONConversion = false;
                     }
                 }

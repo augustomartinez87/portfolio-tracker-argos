@@ -15,11 +15,17 @@ import {
 // ============================================
 
 /**
- * Detecta si un ticker es una Obligación Negociable (ON)
+ * Detecta si un ticker es una Obligación Negociable (ON).
+ * Verifica primero que NO sea un bono soberano/provincial.
  */
 export const isON = (ticker: string | null | undefined): boolean => {
   if (!ticker) return false;
   const t = ticker.toUpperCase();
+  
+  // Si es un bono conocido, NO es una ON
+  if (isBond(t)) return false;
+
+  // Las ONs suelen terminar en O, D o C
   return t.endsWith('O') || t.endsWith('D') || t.endsWith('C');
 };
 

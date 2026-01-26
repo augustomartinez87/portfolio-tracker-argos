@@ -184,14 +184,14 @@ export default function Dashboard() {
   // Combine totals for Summary Cards
   const combinedTotals = useMemo(() => {
     // Si allTotals es null/undefined, inicializar en cero
-    const safeTotals = allTotals || { invested: 0, valuation: 0, pnl: 0, dayPnl: 0 };
+    const safeTotals = allTotals || { invertido: 0, valuacion: 0, resultado: 0, resultadoDiario: 0 };
 
     return {
       ...safeTotals,
-      invested: safeTotals.invested + (fciTotals?.invested || 0),
-      valuation: safeTotals.valuation + (fciTotals?.valuation || 0),
-      pnl: safeTotals.pnl + (fciTotals?.pnl || 0),
-      // dayPnl no lo tenemos en FCI aun, asumimos 0 por ahora
+      invertido: safeTotals.invertido + (fciTotals?.invested || 0),
+      valuacion: safeTotals.valuacion + (fciTotals?.valuation || 0),
+      resultado: safeTotals.resultado + (fciTotals?.pnl || 0),
+      // resultadoDiario no lo tenemos en FCI aun, asumimos el del portfolio por ahora
     };
   }, [allTotals, fciTotals]);
 
