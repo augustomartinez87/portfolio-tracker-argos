@@ -31,14 +31,14 @@ export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false, c
         value={formatValue(totals.resultado, totals.resultadoUSD)}
         trend={isLoading ? 0 : (currency === 'ARS' ? totals.resultado : totals.resultadoUSD)}
         showBadge
-        badgeValue={formatBadgeValue(totals.resultado, totals.resultadoUSD, totals.resultadoPct)}
+        badgeValue={formatBadgeValue(totals.resultado, totals.resultadoUSD, currency === 'ARS' ? totals.resultadoPct : totals.resultadoPctUSD)}
       />
       <SummaryCard
         title="P&L Hoy"
         value={formatValue(totals.resultadoDiario, totals.resultadoDiarioUSD)}
         trend={isLoading ? 0 : (currency === 'ARS' ? totals.resultadoDiario : totals.resultadoDiarioUSD)}
         showBadge
-        badgeValue={formatBadgeValue(totals.resultadoDiario, totals.resultadoDiarioUSD, totals.resultadoDiarioPct)}
+        badgeValue={formatBadgeValue(totals.resultadoDiario, totals.resultadoDiarioUSD, currency === 'ARS' ? totals.resultadoDiarioPct : totals.resultadoDiarioPctUSD)}
       />
     </div>
   );

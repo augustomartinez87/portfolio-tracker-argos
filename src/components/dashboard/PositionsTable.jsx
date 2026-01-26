@@ -248,11 +248,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   <td className={`text-center ${paddingX} ${paddingY}`}>
-                    <span className={`font-medium px-1.5 py-0.5 rounded text-sm inline-block ${pos.resultadoPct >= 0
+                    <span className={`font-medium px-1.5 py-0.5 rounded text-sm inline-block ${(currency === 'ARS' ? pos.resultadoPct : pos.resultadoPctUSD) >= 0
                       ? 'bg-profit-muted text-profit'
                       : 'bg-loss-muted text-loss'
                       }`}>
-                      <PercentageDisplay value={pos.resultadoPct} className="!text-current" iconSize="w-3 h-3" />
+                      <PercentageDisplay value={currency === 'ARS' ? pos.resultadoPct : pos.resultadoPctUSD} className="!text-current" iconSize="w-3 h-3" />
                     </span>
                   </td>
                   {columnSettings.showDiario && (
@@ -264,11 +264,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   )}
                   {columnSettings.showDiarioPct && (
                     <td className={`text-center ${paddingX} ${paddingY}`}>
-                      <span className={`font-medium px-1.5 py-0.5 rounded text-xs inline-block ${pos.resultadoDiarioPct >= 0
+                      <span className={`font-medium px-1.5 py-0.5 rounded text-xs inline-block ${(currency === 'ARS' ? pos.resultadoDiarioPct : pos.resultadoDiarioPctUSD) >= 0
                         ? 'bg-profit-muted text-profit'
                         : 'bg-loss-muted text-loss'
                         }`}>
-                        <PercentageDisplay value={pos.resultadoDiarioPct || 0} className="!text-current" iconSize="w-3 h-3" />
+                        <PercentageDisplay value={currency === 'ARS' ? pos.resultadoDiarioPct : pos.resultadoDiarioPctUSD} className="!text-current" iconSize="w-3 h-3" />
                       </span>
                     </td>
                   )}

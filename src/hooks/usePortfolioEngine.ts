@@ -48,6 +48,8 @@ export interface Position {
     valuacionUSD: number;
     resultadoUSD: number;
     resultadoDiarioUSD: number;
+    resultadoPctUSD: number;
+    resultadoDiarioPctUSD: number;
     trades: Trade[];
 }
 
@@ -61,7 +63,9 @@ export interface PortfolioTotals {
     invertidoUSD: number;
     valuacionUSD: number;
     resultadoUSD: number;
+    resultadoPctUSD: number;
     resultadoDiarioUSD: number;
+    resultadoDiarioPctUSD: number;
 }
 
 
@@ -79,6 +83,12 @@ export const calculateTotals = (positions: Position[], mepRate: number): Portfol
     const resultadoDiario = positions.reduce((sum, p) => sum + (p.resultadoDiario || 0), 0);
     const resultadoDiarioPct = invertido > 0 ? (resultadoDiario / invertido) * 100 : 0;
 
+    // Use historical accumulated USD costs for accurate percentages
+    const invertidoUSD = positions.reduce((sum, p) => sum + (p.costoUSD || 0), 0);
+    const valuacionUSD = positions.reduce((sum, p) => sum + (p.valuacionUSD || 0), 0);
+    const resultadoUSD = valuacionUSD - invertidoUSD;
+    const resultadoDiarioUSD = positions.reduce((sum, p) => sum + (p.resultadoDiarioUSD || 0), 0);
+
     return {
         invertido,
         valuacion,
@@ -86,10 +96,12 @@ export const calculateTotals = (positions: Position[], mepRate: number): Portfol
         resultadoPct,
         resultadoDiario,
         resultadoDiarioPct,
-        invertidoUSD: mepRate > 0 ? invertido / mepRate : 0,
-        valuacionUSD: mepRate > 0 ? valuacion / mepRate : 0,
-        resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
-        resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
+        invertidoUSD,
+        valuacionUSD,
+        resultadoUSD,
+        resultadoPctUSD: invertidoUSD > 0 ? (resultadoUSD / invertidoUSD) * 100 : 0,
+        resultadoDiarioUSD,
+        resultadoDiarioPctUSD: invertidoUSD > 0 ? (resultadoDiarioUSD / invertidoUSD) * 100 : 0
     };
 };
 
@@ -223,7 +235,9 @@ export const usePortfolioEngine = (
                     costoUSD: pos.costoTotalUSD, // Usar el acumulado histórico
                     valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
                     resultadoUSD: (mepRate > 0 ? valuacionActual / mepRate : 0) - pos.costoTotalUSD,
-                    resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
+                    resultadoPctUSD: pos.costoTotalUSD > 0 ? (((mepRate > 0 ? valuacionActual / mepRate : 0) - pos.costoTotalUSD) / pos.costoTotalUSD) * 100 : 0,
+                    resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0,
+                    resultadoDiarioPctUSD: dailyReturnPct // Daily % is same since it's intraday relative
                 };
             })
             .sort((a, b) => b.valuacionActual - a.valuacionActual);
