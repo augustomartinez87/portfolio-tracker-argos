@@ -96,11 +96,9 @@ export const KNOWN_CEDEARS = [
 /**
  * Patrones de bonos en pesos
  */
-export const BONO_PESOS_PATTERNS = [
-  /^T[A-Z0-9]{2,5}$/,      // T15E7, TTD26, TX26, etc.
-  /^S[0-9]{2}[A-Z][0-9]$/, // S31E5, S24DD, etc.
-  /^TTD/,                   // TTD bonds
-  /^TTS/,                   // TTS bonds
+export const BONO_PESOS_PATTERNS: ReadonlyArray<RegExp> = [
+  // Eliminamos patrones genéricos (/^T/, /^S/) para evitar falsos positivos como TXAR.
+  // La clasificación ahora se hace por exclusión en el panel 'bonds'.
 ] as const;
 
 /**

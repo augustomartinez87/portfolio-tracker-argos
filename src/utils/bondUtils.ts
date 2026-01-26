@@ -180,7 +180,10 @@ export const isBond = (ticker: string | null | undefined): boolean => {
 
 /**
  * Determina la clase de activo de un ticker.
- * Prioriza el panel de data912 si está disponible para una clasificación 100% precisa.
+ * Aplica una "Jerarquía de Verdad" absoluta para evitar ambigüedades:
+ * 1. Prioridad: Lista ARGY_TICKERS (GGAL, TXAR, etc. siempre son acciones).
+ * 2. Origen: Panel de la API (corp, arg_stock, cedear, bonds).
+ * 3. Fallback: Patrones técnicos.
  *
  * @param ticker - El símbolo del activo
  * @param panel - Panel de data912 (opcional, pero recomendado)
@@ -195,29 +198,42 @@ export const getAssetClass = (
 
   const t = ticker.toUpperCase();
 
-  // 1. Prioridad absoluta: Panel de la API
+  // 1. PRIORIDAD MÁXIMA: Si está en la lista de acciones argentinas, es ARGY
+  // Esto previene que TXAR sea confundido con un bono aunque el panel sea erróneo.
+  if (isArgStock || ARGY_TICKERS.includes(t as any)) {
+    return 'ARGY';
+  }
+
+  // 2. PRIORIDAD PANEL: Si tenemos el panel, confiamos en el origen
   if (panel) {
-    if (panel === 'bonds') return 'BONO HARD DOLLAR'; // Los bonos de este panel son HD
-    if (panel === 'corp') return 'ON';
     if (panel === 'arg_stock') return 'ARGY';
     if (panel === 'cedear') return 'CEDEAR';
-    if (panel === 'mep' && (isBonoPesos(t) || isBonoHardDollar(t))) {
-      return isBonoPesos(t) ? 'BONOS PESOS' : 'BONO HARD DOLLAR';
+    if (panel === 'corp') return 'ON';
+
+    if (panel === 'bonds') {
+      // Regla de Oro para el panel mixto de bonos:
+      // Si tiene variante D/C o es de una familia HD conocida -> BONO HD
+      // De lo contrario -> BONOS PESOS (por exclusión)
+      const isVariant = t.endsWith('D') || t.endsWith('C');
+      const isHDFamily = isBonoHardDollar(t);
+      return (isVariant || isHDFamily) ? 'BONO HARD DOLLAR' : 'BONOS PESOS';
+    }
+
+    if (panel === 'mep') {
+      // El panel MEP suele ser Bonos HD o CEDEARs
+      if (isBonoHardDollar(t) || t.endsWith('D')) return 'BONO HARD DOLLAR';
+      return 'CEDEAR';
     }
   }
 
-  // 2. Segunda prioridad: Flags explícitos
-  if (isArgStock) return 'ARGY';
-
-  // 3. Tercera prioridad: Detección por patrones/listas (fallback)
+  // 3. FALLBACK (Entrada manual o datos incompletos)
   if (isBonoPesos(t)) return 'BONOS PESOS';
   if (isBonoHardDollar(t)) return 'BONO HARD DOLLAR';
-  if (ARGY_TICKERS.includes(t as any)) return 'ARGY';
 
-  // ONs suelen terminar en O, D o C y no son bonos/acciones conocidas
+  // Si no es bono y tiene O/D/C es probable que sea una ON (ej: YMCXO)
   if (isON(t)) return 'ON';
 
-  // Default para el resto
+  // Por defecto, la mayoría de los activos externos son CEDEARs
   return 'CEDEAR';
 };
 
