@@ -48,6 +48,9 @@ export const API_ENDPOINTS = {
   /** Bonos argentinos */
   ARG_BONDS: 'https://data912.com/live/arg_bonds',
 
+  /** Obligaciones Negociables (ONs) */
+  ARG_CORP: 'https://data912.com/live/arg_corp',
+
   /** Históricos de acciones/CEDEARs */
   HISTORICAL_STOCKS: 'https://data912.com/historical/stocks',
 
@@ -66,6 +69,7 @@ export const ASSET_CLASS_COLORS: Record<string, string> = {
   'ARGY': '#6366f1',        // indigo
   'BONOS PESOS': '#a855f7', // purple
   'BONO HARD DOLLAR': '#f59e0b', // amber
+  'ON': '#f59e0b',          // amber (similar a bonos hard dollar)
   'OTROS': '#6b7280',       // gray
 } as const;
 
@@ -113,6 +117,15 @@ export const BONO_HD_PATTERNS = [
   /^(AL|AE|AN|CO|GD)[0-9]{2}$/,    // AL30, AE38, GD30, etc.
   /^(AL|AE|AN|CO|GD)[0-9]{2}[DC]$/, // AL30D, GD30C, etc.
 ] as const;
+
+/**
+ * Patrones de Obligaciones Negociables (ONs)
+ */
+export const ON_PATTERNS = {
+  ON_PESOS: /O$/,    // Termina en O = pesos
+  ON_DOLLAR: /D$/,   // Termina en D = dólares
+  ON_CABLE: /C$/,    // Termina en C = cable
+} as const;
 
 /**
  * Tickers específicos de bonos hard dollar

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '../utils/bondUtils';
 
 // Interfaces
 export interface Trade {
@@ -39,6 +40,8 @@ export interface Position {
     pctChange: number;
     isBonoPesos: boolean;
     isBonoHD: boolean;
+    isON?: boolean;
+    usesONConversion?: boolean;
     costoUSD: number;
     valuacionUSD: number;
     resultadoUSD: number;
@@ -59,27 +62,11 @@ export interface PortfolioTotals {
     resultadoDiarioUSD: number;
 }
 
-// Helpers from original code (adapted)
-const isBonoPesos = (ticker: string) => {
-    const t = ticker.toUpperCase();
-    // Simple heuristic based on common ARS bonds logic found in codebase
-    return t.endsWith('P') || ['TX24', 'TX26', 'TX28', 'DICP', 'PARP', 'CUAP', 'TO26'].includes(t);
-};
 
-const isBonoHardDollar = (ticker: string) => {
-    const t = ticker.toUpperCase();
-    return ['AL29', 'AL30', 'AL35', 'AE38', 'AL41', 'GD29', 'GD30', 'GD35', 'GD38', 'GD41', 'GD46'].includes(t);
-};
 
-const getAssetClass = (ticker: string, panel?: string) => {
-    if (panel) return panel;
-    if (isBonoPesos(ticker)) return 'BONOS PESOS';
-    if (isBonoHardDollar(ticker)) return 'BONO HARD DOLLAR';
-    if (ticker.includes('CEDEAR')) return 'CEDEAR'; // unlikely to be in ticker string directly usually
-    // Fallback heuristics
-    if (ticker.endsWith('D') || ticker.endsWith('C')) return 'BONO HARD DOLLAR';
-    return 'ACCIONES'; // Default
-};
+
+
+
 
 // Pure calculation functions
 export const calculateTotals = (positions: Position[], mepRate: number): PortfolioTotals => {
@@ -165,9 +152,30 @@ export const usePortfolioEngine = (
             .filter((pos: any) => pos.cantidadTotal > 0.0001) // Filter almost zero
             .map((pos: any): Position => {
                 const priceData = prices[pos.ticker];
-                const precioActual = priceData?.precio || 0;
+                const isPositionON = isON(pos.ticker);
+                
+                // Calcular precio actual y valuación con conversión de ONs si es necesario
+                let precioActual = priceData?.precio || 0;
+                let valuacionActual = pos.cantidadTotal * precioActual;
+                let usesONConversion = false;
+                
+                if (isPositionON && !pos.ticker.endsWith('O')) {
+                    // Es ON en dólar/cable, convertir a ARS usando equivalente O
+                    try {
+                        const onValue = calculateONValueInARS(pos.ticker, pos.cantidadTotal, prices, mepRate);
+                        precioActual = onValue.priceInARS;
+                        valuacionActual = onValue.value;
+                        usesONConversion = onValue.usesConversion;
+                    } catch (error) {
+                        // No existe equivalente O, mostrar error
+                        console.error('Error en conversión ON:', error instanceof Error ? error.message : 'Unknown error');
+                        precioActual = 0;
+                        valuacionActual = 0;
+                        usesONConversion = false;
+                    }
+                }
+                
                 const precioPromedio = pos.cantidadTotal > 0 ? pos.costoTotal / pos.cantidadTotal : 0;
-                const valuacionActual = pos.cantidadTotal * precioActual;
                 const resultado = valuacionActual - pos.costoTotal;
                 const resultadoPct = pos.costoTotal > 0 ? (resultado / pos.costoTotal) * 100 : 0;
 
@@ -195,6 +203,8 @@ export const usePortfolioEngine = (
                     pctChange: priceData?.pctChange || 0,
                     isBonoPesos: isBP,
                     isBonoHD: isBHD,
+                    isON: isPositionON,
+                    usesONConversion,
                     costoUSD: mepRate > 0 ? pos.costoTotal / mepRate : 0,
                     valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
                     resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,

@@ -4,8 +4,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { API_ENDPOINTS, CONSTANTS, DOLLAR_SUFFIXES } from '../utils/constants';
-import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from '../utils/bondUtils';
-import type { PriceMap, TickerInfo, MEPDataItem, StockDataItem, BondDataItem, AssetClass } from '../types';
+import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, getONCurrencyType, convertToONPesos } from '../utils/bondUtils';
+import type { PriceMap, TickerInfo, MEPDataItem, StockDataItem, BondDataItem, CorpDataItem, AssetClass } from '../types';
 
 // ============================================
 // TIPOS
@@ -107,11 +107,12 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
     mepRate = avgMep / mepCount;
   }
 
-  // 2. Fetch paralelo de stocks, cedears y bonds
-  const [stocksResult, cedearsResult, bondsResult] = await Promise.allSettled([
+  // 2. Fetch paralelo de stocks, cedears, bonds y corp (ONs)
+  const [stocksResult, cedearsResult, bondsResult, corpResult] = await Promise.allSettled([
     fetchWithTimeout<StockDataItem[]>(API_ENDPOINTS.ARG_STOCKS),
     fetchWithTimeout<StockDataItem[]>(API_ENDPOINTS.ARG_CEDEARS),
     fetchWithTimeout<BondDataItem[]>(API_ENDPOINTS.ARG_BONDS),
+    fetchWithTimeout<CorpDataItem[]>(API_ENDPOINTS.ARG_CORP),
   ]);
 
   // Procesar arg_stocks
@@ -218,6 +219,44 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
         tickerList.push({ ticker, panel: 'bonds', assetClass });
       } else if (item.pct_change !== undefined && item.pct_change !== null) {
+        priceMap[ticker].pctChange = item.pct_change;
+      }
+    });
+  }
+
+  // Procesar ONs (corporate bonds)
+  if (corpResult.status === 'fulfilled') {
+    corpResult.value.forEach(item => {
+      const ticker = item.symbol;
+      if (!ticker) return;
+      
+      if (!priceMap[ticker]) {
+        const rawPrice = item.c || item.px_ask || item.px_bid || 0;
+        
+        priceMap[ticker] = {
+          precio: adjustBondPrice(ticker, rawPrice),
+          precioRaw: rawPrice,
+          bid: item.px_bid,
+          ask: item.px_ask,
+          close: item.c,
+          panel: 'corp',
+          assetClass: 'ON' as AssetClass,
+          pctChange: item.pct_change ?? null,
+          isBonoPesos: false,
+          isBonoHD: false,
+          isON: true,
+          isONInPesos: ticker.endsWith('O'),
+          currencyType: getONCurrencyType(ticker),
+        };
+        
+        tickerList.push({ 
+          ticker, 
+          panel: 'corp', 
+          assetClass: 'ON' as AssetClass,
+          originalTicker: ticker,
+          pesosEquivalent: convertToONPesos(ticker)
+        });
+      } else if (item.pct_change !== undefined) {
         priceMap[ticker].pctChange = item.pct_change;
       }
     });

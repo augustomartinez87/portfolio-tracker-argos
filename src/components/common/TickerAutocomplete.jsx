@@ -6,6 +6,7 @@ const ASSET_CLASS_COLORS = {
   'ARGY': 'text-primary',
   'BONO HARD DOLLAR': 'text-amber-400',
   'BONOS PESOS': 'text-purple-400',
+  'ON': 'text-amber-400',
   'OTROS': 'text-text-tertiary'
 };
 

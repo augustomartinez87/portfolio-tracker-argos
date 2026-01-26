@@ -10,6 +10,121 @@ import {
   ARGY_TICKERS,
 } from './constants';
 
+// ============================================
+// FUNCIONES DE OBLIGACIONES NEGOCIABLES (ONs)
+// ============================================
+
+/**
+ * Detecta si un ticker es una Obligación Negociable (ON)
+ */
+export const isON = (ticker: string | null | undefined): boolean => {
+  if (!ticker) return false;
+  const t = ticker.toUpperCase();
+  return t.endsWith('O') || t.endsWith('D') || t.endsWith('C');
+};
+
+/**
+ * Determina el tipo de moneda de una ON
+ */
+export const getONCurrencyType = (ticker: string): 'ARS' | 'USD' | 'CABLE' => {
+  const t = ticker.toUpperCase();
+  if (t.endsWith('O')) return 'ARS';
+  if (t.endsWith('D')) return 'USD';
+  if (t.endsWith('C')) return 'CABLE';
+  return 'USD'; // fallback
+};
+
+/**
+ * Convierte un ticker ON D/C a su equivalente O (pesos)
+ */
+export const convertToONPesos = (ticker: string): string => {
+  if (!ticker) return ticker;
+  const lastChar = ticker.charAt(ticker.length - 1).toUpperCase();
+  if (lastChar === 'D' || lastChar === 'C') {
+    return ticker.slice(0, -1) + 'O';
+  }
+  return ticker;
+};
+
+/**
+ * Valida que exista equivalente O en los precios disponibles
+ */
+export const hasONPesosEquivalent = (ticker: string, priceMap: any): boolean => {
+  const pesosEquivalent = convertToONPesos(ticker);
+  return priceMap[pesosEquivalent]?.precio > 0;
+};
+
+/**
+ * Calcula el valor de una posición ON en ARS
+ */
+export const calculateONValueInARS = (
+  originalTicker: string,
+  quantity: number,
+  priceMap: any,
+  _mepRate: number
+): { value: number; priceInARS: number; usesConversion: boolean } => {
+  const isDirectON = originalTicker.endsWith('O');
+  
+  if (isDirectON) {
+    // Ya está en ARS
+    const price = priceMap[originalTicker]?.precio || 0;
+    return {
+      value: price * quantity,
+      priceInARS: price,
+      usesConversion: false
+    };
+  } else {
+    // Convertir D/C a O para obtener precio ARS
+    const pesosEquivalent = convertToONPesos(originalTicker);
+    const priceInARS = priceMap[pesosEquivalent]?.precio || 0;
+    
+    if (priceInARS === 0) {
+      // No existe equivalente O
+      throw new Error(`No existe equivalente en pesos para ${originalTicker}`);
+    }
+    
+    return {
+      value: priceInARS * quantity,
+      priceInARS,
+      usesConversion: true
+    };
+  }
+};
+
+/**
+ * Formatea el precio de una posición ON (siempre en ARS)
+ */
+export const formatONPositionPrice = (
+  ticker: string,
+  priceMap: any,
+  formatARS: (value: number) => string
+): string => {
+  const pesosEquivalent = convertToONPesos(ticker);
+  const priceInARS = priceMap[pesosEquivalent]?.precio || 0;
+  return formatARS(priceInARS);
+};
+
+/**
+ * Formatea el precio de una ON para el selector (moneda original)
+ */
+export const formatONSelectorPrice = (
+  ticker: string,
+  price: number,
+  formatARS: (value: number) => string,
+  formatUSD: (value: number) => string
+): string => {
+  const currency = getONCurrencyType(ticker);
+  switch(currency) {
+    case 'ARS': 
+      return formatARS(price);
+    case 'USD': 
+    case 'CABLE': 
+      return formatUSD(price);
+    default: 
+      return price.toString();
+  }
+};
+
 /**
  * Detecta si un ticker es un bono en pesos argentinos
  *
@@ -70,12 +185,18 @@ export const getAssetClass = (
 
   const t = ticker.toUpperCase();
 
-  // Bonos primero (más específicos)
+  // ONs primero (prioridad alta)
+  if (isON(t)) return 'ON';
+
+  // Bonos (más específicos)
   if (isBonoPesos(t)) return 'BONOS PESOS';
   if (isBonoHardDollar(t)) return 'BONO HARD DOLLAR';
 
   // Panel de bonds
   if (panel === 'bonds') return 'BONO HARD DOLLAR';
+
+  // Panel de corp (ONs) - fallback
+  if (panel === 'corp') return 'ON';
 
   // Acciones argentinas
   if (isArgStock || ARGY_TICKERS.includes(t as typeof ARGY_TICKERS[number])) {

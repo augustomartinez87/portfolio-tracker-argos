@@ -11,6 +11,7 @@ export const ASSET_CLASSES = {
   ARGY: 'ARGY',
   BONOS_PESOS: 'BONOS PESOS',
   BONO_HARD_DOLLAR: 'BONO HARD DOLLAR',
+  ON: 'ON',
   OTROS: 'OTROS',
 } as const;
 
@@ -100,6 +101,8 @@ export interface Position {
   pctChange: number | null;
   isBonoPesos: boolean;
   isBonoHD: boolean;
+  isON?: boolean;
+  usesONConversion?: boolean;
   costoUSD: number;
   valuacionUSD: number;
   resultadoUSD: number;
@@ -140,6 +143,9 @@ export interface PriceData {
   pctChange: number | null;
   isBonoPesos: boolean;
   isBonoHD: boolean;
+  isON?: boolean;
+  isONInPesos?: boolean;
+  currencyType?: 'ARS' | 'USD' | 'CABLE';
   isStale?: boolean;
   lastUpdate?: number;
 }
@@ -156,6 +162,8 @@ export interface TickerInfo {
   ticker: string;
   panel?: string;
   assetClass: AssetClass;
+  originalTicker?: string;
+  pesosEquivalent?: string;
 }
 
 /**
@@ -290,6 +298,14 @@ export interface StockDataItem {
 
 export interface BondDataItem extends StockDataItem {
   panel?: string;
+}
+
+export interface CorpDataItem {
+  symbol: string;
+  c: number;
+  pct_change?: number;
+  px_bid?: number;
+  px_ask?: number;
 }
 
 // ============================================
