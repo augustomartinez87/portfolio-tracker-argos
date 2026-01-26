@@ -4,7 +4,7 @@ import { Treemap, Tooltip, ResponsiveContainer } from 'recharts';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { usePrices } from '../../services/priceService';
 import { macroCarryEngine } from '../../services/macroCarryEngine';
-import { formatPercent, formatCurrency } from '../../utils/formatters';
+import { formatPercent, formatARS } from '../../utils/formatters';
 import { Loader2, TrendingUp } from 'lucide-react';
 
 const CustomTooltip = ({ active, payload }) => {
@@ -16,7 +16,7 @@ const CustomTooltip = ({ active, payload }) => {
                 <div className="space-y-1">
                     <div className="flex justify-between gap-4">
                         <span className="text-text-tertiary">Precio (ARS):</span>
-                        <span className="font-mono text-text-primary">{formatCurrency(data.marketPrice)}</span>
+                        <span className="font-mono text-text-primary">{formatARS(data.marketPrice)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
                         <span className="text-text-tertiary">Tasa Implícita (ARS):</span>
