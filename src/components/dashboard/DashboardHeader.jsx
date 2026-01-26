@@ -5,7 +5,7 @@ import logo from '../../assets/logo.png';
 import { formatNumber } from '../../utils/formatters';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true }) => {
+export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true, hideMep = false }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -20,8 +20,12 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
       )}
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
-        <span className="text-text-tertiary">|</span>
+        {!hideMep && (
+          <>
+            <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
+            <span className="text-text-tertiary">|</span>
+          </>
+        )}
         <span className="text-sm text-text-tertiary">Precios: {lastUpdate || '--:--'}</span>
 
         <button

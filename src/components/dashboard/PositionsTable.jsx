@@ -92,7 +92,7 @@ const getAssetClassOrder = (assetClass) => {
   return order[assetClass] || 5;
 };
 
-const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfig, onSortChange, searchTerm, columnSettings, onColumnSettingsChange }) => {
+const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfig, onSortChange, searchTerm, columnSettings, onColumnSettingsChange, currency = 'ARS' }) => {
   const defaultSort = { key: 'valuacionActual', direction: 'desc' };
   const currentSort = sortConfig || defaultSort;
 
@@ -222,29 +222,29 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   </td>
                   {columnSettings.showPPC && (
                     <td className={`text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
-                      {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
-                        ? `$${pos.precioPromedio.toFixed(2)}`
-                        : formatARS(pos.precioPromedio)
+                      {currency === 'ARS'
+                        ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$${pos.precioPromedio.toFixed(2)}` : formatARS(pos.precioPromedio))
+                        : formatUSD(pos.costoUSD / pos.cantidadTotal)
                       }
                     </td>
                   )}
                   <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
-                    {(isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker))
-                      ? `$${pos.precioActual.toFixed(2)}`
-                      : formatARS(pos.precioActual)
+                    {currency === 'ARS'
+                      ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$${pos.precioActual.toFixed(2)}` : formatARS(pos.precioActual))
+                      : formatUSD(pos.valuacionUSD / pos.cantidadTotal)
                     }
                   </td>
                   <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono text-base font-medium whitespace-nowrap tabular-nums`}>
-                    {formatARS(pos.valuacionActual)}
+                    {currency === 'ARS' ? formatARS(pos.valuacionActual) : formatUSD(pos.valuacionUSD)}
                   </td>
                   {columnSettings.showInvertido && (
                     <td className={`text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
-                      {formatARS(pos.costoTotal)}
+                      {currency === 'ARS' ? formatARS(pos.costoTotal) : formatUSD(pos.costoUSD)}
                     </td>
                   )}
                   <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                     <span className={`font-mono font-semibold text-base ${pos.resultado >= 0 ? 'text-profit' : 'text-loss'}`}>
-                      {formatARS(pos.resultado)}
+                      {currency === 'ARS' ? formatARS(pos.resultado) : formatUSD(pos.resultadoUSD)}
                     </span>
                   </td>
                   <td className={`text-center ${paddingX} ${paddingY}`}>
@@ -258,7 +258,7 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   {columnSettings.showDiario && (
                     <td className={`text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                       <span className={`font-mono text-sm font-medium ${pos.resultadoDiario >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        {formatARS(pos.resultadoDiario || 0)}
+                        {currency === 'ARS' ? formatARS(pos.resultadoDiario || 0) : formatUSD(pos.resultadoDiarioUSD || 0)}
                       </span>
                     </td>
                   )}

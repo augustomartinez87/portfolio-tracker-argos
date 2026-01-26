@@ -3,13 +3,13 @@ import SummaryCard from '../common/SummaryCard';
 import { formatARS, formatPercent } from '../../utils/formatters';
 import { PercentageDisplay } from '../common/PercentageDisplay';
 
-export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false }) => {
-  const formatValue = (value) => {
+export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false, currency = 'ARS' }) => {
+  const formatValue = (arsValue, usdValue) => {
     if (isLoading) return '---';
-    return formatARS(value);
+    return currency === 'ARS' ? formatARS(arsValue) : formatUSD(usdValue);
   };
 
-  const formatBadgeValue = (value, pct) => {
+  const formatBadgeValue = (arsValue, usdValue, pct) => {
     if (isLoading) return '...';
     return <PercentageDisplay value={pct} className="!text-current" iconSize="w-2.5 h-2.5" />;
   };
@@ -18,27 +18,27 @@ export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false })
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
       <SummaryCard
         title="Invertido"
-        value={formatValue(totals.invertido)}
+        value={formatValue(totals.invertido, totals.invertidoUSD)}
         subtitle="Total invertido"
       />
       <SummaryCard
         title="Valuación"
-        value={formatValue(totals.valuacion)}
+        value={formatValue(totals.valuacion, totals.valuacionUSD)}
         subtitle={isLoading ? 'Actualizando precios...' : (lastUpdate ? `Actualizado: ${lastUpdate}` : '')}
       />
       <SummaryCard
         title="P&L"
-        value={formatValue(totals.resultado)}
-        trend={isLoading ? 0 : totals.resultado}
+        value={formatValue(totals.resultado, totals.resultadoUSD)}
+        trend={isLoading ? 0 : (currency === 'ARS' ? totals.resultado : totals.resultadoUSD)}
         showBadge
-        badgeValue={formatBadgeValue(totals.resultado, totals.resultadoPct)}
+        badgeValue={formatBadgeValue(totals.resultado, totals.resultadoUSD, totals.resultadoPct)}
       />
       <SummaryCard
         title="P&L Hoy"
-        value={formatValue(totals.resultadoDiario)}
-        trend={isLoading ? 0 : totals.resultadoDiario}
+        value={formatValue(totals.resultadoDiario, totals.resultadoDiarioUSD)}
+        trend={isLoading ? 0 : (currency === 'ARS' ? totals.resultadoDiario : totals.resultadoDiarioUSD)}
         showBadge
-        badgeValue={formatBadgeValue(totals.resultadoDiario, totals.resultadoDiarioPct)}
+        badgeValue={formatBadgeValue(totals.resultadoDiario, totals.resultadoDiarioUSD, totals.resultadoDiarioPct)}
       />
     </div>
   );

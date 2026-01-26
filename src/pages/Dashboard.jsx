@@ -31,6 +31,8 @@ import { useFciEngine } from '../hooks/useFciEngine';
 import FciTable from '../components/dashboard/FciTable';
 import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector.jsx';
 import { useSearch } from '../hooks/useSearch';
+import { CurrencySelector } from '../components/dashboard/CurrencySelector';
+import { mepService } from '../services/mepService';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -45,6 +47,18 @@ export default function Dashboard() {
   const [trades, setTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [displayCurrency, setDisplayCurrency] = useState('ARS');
+  const [mepHistory, setMepHistory] = useState([]);
+
+  // Cargar historial de MEP para cálculos exactos
+  useEffect(() => {
+    const loadMepHistory = async () => {
+      const history = await mepService.getHistory();
+      setMepHistory(history);
+    };
+    loadMepHistory();
+  }, []);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -141,8 +155,8 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFormatHelp]);
 
-  // Portfolio Engine - replaces local calculations
-  const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(trades, prices, mepRate);
+  // Portfolio Engine - handles calculations with historical precision
+  const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(trades, prices, mepRate, mepHistory);
 
   // FCI Engine
   const {
@@ -435,6 +449,10 @@ export default function Dashboard() {
               </div>
 
               <div className="flex items-center gap-2">
+                <CurrencySelector
+                  currentCurrency={displayCurrency}
+                  onCurrencyChange={setDisplayCurrency}
+                />
                 <DashboardHeader
                   mepRate={mepRate}
                   lastUpdate={lastUpdate}
@@ -444,6 +462,7 @@ export default function Dashboard() {
                   showLogo={false}
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
+                  hideMep={true}
                 />
               </div>
             </div>
@@ -718,6 +737,7 @@ export default function Dashboard() {
                     totals={allTotals}
                     lastUpdate={lastUpdate}
                     isLoading={!isPricesReady || isPricesLoading}
+                    currency={displayCurrency}
                   />
 
 
@@ -780,7 +800,7 @@ export default function Dashboard() {
                           ))}
                         </div>
                       ) : (
-                        <PositionsTable positions={filteredPositions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} />
+                        <PositionsTable positions={filteredPositions} onRowClick={handleOpenPositionDetail} prices={prices} mepRate={mepRate} sortConfig={positionsSort} onSortChange={setPositionsSort} columnSettings={columnSettings} onColumnSettingsChange={setColumnSettings} currency={displayCurrency} />
                       )}
                     </div>
                   </div>

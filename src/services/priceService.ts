@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { API_ENDPOINTS, CONSTANTS, DOLLAR_SUFFIXES } from '../utils/constants';
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice, getONCurrencyType, convertToONPesos } from '../utils/bondUtils';
+import { mepService } from './mepService';
 import type { PriceMap, TickerInfo, MEPDataItem, StockDataItem, BondDataItem, CorpDataItem, AssetClass } from '../types';
 
 // ============================================
@@ -151,6 +152,8 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
   if (mepCount > 0) {
     mepRate = avgMep / mepCount;
+    // Registrar el MEP del día automáticamente
+    mepService.recordDailyMep(mepRate);
   }
 
   // 2. Fetch paralelo de stocks, cedears, bonds y corp (ONs)

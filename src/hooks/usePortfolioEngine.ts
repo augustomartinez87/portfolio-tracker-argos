@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '../utils/bondUtils';
+import { mepService, MepHistoryItem } from '../services/mepService';
 import { AssetClass } from '../types';
 
 // Interfaces
@@ -95,7 +96,8 @@ export const calculateTotals = (positions: Position[], mepRate: number): Portfol
 export const usePortfolioEngine = (
     trades: Trade[],
     prices: Record<string, PriceData>,
-    mepRate: number
+    mepRate: number,
+    mepHistory: MepHistoryItem[] = []
 ) => {
     const positions = useMemo(() => {
         const grouped: Record<string, any> = {};
@@ -115,7 +117,8 @@ export const usePortfolioEngine = (
                     ticker: ticker,
                     trades: [],
                     cantidadTotal: 0,
-                    costoTotal: 0
+                    costoTotal: 0,
+                    costoTotalUSD: 0
                 };
             }
             grouped[ticker].trades.push(trade);
@@ -145,6 +148,15 @@ export const usePortfolioEngine = (
                 // Compra: sumar cantidad y costo
                 grouped[ticker].cantidadTotal += cantidad;
                 grouped[ticker].costoTotal += cantidad * price;
+
+                // Cálculo USD con precisión histórica
+                const dateStr = trade.trade_date || trade.fecha;
+                const formattedDate = dateStr instanceof Date
+                    ? dateStr.toISOString().split('T')[0]
+                    : String(dateStr).split('T')[0];
+
+                const historicalMep = mepService.findClosestRate(formattedDate, mepHistory) || mepRate;
+                grouped[ticker].costoTotalUSD += (cantidad * price) / historicalMep;
             }
         });
 
@@ -204,9 +216,9 @@ export const usePortfolioEngine = (
                     isBonoHD: isBHD,
                     isON: isPositionON,
                     usesONConversion,
-                    costoUSD: mepRate > 0 ? pos.costoTotal / mepRate : 0,
+                    costoUSD: pos.costoTotalUSD, // Usar el acumulado histórico
                     valuacionUSD: mepRate > 0 ? valuacionActual / mepRate : 0,
-                    resultadoUSD: mepRate > 0 ? resultado / mepRate : 0,
+                    resultadoUSD: (mepRate > 0 ? valuacionActual / mepRate : 0) - pos.costoTotalUSD,
                     resultadoDiarioUSD: mepRate > 0 ? resultadoDiario / mepRate : 0
                 };
             })
