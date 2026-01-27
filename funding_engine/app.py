@@ -150,10 +150,15 @@ with st.spinner("Procesando datos del mercado..."):
     
     # Check for available FCIs
     available_fcis = engine.get_available_fcis(selected_portfolio)
+
+    # DEFAULT VALUES for Risk Variables (to prevent NameError if bypassed)
+    show_usd = False
+    max_daily_loss = 10000
+    mep_history = pd.Series()
+    show_full_deployment = False
+
     if available_fcis:
         # Default to first FCI if not set
-        # We need a way to select FCI without breaking the "Top of Page" rule
-        # So we keep selector in sidebar but maybe auto-select first one?
         fci_options = {fci['id']: fci['nombre'] for fci in available_fcis}
         
         # Sidebar control
@@ -164,13 +169,33 @@ with st.spinner("Procesando datos del mercado..."):
             options=list(fci_options.keys()),
             format_func=lambda x: fci_options.get(x, x)
         )
+
+        # Risk & Sizing Controls
+        st.sidebar.subheader("🛡️ Control de Riesgo")
+        max_daily_loss = st.sidebar.number_input("Max Daily Loss ($)", min_value=0, value=10000, step=1000, format="%d")
+
+        # USD Toggle (Check availability)
+        # Fetch MEP history (fast enough to do here, or cache it)
+        try:
+             mep_history = engine.get_mep_history(start_date, end_date)
+        except:
+             mep_history = pd.Series()
+
+        if not mep_history.empty:
+            show_usd = st.sidebar.checkbox("Show in USD (MEP)")
+        else:
+            st.sidebar.caption("🚫 Modo USD no disponible (Faltan datos MEP)")
+
+        show_full_deployment = st.sidebar.checkbox("Show Full Deployment PnL", value=False)
         
-        df_spread, spread_kpis = engine.calculate_spread(
-            portfolio_id=selected_portfolio,
-            fci_id=selected_fci_id,
-            start_date=start_date,
-            end_date=end_date
-        )
+        # Calculate Spread
+        with st.spinner("Calculando spread..."):
+            df_spread, spread_kpis = engine.calculate_spread(
+                portfolio_id=selected_portfolio,
+                fci_id=selected_fci_id,
+                start_date=start_date,
+                end_date=end_date
+            )
 
 # 3. Main Dashboard Display
 if df_spread.empty or not spread_kpis:
