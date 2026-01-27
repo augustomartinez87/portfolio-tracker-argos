@@ -61,10 +61,22 @@ const FciPriceUploadModal = ({ isOpen, onClose, onRefresh }) => {
                     const line = lines[i].trim();
                     if (!line) continue;
 
-                    const [fechaRaw, vcpRaw] = line.split(',').map(s => s.trim());
+                    const cols = line.split(',').map(s => s.trim());
 
-                    // Validar fecha (YYYY-MM-DD o similar que acepte PG)
-                    // El usuario mandó: 2025-01-02,123.4567
+                    let fechaRaw, vcpRaw;
+                    if (cols.length >= 3) {
+                        // Formato: fci, fecha, vcp (como genera process_bala.py)
+                        fechaRaw = cols[1];
+                        vcpRaw = cols[2];
+                    } else if (cols.length === 2) {
+                        // Formato: fecha, vcp
+                        fechaRaw = cols[0];
+                        vcpRaw = cols[1];
+                    } else {
+                        skipCount++;
+                        continue;
+                    }
+
                     const vcp = parseARSNumber(vcpRaw);
 
                     if (fechaRaw && !isNaN(vcp)) {
@@ -84,7 +96,7 @@ const FciPriceUploadModal = ({ isOpen, onClose, onRefresh }) => {
 
                 setResult({
                     type: 'success',
-                    message: `Carga exitosa: ${prices.push} registros procesados.${skipCount > 0 ? ` (${skipCount} omitidos por formato)` : ''}`
+                    message: `Carga exitosa: ${prices.length} registros procesados.${skipCount > 0 ? ` (${skipCount} omitidos por formato)` : ''}`
                 });
 
                 if (onRefresh) onRefresh();
