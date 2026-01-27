@@ -15,6 +15,7 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
     const [tipo, setTipo] = useState(initialType);
     const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
     const [monto, setMonto] = useState('');
+    const [cuotapartes, setCuotapartes] = useState('');
 
     // VCP State
     const [vcp, setVcp] = useState(null);
@@ -92,14 +93,20 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
 
     }, [selectedFciId, fecha]);
 
+    // 3. Calcular cuotapartes automáticamente (editable)
+    useEffect(() => {
+        if (monto && vcp && !isNaN(monto) && !isNaN(vcp)) {
+            const calculated = Number(monto) / Number(vcp);
+            setCuotapartes(calculated.toFixed(6));
+        }
+    }, [monto, vcp]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!vcp) return;
+        if (!vcp || !cuotapartes) return;
 
         setSaving(true);
         try {
-            const cuotapartes = Number(monto) / Number(vcp);
-
             const transaction = {
                 portfolio_id: portfolioId,
                 fci_id: selectedFciId,
@@ -107,7 +114,7 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                 tipo: tipo, // 'SUBSCRIPTION' | 'REDEMPTION'
                 monto: Number(monto),
                 vcp_operado: Number(vcp),
-                cuotapartes
+                cuotapartes: Number(cuotapartes)
             };
 
             // Inyectamos user_id en el fciService o dejamos que supabase lo tome del contexto?
@@ -133,7 +140,6 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
         }
     };
 
-    const cuotapartesEstimadas = (monto && vcp) ? (monto / vcp) : 0;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
@@ -240,15 +246,29 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                         </div>
                     </div>
 
-                    {/* Resultado Estimado */}
-                    <div className="flex justify-between items-center py-2 px-1 border-t border-border-primary/50">
-                        <span className="text-sm text-text-secondary">Cuotapartes est:</span>
-                        <span className="font-mono font-bold text-text-primary">{formatNumber(cuotapartesEstimadas, 4)}</span>
+                    {/* Cuotapartes */}
+                    <div>
+                        <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1.5 flex justify-between">
+                            <span>Cuotapartes</span>
+                            <span className="text-[10px] normal-case font-normal opacity-70 italic text-primary">Pre-calculado (Monto/VCP)</span>
+                        </label>
+                        <div className="relative">
+                            <RefreshCw className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                            <input
+                                type="number"
+                                step="0.000001"
+                                required
+                                placeholder="0.000000"
+                                value={cuotapartes}
+                                onChange={(e) => setCuotapartes(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors font-mono font-bold"
+                            />
+                        </div>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={saving || !vcp || !monto}
+                        disabled={saving || !vcp || !monto || !cuotapartes}
                         className="w-full py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
