@@ -239,3 +239,284 @@ class FundingCarryEngine:
             kpis = {}
             
         return df_daily, kpis
+
+    # =========================================================================
+    # SPREAD ENGINE: FCI vs Caución
+    # =========================================================================
+
+    def _fetch_fci_prices(self, fci_id, start_date=None, end_date=None):
+        """
+        Fetch VCP history from fci_prices table.
+        Returns DataFrame with columns: fecha, vcp
+        """
+        if self.use_mock:
+            # Create mock FCI prices for demo
+            return self._create_mock_fci_prices(start_date, end_date)
+        
+        try:
+            query = self.supabase.table('fci_prices').select('fecha, vcp').eq('fci_id', fci_id)
+            
+            if start_date:
+                query = query.gte('fecha', pd.to_datetime(start_date).strftime('%Y-%m-%d'))
+            if end_date:
+                # Fetch D+1 day for offset calculation
+                end_plus_one = pd.to_datetime(end_date) + timedelta(days=1)
+                query = query.lte('fecha', end_plus_one.strftime('%Y-%m-%d'))
+            
+            response = query.order('fecha', desc=False).execute()
+            
+            if response.data and len(response.data) > 0:
+                df = pd.DataFrame(response.data)
+                df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%Y-%m-%d')
+                df['vcp'] = pd.to_numeric(df['vcp'], errors='coerce')
+                return df
+            
+            print("ℹ️ No FCI prices found.")
+            return pd.DataFrame()
+        except Exception as e:
+            print(f"Error fetching FCI prices: {e}")
+            return pd.DataFrame()
+    
+    def _create_mock_fci_prices(self, start_date=None, end_date=None):
+        """Create mock FCI prices for demo/testing"""
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = date.today() - timedelta(days=30)
+        
+        # Simulate ~42% TNA FCI (10% more than 32% TNA caución)
+        base_vcp = 1000.0
+        daily_return = (1 + 0.42) ** (1/365) - 1  # ~0.096% daily
+        
+        prices = []
+        current_vcp = base_vcp
+        date_range = pd.date_range(start=start_date, end=end_date + timedelta(days=1), freq='D')
+        
+        for d in date_range:
+            # Skip weekends (FCI prices not published)
+            if d.weekday() < 5:
+                prices.append({
+                    'fecha': d.strftime('%Y-%m-%d'),
+                    'vcp': current_vcp
+                })
+                current_vcp *= (1 + daily_return)
+        
+        return pd.DataFrame(prices)
+    
+    def _fetch_fci_balance(self, portfolio_id=None):
+        """
+        Fetch current FCI balance (cuotapartes × VCP) from fci_transactions.
+        Returns total balance in ARS.
+        """
+        if self.use_mock:
+            # Mock: Assume 20M invested at VCP 1000
+            return 20_000_000.0
+        
+        try:
+            # Get transactions for portfolio
+            query = self.supabase.table('fci_transactions').select('*')
+            
+            if self.user_id:
+                query = query.eq('user_id', self.user_id)
+            if portfolio_id and portfolio_id != 'all':
+                query = query.eq('portfolio_id', portfolio_id)
+            
+            response = query.execute()
+            
+            if not response.data or len(response.data) == 0:
+                return 0.0
+            
+            df = pd.DataFrame(response.data)
+            
+            # Calculate net cuotapartes per FCI
+            total_balance = 0.0
+            fci_ids = df['fci_id'].unique()
+            
+            for fci_id in fci_ids:
+                fci_txs = df[df['fci_id'] == fci_id]
+                
+                cuotapartes = 0.0
+                for _, tx in fci_txs.iterrows():
+                    if tx['tipo'] == 'SUBSCRIPTION':
+                        cuotapartes += float(tx['cuotapartes'])
+                    elif tx['tipo'] == 'REDEMPTION':
+                        cuotapartes -= float(tx['cuotapartes'])
+                
+                # Get latest VCP for this FCI
+                latest = self.supabase.table('fci_prices').select('vcp').eq('fci_id', fci_id).order('fecha', desc=True).limit(1).execute()
+                if latest.data and len(latest.data) > 0:
+                    vcp = float(latest.data[0]['vcp'])
+                    total_balance += cuotapartes * vcp
+            
+            return total_balance
+        except Exception as e:
+            print(f"Error fetching FCI balance: {e}")
+            return 0.0
+    
+    def get_available_fcis(self, portfolio_id=None):
+        """Get list of FCIs with transactions for this user/portfolio"""
+        if self.use_mock:
+            return [{'id': 'mock-fci-1', 'nombre': 'FCI Demo (42% TNA)'}]
+        
+        try:
+            query = self.supabase.table('fci_transactions').select('fci_id, fci_master(id, nombre)')
+            
+            if self.user_id:
+                query = query.eq('user_id', self.user_id)
+            if portfolio_id and portfolio_id != 'all':
+                query = query.eq('portfolio_id', portfolio_id)
+            
+            response = query.execute()
+            
+            if not response.data:
+                return []
+            
+            # Deduplicate FCIs
+            seen = set()
+            fcis = []
+            for row in response.data:
+                fci_id = row.get('fci_id')
+                if fci_id and fci_id not in seen:
+                    seen.add(fci_id)
+                    master = row.get('fci_master', {})
+                    fcis.append({
+                        'id': fci_id,
+                        'nombre': master.get('nombre', 'Desconocido')
+                    })
+            
+            return fcis
+        except Exception as e:
+            print(f"Error fetching FCIs: {e}")
+            return []
+
+    def calculate_spread(self, portfolio_id=None, fci_id=None, start_date=None, end_date=None):
+        """
+        Calculate daily spread between FCI returns and caución costs.
+        
+        For each day D:
+        - caucion_cost[D] = daily interest cost (already calculated)
+        - fci_return[D] = C × (vcp[D+1] - vcp[D]) / vcp[D]  (D+1 offset!)
+        - spread[D] = fci_return[D] - caucion_cost[D]
+        
+        ROI is computed over capital_productivo = min(fci_balance, caucion_viva)
+        
+        Returns: (df_spread, spread_kpis)
+        """
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+        
+        # 1. Get caución daily stats (reuse existing method)
+        df_daily, _ = self.calculate_metrics(portfolio_id, start_date, end_date)
+        
+        if df_daily.empty:
+            return pd.DataFrame(), {}
+        
+        # 2. Fetch FCI prices
+        fci_prices = self._fetch_fci_prices(fci_id, start_date, end_date)
+        
+        if fci_prices.empty:
+            return pd.DataFrame(), {}
+        
+        # Create VCP lookup dict
+        vcp_map = dict(zip(fci_prices['fecha'], fci_prices['vcp']))
+        
+        # 3. Get FCI balance (mark-to-market)
+        fci_balance = self._fetch_fci_balance(portfolio_id)
+        
+        # 4. Calculate daily spread with D+1 offset
+        spread_data = []
+        
+        for _, row in df_daily.iterrows():
+            d_str = row['date']
+            d = pd.to_datetime(d_str)
+            d_plus_1 = (d + timedelta(days=1)).strftime('%Y-%m-%d')
+            
+            vcp_d = vcp_map.get(d_str)
+            vcp_d1 = vcp_map.get(d_plus_1)
+            
+            # Skip if we don't have both VCPs (weekends, missing data)
+            if vcp_d is None or vcp_d1 is None or vcp_d == 0:
+                spread_data.append({
+                    'date': d_str,
+                    'caucion_cost': row['daily_interest_cost'],
+                    'fci_return': None,
+                    'spread': None,
+                    'caucion_viva': row['total_debt'],
+                    'fci_balance': fci_balance
+                })
+                continue
+            
+            # Calculate FCI daily return
+            # fci_return = C × (vcp[D+1] - vcp[D]) / vcp[D]
+            fci_daily_return = fci_balance * (vcp_d1 - vcp_d) / vcp_d
+            
+            # Calculate spread
+            caucion_cost = row['daily_interest_cost']
+            spread = fci_daily_return - caucion_cost
+            
+            spread_data.append({
+                'date': d_str,
+                'caucion_cost': caucion_cost,
+                'fci_return': fci_daily_return,
+                'spread': spread,
+                'caucion_viva': row['total_debt'],
+                'fci_balance': fci_balance
+            })
+        
+        df_spread = pd.DataFrame(spread_data)
+        
+        # Calculate Capital Productivo for ALL rows (used in UI table)
+        if not df_spread.empty:
+            df_spread['capital_productivo'] = df_spread.apply(
+                lambda r: min(r['fci_balance'], r['caucion_viva']) if r['caucion_viva'] > 0 else 0,
+                axis=1
+            )
+        
+        # 5. Calculate KPIs
+        df_valid = df_spread.dropna(subset=['spread'])
+        
+        if df_valid.empty:
+            return df_spread, {}
+        
+        accumulated_spread = df_valid['spread'].sum()
+        total_fci_return = df_valid['fci_return'].sum()
+        total_caucion_cost = df_valid['caucion_cost'].sum()
+        
+        # Stats based on capital productivo
+        avg_capital_productivo = df_valid['capital_productivo'].mean()
+        
+        # ROI over capital productivo (annualized)
+        days_in_period = len(df_valid)
+        if avg_capital_productivo > 0 and days_in_period > 0:
+            roi_period = (accumulated_spread / avg_capital_productivo) * 100
+            roi_annualized = roi_period * (365 / days_in_period)
+        else:
+            roi_period = 0.0
+            roi_annualized = 0.0
+        
+        # Positive vs negative days
+        positive_days = len(df_valid[df_valid['spread'] > 0])
+        negative_days = len(df_valid[df_valid['spread'] < 0])
+        
+        # Best and worst day
+        best_day = df_valid.loc[df_valid['spread'].idxmax()] if not df_valid.empty else None
+        worst_day = df_valid.loc[df_valid['spread'].idxmin()] if not df_valid.empty else None
+        
+        spread_kpis = {
+            'accumulated_spread': accumulated_spread,
+            'total_fci_return': total_fci_return,
+            'total_caucion_cost': total_caucion_cost,
+            'avg_capital_productivo': avg_capital_productivo,
+            'roi_period': roi_period,
+            'roi_annualized': roi_annualized,
+            'positive_days': positive_days,
+            'negative_days': negative_days,
+            'best_day': {'date': best_day['date'], 'spread': best_day['spread']} if best_day is not None else None,
+            'worst_day': {'date': worst_day['date'], 'spread': worst_day['spread']} if worst_day is not None else None,
+            'days_analyzed': days_in_period
+        }
+        
+        return df_spread, spread_kpis
+

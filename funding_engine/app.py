@@ -131,9 +131,8 @@ if start_date >= end_date:
     st.stop()
 
 # --- MAIN LOGIC ---
-st.title("💸 Funding Engine")
-st.markdown("Monitoreo de **Costo de Financiamiento** de tus Cauciones Tomadoras.")
-st.info("💡 **Módulo FCI pendiente**: actualmente solo se muestra el costo de interés. Próximamente agregaremos la valuación de FCIs para calcular el Carry Neto completo.")
+st.title("💸 Funding & Carry Engine")
+st.markdown("Monitoreo de **Costo de Financiamiento** y **Carry Trade** de tus Cauciones Tomadoras.")
 
 with st.spinner("Calculando métricas..."):
     df_daily, kpis = engine.calculate_metrics(
@@ -232,3 +231,156 @@ with st.expander("🔎 Ver Datos Detallados"):
         }),
         use_container_width=True
     )
+
+# =============================================================================
+# CARRY TRADE / SPREAD SECTION
+# =============================================================================
+st.divider()
+st.header("📊 Carry Trade – Spread FCI vs Caución")
+st.markdown("""
+Este módulo calcula el **spread diario** entre los rendimientos del FCI y el costo de las cauciones.
+- ⚠️ Se aplica un **offset D+1** en el VCP del FCI para reflejar el delay real de publicación.
+- 💡 ROI calculado sobre **capital productivo** = min(balance FCI, caución viva)
+""")
+
+# FCI Selector in Sidebar
+st.sidebar.header("📈 Configuración Carry Trade")
+available_fcis = engine.get_available_fcis(selected_portfolio)
+
+if not available_fcis:
+    st.warning("⚠️ No hay FCIs con transacciones para este portfolio. Agregá suscripciones en el módulo FCI.")
+else:
+    # FCI Selector
+    fci_options = {fci['id']: fci['nombre'] for fci in available_fcis}
+    selected_fci_id = st.sidebar.selectbox(
+        "Seleccionar FCI",
+        options=list(fci_options.keys()),
+        format_func=lambda x: fci_options.get(x, x)
+    )
+    
+    # Calculate Spread
+    with st.spinner("Calculando spread..."):
+        df_spread, spread_kpis = engine.calculate_spread(
+            portfolio_id=selected_portfolio,
+            fci_id=selected_fci_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+    
+    if df_spread.empty or not spread_kpis:
+        st.warning("No hay datos de spread para este período. Verificá que existan precios de FCI y cauciones en las fechas seleccionadas.")
+    else:
+        # --- SPREAD KPI ROW ---
+        sk1, sk2, sk3, sk4 = st.columns(4)
+        
+        accumulated_spread = spread_kpis.get('accumulated_spread', 0)
+        roi_annualized = spread_kpis.get('roi_annualized', 0)
+        positive_days = spread_kpis.get('positive_days', 0)
+        negative_days = spread_kpis.get('negative_days', 0)
+        avg_capital = spread_kpis.get('avg_capital_productivo', 0)
+        
+        # Color-coded accumulated spread
+        spread_color = "🟢" if accumulated_spread >= 0 else "🔴"
+        sk1.metric(
+            f"{spread_color} Spread Acumulado", 
+            f"${accumulated_spread:,.0f}",
+            delta=f"{spread_kpis.get('roi_period', 0):.2f}% período"
+        )
+        sk1.caption(f"Retorno neto del carry trade")
+        
+        # ROI Annualized
+        roi_color = "🟢" if roi_annualized >= 0 else "🔴"
+        sk2.metric(f"{roi_color} ROI TNA", f"{roi_annualized:.1f}%")
+        sk2.caption(f"Sobre capital productivo avg ${avg_capital:,.0f}")
+        
+        # Positive vs Negative Days
+        total_days = positive_days + negative_days
+        win_rate = (positive_days / total_days * 100) if total_days > 0 else 0
+        sk3.metric("Días Positivos", f"{positive_days}/{total_days}")
+        sk3.caption(f"Win Rate: {win_rate:.0f}%")
+        
+        # Best and Worst Day
+        best_day = spread_kpis.get('best_day')
+        worst_day = spread_kpis.get('worst_day')
+        if best_day and worst_day:
+            sk4.metric("Mejor Día", f"${best_day['spread']:,.0f}", delta=best_day['date'])
+            sk4.caption(f"Peor: ${worst_day['spread']:,.0f} ({worst_day['date']})")
+        
+        # --- SPREAD CHART ---
+        st.subheader("📈 Evolución del Spread Diario")
+        
+        # Filter to valid data only
+        df_chart = df_spread.dropna(subset=['spread'])
+        
+        if not df_chart.empty:
+            fig_spread = go.Figure()
+            
+            # Spread bars (green positive, red negative)
+            colors = ['#00eb88' if x >= 0 else '#ff4b4b' for x in df_chart['spread']]
+            
+            fig_spread.add_trace(go.Bar(
+                x=df_chart['date'],
+                y=df_chart['spread'],
+                name="Spread $",
+                marker_color=colors,
+                opacity=0.8
+            ))
+            
+            # FCI Return line
+            fig_spread.add_trace(go.Scatter(
+                x=df_chart['date'],
+                y=df_chart['fci_return'],
+                name="Retorno FCI",
+                line=dict(color="#00eb88", width=2),
+                mode='lines'
+            ))
+            
+            # Caucion Cost line
+            fig_spread.add_trace(go.Scatter(
+                x=df_chart['date'],
+                y=df_chart['caucion_cost'],
+                name="Costo Caución",
+                line=dict(color="#ff4b4b", width=2, dash='dot'),
+                mode='lines'
+            ))
+            
+            fig_spread.update_layout(
+                template="plotly_dark",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                hovermode="x unified",
+                margin=dict(l=0, r=0, t=30, b=0),
+                yaxis_title="ARS",
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            # Add zero line
+            fig_spread.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+            
+            st.plotly_chart(fig_spread, use_container_width=True)
+            
+            # Summary Cards
+            col1, col2, col3 = st.columns(3)
+            col1.metric("📈 Total FCI Return", f"${spread_kpis.get('total_fci_return', 0):,.0f}")
+            col2.metric("📉 Total Caución Cost", f"${spread_kpis.get('total_caucion_cost', 0):,.0f}")
+            col3.metric("📊 Días Analizados", f"{spread_kpis.get('days_analyzed', 0)}")
+        
+        # --- SPREAD DETAILS TABLE ---
+        with st.expander("🔎 Ver Datos Detallados de Spread"):
+            st.dataframe(
+                df_spread.style.format({
+                    "caucion_cost": "${:,.0f}",
+                    "fci_return": "${:,.0f}",
+                    "spread": "${:,.0f}",
+                    "caucion_viva": "${:,.0f}",
+                    "fci_balance": "${:,.0f}"
+                }, na_rep="-"),
+                use_container_width=True
+            )
+
