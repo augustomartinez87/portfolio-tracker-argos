@@ -77,7 +77,6 @@ export default function Dashboard() {
   // Filtros de transacciones
   const [dateRangeValue, setDateRangeValue] = useState('all');
   const [tradesSearchTerm, setTradesSearchTerm] = useState('');
-  const [periodFilter, setPeriodFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [tickerFilter, setTickerFilter] = useState('all');
   const [columnSettings, setColumnSettings] = useState({
@@ -294,7 +293,7 @@ export default function Dashboard() {
       return 0;
     });
     return sorted;
-  }, [trades, sortConfig, tradesSearchTerm, typeFilter, tickerFilter, periodFilter]);
+  }, [trades, sortConfig, tradesSearchTerm, typeFilter, tickerFilter, dateRangeValue]);
 
   const handleSort = useCallback((key) => {
     setSortConfig(prev => ({
@@ -467,8 +466,6 @@ export default function Dashboard() {
                   refetchPrices={refetchPrices}
                   compact={true}
                   showLogo={false}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
                   hideMep={true}
                 />
               </div>
@@ -530,7 +527,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'trades' && (
-                <div className="space-y-4 lg:space-y-6">
+                <div className="flex-1 flex flex-col min-h-0 space-y-4 lg:space-y-6 overflow-y-auto pr-1">
                   {/* Sección de Filtros */}
                   <div className="bg-background-secondary border border-border-primary rounded-xl p-3 sm:p-4 lg:p-5">
                     {/* Buscador - fila completa en móvil */}
@@ -756,8 +753,8 @@ export default function Dashboard() {
                         <button
                           onClick={() => setShowFciHistory(!showFciHistory)}
                           className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${showFciHistory
-                              ? 'bg-primary/10 text-primary border-primary/30'
-                              : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary'
+                            ? 'bg-primary/10 text-primary border-primary/30'
+                            : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary'
                             }`}
                         >
                           {showFciHistory ? 'Ver Posiciones' : 'Gestionar Transacciones'}

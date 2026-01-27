@@ -54,30 +54,30 @@ function calcularBandaSuperior(valorRescate, precioActual, tcActual) {
     return tcBase * 1.05;
 }
 
-function calcularCarryParaTC(precioActual, valorRescate, diasAlVencimiento, tcProyectado) {
+function calcularCarryParaTC(precioActual, valorRescate, diasAlVencimiento, tcProyectado, baseTC) {
     // Calcular retorno en USD para un tipo de cambio proyectado
     if (diasAlVencimiento <= 0) return 0;
-    
+
     const years = diasAlVencimiento / 365;
     const retornoTotalPesos = (valorRescate / precioActual); // Factor de retorno (1 + r)
-    const devaluacionTotal = (tcProyectado / TC_ACTUAL); // Factor de devaluación
-    
+    const devaluacionTotal = (tcProyectado / baseTC); // Factor de devaluación
+
     // Fórmula Geométrica: ((1 + R_ars) / (1 + Deval))^(1/years) - 1
-    const carryAnual = Math.pow(retornoTotalPesos / devaluacionTotal, 1/years) - 1;
-    
+    const carryAnual = Math.pow(retornoTotalPesos / devaluacionTotal, 1 / years) - 1;
+
     return carryAnual * 100; // convertir a porcentaje
 }
 
 function calcularTIRusd(precioActual, valorRescate, diasAlVencimiento) {
     if (diasAlVencimiento <= 0) return 0;
-    
+
     const years = diasAlVencimiento / 365;
     const factorRetornoTotal = (valorRescate / precioActual);
-    
+
     // TIR USD usando Fisher: (1 + R_anual_ars) / (1 + Inflacion_anual) - 1
     // Simplificado: (Factor_Retorno_Total)^(1/years) / (1 + INFLACION_ANUAL) - 1
-    const tirUsd = (Math.pow(factorRetornoTotal, 1/years) / (1 + INFLACION_ANUAL)) - 1;
-    
+    const tirUsd = (Math.pow(factorRetornoTotal, 1 / years) / (1 + INFLACION_ANUAL)) - 1;
+
     return tirUsd; // TIR anual en USD (decimal)
 }
 
@@ -123,12 +123,12 @@ export class MacroCarryEngine {
                         const tirUsd = calcularTIRusd(marketPrice, metadata.redemptionValue, daysToMaturity);
 
                         // Cálculos de Carry para diferentes escenarios de TC
-                        const carry1000 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1000);
-                        const carry1100 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1100);
-                        const carry1200 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1200);
-                        const carry1250 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1250);
-                        const carry1300 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1300);
-                        const carry1400 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1400);
+                        const carry1000 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1000, tcActual);
+                        const carry1100 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1100, tcActual);
+                        const carry1200 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1200, tcActual);
+                        const carry1250 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1250, tcActual);
+                        const carry1300 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1300, tcActual);
+                        const carry1400 = calcularCarryParaTC(marketPrice, metadata.redemptionValue, daysToMaturity, 1400, tcActual);
 
                         // Net Carry (Stable FX) - legacy compatibility
                         const netCarry = retornoTotalAnual / 100; // convertir a decimal
@@ -145,14 +145,14 @@ export class MacroCarryEngine {
                             redemptionValue: metadata.redemptionValue,
                             daysToMaturity: daysToMaturity,
                             maturity: maturity,
-                            
+
                             // Métricas principales de Docta
                             retornoDirecto: retornoDirecto, // en %
                             maxVarPosible: maxVarPosible, // en %
                             spreadVsTC: spreadVsTC, // en puntos porcentuales
                             tirUsd: tirUsd, // en decimal
                             bandaSuperior: bandaSuperior, // en ARS
-                            
+
                             // Cálculos de Carry para diferentes escenarios
                             carry1000: carry1000, // en %
                             carry1100: carry1100, // en %
@@ -160,7 +160,7 @@ export class MacroCarryEngine {
                             carry1250: carry1250, // en %
                             carry1300: carry1300, // en %
                             carry1400: carry1400, // en %
-                            
+
                             // Legacy compatibility
                             retornoTotal: retornoDirecto,
                             impliedYieldArs: retornoTotalAnual / 100,

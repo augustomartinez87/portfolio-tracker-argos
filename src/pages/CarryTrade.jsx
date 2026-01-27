@@ -54,21 +54,6 @@ export default function CarryTrade() {
                             </div>
                         </div>
 
-                        {/* Debug Info Panel */}
-                        <div className="bg-background-secondary border border-border-primary rounded-lg p-4 text-sm">
-                            <h3 className="font-bold text-text-primary mb-2">Debug Info</h3>
-                            <div className="space-y-1 text-text-secondary">
-                                <p>Loading: {isPricesLoading ? 'Yes' : 'No'}</p>
-                                <p>Fetching: {isFetching ? 'Yes' : 'No'}</p>
-                                <p>Error: {error ? error.message : 'None'}</p>
-                                <p>MEP Rate: {mepRate}</p>
-                                <p>Total Prices: {priceCount}</p>
-                                <p>Target Tickers Found: {foundTickers.length} / {targetTickers.length}</p>
-                                <p className="text-xs font-mono">
-                                    Found: {foundTickers.length > 0 ? foundTickers.join(', ') : 'None'}
-                                </p>
-                            </div>
-                        </div>
 
                         {/* Loading State */}
                         {isPricesLoading && (
