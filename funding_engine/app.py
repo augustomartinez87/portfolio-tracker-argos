@@ -131,261 +131,219 @@ if start_date >= end_date:
     st.stop()
 
 # --- MAIN LOGIC ---
-st.title("💸 Funding & Carry Engine")
-st.markdown("Monitoreo de **Costo de Financiamiento** y **Carry Trade** de tus Cauciones Tomadoras.")
+# --- MAIN LOGIC ---
+# 1. Title at the very top
+st.title("Carry Trade – Spread FCI vs Caución")
 
-with st.spinner("Calculando métricas..."):
+# 2. Main Calculations (Running in background first)
+with st.spinner("Procesando datos del mercado..."):
+    # Base Funding Metrics (always needed for context)
     df_daily, kpis = engine.calculate_metrics(
         portfolio_id=selected_portfolio,
         start_date=start_date,
         end_date=end_date
     )
 
-if df_daily.empty:
-    st.warning("No hay datos para este período.")
-    st.stop()
-
-# =============================================================================
-# CARRY TRADE / SPREAD SECTION (MOVED TO TOP)
-# =============================================================================
-st.header("📊 Carry Trade – Spread FCI vs Caución")
-st.markdown("""
-Este módulo calcula el **spread diario** entre los rendimientos del FCI y el costo de las cauciones.
-- ⚠️ Se aplica un **offset D+1** en el VCP del FCI para reflejar el delay real de publicación.
-- 💡 ROI calculado sobre **capital productivo** = min(balance FCI, caución viva)
-""")
-
-# FCI Selector in Sidebar
-st.sidebar.header("📈 Configuración Carry Trade")
-available_fcis = engine.get_available_fcis(selected_portfolio)
-
-if not available_fcis:
-    st.warning("⚠️ No hay FCIs con transacciones para este portfolio. Agregá suscripciones en el módulo FCI.")
-else:
-    # FCI Selector
-    fci_options = {fci['id']: fci['nombre'] for fci in available_fcis}
-    selected_fci_id = st.sidebar.selectbox(
-        "Seleccionar FCI",
-        options=list(fci_options.keys()),
-        format_func=lambda x: fci_options.get(x, x)
-    )
+    # FCI Spread Calculation (if configured)
+    df_spread = pd.DataFrame()
+    spread_kpis = {}
     
-    # Calculate Spread
-    with st.spinner("Calculando spread..."):
+    # Check for available FCIs
+    available_fcis = engine.get_available_fcis(selected_portfolio)
+    if available_fcis:
+        # Default to first FCI if not set
+        # We need a way to select FCI without breaking the "Top of Page" rule
+        # So we keep selector in sidebar but maybe auto-select first one?
+        fci_options = {fci['id']: fci['nombre'] for fci in available_fcis}
+        
+        # Sidebar control
+        st.sidebar.markdown("---")
+        st.sidebar.header("📈 Configuración Carry")
+        selected_fci_id = st.sidebar.selectbox(
+            "Seleccionar FCI para Spread",
+            options=list(fci_options.keys()),
+            format_func=lambda x: fci_options.get(x, x)
+        )
+        
         df_spread, spread_kpis = engine.calculate_spread(
             portfolio_id=selected_portfolio,
             fci_id=selected_fci_id,
             start_date=start_date,
             end_date=end_date
         )
-    
-    if df_spread.empty or not spread_kpis:
-        st.warning("No hay datos de spread para este período. Verificá que existan precios de FCI y cauciones en las fechas seleccionadas.")
+
+# 3. Main Dashboard Display
+if df_spread.empty or not spread_kpis:
+    if not available_fcis:
+        st.warning("⚠️ No se encontraron suscripciones a FCIs en este portfolio. Agregá operaciones para ver el dashboard.")
     else:
-        # --- SPREAD KPI ROW ---
-        sk1, sk2, sk3, sk4 = st.columns(4)
+        st.info("👈 Seleccioná un FCI y rango de fechas válido para ver el análisis.")
+else:
+    # --- A. EQUITY CURVE (PnL ACUMULADO) ---
+    # This is the "State of Account" chart
+    
+    # Prepare data
+    df_chart = df_spread.dropna(subset=['spread']).copy()
+    
+    if not df_chart.empty:
+        df_chart['spread_acumulado'] = df_chart['spread'].cumsum()
+        final_pnl = df_chart['spread_acumulado'].iloc[-1]
         
-        accumulated_spread = spread_kpis.get('accumulated_spread', 0)
-        roi_annualized = spread_kpis.get('roi_annualized', 0)
-        positive_days = spread_kpis.get('positive_days', 0)
-        negative_days = spread_kpis.get('negative_days', 0)
-        avg_capital = spread_kpis.get('avg_capital_productivo', 0)
+        # Determine color (Green/Red)
+        pnl_color = "#00eb88" if final_pnl >= 0 else "#ff4b4b"
         
-        # Color-coded accumulated spread
-        spread_color = "🟢" if accumulated_spread >= 0 else "🔴"
-        sk1.metric(
-            f"{spread_color} Spread Acumulado", 
-            f"${accumulated_spread:,.0f}",
-            delta=f"{spread_kpis.get('roi_period', 0):.2f}% período"
+        st.subheader("💰 Equity Curve (PnL Acumulado)")
+        
+        fig_equity = go.Figure()
+        
+        fig_equity.add_trace(go.Scatter(
+            x=df_chart['date'],
+            y=df_chart['spread_acumulado'],
+            name="PnL Acumulado",
+            line=dict(color=pnl_color, width=3),
+            fill='tozeroy',
+            fillcolor=f"rgba({0 if final_pnl >=0 else 255}, {235 if final_pnl >=0 else 75}, {136 if final_pnl >=0 else 75}, 0.1)"
+        ))
+        
+        fig_equity.update_layout(
+            template="plotly_dark",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            hovermode="x unified",
+            margin=dict(l=0, r=0, t=10, b=0),
+            yaxis_title="PnL Acumulado ($)",
+            height=350,
+            showlegend=False
         )
-        sk1.caption(f"Retorno neto del carry trade")
+        st.plotly_chart(fig_equity, use_container_width=True)
         
-        # ROI Annualized
-        roi_color = "🟢" if roi_annualized >= 0 else "🔴"
-        sk2.metric(f"{roi_color} ROI TNA", f"{roi_annualized:.1f}%")
-        sk2.caption(f"Sobre capital productivo avg ${avg_capital:,.0f}")
-        
-        # Positive vs Negative Days
-        total_days = positive_days + negative_days
-        win_rate = (positive_days / total_days * 100) if total_days > 0 else 0
-        sk3.metric("Días Positivos", f"{positive_days}/{total_days}")
-        sk3.caption(f"Win Rate: {win_rate:.0f}%")
-        
-        # Best and Worst Day
-        best_day = spread_kpis.get('best_day')
-        worst_day = spread_kpis.get('worst_day')
-        if best_day and worst_day:
-            sk4.metric("Mejor Día", f"${best_day['spread']:,.0f}", delta=best_day['date'])
-            sk4.caption(f"Peor: ${worst_day['spread']:,.0f} ({worst_day['date']})")
-        
-        # --- SPREAD CHART ---
-        st.subheader("📈 Evolución del Spread Diario")
-        
-        # Filter to valid data only
-        df_chart = df_spread.dropna(subset=['spread'])
-        
+        # Key High-Level Metrics Row (Compact)
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("PnL Total", f"${spread_kpis['accumulated_spread']:,.0f}")
+        k2.metric("TNA Implícita (ROI)", f"{spread_kpis['roi_annualized']:.1f}%")
+        k3.metric("Capital Productivo Avg", f"${spread_kpis['avg_capital_productivo']:,.0f}")
+        win_rate = (spread_kpis['positive_days'] / spread_kpis['days_analyzed'] * 100) if spread_kpis['days_analyzed'] > 0 else 0
+        k4.metric("Win Rate", f"{win_rate:.0f}%", help=f"{spread_kpis['positive_days']} días pos / {spread_kpis['negative_days']} neg")
+
+    # --- EXPLANATION EXPANDER ---
+    with st.expander("ℹ️ Detalles del Modelo (Offset D+1, Capital Productivo)"):
+        st.markdown("""
+        - **Spread Diario**: `Retorno Diario FCI ($) - Costo Diario Caución ($)`
+        - **Offset D+1**: El VCP del FCI se toma con un día de delay para simular el precio real de rescate/publicación.
+        - **Capital Productivo**: Se considera el menor valor entre `Balance FCI` y `Deuda Viva` para calcular el ROI real sobre el dinero "trabajando".
+        """)
+
+    st.divider()
+
+    # --- B. SPREAD DIARIO & BREAKDOWN ---
+    col_spread, col_breakdown = st.columns(2)
+    
+    with col_spread:
+        st.subheader("📊 Spread Diario")
         if not df_chart.empty:
             fig_spread = go.Figure()
-            
-            # Spread bars (green positive, red negative)
             colors = ['#00eb88' if x >= 0 else '#ff4b4b' for x in df_chart['spread']]
             
             fig_spread.add_trace(go.Bar(
                 x=df_chart['date'],
                 y=df_chart['spread'],
-                name="Spread $",
                 marker_color=colors,
-                opacity=0.8
-            ))
-            
-            # FCI Return line
-            fig_spread.add_trace(go.Scatter(
-                x=df_chart['date'],
-                y=df_chart['fci_return'],
-                name="Retorno FCI",
-                line=dict(color="#00eb88", width=2),
-                mode='lines'
-            ))
-            
-            # Caucion Cost line
-            fig_spread.add_trace(go.Scatter(
-                x=df_chart['date'],
-                y=df_chart['caucion_cost'],
-                name="Costo Caución",
-                line=dict(color="#ff4b4b", width=2, dash='dot'),
-                mode='lines'
+                name="Spread $"
             ))
             
             fig_spread.update_layout(
                 template="plotly_dark",
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0, r=0, t=30, b=0),
+                height=300,
+                showlegend=False
+            )
+            st.plotly_chart(fig_spread, use_container_width=True)
+
+    with col_breakdown:
+        st.subheader("🆚 Breakdown: FCI vs Caución")
+        if not df_chart.empty:
+            fig_break = go.Figure()
+            
+            fig_break.add_trace(go.Scatter(
+                x=df_chart['date'],
+                y=df_chart['fci_return'],
+                name="Ganancia FCI",
+                line=dict(color="#00eb88", width=2)
+            ))
+            
+            fig_break.add_trace(go.Scatter(
+                x=df_chart['date'],
+                y=df_chart['caucion_cost'],
+                name="Costo Caución",
+                line=dict(color="#ff4b4b", width=2, dash='dot')
+            ))
+            
+            fig_break.update_layout(
+                template="plotly_dark",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
                 hovermode="x unified",
                 margin=dict(l=0, r=0, t=30, b=0),
-                yaxis_title="ARS",
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                )
+                legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
+                height=300
             )
-            
-            # Add zero line
-            fig_spread.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
-            
-            st.plotly_chart(fig_spread, use_container_width=True)
-            
-            # Summary Cards
-            col1, col2, col3 = st.columns(3)
-            col1.metric("📈 Total FCI Return", f"${spread_kpis.get('total_fci_return', 0):,.0f}")
-            col2.metric("📉 Total Caución Cost", f"${spread_kpis.get('total_caucion_cost', 0):,.0f}")
-            col3.metric("📊 Días Analizados", f"{spread_kpis.get('days_analyzed', 0)}")
-        
-        # --- SPREAD DETAILS TABLE ---
-        with st.expander("🔎 Ver Datos Detallados de Spread"):
-            st.dataframe(
-                df_spread.style.format({
-                    "caucion_cost": "${:,.0f}",
-                    "fci_return": "${:,.0f}",
-                    "spread": "${:,.0f}",
-                    "caucion_viva": "${:,.0f}",
-                    "fci_balance": "${:,.0f}"
-                }, na_rep="-"),
-                use_container_width=True
-            )
+            st.plotly_chart(fig_break, use_container_width=True)
 
+    # --- C. CAPITAL STRUCTURE ---
+    st.subheader("⚖️ Estructura de Capital: Productivo vs Deuda")
+    if not df_chart.empty:
+        fig_cap = go.Figure()
+        
+        fig_cap.add_trace(go.Scatter(
+            x=df_chart['date'],
+            y=df_chart['fci_balance'],
+            name="Balance FCI (Activo)",
+            line=dict(color="#3b82f6", width=2),
+            fill='tozeroy',
+            fillcolor="rgba(59, 130, 246, 0.1)"
+        ))
+        
+        fig_cap.add_trace(go.Scatter(
+            x=df_chart['date'],
+            y=df_chart['caucion_viva'],
+            name="Deuda Viva (Pasivo)",
+            line=dict(color="#ef4444", width=2)
+        ))
+        
+        fig_cap.update_layout(
+            template="plotly_dark",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            hovermode="x unified",
+            margin=dict(l=0, r=0, t=30, b=0),
+            legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"),
+            height=300
+        )
+        st.plotly_chart(fig_cap, use_container_width=True)
+
+# =============================================================================
+# FUNDING ENGINE METRICS (SECONDARY)
+# =============================================================================
 st.divider()
 
-# =============================================================================
-# FUNDING ENGINE METRICS (DEBT & INTEREST) - MOVED TO BOTTOM
-# =============================================================================
-st.subheader("📉 Métricas de Financiamiento Pura (Deuda)")
+if not df_daily.empty:
+    with st.expander("📉 Métricas de Financiamiento (Solo Deuda)"):
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Deuda Promedio", f"${kpis.get('avg_debt', 0):,.0f}")
+        k2.metric("Intereses Pagados", f"${kpis.get('total_interest', 0):,.0f}")
+        k3.metric("TNA Promedio", f"{kpis.get('avg_tna', 0):.2f}%")
+        k4.metric("Deuda Actual", f"${kpis.get('current_debt', 0):,.0f}")
+        
+        st.subheader("Evolución de Deuda")
+        fig_debt = go.Figure()
+        fig_debt.add_trace(go.Scatter(
+            x=df_daily['date'], y=df_daily['total_debt'],
+            name="Deuda Total",
+            line=dict(color="#ff4b4b", width=2),
+            fill='tozeroy'
+        ))
+        fig_debt.update_layout(template="plotly_dark", height=300, margin=dict(t=0, b=0, l=0, r=0))
+        st.plotly_chart(fig_debt, use_container_width=True)
 
-# --- KPI ROW ---
-k1, k2, k3, k4 = st.columns(4)
-
-avg_debt = kpis.get('avg_debt', 0)
-total_interest = kpis.get('total_interest', 0)
-avg_tna = kpis.get('avg_tna', 0)
-current_debt = kpis.get('current_debt', 0)
-
-k1.metric("Capital Financiado (Avg)", f"${avg_debt:,.0f}")
-k1.caption("Deuda Promedio Diaria")
-
-k2.metric("Costo Interés (Período)", f"${total_interest:,.0f}")
-k2.caption(f"Interés acumulado ({(end_date - start_date).days} días)")
-
-k3.metric("TNA Promedio Ponderada", f"{avg_tna:.2f}%")
-k3.caption("Costo del Funding")
-
-k4.metric("Deuda Actual", f"${current_debt:,.0f}")
-k4.caption("Capital activo hoy")
-
-# --- CHARTS ---
-
-# 1. Debt Evolution Chart
-st.subheader("📈 Evolución del Capital Financiado")
-fig_debt = go.Figure()
-
-fig_debt.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['total_debt'],
-    name="Capital Financiado",
-    line=dict(color="#ff4b4b", width=2),
-    fill='tozeroy',
-    fillcolor='rgba(255, 75, 75, 0.1)'
-))
-
-fig_debt.update_layout(
-    template="plotly_dark",
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    hovermode="x unified",
-    margin=dict(l=0, r=0, t=30, b=0),
-    yaxis_title="ARS",
-)
-st.plotly_chart(fig_debt, use_container_width=True)
-
-# 2. Daily Interest Cost
-st.subheader("📊 Costo de Interés Diario")
-fig_interest = go.Figure()
-
-fig_interest.add_trace(go.Bar(
-    x=df_daily['date'], y=df_daily['daily_interest_cost'],
-    name="Costo Interés",
-    marker_color="#ff4b4b"
-))
-
-# Add TNA line on secondary axis
-fig_interest.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['weighted_tna'],
-    name="TNA (%)",
-    line=dict(color="#00eb88", width=2, dash='dot'),
-    yaxis="y2"
-))
-
-fig_interest.update_layout(
-    template="plotly_dark",
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=0, r=0, t=30, b=0),
-    yaxis_title="Interés Diario (ARS)",
-    yaxis2=dict(
-        title="TNA (%)",
-        overlaying="y",
-        side="right"
-    )
-)
-st.plotly_chart(fig_interest, use_container_width=True)
-
-# --- DETAILS TABLE ---
-with st.expander("🔎 Ver Datos Detallados"):
-    st.dataframe(
-        df_daily.style.format({
-            "total_debt": "${:,.0f}",
-            "daily_interest_cost": "${:,.0f}",
-            "weighted_tna": "{:.2f}%"
-        }),
-        use_container_width=True
-    )
