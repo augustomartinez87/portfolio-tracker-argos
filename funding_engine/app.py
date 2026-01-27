@@ -212,7 +212,7 @@ else:
             
             # 1. USD Conversion (if enabled)
             currency_label = "$"
-            if show_usd and mep_history:
+            if show_usd and not mep_history.empty:
                 currency_label = "USD"
                 # Align MEP data
                 df_spread['mep'] = df_spread['date'].map(mep_history)
@@ -233,7 +233,7 @@ else:
                 spread_kpis['carry_lost'] = spread_kpis['accumulated_spread_full'] - spread_kpis['accumulated_spread']
                 
                 # Loss Max in USD for display/warnings (approx using current MEP)
-                current_mep = list(mep_history.values())[-1] if mep_history else 1000
+                current_mep = mep_history.iloc[-1] if not mep_history.empty else 1000
                 max_daily_loss_val = max_daily_loss / current_mep
             else:
                 max_daily_loss_val = max_daily_loss
