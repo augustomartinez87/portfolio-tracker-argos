@@ -61,7 +61,15 @@ const FciPriceUploadModal = ({ isOpen, onClose, onRefresh }) => {
                     const line = lines[i].trim();
                     if (!line) continue;
 
-                    const cols = line.split(',').map(s => s.trim());
+                    // Usar un separador dinámico si es posible, o probar los comunes
+                    let cols = [];
+                    if (line.includes(';')) {
+                        cols = line.split(';').map(s => s.trim());
+                    } else if (line.includes('\t')) {
+                        cols = line.split('\t').map(s => s.trim());
+                    } else {
+                        cols = line.split(',').map(s => s.trim());
+                    }
 
                     let fechaRaw, vcpRaw;
                     if (cols.length >= 3) {

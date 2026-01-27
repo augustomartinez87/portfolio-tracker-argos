@@ -8,15 +8,48 @@
  * @example parseARSNumber("1234.56") => 1234.56
  */
 export const parseARSNumber = (str: string | number | null | undefined): number => {
-  if (!str) return 0;
+  if (str === null || str === undefined || str === '') return 0;
 
-  const cleaned = str.toString()
-    .replace(/\$/g, '')     // Quitar símbolo $
-    .replace(/\s/g, '')     // Quitar espacios
-    .replace(/\./g, '')     // Quitar separadores de miles (puntos)
-    .replace(/,/g, '.');    // Convertir coma decimal a punto
+  const s = str.toString().trim();
+  if (!s) return 0;
 
-  return parseFloat(cleaned) || 0;
+  // 1. Quitar símbolos de moneda y espacios
+  let cleaned = s.replace(/[\$\s]/g, '');
+
+  // 2. Heurística para determinar separadores
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+
+  if (lastComma > lastDot) {
+    // Caso 1: "1.234,56" -> La coma es decimal
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  } else if (lastDot > lastComma) {
+    // Caso 2: "1,234.56" o "4.124356"
+    if (lastComma === -1) {
+      // Si NO hay comas, y solo hay UN punto:
+      // ¿Es separador de miles o decimal?
+      // "1.234" (miles) vs "1.2345" (decimal)
+      // En contextos financieros/CSV, un solo punto suele ser decimal a menos que sea 
+      // exactamente 4 dígitos (N.NNN) y estemos seguros de que es miles.
+      // Pero para VCP de 6 decimales, es claramente decimal.
+      const dotCount = (cleaned.match(/\./g) || []).length;
+      if (dotCount > 1) {
+        // "1.234.567" -> Todos son miles
+        cleaned = cleaned.replace(/\./g, '');
+      } else {
+        // "4.124356" o "1234.56" -> Es decimal
+        // No hacemos nada, parseFloat lo entiende
+      }
+    } else {
+      // "1,234.56" -> El punto es decimal
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else {
+    // No hay ni puntos ni comas, o son iguales (imposible si lastIndex != -1)
+  }
+
+  const result = parseFloat(cleaned);
+  return isNaN(result) ? 0 : result;
 };
 
 /**
