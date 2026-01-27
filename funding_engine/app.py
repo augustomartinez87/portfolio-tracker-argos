@@ -155,7 +155,7 @@ with st.spinner("Procesando datos del mercado..."):
     show_usd = False
     max_daily_loss = 10000
     mep_history = pd.Series()
-    show_full_deployment = False
+    show_full_deployment = True
 
     if available_fcis:
         # Default to first FCI if not set
@@ -186,7 +186,7 @@ with st.spinner("Procesando datos del mercado..."):
         else:
             st.sidebar.caption("🚫 Modo USD no disponible (Faltan datos MEP)")
 
-        show_full_deployment = st.sidebar.checkbox("Show Full Deployment PnL", value=False)
+        show_full_deployment = st.sidebar.checkbox("Mostrar PnL Full Deployment", value=True)
         
         # Calculate Spread
         with st.spinner("Calculando spread..."):

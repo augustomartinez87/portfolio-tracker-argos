@@ -40,10 +40,12 @@ function calcularMaxVarPosible(retornoTotal) {
     return Math.abs(retornoTotal);
 }
 
-function calcularSpreadVsTC(retornoTotalAnual, diasAlVencimiento) {
-    // Spread = TIR ARS - Devaluación proyectada (inflación anual ~12.68%)
-    // Usamos el retorno anualizado - inflación proyectada
-    return retornoTotalAnual - INFLACION_ANUAL;
+function calcularSpreadVsTC(precioActual, valorRescate, diasAlVencimiento) {
+    // Spread = TIR ARS Geométrica - Inflación proyectada
+    // Fórmula geométrica consistente con el resto del motor
+    if (diasAlVencimiento <= 0) return 0;
+    const retornoAnualGeometrico = Math.pow(valorRescate / precioActual, 365 / diasAlVencimiento) - 1;
+    return retornoAnualGeometrico - INFLACION_ANUAL;
 }
 
 function calcularBandaSuperior(valorRescate, precioActual, tcActual) {
@@ -57,11 +59,11 @@ function calcularCarryParaTC(precioActual, valorRescate, diasAlVencimiento, tcPr
     if (diasAlVencimiento <= 0) return 0;
     
     const years = diasAlVencimiento / 365;
-    const retornoTotalPesos = (valorRescate / precioActual) - 1;
-    const devaluacionAnual = Math.pow(tcProyectado / TC_ACTUAL, 1/years) - 1;
+    const retornoTotalPesos = (valorRescate / precioActual); // Factor de retorno (1 + r)
+    const devaluacionTotal = (tcProyectado / TC_ACTUAL); // Factor de devaluación
     
-    // Carry = Retorno ARS - Devaluación proyectada
-    const carryAnual = (retornoTotalPesos / years) - devaluacionAnual;
+    // Fórmula Geométrica: ((1 + R_ars) / (1 + Deval))^(1/years) - 1
+    const carryAnual = Math.pow(retornoTotalPesos / devaluacionTotal, 1/years) - 1;
     
     return carryAnual * 100; // convertir a porcentaje
 }
@@ -70,12 +72,13 @@ function calcularTIRusd(precioActual, valorRescate, diasAlVencimiento) {
     if (diasAlVencimiento <= 0) return 0;
     
     const years = diasAlVencimiento / 365;
-    const retornoTotal = (valorRescate / precioActual) - 1;
+    const factorRetornoTotal = (valorRescate / precioActual);
     
-    // TIR USD asumiendo devaluación igual a inflación proyectada
-    const retornoReal = retornoTotal - INFLACION_ANUAL * years;
+    // TIR USD usando Fisher: (1 + R_anual_ars) / (1 + Inflacion_anual) - 1
+    // Simplificado: (Factor_Retorno_Total)^(1/years) / (1 + INFLACION_ANUAL) - 1
+    const tirUsd = (Math.pow(factorRetornoTotal, 1/years) / (1 + INFLACION_ANUAL)) - 1;
     
-    return retornoReal / years; // TIR anual en USD
+    return tirUsd; // TIR anual en USD (decimal)
 }
 
 export class MacroCarryEngine {
@@ -112,9 +115,10 @@ export class MacroCarryEngine {
                     if (daysToMaturity > 0) {
                         // Cálculos principales (estilo Docta)
                         const retornoDirecto = calcularRetornoDirecto(marketPrice, metadata.redemptionValue);
-                        const retornoTotalAnual = retornoDirecto * (365 / daysToMaturity);
+                        // Retorno anualizado geométrico (consistente con fórmulas de carry)
+                        const retornoTotalAnual = (Math.pow(metadata.redemptionValue / marketPrice, 365 / daysToMaturity) - 1) * 100;
                         const maxVarPosible = calcularMaxVarPosible(retornoDirecto);
-                        const spreadVsTC = calcularSpreadVsTC(retornoTotalAnual, daysToMaturity);
+                        const spreadVsTC = calcularSpreadVsTC(marketPrice, metadata.redemptionValue, daysToMaturity);
                         const bandaSuperior = calcularBandaSuperior(metadata.redemptionValue, marketPrice, tcActual);
                         const tirUsd = calcularTIRusd(marketPrice, metadata.redemptionValue, daysToMaturity);
 

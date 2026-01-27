@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import os
+import json
 from datetime import date, datetime, timedelta
 import uuid
+from pathlib import Path
 
 # Configuration: Get Supabase credentials
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -18,6 +20,30 @@ if not SUPABASE_URL or not SUPABASE_KEY:
             SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
     except:
         pass
+
+
+def load_local_mep_history():
+    """
+    Load MEP history from local JSON file as fallback.
+    Returns a pandas Series indexed by date.
+    """
+    try:
+        # Path relative to this file: ../src/data/mepHistory.json
+        json_path = Path(__file__).parent.parent / 'src' / 'data' / 'mepHistory.json'
+
+        if json_path.exists():
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+
+            if data:
+                df = pd.DataFrame(data)
+                return pd.Series(df['price'].values, index=df['date'])
+
+        print("⚠️ Local mepHistory.json not found")
+        return pd.Series()
+    except Exception as e:
+        print(f"Error loading local MEP history: {e}")
+        return pd.Series()
 
 
 def create_mock_cauciones():
@@ -592,41 +618,52 @@ class FundingCarryEngine:
 
     def get_mep_history(self, start_date=None, end_date=None):
         """
-        Fetch MEP prices from market_prices table.
-        Looking for ticker 'MEP', 'CCL', or 'USD'.
+        Fetch MEP prices from mep_history table in Supabase.
+        Falls back to local JSON file if table is empty or unavailable.
         """
+        def filter_by_date_range(series, start_date, end_date):
+            """Filter a pandas Series by date range"""
+            if series.empty:
+                return series
+            if start_date:
+                start_str = start_date.strftime('%Y-%m-%d')
+                series = series[series.index >= start_str]
+            if end_date:
+                end_str = end_date.strftime('%Y-%m-%d')
+                series = series[series.index <= end_str]
+            return series
+
+        # Mock mode: use local JSON directly
         if self.use_mock:
-            # NO MOCK DATA ALLOWED for financial calcs as per user request.
-            # But for development/UI testing if DB is empty, we return empty
-            # unless explicitly told otherwise. User said "USD solo con MEP real".
-            return pd.Series()
+            local_data = load_local_mep_history()
+            return filter_by_date_range(local_data, start_date, end_date)
 
         try:
-            # Try to find a standard USD ticker
-            tickers_to_try = ['MEP', 'DOLAR MEP', 'AL30D/AL30'] # Common conventions
-            
-            # Simple query for first match
-            # For now, let's assume there is a 'MEP' ticker in market_prices
-            # If market_prices structure is ticker, price... that is a snapshot table?
-            # Creating history from a snapshot table is impossible unless it has history.
-            # Checking schema... market_prices has 'last_update'. 
-            # It seems 'market_prices' is a SNAPSHOT table (current price).
-            # We don't have a history table for market prices in the schema provided.
-            
-            # CRITICAL: Schema only has `market_prices` (snapshot) and `fci_prices` (history).
-            # We cannot build a historical USD curve from a snapshot table.
-            
-            # Workaround: Check if there is a 'usd_prices' or similar.
-            # If not, we can only provide CURRENT USD conversion, not historical.
-            # User asked for "Equity curve... in USD". This requires history.
-            
-            # Since I cannot create data that doesn't exist, and user banned mocks:
-            # I will return EMPTY, which will disable the toggle.
-            print("ℹ️ No historical market prices table found. USD mode disabled.")
-            return pd.Series()
-            
+            # Query the correct historical table: 'mep_history' (from migrations/services)
+            query = self.supabase.table('mep_history').select('date, price')
+
+            if start_date:
+                query = query.gte('date', start_date.strftime('%Y-%m-%d'))
+            if end_date:
+                query = query.lte('date', end_date.strftime('%Y-%m-%d'))
+
+            response = query.order('date', desc=False).execute()
+
+            if response.data and len(response.data) > 0:
+                df = pd.DataFrame(response.data)
+                # Return as a series indexed by date for easy mapping in app.py
+                return pd.Series(df['price'].values, index=df['date'])
+
+            # Fallback to local JSON if Supabase table is empty
+            print("ℹ️ No data in 'mep_history' table, using local JSON fallback...")
+            local_data = load_local_mep_history()
+            return filter_by_date_range(local_data, start_date, end_date)
+
         except Exception as e:
-            print(f"Error fetching MEP: {e}")
-            return pd.Series()
+            print(f"Error fetching MEP History from Supabase: {e}")
+            # Fallback to local JSON on error
+            print("ℹ️ Using local JSON fallback...")
+            local_data = load_local_mep_history()
+            return filter_by_date_range(local_data, start_date, end_date)
 
 
