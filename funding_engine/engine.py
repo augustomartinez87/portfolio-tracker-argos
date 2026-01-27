@@ -473,6 +473,62 @@ class FundingCarryEngine:
                 lambda r: min(r['fci_balance'], r['caucion_viva']) if r['caucion_viva'] > 0 else 0,
                 axis=1
             )
+
+            # -----------------------------------------------------------------
+            # RISK LAYER: Full Deployment + Optimal Capital
+            # -----------------------------------------------------------------
+            
+            # 1. Full Deployment PnL (Simulation)
+            # Assumptions: 
+            # - 100% of caucion_viva is deployed in FCI
+            # - Spread Rate = FCI Rate - Caucion Rate (implicit in $ terms)
+            # But we have daily $ returns. Let's infer rates.
+            
+            # Rate FCI = fci_return / fci_balance (if balance > 0)
+            # Rate Caucion = caucion_cost / caucion_viva (if viva > 0)
+            
+            # Since fci_return is calculated on fci_balance,
+            # fci_daily_rate = fci_return / fci_balance
+            
+            # Full Deployment Spread $ = (fci_daily_rate * caucion_viva) - caucion_cost
+            # = (fci_return / fci_balance * caucion_viva) - caucion_cost
+            
+            def calc_full_deployment(row):
+                if row['fci_balance'] > 0 and row['caucion_viva'] > 0:
+                    fci_rate = row['fci_return'] / row['fci_balance']
+                    # Potential return if we had deployed ALL debt
+                    potential_fci_return = fci_rate * row['caucion_viva']
+                    return potential_fci_return - row['caucion_cost']
+                return row['spread'] # Fallback to actual if generic data missing
+
+            df_spread['spread_full'] = df_spread.apply(calc_full_deployment, axis=1)
+            
+            # 2. Optimal Capital (Sizing)
+            # Formula: If spread < 0 -> Max_Loss / |Spread_Rate|
+            # Spread Rate needed here is (FCI_Rate - Caucion_Rate)
+            # Spread $ = Capital * Spread_Rate
+            # So Spread_Rate = Spread $ / Capital (Productive)
+            
+            # But wait, the user definition: "spread_diario = r_FCI - r_caución"
+            # And "Capital óptimo = Loss_Max_Diaria / |spread_diario|"
+            
+            # Let's calculate daily net rate first
+            def calc_net_rate(row):
+                if row['capital_productivo'] > 0:
+                    return row['spread'] / row['capital_productivo']
+                return 0.0
+            
+            df_spread['net_rate'] = df_spread.apply(calc_net_rate, axis=1)
+
+            # Note: Optimal Capital calculation depends on Max Loss which is a UI parameter.
+            # We will return the 'net_rate' so UI can compute dynamic Optimal Capital 
+            # or we can pass max_loss to this function.
+            # Since engine should be stateless regarding UI params, we'll let UI compute 
+            # the final scalar or pass it in. 
+            # Actually, to plotting historical optimal capital, we need it here.
+            # Let's add an optional argument to calculate_spread or just return rates.
+            # We'll stick to returning 'net_rate' and let App handle the interactive "Max Loss" math 
+            # to be responsive without re-running engine query.
         
         # 5. Calculate KPIs
         df_valid = df_spread.dropna(subset=['spread'])
@@ -481,6 +537,9 @@ class FundingCarryEngine:
             return df_spread, {}
         
         accumulated_spread = df_valid['spread'].sum()
+        accumulated_spread_full = df_valid['spread_full'].sum() if 'spread_full' in df_valid.columns else 0
+        carry_lost = accumulated_spread_full - accumulated_spread
+        
         total_fci_return = df_valid['fci_return'].sum()
         total_caucion_cost = df_valid['caucion_cost'].sum()
         
@@ -504,8 +563,15 @@ class FundingCarryEngine:
         best_day = df_valid.loc[df_valid['spread'].idxmax()] if not df_valid.empty else None
         worst_day = df_valid.loc[df_valid['spread'].idxmin()] if not df_valid.empty else None
         
+        # Latest Day Shortcuts for Signals
+        last_day = df_valid.iloc[-1] if not df_valid.empty else None
+        last_net_rate = last_day['net_rate'] if last_day is not None else 0
+        last_spread = last_day['spread'] if last_day is not None else 0
+        
         spread_kpis = {
             'accumulated_spread': accumulated_spread,
+            'accumulated_spread_full': accumulated_spread_full,
+            'carry_lost': carry_lost,
             'total_fci_return': total_fci_return,
             'total_caucion_cost': total_caucion_cost,
             'avg_capital_productivo': avg_capital_productivo,
@@ -515,8 +581,52 @@ class FundingCarryEngine:
             'negative_days': negative_days,
             'best_day': {'date': best_day['date'], 'spread': best_day['spread']} if best_day is not None else None,
             'worst_day': {'date': worst_day['date'], 'spread': worst_day['spread']} if worst_day is not None else None,
-            'days_analyzed': days_in_period
+            'days_analyzed': days_in_period,
+            'last_net_rate': last_net_rate,
+            'last_spread': last_spread,
+            'last_capital_productivo': last_day['capital_productivo'] if last_day is not None else 0,
+            'last_caucion_viva': last_day['caucion_viva'] if last_day is not None else 0
         }
         
         return df_spread, spread_kpis
+
+    def get_mep_history(self, start_date=None, end_date=None):
+        """
+        Fetch MEP prices from market_prices table.
+        Looking for ticker 'MEP', 'CCL', or 'USD'.
+        """
+        if self.use_mock:
+            # NO MOCK DATA ALLOWED for financial calcs as per user request.
+            # But for development/UI testing if DB is empty, we return empty
+            # unless explicitly told otherwise. User said "USD solo con MEP real".
+            return pd.Series()
+
+        try:
+            # Try to find a standard USD ticker
+            tickers_to_try = ['MEP', 'DOLAR MEP', 'AL30D/AL30'] # Common conventions
+            
+            # Simple query for first match
+            # For now, let's assume there is a 'MEP' ticker in market_prices
+            # If market_prices structure is ticker, price... that is a snapshot table?
+            # Creating history from a snapshot table is impossible unless it has history.
+            # Checking schema... market_prices has 'last_update'. 
+            # It seems 'market_prices' is a SNAPSHOT table (current price).
+            # We don't have a history table for market prices in the schema provided.
+            
+            # CRITICAL: Schema only has `market_prices` (snapshot) and `fci_prices` (history).
+            # We cannot build a historical USD curve from a snapshot table.
+            
+            # Workaround: Check if there is a 'usd_prices' or similar.
+            # If not, we can only provide CURRENT USD conversion, not historical.
+            # User asked for "Equity curve... in USD". This requires history.
+            
+            # Since I cannot create data that doesn't exist, and user banned mocks:
+            # I will return EMPTY, which will disable the toggle.
+            print("ℹ️ No historical market prices table found. USD mode disabled.")
+            return pd.Series()
+            
+        except Exception as e:
+            print(f"Error fetching MEP: {e}")
+            return pd.Series()
+
 
