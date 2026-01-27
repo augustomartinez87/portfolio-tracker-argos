@@ -28,18 +28,32 @@ def load_local_mep_history():
     Returns a pandas Series indexed by date.
     """
     try:
-        # Path relative to this file: ../src/data/mepHistory.json
-        json_path = Path(__file__).parent.parent / 'src' / 'data' / 'mepHistory.json'
+        # Try multiple possible paths to find mepHistory.json
+        possible_paths = [
+            # From funding_engine/engine.py -> ../src/data/
+            Path(__file__).resolve().parent.parent / 'src' / 'data' / 'mepHistory.json',
+            # From CWD if running from project root
+            Path.cwd() / 'src' / 'data' / 'mepHistory.json',
+            # From CWD if running from funding_engine/
+            Path.cwd().parent / 'src' / 'data' / 'mepHistory.json',
+        ]
 
-        if json_path.exists():
-            with open(json_path, 'r') as f:
+        json_path = None
+        for p in possible_paths:
+            if p.exists():
+                json_path = p
+                break
+
+        if json_path and json_path.exists():
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if data:
                 df = pd.DataFrame(data)
+                print(f"[OK] MEP history loaded: {len(data)} records from {json_path.name}")
                 return pd.Series(df['price'].values, index=df['date'])
 
-        print("⚠️ Local mepHistory.json not found")
+        print(f"[WARN] Local mepHistory.json not found. Tried: {[str(p) for p in possible_paths]}")
         return pd.Series()
     except Exception as e:
         print(f"Error loading local MEP history: {e}")
