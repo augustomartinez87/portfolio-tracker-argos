@@ -145,97 +145,9 @@ if df_daily.empty:
     st.warning("No hay datos para este período.")
     st.stop()
 
-# --- KPI ROW ---
-k1, k2, k3, k4 = st.columns(4)
-
-avg_debt = kpis.get('avg_debt', 0)
-total_interest = kpis.get('total_interest', 0)
-avg_tna = kpis.get('avg_tna', 0)
-current_debt = kpis.get('current_debt', 0)
-
-k1.metric("Capital Financiado (Avg)", f"${avg_debt:,.0f}")
-k1.caption("Deuda Promedio Diaria")
-
-k2.metric("Costo Interés (Período)", f"${total_interest:,.0f}")
-k2.caption(f"Interés acumulado ({(end_date - start_date).days} días)")
-
-k3.metric("TNA Promedio Ponderada", f"{avg_tna:.2f}%")
-k3.caption("Costo del Funding")
-
-k4.metric("Deuda Actual", f"${current_debt:,.0f}")
-k4.caption("Capital activo hoy")
-
-# --- CHARTS ---
-
-# 1. Debt Evolution Chart
-st.subheader("📈 Evolución del Capital Financiado")
-fig_debt = go.Figure()
-
-fig_debt.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['total_debt'],
-    name="Capital Financiado",
-    line=dict(color="#ff4b4b", width=2),
-    fill='tozeroy',
-    fillcolor='rgba(255, 75, 75, 0.1)'
-))
-
-fig_debt.update_layout(
-    template="plotly_dark",
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    hovermode="x unified",
-    margin=dict(l=0, r=0, t=30, b=0),
-    yaxis_title="ARS",
-)
-st.plotly_chart(fig_debt, use_container_width=True)
-
-# 2. Daily Interest Cost
-st.subheader("📊 Costo de Interés Diario")
-fig_interest = go.Figure()
-
-fig_interest.add_trace(go.Bar(
-    x=df_daily['date'], y=df_daily['daily_interest_cost'],
-    name="Costo Interés",
-    marker_color="#ff4b4b"
-))
-
-# Add TNA line on secondary axis
-fig_interest.add_trace(go.Scatter(
-    x=df_daily['date'], y=df_daily['weighted_tna'],
-    name="TNA (%)",
-    line=dict(color="#00eb88", width=2, dash='dot'),
-    yaxis="y2"
-))
-
-fig_interest.update_layout(
-    template="plotly_dark",
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=0, r=0, t=30, b=0),
-    yaxis_title="Interés Diario (ARS)",
-    yaxis2=dict(
-        title="TNA (%)",
-        overlaying="y",
-        side="right"
-    )
-)
-st.plotly_chart(fig_interest, use_container_width=True)
-
-# --- DETAILS TABLE ---
-with st.expander("🔎 Ver Datos Detallados"):
-    st.dataframe(
-        df_daily.style.format({
-            "total_debt": "${:,.0f}",
-            "daily_interest_cost": "${:,.0f}",
-            "weighted_tna": "{:.2f}%"
-        }),
-        use_container_width=True
-    )
-
 # =============================================================================
-# CARRY TRADE / SPREAD SECTION
+# CARRY TRADE / SPREAD SECTION (MOVED TO TOP)
 # =============================================================================
-st.divider()
 st.header("📊 Carry Trade – Spread FCI vs Caución")
 st.markdown("""
 Este módulo calcula el **spread diario** entre los rendimientos del FCI y el costo de las cauciones.
@@ -384,3 +296,96 @@ else:
                 use_container_width=True
             )
 
+st.divider()
+
+# =============================================================================
+# FUNDING ENGINE METRICS (DEBT & INTEREST) - MOVED TO BOTTOM
+# =============================================================================
+st.subheader("📉 Métricas de Financiamiento Pura (Deuda)")
+
+# --- KPI ROW ---
+k1, k2, k3, k4 = st.columns(4)
+
+avg_debt = kpis.get('avg_debt', 0)
+total_interest = kpis.get('total_interest', 0)
+avg_tna = kpis.get('avg_tna', 0)
+current_debt = kpis.get('current_debt', 0)
+
+k1.metric("Capital Financiado (Avg)", f"${avg_debt:,.0f}")
+k1.caption("Deuda Promedio Diaria")
+
+k2.metric("Costo Interés (Período)", f"${total_interest:,.0f}")
+k2.caption(f"Interés acumulado ({(end_date - start_date).days} días)")
+
+k3.metric("TNA Promedio Ponderada", f"{avg_tna:.2f}%")
+k3.caption("Costo del Funding")
+
+k4.metric("Deuda Actual", f"${current_debt:,.0f}")
+k4.caption("Capital activo hoy")
+
+# --- CHARTS ---
+
+# 1. Debt Evolution Chart
+st.subheader("📈 Evolución del Capital Financiado")
+fig_debt = go.Figure()
+
+fig_debt.add_trace(go.Scatter(
+    x=df_daily['date'], y=df_daily['total_debt'],
+    name="Capital Financiado",
+    line=dict(color="#ff4b4b", width=2),
+    fill='tozeroy',
+    fillcolor='rgba(255, 75, 75, 0.1)'
+))
+
+fig_debt.update_layout(
+    template="plotly_dark",
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    hovermode="x unified",
+    margin=dict(l=0, r=0, t=30, b=0),
+    yaxis_title="ARS",
+)
+st.plotly_chart(fig_debt, use_container_width=True)
+
+# 2. Daily Interest Cost
+st.subheader("📊 Costo de Interés Diario")
+fig_interest = go.Figure()
+
+fig_interest.add_trace(go.Bar(
+    x=df_daily['date'], y=df_daily['daily_interest_cost'],
+    name="Costo Interés",
+    marker_color="#ff4b4b"
+))
+
+# Add TNA line on secondary axis
+fig_interest.add_trace(go.Scatter(
+    x=df_daily['date'], y=df_daily['weighted_tna'],
+    name="TNA (%)",
+    line=dict(color="#00eb88", width=2, dash='dot'),
+    yaxis="y2"
+))
+
+fig_interest.update_layout(
+    template="plotly_dark",
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    margin=dict(l=0, r=0, t=30, b=0),
+    yaxis_title="Interés Diario (ARS)",
+    yaxis2=dict(
+        title="TNA (%)",
+        overlaying="y",
+        side="right"
+    )
+)
+st.plotly_chart(fig_interest, use_container_width=True)
+
+# --- DETAILS TABLE ---
+with st.expander("🔎 Ver Datos Detallados"):
+    st.dataframe(
+        df_daily.style.format({
+            "total_debt": "${:,.0f}",
+            "daily_interest_cost": "${:,.0f}",
+            "weighted_tna": "{:.2f}%"
+        }),
+        use_container_width=True
+    )
