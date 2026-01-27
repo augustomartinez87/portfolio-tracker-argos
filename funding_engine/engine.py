@@ -560,6 +560,25 @@ class FundingCarryEngine:
             
             df_spread['net_rate'] = df_spread.apply(calc_net_rate, axis=1)
 
+            # 3. FCI Mínimo (Punto de Equilibrio)
+            # Fórmula: FCI_minimo = caucion_cost / tasa_fci_diaria
+            #        = caucion_cost * fci_balance / fci_return
+            # Es el FCI necesario para que el retorno cubra exactamente el costo de la caución
+            def calc_fci_minimo(row):
+                if row['fci_return'] > 0 and row['fci_balance'] > 0:
+                    # tasa_fci = fci_return / fci_balance
+                    # fci_minimo = caucion_cost / tasa_fci
+                    return row['caucion_cost'] * row['fci_balance'] / row['fci_return']
+                elif row['fci_return'] <= 0:
+                    # FCI no rinde o pierde, no hay punto de equilibrio alcanzable
+                    return float('inf')
+                return row['caucion_viva']  # Fallback
+
+            df_spread['fci_minimo'] = df_spread.apply(calc_fci_minimo, axis=1)
+            # Cap infinitos para visualización
+            max_display = df_spread['caucion_viva'].max() * 2 if not df_spread['caucion_viva'].empty else 0
+            df_spread['fci_minimo'] = df_spread['fci_minimo'].clip(upper=max_display)
+
             # Note: Optimal Capital calculation depends on Max Loss which is a UI parameter.
             # We will return the 'net_rate' so UI can compute dynamic Optimal Capital 
             # or we can pass max_loss to this function.
@@ -625,7 +644,9 @@ class FundingCarryEngine:
             'last_net_rate': last_net_rate,
             'last_spread': last_spread,
             'last_capital_productivo': last_day['capital_productivo'] if last_day is not None else 0,
-            'last_caucion_viva': last_day['caucion_viva'] if last_day is not None else 0
+            'last_caucion_viva': last_day['caucion_viva'] if last_day is not None else 0,
+            'last_fci_balance': last_day['fci_balance'] if last_day is not None else 0,
+            'last_fci_minimo': last_day['fci_minimo'] if last_day is not None and 'fci_minimo' in last_day else 0
         }
         
         return df_spread, spread_kpis

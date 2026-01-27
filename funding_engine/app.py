@@ -263,25 +263,7 @@ else:
             else:
                 max_daily_loss_val = max_daily_loss
 
-            # 2. Optimal Capital Calculation (Historical for Chart)
-            # We need to calculate this row by row for the chart
-            # Optimal = Max_Loss / abs(net_rate) (if net_rate < 0)
-            
-            def get_optimal_cap(row):
-                rate = row['net_rate'] # This rate is unaffected by currency conversion (ratio)
-                if rate >= 0:
-                    return row['caucion_viva'] # Or None? User said "No reducir", so implies keeping current.
-                else:
-                    # If rate is negative, we cap the capital to stay within max_loss
-                    # Loss = Capital * |Rate| <= Max_Loss
-                    # Capital <= Max_Loss / |Rate|
-                    if abs(rate) > 0:
-                        return max_daily_loss_val / abs(rate) # Use converted max_loss if USD
-                    return 0
-            
-            df_spread['optimal_capital'] = df_spread.apply(get_optimal_cap, axis=1)
-
-            # 3. Traffic Light & Sizing Signal (Latest Day)
+            # 2. Traffic Light & Sizing Signal (Latest Day)
             last_spread = spread_kpis.get('last_spread', 0)
             if show_usd: last_spread = df_spread.iloc[-1]['spread']
             
@@ -301,15 +283,12 @@ else:
                     traffic_color = "red"
                     traffic_status = "🔴 ALERTA: Pérdida > Max Loss"
             
-            # Sizing Signal
-            optimal_cap_now = current_caucion
-            if last_net_rate < 0 and abs(last_net_rate) > 0:
-                optimal_cap_now = max_daily_loss_val / abs(last_net_rate)
-            
-            sizing_delta = current_caucion - optimal_cap_now
-            sizing_msg = "✅ Tamaño Óptimo"
-            if sizing_delta > 0 and last_net_rate < 0:
-                sizing_msg = f"⚠️ Reducir exposición en {currency_label}{sizing_delta:,.0f}"
+            # Sizing Signal basado en punto de equilibrio
+            current_fci = spread_kpis.get('last_fci_balance', 0)
+            if show_usd: current_fci = df_spread.iloc[-1]['fci_balance']
+
+            last_fci_minimo = df_spread.iloc[-1]['fci_minimo'] if 'fci_minimo' in df_spread.columns else current_fci
+            fci_gap = current_fci - last_fci_minimo  # Positivo = superávit, Negativo = déficit
 
             # --- TOP DASHBOARD: TRAFFIC LIGHT & EQUITY ---
             
@@ -327,11 +306,11 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Sizing Card
-                if sizing_delta > 0 and last_net_rate < 0:
-                    st.error(f"📉 **Reducir Caución**\n\nMeta: {currency_label}{optimal_cap_now:,.0f}\n\nExceso: {currency_label}{sizing_delta:,.0f}")
+                # Sizing Card basado en punto de equilibrio
+                if fci_gap < 0:
+                    st.error(f"📉 **Déficit de FCI**\n\nFCI actual: {currency_label}{current_fci:,.0f}\n\nFCI mínimo: {currency_label}{last_fci_minimo:,.0f}\n\nFaltan: {currency_label}{abs(fci_gap):,.0f}")
                 else:
-                    st.success(f"🛡️ **Sizing OK**\n\nMantener: {currency_label}{current_caucion:,.0f}")
+                    st.success(f"✅ **Superávit de FCI**\n\nFCI actual: {currency_label}{current_fci:,.0f}\n\nFCI mínimo: {currency_label}{last_fci_minimo:,.0f}\n\nExceso: {currency_label}{fci_gap:,.0f}")
 
             with tl_col2:
                 # --- EQUITY CURVE (PnL ACUMULADO) ---
@@ -433,33 +412,33 @@ else:
                     )
                     st.plotly_chart(fig_break, use_container_width=True)
 
-            # --- C. CAPITAL STRUCTURE & OPTIMAL CAPITAL ---
-            st.subheader("⚖️ Estructura de Capital: Productivo, Deuda y Óptimo")
+            # --- C. CAPITAL STRUCTURE & BREAKEVEN ---
+            st.subheader("⚖️ Estructura de Capital: FCI, Deuda y Punto de Equilibrio")
             if not df_chart.empty:
                 fig_cap = go.Figure()
-                
+
                 fig_cap.add_trace(go.Scatter(
                     x=df_chart['date'],
                     y=df_chart['fci_balance'],
-                    name="Balance FCI",
+                    name="Balance FCI (actual)",
                     line=dict(color="#3b82f6", width=2),
                     fill='tozeroy',
                     fillcolor="rgba(59, 130, 246, 0.1)"
                 ))
-                
+
                 fig_cap.add_trace(go.Scatter(
                     x=df_chart['date'],
                     y=df_chart['caucion_viva'],
                     name="Deuda Viva",
                     line=dict(color="#ef4444", width=2)
                 ))
-                
-                # Optimal Capital Line
+
+                # FCI Mínimo (Punto de Equilibrio) Line
                 fig_cap.add_trace(go.Scatter(
                     x=df_chart['date'],
-                    y=df_chart['optimal_capital'],
-                    name="Capital Óptimo (Risk)",
-                    line=dict(color="#fbbf24", width=2, dash='dash'),
+                    y=df_chart['fci_minimo'],
+                    name="FCI Mínimo (equilibrio)",
+                    line=dict(color="#22c55e", width=2, dash='dash'),
                 ))
                 
                 fig_cap.update_layout(
