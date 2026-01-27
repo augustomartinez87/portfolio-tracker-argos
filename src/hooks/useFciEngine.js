@@ -134,16 +134,34 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
     // 4. Funciones para modificar datos (wrappers del servicio)
     const addTransaction = async (txData) => {
         try {
-            // Necesitamos el VCP para la fecha
-            // Nota: Idealmente la UI ya buscó el VCP, pero por seguridad lo validamos aquí o en backend
             const newTx = await fciService.createTransaction(txData);
-
-            // Recargar transacciones (optimistic update podría ser mejor, pero esto es más seguro)
             const updatedTxs = await fciService.getTransactions(portfolioId);
             setTransactions(updatedTxs);
-
             return newTx;
         } catch (err) {
+            throw err;
+        }
+    };
+
+    const deleteTransaction = async (id) => {
+        try {
+            await fciService.deleteTransaction(id);
+            const updatedTxs = await fciService.getTransactions(portfolioId);
+            setTransactions(updatedTxs);
+        } catch (err) {
+            console.error("Error deleting transaction:", err);
+            throw err;
+        }
+    };
+
+    const updateTransaction = async (id, updates) => {
+        try {
+            const updated = await fciService.updateTransaction(id, updates);
+            const updatedTxs = await fciService.getTransactions(portfolioId);
+            setTransactions(updatedTxs);
+            return updated;
+        } catch (err) {
+            console.error("Error updating transaction:", err);
             throw err;
         }
     };
@@ -169,7 +187,25 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
         loading,
         error,
         addTransaction,
-        refresh: () => { }, // TODO
+        deleteTransaction,
+        updateTransaction,
+        refresh: async () => {
+            setLoading(true);
+            try {
+                const txs = await fciService.getTransactions(portfolioId);
+                setTransactions(txs || []);
+
+                const fciIds = [...new Set((txs || []).map(t => t.fci_id))];
+                const pricesMap = {};
+                await Promise.all(fciIds.map(async (id) => {
+                    const latest = await fciService.getLatestPrice(id);
+                    if (latest) pricesMap[id] = latest;
+                }));
+                setLatestPrices(pricesMap);
+            } finally {
+                setLoading(false);
+            }
+        },
         getVcpForDate: fciService.getPrices // Exponer servicio directo para búsquedas
     };
 }

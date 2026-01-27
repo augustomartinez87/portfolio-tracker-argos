@@ -29,6 +29,8 @@ const FciTransactionModal = lazy(() => import('../components/modals/FciTransacti
 import { usePortfolioEngine } from '../hooks/usePortfolioEngine';
 import { useFciEngine } from '../hooks/useFciEngine';
 import FciTable from '../components/dashboard/FciTable';
+import FciTransactionsList from '../components/dashboard/FciTransactionsList';
+import FciPriceUploadModal from '../components/modals/FciPriceUploadModal';
 import { DateRangeSelector, getDateRange } from '../components/common/DateRangeSelector.jsx';
 import { useSearch } from '../hooks/useSearch';
 import { CurrencySelector } from '../components/dashboard/CurrencySelector';
@@ -162,13 +164,18 @@ export default function Dashboard() {
   const {
     positions: fciPositions,
     totals: fciTotals,
+    transactions: fciTransactions,
     addTransaction: addFciTransaction,
-    loading: fciLoading
+    deleteTransaction: deleteFciTransaction,
+    loading: fciLoading,
+    refresh: refreshFciData
   } = useFciEngine(currentPortfolio?.id, mepRate, mepHistory);
 
   const [fciModalOpen, setFciModalOpen] = useState(false);
   const [fciModalType, setFciModalType] = useState('SUBSCRIPTION');
   const [selectedFciForModal, setSelectedFciForModal] = useState(null);
+  const [showFciHistory, setShowFciHistory] = useState(false);
+  const [fciUploadModalOpen, setFciUploadModalOpen] = useState(false);
 
   const handleOpenFciSubscription = (fci = null) => {
     setFciModalType('SUBSCRIPTION');
@@ -746,24 +753,45 @@ export default function Dashboard() {
                   <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col mt-3 overflow-hidden">
                     <div className="p-2 lg:p-3 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-sm lg:text-base font-semibold text-text-primary">Posiciones en FCIs</h2>
-                        <span className="text-[10px] text-text-tertiary bg-background-tertiary px-1.5 py-0.5 rounded-full">{fciPositions.length}</span>
+                        <button
+                          onClick={() => setShowFciHistory(!showFciHistory)}
+                          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${showFciHistory
+                              ? 'bg-primary/10 text-primary border-primary/30'
+                              : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary'
+                            }`}
+                        >
+                          {showFciHistory ? 'Ver Posiciones' : 'Gestionar Transacciones'}
+                        </button>
+                        <button
+                          onClick={() => setFciUploadModalOpen(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-background-tertiary text-text-secondary border border-border-primary rounded-lg hover:text-text-primary transition-all text-xs font-medium"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Subir VCP
+                        </button>
+                        <button onClick={() => handleOpenFciSubscription()} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20">
+                          <Plus className="w-3.5 h-3.5" />
+                          Operar
+                        </button>
                       </div>
-                      <button onClick={() => handleOpenFciSubscription()} className="flex items-center gap-1.5 px-3 py-1.5 h-8 bg-background-tertiary text-text-primary border border-border-secondary rounded-lg hover:bg-background-tertiary/80 transition-all text-xs font-medium">
-                        <Plus className="w-3.5 h-3.5" />
-                        Suscribir/Rescatar
-                      </button>
                     </div>
                     {fciLoading ? (
                       <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
                     ) : (
-                      <FciTable
-                        positions={fciPositions}
-                        onSubscribe={handleOpenFciSubscription}
-                        onRedeem={handleOpenFciRedemption}
-                        currency={displayCurrency}
-                        mepRate={mepRate}
-                      />
+                      showFciHistory ? (
+                        <FciTransactionsList
+                          transactions={fciTransactions}
+                          onDelete={deleteFciTransaction}
+                        />
+                      ) : (
+                        <FciTable
+                          positions={fciPositions}
+                          onSubscribe={handleOpenFciSubscription}
+                          onRedeem={handleOpenFciRedemption}
+                          currency={displayCurrency}
+                          mepRate={mepRate}
+                        />
+                      )
                     )}
                   </div>
 
@@ -836,6 +864,11 @@ export default function Dashboard() {
           />
         </Suspense>
       </div >
+      <FciPriceUploadModal
+        isOpen={fciUploadModalOpen}
+        onClose={() => setFciUploadModalOpen(false)}
+        onRefresh={refreshFciData}
+      />
     </ErrorBoundary >
   );
 }

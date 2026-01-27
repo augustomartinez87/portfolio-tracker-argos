@@ -97,5 +97,23 @@ export const fciService = {
 
         if (error) throw error;
         return data;
+    },
+
+    // 8. Carga masiva e idempotente de precios (VCP)
+    async upsertPrices(fciId, prices) {
+        // prices: Array de { fecha, vcp }
+        const rows = prices.map(p => ({
+            fci_id: fciId,
+            fecha: p.fecha,
+            vcp: p.vcp
+        }));
+
+        const { data, error } = await supabase
+            .from('fci_prices')
+            .upsert(rows, { onConflict: 'fci_id,fecha' })
+            .select();
+
+        if (error) throw error;
+        return data;
     }
 };
