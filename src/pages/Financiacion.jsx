@@ -8,6 +8,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
 import FinancingDashboard from '../components/financiacion/FinancingDashboard';
 import financingService from '../services/financingService';
+import MobileNav from '../components/common/MobileNav';
 
 const Financiacion = () => {
   const { user, signOut } = useAuth();
@@ -214,6 +215,7 @@ const Financiacion = () => {
             />
           </div>
         </main>
+        <MobileNav />
       </div>
     </ErrorBoundary>
   );

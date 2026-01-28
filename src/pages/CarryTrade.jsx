@@ -7,6 +7,8 @@ import { PortfolioSelector } from '../components/PortfolioSelector';
 import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap.jsx';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
+import MobileNav from '../components/common/MobileNav';
+import logo from '../assets/logo.png';
 
 export default function CarryTrade() {
     const { user, signOut } = useAuth();
@@ -33,18 +35,21 @@ export default function CarryTrade() {
         <ErrorBoundary>
             <div className="min-h-screen bg-background-primary flex">
                 {/* Sidebar */}
-                <DashboardSidebar
-                    user={user}
-                    signOut={signOut}
-                    isExpanded={sidebarExpanded}
-                    setIsExpanded={setSidebarExpanded}
-                />
+                {/* Mobile Header */}
+                <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+                            <h1 className="text-lg font-bold text-text-primary">Carry Trade</h1>
+                        </div>
+                    </div>
+                </div>
 
-                <main className={`flex-1 transition-all duration-300 overflow-auto h-screen flex flex-col ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+                <main className={`flex-1 transition-all duration-300 overflow-auto h-screen flex flex-col mt-16 lg:mt-0 mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
                     <div className="p-4 lg:p-6 space-y-4 flex flex-col h-full">
 
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
+                        {/* Header (Desktop) */}
+                        <div className="hidden lg:flex items-center justify-between">
                             <div>
                                 <h1 className="text-xl lg:text-2xl font-bold text-text-primary">Carry Trade</h1>
                                 <p className="text-text-tertiary text-xs uppercase font-semibold tracking-wider">Macro Strategy</p>
@@ -72,6 +77,7 @@ export default function CarryTrade() {
 
                     </div>
                 </main>
+                <MobileNav />
             </div>
         </ErrorBoundary>
     );

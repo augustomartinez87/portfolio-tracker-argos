@@ -181,7 +181,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar pb-2">
           <table className="w-full min-w-[900px]">
             <thead className="bg-background-tertiary/50 border-b border-border-primary">
               <tr>

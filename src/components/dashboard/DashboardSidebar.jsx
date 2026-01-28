@@ -40,7 +40,7 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
               to={item.path}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
-              className={`w-full flex items-center py-2.5 h-10 transition-all ${isActive(item.id)
+              className={`w-full flex items-center py-2.5 h-10 transition-all duration-300 relative group/item ${isActive(item.id)
                 ? 'bg-text-primary text-background-primary'
                 : hoveredItem === item.id
                   ? 'bg-background-tertiary text-text-primary'

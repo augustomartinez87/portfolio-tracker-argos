@@ -35,6 +35,7 @@ import { DateRangeSelector, getDateRange } from '../components/common/DateRangeS
 import { useSearch } from '../hooks/useSearch';
 import { CurrencySelector } from '../components/dashboard/CurrencySelector';
 import { mepService } from '../services/mepService';
+import MobileNav from '../components/common/MobileNav';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -431,7 +432,7 @@ export default function Dashboard() {
           setIsExpanded={setSidebarExpanded}
         />
 
-        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-2 lg:p-3 space-y-2 lg:space-y-3 flex flex-col h-full overflow-hidden">
 
             {/* Page Header with Actions (matching Financiacion structure) */}
@@ -857,6 +858,7 @@ export default function Dashboard() {
         onClose={() => setFciUploadModalOpen(false)}
         onRefresh={refreshFciData}
       />
+      <MobileNav />
     </ErrorBoundary >
   );
 }

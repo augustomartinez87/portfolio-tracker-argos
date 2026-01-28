@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePrices } from '../services/priceService';
 import { RefreshCw, Coins } from 'lucide-react';
+import MobileNav from '../components/common/MobileNav';
+import logo from '../assets/logo.png';
 
 export default function FundingEngine() {
     const { user, signOut } = useAuth();
@@ -38,16 +40,19 @@ export default function FundingEngine() {
     return (
         <div className="min-h-screen bg-background-primary flex">
             {/* Sidebar reuse */}
-            <DashboardSidebar
-                user={user}
-                signOut={signOut}
-                isExpanded={sidebarExpanded}
-                setIsExpanded={setSidebarExpanded}
-            />
+            {/* Mobile Header */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+                        <h1 className="text-lg font-bold text-text-primary">Funding Engine</h1>
+                    </div>
+                </div>
+            </div>
 
-            <main className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-                {/* Header */}
-                <div className="p-3 border-b border-border-primary">
+            <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+                {/* Header (Desktop) */}
+                <div className="hidden lg:block p-3 border-b border-border-primary">
                     <DashboardHeader
                         mepRate={mepRate}
                         lastUpdate={lastUpdate}
@@ -72,6 +77,7 @@ export default function FundingEngine() {
                     )}
                 </div>
             </main>
+            <MobileNav />
         </div>
     );
 };
