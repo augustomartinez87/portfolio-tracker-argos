@@ -701,8 +701,8 @@ export default function Dashboard() {
                               <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
                               <td className="px-3 sm:px-4 py-3">
                                 <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.tipo === 'compra'
-                                  ? 'bg-success/15 text-success border-success/20'
-                                  : 'bg-danger/15 text-danger border-danger/20'
+                                  ? 'bg-[#10b9811a] text-[#10b981] border-[#10b98133]'
+                                  : 'bg-[#ef44441a] text-[#ef4444] border-[#ef444433]'
                                   }`}>
                                   {trade.tipo === 'compra' ? 'Compra' : 'Venta'}
                                 </span>
@@ -727,14 +727,7 @@ export default function Dashboard() {
 
               {activeTab === 'dashboard' && (
                 <>
-                  {/* Portfolio Tabs - positioned below header and above summary cards for mobile */}
-                  <div className="lg:hidden">
-                    <PortfolioTabs
-                      activeTab={activeTab}
-                      setActiveTab={setActiveTab}
-                      currentPortfolio={currentPortfolio}
-                    />
-                  </div>
+                  {/* Portfolio Tabs removed from here - already visible above in the main flow */}
                   <DashboardSummaryCards
                     totals={allTotals}
                     lastUpdate={lastUpdate}

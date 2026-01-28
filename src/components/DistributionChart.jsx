@@ -78,7 +78,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                   key={`cell-${index}`}
                   fill={entry.color}
                   stroke={entry.color}
-                  strokeWidth={hoveredIndex === index ? 2 : 0}
+                  strokeWidth={hoveredIndex === index ? 1 : 0}
                   style={{
                     transform: hoveredIndex === index ? 'scale(1.08)' : 'scale(1)',
                     transformOrigin: 'center',
@@ -109,7 +109,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
             onClick={() => setSelectedCategory(selectedCategory === item.name ? null : item.name)}
             className={`w-full flex justify-between items-center py-1.5 px-3 rounded border transition-all ${selectedCategory === item.name
               ? 'bg-background-tertiary border-primary/40'
-              : 'bg-background-secondary/30 border-border-primary/30 hover:bg-background-tertiary'
+              : 'bg-background-secondary/30 border-border-primary/10 hover:bg-background-tertiary'
               }`}
           >
             <div className="flex items-center gap-2">

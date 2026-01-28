@@ -275,8 +275,8 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
                       {formatARS(c.capital)}
                     </td>
                     <td className="px-3 py-3">
-                      <span className="text-success font-mono text-sm font-medium tabular-nums">
-                        +{formatARS(c.interes)}
+                      <span className="text-warning font-mono text-sm font-medium tabular-nums">
+                        {formatARS(c.interes)}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-text-secondary text-sm font-mono tabular-nums text-center">
