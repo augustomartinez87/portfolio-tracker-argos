@@ -627,6 +627,63 @@ class FundingCarryEngine:
         last_net_rate = last_day['net_rate'] if last_day is not None else 0
         last_spread = last_day['spread'] if last_day is not None else 0
         
+        # =====================================================================
+        # PERCENTIL 75 FCI MÍNIMO OPERATIVO (Mesa de Dinero Approach)
+        # =====================================================================
+        # Use last 21 days (or all available if less) for P75 calculation
+        fci_minimo_series = df_valid['fci_minimo'].replace([np.inf, -np.inf], np.nan).dropna()
+        
+        # Calculate window (21 days or all available)
+        window_size = min(21, len(fci_minimo_series))
+        fci_minimo_window = fci_minimo_series.tail(window_size)
+        
+        if len(fci_minimo_window) > 0:
+            # Percentil 75 × 1.15 buffer
+            p75_fci_minimo = np.percentile(fci_minimo_window, 75)
+            fci_minimo_operativo = p75_fci_minimo * 1.15
+            
+            # Also calculate other useful stats
+            p25_fci_minimo = np.percentile(fci_minimo_window, 25)
+            p50_fci_minimo = np.percentile(fci_minimo_window, 50)  # Median
+            avg_fci_minimo = fci_minimo_window.mean()
+            std_fci_minimo = fci_minimo_window.std() if len(fci_minimo_window) > 1 else 0
+            min_fci_minimo = fci_minimo_window.min()
+            max_fci_minimo = fci_minimo_window.max()
+        else:
+            # Fallback if no valid data
+            fci_minimo_operativo = last_day['fci_minimo'] if last_day is not None and 'fci_minimo' in last_day else 0
+            p75_fci_minimo = fci_minimo_operativo
+            p25_fci_minimo = fci_minimo_operativo
+            p50_fci_minimo = fci_minimo_operativo
+            avg_fci_minimo = fci_minimo_operativo
+            std_fci_minimo = 0
+            min_fci_minimo = fci_minimo_operativo
+            max_fci_minimo = fci_minimo_operativo
+        
+        # =====================================================================
+        # RATIO DE COBERTURA (Traffic Light Logic)
+        # =====================================================================
+        last_fci_balance = last_day['fci_balance'] if last_day is not None else 0
+        
+        if fci_minimo_operativo > 0:
+            ratio_cobertura = last_fci_balance / fci_minimo_operativo
+        else:
+            ratio_cobertura = 1.0 if last_fci_balance > 0 else 0.0
+        
+        # Deficit/Surplus calculation
+        deficit_fci = fci_minimo_operativo - last_fci_balance
+        
+        # Traffic light status
+        if ratio_cobertura >= 1.05:
+            traffic_status = 'green'
+            traffic_label = '🟢 Carry Positivo'
+        elif ratio_cobertura >= 0.85:
+            traffic_status = 'yellow'
+            traffic_label = '🟡 Zona de Riesgo'
+        else:
+            traffic_status = 'red'
+            traffic_label = '🔴 Déficit Crítico'
+        
         spread_kpis = {
             'accumulated_spread': accumulated_spread,
             'accumulated_spread_full': accumulated_spread_full,
@@ -645,8 +702,23 @@ class FundingCarryEngine:
             'last_spread': last_spread,
             'last_capital_productivo': last_day['capital_productivo'] if last_day is not None else 0,
             'last_caucion_viva': last_day['caucion_viva'] if last_day is not None else 0,
-            'last_fci_balance': last_day['fci_balance'] if last_day is not None else 0,
-            'last_fci_minimo': last_day['fci_minimo'] if last_day is not None and 'fci_minimo' in last_day else 0
+            'last_fci_balance': last_fci_balance,
+            'last_fci_minimo': last_day['fci_minimo'] if last_day is not None and 'fci_minimo' in last_day else 0,
+            # NEW: Percentil 75 Operational Metrics
+            'fci_minimo_operativo': fci_minimo_operativo,
+            'p75_fci_minimo': p75_fci_minimo,
+            'p50_fci_minimo': p50_fci_minimo,
+            'p25_fci_minimo': p25_fci_minimo,
+            'avg_fci_minimo': avg_fci_minimo,
+            'std_fci_minimo': std_fci_minimo,
+            'min_fci_minimo': min_fci_minimo,
+            'max_fci_minimo': max_fci_minimo,
+            'window_days': window_size,
+            # NEW: Ratio de Cobertura
+            'ratio_cobertura': ratio_cobertura,
+            'deficit_fci': deficit_fci,
+            'traffic_status': traffic_status,
+            'traffic_label': traffic_label,
         }
         
         return df_spread, spread_kpis

@@ -269,17 +269,29 @@ else:
             traffic_color = "red"
             traffic_status = "🔴 ALERTA: Pérdida > Max Loss"
 
-    # Sizing Signal basado en punto de equilibrio
+    # Sizing Signal basado en P75 FCI Mínimo Operativo (NEW!)
     current_fci = spread_kpis.get('last_fci_balance', 0)
     if show_usd: current_fci = df_spread.iloc[-1]['fci_balance']
 
-    last_fci_minimo = df_spread.iloc[-1]['fci_minimo'] if 'fci_minimo' in df_spread.columns else current_fci
-    fci_gap = current_fci - last_fci_minimo
+    # Use P75-based FCI Mínimo Operativo instead of last day value
+    fci_minimo_operativo = spread_kpis.get('fci_minimo_operativo', 0)
+    ratio_cobertura = spread_kpis.get('ratio_cobertura', 0)
+    deficit_fci = spread_kpis.get('deficit_fci', 0)
+    p75_traffic_status = spread_kpis.get('traffic_status', 'red')
+    p75_traffic_label = spread_kpis.get('traffic_label', '🔴 Déficit Crítico')
+    window_days = spread_kpis.get('window_days', 21)
+
+    # USD adjustment for fci_minimo_operativo
+    if show_usd and not mep_history.empty:
+        current_mep = mep_history.iloc[-1]
+        fci_minimo_operativo = fci_minimo_operativo / current_mep
+        deficit_fci = deficit_fci / current_mep
 
     # --- TOP DASHBOARD: TRAFFIC LIGHT & EQUITY ---
     tl_col1, tl_col2 = st.columns([1, 3])
 
     with tl_col1:
+        # Main Traffic Light based on Max Loss (keep existing)
         st.markdown(f"""
         <div style="background-color: #1a1c24; padding: 15px; border-radius: 10px; border: 1px solid #333; text-align: center;">
             <h2 style="margin:0; font-size: 2rem;">{traffic_status.split(' ')[0]}</h2>
@@ -289,11 +301,53 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-        # Sizing Card basado en punto de equilibrio
-        if fci_gap < 0:
-            st.error(f"📉 **Déficit de FCI**\n\nFCI actual: {currency_label}{current_fci:,.0f}\n\nFCI mínimo: {currency_label}{last_fci_minimo:,.0f}\n\nFaltan: {currency_label}{abs(fci_gap):,.0f}")
+        # NEW: Ratio Cobertura Card (P75-based)
+        ratio_pct = ratio_cobertura * 100
+        bar_width = min(100, max(0, ratio_pct))
+        
+        if p75_traffic_status == 'green':
+            bar_color = '#22c55e'
+            text_color = '#22c55e'
+        elif p75_traffic_status == 'yellow':
+            bar_color = '#fbbf24'
+            text_color = '#fbbf24'
         else:
-            st.success(f"✅ **Superávit de FCI**\n\nFCI actual: {currency_label}{current_fci:,.0f}\n\nFCI mínimo: {currency_label}{last_fci_minimo:,.0f}\n\nExceso: {currency_label}{fci_gap:,.0f}")
+            bar_color = '#ef4444'
+            text_color = '#ef4444'
+        
+        st.markdown(f"""
+        <div style="background-color: #1a1c24; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-top: 10px;">
+            <h4 style="margin:0 0 10px 0; color: #fff;">📊 Ratio Cobertura <small style="color:#888;">(P75×1.15, {window_days}d)</small></h4>
+            
+            <div style="text-align: center; margin: 10px 0;">
+                <h2 style="margin:0; font-size: 2.5rem; color: {text_color};">{ratio_pct:.0f}%</h2>
+                <p style="margin:0; font-size: 0.9rem; color: {text_color};">{p75_traffic_label}</p>
+            </div>
+            
+            <div style="background-color: #333; border-radius: 5px; height: 12px; overflow: hidden; margin: 10px 0;">
+                <div style="background: {bar_color}; width: {bar_width}%; height: 100%;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #666;">
+                <span>0%</span>
+                <span style="color: #ef4444;">85%</span>
+                <span style="color: #fbbf24;">100%</span>
+                <span style="color: #22c55e;">105%+</span>
+            </div>
+            
+            <hr style="margin: 10px 0; border-color: #444;">
+            
+            <p style="margin:5px 0; font-size: 0.85rem;">
+                <strong>FCI Actual:</strong> {currency_label}{current_fci:,.0f}
+            </p>
+            <p style="margin:5px 0; font-size: 0.85rem;">
+                <strong>FCI Mínimo Op.:</strong> {currency_label}{fci_minimo_operativo:,.0f}
+            </p>
+            <p style="margin:5px 0; font-size: 0.85rem; color: {text_color};">
+                <strong>{'Déficit' if deficit_fci > 0 else 'Exceso'}:</strong> {currency_label}{abs(deficit_fci):,.0f}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
         # --- WITHDRAWAL THRESHOLD PROGRESS ---
         st.markdown("---")
