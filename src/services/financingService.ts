@@ -119,6 +119,40 @@ export class FinancingService {
   }
 
   /**
+   * Fetch CSV from a public URL (e.g. published Google Sheet) and ingest it.
+   * @param userId - User ID
+   * @param portfolioId - Portfolio ID
+   * @param csvUrl - Public URL of the CSV
+   */
+  async ingestFromUrl(
+    userId: string,
+    portfolioId: string,
+    csvUrl: string
+  ): Promise<Result<{ success: true; records: Caucion[]; totalInserted: number; summary: any }>> {
+    try {
+      console.log('🌐 Fetching CSV from URL:', csvUrl);
+
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        throw new Error(`Error descargando CSV: ${response.status} ${response.statusText}`);
+      }
+
+      const csvText = await response.text();
+      console.log('✅ CSV descargado, longitud:', csvText.length);
+
+      // Reuse existing CSV ingestion logic
+      return this.ingestFromCsv(userId, csvText, portfolioId);
+
+    } catch (error) {
+      console.error('❌ Error ingesting from URL:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
+      };
+    }
+  }
+
+  /**
    * Retrieve operations from database with type safety
    * @param userId - User ID for scoping
    * @param portfolioId - Portfolio ID for data isolation
