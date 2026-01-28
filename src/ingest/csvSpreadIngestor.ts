@@ -43,10 +43,22 @@ export type IngestResult = {
   spreads?: { tenor: number; avgSpread: number; }[];
 };
 
-/** Simple, robust CSV parser that handles quoted fields */
+/** Simple, robust CSV parser that handles quoted fields and detects delimiter */
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   const lines = text.split(/\r?\n/);
+  if (lines.length === 0) return [];
+
+  // Detect delimiter based on first line (header)
+  // We prefer comma, but if first line has no commas and has semicolons, use semicolon.
+  // Or check which one appears more often in the header.
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const delimiter = semiCount > commaCount ? ';' : ',';
+
+  console.log('📊 CSV Parser detected delimiter:', delimiter === ';' ? 'Semicolon (;)' : 'Comma (,)');
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -56,7 +68,6 @@ function parseCsv(text: string): string[][] {
     for (let i = 0; i < trimmed.length; i++) {
       const ch = trimmed[i];
       if (ch === '"') {
-        // toggle quotes, but allow escaping by doubling
         if (inQuotes && trimmed[i + 1] === '"') {
           cur += '"';
           i++;
@@ -65,7 +76,7 @@ function parseCsv(text: string): string[][] {
         }
         continue;
       }
-      if (ch === ',' && !inQuotes) {
+      if (ch === delimiter && !inQuotes) {
         cells.push(cur.trim());
         cur = '';
         continue;
@@ -73,7 +84,6 @@ function parseCsv(text: string): string[][] {
       cur += ch;
     }
     cells.push(cur.trim());
-    // skip comments or empty trailing lines
     rows.push(cells);
   }
   return rows;
@@ -94,18 +104,43 @@ function validateHeaders(headers: string[]): boolean {
     'fecha_apertura', 'fecha_cierre', 'capital', 'monto_devolver', 'interes', 'dias', 'tna_real', 'archivo', 'operation_key'
   ];
   const lower = headers.map(h => h.trim().toLowerCase());
-  console.log('Headers en minúsculas:', lower);
-  console.log('Headers requeridos:', required);
 
   const missing = required.filter(r => !lower.includes(r.toLowerCase()));
-  console.log('Headers faltantes:', missing);
+  if (missing.length > 0) {
+    console.warn('Headers faltantes:', missing);
+  }
 
   return required.every(r => lower.includes(r.toLowerCase()));
 }
 
-/** Helpers to safely convert to number */
+/** Helpers to safely convert to number, handling comma decimals */
 function toNumber(n: any): number {
-  const v = Number(n);
+  if (typeof n === 'number') return n;
+  if (!n) return 0;
+
+  let str = String(n).trim();
+
+  // Handle "1.000,50" -> remove dots, replace comma with dot -> "1000.50"
+  // OR "1000,50" -> "1000.50"
+  // Heuristic: if both . and , exist:
+  //   if last is comma (1.234,56), remove dots, replace comma.
+  //   if last is dot (1,234.56), remove commas.
+  if (str.includes(',') && str.includes('.')) {
+    const lastDot = str.lastIndexOf('.');
+    const lastComma = str.lastIndexOf(',');
+    if (lastComma > lastDot) {
+      // European/Latin style: 1.000,00
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // US style: 1,000.00
+      str = str.replace(/,/g, '');
+    }
+  } else if (str.includes(',')) {
+    // Only comma? Assume decimal separator (Latin)
+    str = str.replace(',', '.');
+  }
+
+  const v = Number(str);
   return isNaN(v) ? 0 : v;
 }
 
