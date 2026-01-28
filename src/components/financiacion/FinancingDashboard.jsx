@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2, List } from 'lucide-react';
+import { TrendingUp, RefreshCw, Upload, Filter, Trash2, List, BarChart3 } from 'lucide-react';
 import FinancingKPIs from './FinancingKPIs';
 import CSVUploadView from './CSVUploadView';
 import FinancingCharts from './FinancingCharts';
