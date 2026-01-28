@@ -125,16 +125,19 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     console.warn('Headers faltantes para idempotencia completa.');
   }
 
+  const normalizedHeaders = headers.map(h => h.trim().toLowerCase());
+  const getIdx = (key: string) => normalizedHeaders.indexOf(key.toLowerCase());
+
   const idx: Record<string, number> = {
-    fecha_apertura: headers.indexOf('fecha_apertura'),
-    fecha_cierre: headers.indexOf('fecha_cierre'),
-    capital: headers.indexOf('capital'),
-    monto_devolver: headers.indexOf('monto_devolver'),
-    interes: headers.indexOf('interes'),
-    dias: headers.indexOf('dias'),
-    tna_real: headers.indexOf('tna_real'),
-    archivo: headers.indexOf('archivo'),
-    operation_key: headers.indexOf('operation_key')
+    fecha_apertura: getIdx('fecha_apertura'),
+    fecha_cierre: getIdx('fecha_cierre'),
+    capital: getIdx('capital'),
+    monto_devolver: getIdx('monto_devolver'),
+    interes: getIdx('interes'),
+    dias: getIdx('dias'),
+    tna_real: getIdx('tna_real'),
+    archivo: getIdx('archivo'),
+    operation_key: getIdx('operation_key')
   } as any;
 
   const records: DerivedRecord[] = [];
