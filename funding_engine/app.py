@@ -319,39 +319,27 @@ else:
         deficit_label = "Déficit" if deficit_fci > 0 else "Exceso"
         deficit_amount = abs(deficit_fci)
         
-        ratio_html = f"""
-        <div style="background-color: #1a1c24; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-top: 10px;">
-            <h4 style="margin:0 0 10px 0; color: #fff;">📊 Ratio Cobertura <small style="color:#888;">(P75×1.15, {window_days}d)</small></h4>
-            
-            <div style="text-align: center; margin: 10px 0;">
-                <h2 style="margin:0; font-size: 2.5rem; color: {text_color};">{ratio_pct:.0f}%</h2>
-                <p style="margin:0; font-size: 0.9rem; color: {text_color};">{p75_traffic_label}</p>
-            </div>
-            
-            <div style="background-color: #333; border-radius: 5px; height: 12px; overflow: hidden; margin: 10px 0;">
-                <div style="background: {bar_color}; width: {bar_width}%; height: 100%;"></div>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #666;">
-                <span>0%</span>
-                <span style="color: #ef4444;">85%</span>
-                <span style="color: #fbbf24;">100%</span>
-                <span style="color: #22c55e;">105%+</span>
-            </div>
-            
-            <hr style="margin: 10px 0; border-color: #444;">
-            
-            <p style="margin:5px 0; font-size: 0.85rem;">
-                <strong>FCI Actual:</strong> {currency_label}{current_fci:,.0f}
-            </p>
-            <p style="margin:5px 0; font-size: 0.85rem;">
-                <strong>FCI Mínimo Op.:</strong> {currency_label}{fci_minimo_operativo:,.0f}
-            </p>
-            <p style="margin:5px 0; font-size: 0.85rem; color: {text_color};">
-                <strong>{deficit_label}:</strong> {currency_label}{deficit_amount:,.0f}
-            </p>
-        </div>
-        """
+        ratio_html = f'<div style="background-color: #1a1c24; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-top: 10px;">'
+        ratio_html += f'<h4 style="margin:0 0 10px 0; color: #fff;">📊 Ratio Cobertura <small style="color:#888;">(P75×1.15, {window_days}d)</small></h4>'
+        ratio_html += f'<div style="text-align: center; margin: 10px 0;">'
+        ratio_html += f'<h2 style="margin:0; font-size: 2.5rem; color: {text_color};">{ratio_pct:.0f}%</h2>'
+        ratio_html += f'<p style="margin:0; font-size: 0.9rem; color: {text_color};">{p75_traffic_label}</p>'
+        ratio_html += '</div>'
+        ratio_html += f'<div style="background-color: #333; border-radius: 5px; height: 12px; overflow: hidden; margin: 10px 0;">'
+        ratio_html += f'<div style="background: {bar_color}; width: {bar_width}%; height: 100%;"></div>'
+        ratio_html += '</div>'
+        ratio_html += '<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #666;">'
+        ratio_html += '<span>0%</span>'
+        ratio_html += '<span style="color: #ef4444;">85%</span>'
+        ratio_html += '<span style="color: #fbbf24;">100%</span>'
+        ratio_html += '<span style="color: #22c55e;">105%+</span>'
+        ratio_html += '</div>'
+        ratio_html += '<hr style="margin: 10px 0; border-color: #444;">'
+        ratio_html += f'<p style="margin:5px 0; font-size: 0.85rem;"><strong>FCI Actual:</strong> {currency_label}{current_fci:,.0f}</p>'
+        ratio_html += f'<p style="margin:5px 0; font-size: 0.85rem;"><strong>FCI Mínimo Op.:</strong> {currency_label}{fci_minimo_operativo:,.0f}</p>'
+        ratio_html += f'<p style="margin:5px 0; font-size: 0.85rem; color: {text_color};"><strong>{deficit_label}:</strong> {currency_label}{deficit_amount:,.0f}</p>'
+        ratio_html += '</div>'
+        
         st.markdown(ratio_html, unsafe_allow_html=True)
 
         # --- WITHDRAWAL THRESHOLD PROGRESS ---
