@@ -284,7 +284,7 @@ const CaucionesTable = ({ cauciones, onDelete, onDeleteAll, loading }) => {
                     </td>
                     <td className="px-3 py-3">
                       <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm font-mono font-medium">
-                        {formatPercent(c.tna_real / 100, 2)}
+                        {formatPercent(c.tna_real, 2)}
                       </span>
                     </td>
                     <td className="px-2 py-3">

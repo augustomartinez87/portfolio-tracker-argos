@@ -206,10 +206,10 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
             <button
               key={option.id}
               onClick={() => setActiveView(option.id)}
-              className={`flex items - center gap - 2 px - 4 py - 2 rounded - lg transition - all font - medium text - sm ${activeView === option.id
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeView === option.id
                 ? 'bg-primary text-white'
                 : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
-                } `}
+                }`}
             >
               <option.icon className="w-4 h-4" />
               {option.label}
@@ -218,7 +218,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
           <button
             onClick={handleSyncFromSheets}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0F9D58]/10 text-[#0F9D58] rounded-lg hover:bg-[#0F9D58]/20 transition-colors border border-[#0F9D58]/30 disabled:opacity-50 font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0F9D58]/10 text-[#0F9D58] rounded-lg hover:bg-[#0F9D58]/20 transition-colors border border-[#0F9D58]/30 disabled:opacity-50 font-medium text-sm"
           >
             <List className="w-4 h-4" />
             Sincronizar Sheets
@@ -226,7 +226,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/30 disabled:opacity-50 font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/30 disabled:opacity-50 font-medium text-sm"
           >
             <RefreshCw className="w-4 h-4" />
             Actualizar

@@ -9,17 +9,24 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className={`${compact ? 'lg:flex' : 'hidden lg:flex'} items-center justify-between gap-4`}>
-      {!compact && <PortfolioSelector />}
+    <header className={`${compact ? 'lg:grid' : 'hidden lg:grid'} grid-cols-3 items-center gap-4`}>
+      {/* Col 1: Portfolio Selector (Left) */}
+      <div className="flex items-center justify-start">
+        {!compact && <PortfolioSelector />}
+      </div>
 
-      {showLogo && (
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Argos Capital" className="w-8 h-8" />
-          <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
-        </div>
-      )}
+      {/* Col 2: Logo (Center) */}
+      <div className="flex items-center justify-center gap-3">
+        {showLogo && (
+          <>
+            <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+            <h1 className="text-xl font-bold text-text-primary">Argos Capital</h1>
+          </>
+        )}
+      </div>
 
-      <div className="flex items-center gap-2">
+      {/* Col 3: MEP & Prices (Right) */}
+      <div className="flex items-center justify-end gap-2">
         {!hideMep && (
           <>
             <span className="text-sm text-text-tertiary">MEP: {formatNumber(mepRate, 0)}</span>
