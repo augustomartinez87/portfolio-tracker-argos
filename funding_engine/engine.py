@@ -189,6 +189,7 @@ class FundingCarryEngine:
             
             # Calculate Debt State
             # Include cauciones that expire TODAY as still active (rollover strategy)
+            active_cauciones = cauciones[
                 (cauciones['fecha_inicio_str'] <= d_str) & 
                 (cauciones['fecha_fin_str'] >= d_str)  # >= includes maturity date (interest still accrued)
             ]

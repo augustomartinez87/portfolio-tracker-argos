@@ -1,12 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RefreshCw, Sun, Moon } from 'lucide-react';
 import { PortfolioSelector } from '../PortfolioSelector';
+import { CurrencySelector } from './CurrencySelector';
 import logo from '../../assets/logo.png';
 import { formatNumber } from '../../utils/formatters';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true, hideMep = false }) => {
+export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true, hideMep = false, displayCurrency, onCurrencyChange }) => {
   const { theme, toggleTheme } = useTheme();
+
+  // Calculate price time with 20 min delay
+  const priceTimeDisplay = useMemo(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - 20);
+    return now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }, []);
 
   return (
     <header className={`${compact ? 'lg:grid' : 'hidden lg:grid'} grid-cols-3 items-center gap-4`}>
@@ -33,7 +41,13 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
             <span className="text-text-tertiary">|</span>
           </>
         )}
-        <span className="text-sm text-text-tertiary">Precios: {lastUpdate || '--:--'}</span>
+        <span className="text-sm text-text-tertiary">Precios de {priceTimeDisplay}</span>
+        {displayCurrency && onCurrencyChange && (
+          <CurrencySelector
+            currentCurrency={displayCurrency}
+            onCurrencyChange={onCurrencyChange}
+          />
+        )}
 
         <button
           onClick={toggleTheme}

@@ -455,10 +455,6 @@ export default function Dashboard() {
               </div>
 
               <div className="flex items-center gap-2">
-                <CurrencySelector
-                  currentCurrency={displayCurrency}
-                  onCurrencyChange={setDisplayCurrency}
-                />
                 <DashboardHeader
                   mepRate={mepRate}
                   lastUpdate={lastUpdate}
@@ -467,6 +463,8 @@ export default function Dashboard() {
                   compact={true}
                   showLogo={false}
                   hideMep={true}
+                  displayCurrency={displayCurrency}
+                  onCurrencyChange={setDisplayCurrency}
                 />
               </div>
             </div>
