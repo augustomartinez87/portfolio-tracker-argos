@@ -4,7 +4,7 @@ import { CONSTANTS } from '../utils/constants';
 import { isBonoPesos, isBonoHardDollar, getAssetClass, adjustBondPrice } from '../utils/bondUtils';
 import { mepService } from './mepService';
 import { supabase } from '../lib/supabase';
-import type { PriceMap, TickerInfo, AssetClass } from '../types';
+import type { PriceMap, TickerInfo } from '../types';
 
 // ============================================
 // TIPOS
@@ -84,7 +84,8 @@ function loadFromLocalStorage(): PriceServiceResult | null {
 async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastValidPrices>): Promise<PriceServiceResult> {
   const priceMap: PriceMap = {};
   const tickerList: TickerInfo[] = [];
-  let mepRate = CONSTANTS.MEP_DEFAULT;
+  let mepRate: number = CONSTANTS.MEP_DEFAULT;
+  let latestUpdate: Date | null = null;
 
   try {
     // 1. Fetch único y rápido a Supabase
@@ -133,6 +134,14 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
         lastValidPricesRef.current[ticker] = { precio: adjustedPrice, precioRaw: rawPrice };
       }
 
+      // Track latest update
+      if (row.last_update) {
+        const rowDate = new Date(row.last_update);
+        if (!latestUpdate || rowDate > latestUpdate) {
+          latestUpdate = rowDate;
+        }
+      }
+
       // Build Price Entry
       priceMap[ticker] = {
         precio: finalPrice,
@@ -172,11 +181,25 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
     prices: priceMap,
     mepRate,
     tickers: tickerList.sort((a, b) => a.ticker.localeCompare(b.ticker)),
-    lastUpdate: new Date(),
+    lastUpdate: latestUpdate || new Date(),
   };
 
   saveToLocalStorage(result);
   return result;
+}
+
+/**
+ * Invoca la Edge Function de Supabase para forzar el fetch de precios.
+ */
+export async function invokeFetchPrices() {
+  try {
+    const { data, error } = await supabase.functions.invoke('fetch-prices');
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error invoking fetch-prices:', err);
+    throw err;
+  }
 }
 
 // ============================================

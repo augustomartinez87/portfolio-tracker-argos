@@ -4,7 +4,7 @@ import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { usePrices } from '../services/priceService';
+import { usePrices, invokeFetchPrices } from '../services/priceService';
 import { RefreshCw, Coins } from 'lucide-react';
 import MobileNav from '../components/common/MobileNav';
 import logo from '../assets/logo.png';
@@ -13,10 +13,19 @@ export default function FundingEngine() {
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
     const { theme } = useTheme();
-    const { mepRate, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, refetch: refetchPrices } = usePrices();
+    const { mepRate, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
-    const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : null;
+    const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : '--:-- hs';
+
+    const handleManualRefresh = async () => {
+        try {
+            await invokeFetchPrices();
+            refetchPrices();
+        } catch (error) {
+            console.error("Manual refresh failed", error);
+        }
+    };
 
     // Reemplaza con TU URL final de Streamlit Cloud
     const APP_URL = "https://portfolio-tracker-argos.streamlit.app";
@@ -56,8 +65,8 @@ export default function FundingEngine() {
                     <DashboardHeader
                         mepRate={mepRate}
                         lastUpdate={lastUpdate}
-                        isPricesLoading={isPricesLoading}
-                        refetchPrices={refetchPrices}
+                        isPricesLoading={isPricesLoading || isPricesFetching}
+                        refetchPrices={handleManualRefresh}
                         compact={true}
                         showLogo={true}
                     />

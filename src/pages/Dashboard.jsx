@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info } from 'lucide-react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '../utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '../hooks/useBondPrices';
-import { usePrices } from '../services/priceService';
+import { usePrices, invokeFetchPrices } from '../services/priceService';
 import { downloadTemplate, parseAndImportTrades } from '../services/importExportService';
 import DistributionChart from '../components/DistributionChart';
 import SummaryCard from '../components/common/SummaryCard';
@@ -44,7 +44,7 @@ export default function Dashboard() {
   const { prices: rawPrices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const prices = rawPrices || {};
 
-  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : null;
+  const lastUpdate = priceLastUpdate ? priceLastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' hs' : '--:-- hs';
   const lastUpdateFull = priceLastUpdate ? priceLastUpdate.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
 
   const [trades, setTrades] = useState([]);
@@ -109,6 +109,15 @@ export default function Dashboard() {
   useEffect(() => {
     loadTrades();
   }, [loadTrades]);
+
+  const handleManualRefresh = useCallback(async () => {
+    try {
+      await invokeFetchPrices();
+      refetchPrices();
+    } catch (error) {
+      console.error("Manual refresh failed", error);
+    }
+  }, [refetchPrices]);
 
   const handleDownloadTemplate = useCallback(() => {
     downloadTemplate();
@@ -459,8 +468,8 @@ export default function Dashboard() {
                 <DashboardHeader
                   mepRate={mepRate}
                   lastUpdate={lastUpdate}
-                  isPricesLoading={isPricesLoading}
-                  refetchPrices={refetchPrices}
+                  isPricesLoading={isPricesLoading || isPricesFetching}
+                  refetchPrices={handleManualRefresh}
                   compact={true}
                   showLogo={false}
                   hideMep={true}

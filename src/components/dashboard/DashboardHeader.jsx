@@ -9,12 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true, hideMep = false, displayCurrency, onCurrencyChange }) => {
   const { theme, toggleTheme } = useTheme();
 
-  // Calculate price time with 20 min delay
-  const priceTimeDisplay = useMemo(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - 20);
-    return now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  }, []);
+  // No longer hardcoding time here, using lastUpdate prop
 
   return (
     <header className={`${compact ? 'lg:grid' : 'hidden lg:grid'} grid-cols-3 items-center gap-4`}>
@@ -41,7 +36,7 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
             <span className="text-text-tertiary">|</span>
           </>
         )}
-        <span className="text-sm text-text-tertiary">Precios de {priceTimeDisplay}</span>
+        <span className="text-sm text-text-tertiary">Precios de {lastUpdate || '--:-- hs'}</span>
         {displayCurrency && onCurrencyChange && (
           <CurrencySelector
             currentCurrency={displayCurrency}
@@ -50,8 +45,17 @@ export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchP
         )}
 
         <button
+          onClick={refetchPrices}
+          disabled={isPricesLoading}
+          className="p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95 disabled:opacity-50"
+          title="Actualizar precios"
+        >
+          <RefreshCw className={`w-4 h-4 ${isPricesLoading ? 'animate-spin' : ''}`} />
+        </button>
+
+        <button
           onClick={toggleTheme}
-          className="ml-2 p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95"
+          className="p-2 h-9 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary transition-all border border-border-primary active:scale-95"
           title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           aria-label="Cambiar tema"
         >
