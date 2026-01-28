@@ -315,7 +315,11 @@ else:
             bar_color = '#ef4444'
             text_color = '#ef4444'
         
-        st.markdown(f"""
+        # Pre-calculate label to avoid f-string issues
+        deficit_label = "Déficit" if deficit_fci > 0 else "Exceso"
+        deficit_amount = abs(deficit_fci)
+        
+        ratio_html = f"""
         <div style="background-color: #1a1c24; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-top: 10px;">
             <h4 style="margin:0 0 10px 0; color: #fff;">📊 Ratio Cobertura <small style="color:#888;">(P75×1.15, {window_days}d)</small></h4>
             
@@ -344,10 +348,11 @@ else:
                 <strong>FCI Mínimo Op.:</strong> {currency_label}{fci_minimo_operativo:,.0f}
             </p>
             <p style="margin:5px 0; font-size: 0.85rem; color: {text_color};">
-                <strong>{'Déficit' if deficit_fci > 0 else 'Exceso'}:</strong> {currency_label}{abs(deficit_fci):,.0f}
+                <strong>{deficit_label}:</strong> {currency_label}{deficit_amount:,.0f}
             </p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(ratio_html, unsafe_allow_html=True)
 
         # --- WITHDRAWAL THRESHOLD PROGRESS ---
         st.markdown("---")
