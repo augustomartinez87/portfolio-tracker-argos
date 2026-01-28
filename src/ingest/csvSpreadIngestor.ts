@@ -223,15 +223,8 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     const monto_devolver = toNumber(row[idx.monto_devolver]);
     const interes = toNumber(row[idx.interes]);
     const dias = Number(row[idx.dias]);
-    let tna_real = toNumber(row[idx.tna_real]);
+    const tna_real = toNumber(row[idx.tna_real]);
 
-    // Heuristic: Auto-normalize TNA if it appears to be in percentage format (e.g. 27.5 instead of 0.275)
-    // We assume any TNA > 2.0 (200%) is likely in percentage units, considering ARG market context.
-    // Real TNA of 200% would be 2.0 in decimal or 200.0 in percent. 
-    // It's ambiguous between 2.0-?, but >10 is almost certainly %.
-    if (tna_real > 2.0) {
-      tna_real = tna_real / 100.0;
-    }
     const archivo = row[idx.archivo] ?? '';
     const operation_key = idx.operation_key >= 0 ? (row[idx.operation_key] ?? '') : '';
 
