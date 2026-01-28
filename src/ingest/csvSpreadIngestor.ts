@@ -90,9 +90,33 @@ function parseCsv(text: string): string[][] {
 }
 
 /** Parse a date in YYYY-MM-DD or similar ISO-like format to a string (or Date if needed) */
+/** Parse a date safely, handling ISO (YYYY-MM-DD) and Latin (DD/MM/YYYY) formats */
 function parseDateSafe(dateStr: string): Date | null {
   if (!dateStr) return null;
-  const d = new Date(dateStr);
+  // Remove leading single quote (plain text indicator in Sheets) and trim
+  const s = dateStr.trim().replace(/^'/, '');
+
+  // Try ISO YYYY-MM-DD
+  if (/\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Try Latin DD/MM/YYYY (common in Sheets export for Spanish locale)
+  const latinMatch = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (latinMatch) {
+    const day = parseInt(latinMatch[1], 10);
+    const month = parseInt(latinMatch[2], 10) - 1; // JS months are 0-11
+    const year = parseInt(latinMatch[3], 10);
+    const d = new Date(year, month, day);
+    // Validate components match (handles 31/02 case)
+    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
+      return d;
+    }
+  }
+
+  // Fallback to browser standard (usually allows MM/DD/YYYY)
+  const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -199,7 +223,15 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     const monto_devolver = toNumber(row[idx.monto_devolver]);
     const interes = toNumber(row[idx.interes]);
     const dias = Number(row[idx.dias]);
-    const tna_real = toNumber(row[idx.tna_real]);
+    let tna_real = toNumber(row[idx.tna_real]);
+
+    // Heuristic: Auto-normalize TNA if it appears to be in percentage format (e.g. 27.5 instead of 0.275)
+    // We assume any TNA > 2.0 (200%) is likely in percentage units, considering ARG market context.
+    // Real TNA of 200% would be 2.0 in decimal or 200.0 in percent. 
+    // It's ambiguous between 2.0-?, but >10 is almost certainly %.
+    if (tna_real > 2.0) {
+      tna_real = tna_real / 100.0;
+    }
     const archivo = row[idx.archivo] ?? '';
     const operation_key = idx.operation_key >= 0 ? (row[idx.operation_key] ?? '') : '';
 
