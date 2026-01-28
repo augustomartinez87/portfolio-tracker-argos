@@ -178,7 +178,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
       if (result.success) {
         const count = result.data?.totalInserted || 0;
         alert(`✅ Sincronización exitosa!\n\nSe procesaron ${count} registros.`);
-        await handleRefresh();
+        await onRefresh();
       } else {
         console.error('Error sync:', result.error);
         alert(`❌ Error al sincronizar: ${result.error?.message || 'Error desconocido'} `);
@@ -188,7 +188,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
       console.error('Error sync:', error);
       alert(`❌ Error inesperado: ${error.message} `);
     }
-  }, [userId, portfolioId, handleRefresh]);
+  }, [userId, portfolioId, onRefresh]);
 
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -207,8 +207,8 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
               key={option.id}
               onClick={() => setActiveView(option.id)}
               className={`flex items - center gap - 2 px - 4 py - 2 rounded - lg transition - all font - medium text - sm ${activeView === option.id
-                  ? 'bg-primary text-white'
-                  : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
+                ? 'bg-primary text-white'
+                : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
                 } `}
             >
               <option.icon className="w-4 h-4" />
@@ -224,7 +224,7 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
             Sincronizar Sheets
           </button>
           <button
-            onClick={handleRefresh}
+            onClick={onRefresh}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/30 disabled:opacity-50 font-medium"
           >
