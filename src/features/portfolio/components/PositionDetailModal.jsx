@@ -70,13 +70,13 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
           return dateB - dateA;
         });
 
-      // Mapear campos de Supabase al formato esperado por la UI
+      // Mapear campos de Supabase al formato estandarizado
       return filtered.map(trade => ({
         ...trade,
-        fecha: trade.fecha || trade.trade_date,
-        cantidad: trade.quantity,
-        precioCompra: trade.price,
-        tipo: trade.trade_type === 'buy' ? 'compra' : 'venta'
+        date: trade.trade_date || trade.date,
+        quantity: trade.quantity,
+        price: trade.price,
+        type: trade.trade_type || trade.type
       }));
     } catch (err) {
       console.error('Error filtering trades:', err);
@@ -253,10 +253,10 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
       const currentPrice = position.currentPrice || 0;
 
       return positionTrades.map(trade => {
-        const investedAmount = (trade.cantidad || 0) * (trade.precioCompra || 0);
-        const currentValue = (trade.cantidad || 0) * currentPrice;
+        const investedAmount = (trade.quantity || 0) * (trade.price || 0);
+        const currentValue = (trade.quantity || 0) * currentPrice;
         const result = currentValue - investedAmount;
-        const resultPct = trade.precioCompra > 0 ? (result / investedAmount) * 100 : 0;
+        const resultPct = (trade.price || 0) > 0 ? (result / investedAmount) * 100 : 0;
 
         // Versión USD - El motor no nos pasa el USD individual por trade aquí, pero podemos estimarlo
         // Pero para consistencia, usaremos lo que ya calculamos en el motor si estuviera disponible.
@@ -646,18 +646,21 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                       return (
                         <tr key={trade.id} className="hover:bg-background-tertiary transition-colors">
                           <td className="px-3 py-3 text-text-secondary text-sm">
-                            {formatDateSafe(trade.fecha)}
+                            {formatDateSafe(trade.date)}
                           </td>
                           <td className="px-3 py-3">
-                            <span className="inline-block px-2 py-1 bg-success/20 text-success rounded text-xs font-semibold">
-                              Compra
+                            <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${trade.trade_type === 'buy' || trade.type === 'compra'
+                                ? 'bg-success/20 text-success'
+                                : 'bg-danger/20 text-danger'
+                              }`}>
+                              {(trade.trade_type === 'buy' || trade.type === 'compra') ? 'Compra' : 'Venta'}
                             </span>
                           </td>
-                          <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.cantidad}</td>
+                          <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.quantity}</td>
                           <td className="text-right px-3 py-3 text-text-primary font-mono">
                             {currency === 'ARS' && isBonoPesos(trade.ticker)
-                              ? `$${trade.precioCompra.toFixed(4)}`
-                              : formatGenericCurrency(isARS ? trade.precioCompra : (trade.precioCompra / mepRate), currency)
+                              ? `$${trade.price.toFixed(4)}`
+                              : formatGenericCurrency(isARS ? trade.price : (trade.price / mepRate), currency)
                             }
                           </td>
                           <td className="text-right px-3 py-3 text-text-tertiary font-mono text-sm">

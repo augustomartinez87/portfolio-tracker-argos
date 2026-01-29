@@ -75,7 +75,7 @@ export default function Dashboard() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTrade, setDeletingTrade] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'fecha', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [positionsSort, setPositionsSort] = useState({ key: 'valuation', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -223,11 +223,11 @@ export default function Dashboard() {
 
     const mappedTrades = trades.map(trade => ({
       ...trade,
-      fecha: trade.trade_date,
-      fechaFormatted: formatDateDMY(trade.trade_date),
-      cantidad: trade.quantity,
-      precioCompra: trade.price,
-      tipo: trade.trade_type === 'buy' ? 'compra' : 'venta'
+      date: trade.trade_date,
+      dateFormatted: formatDateDMY(trade.trade_date),
+      quantity: trade.quantity,
+      price: trade.price,
+      type: trade.trade_type === 'buy' ? 'compra' : 'venta'
     }));
 
     // Aplicar filtros
@@ -238,13 +238,13 @@ export default function Dashboard() {
       const term = tradesSearchTerm.toLowerCase();
       filtered = filtered.filter(t =>
         t.ticker.toLowerCase().includes(term) ||
-        t.fechaFormatted.includes(term)
+        t.dateFormatted.includes(term)
       );
     }
 
     // Filtro de tipo
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(t => t.tipo === typeFilter);
+      filtered = filtered.filter(t => t.type === typeFilter);
     }
 
     // Filtro de ticker/activo
@@ -257,7 +257,7 @@ export default function Dashboard() {
       const { startDate } = getDateRange(dateRangeValue);
       if (startDate) {
         filtered = filtered.filter(t => {
-          const tradeDate = new Date(t.fecha);
+          const tradeDate = new Date(t.date);
           return tradeDate >= startDate;
         });
       }
@@ -268,7 +268,7 @@ export default function Dashboard() {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
-      if (sortConfig.key === 'fecha') {
+      if (sortConfig.key === 'date') {
         aVal = aVal ? new Date(aVal) : new Date();
         bVal = bVal ? new Date(bVal) : new Date();
       }
@@ -294,22 +294,22 @@ export default function Dashboard() {
       if (editingTrade) {
         await tradeService.updateTrade(trade.id, {
           ticker: trade.ticker,
-          trade_type: trade.tipo === 'compra' ? 'buy' : 'sell',
-          quantity: Math.abs(trade.cantidad),
-          price: trade.precioCompra,
-          total_amount: Math.abs(trade.cantidad) * trade.precioCompra,
+          trade_type: trade.type === TRANSACTION_TYPES.BUY ? 'buy' : 'sell',
+          quantity: Math.abs(trade.quantity),
+          price: trade.price,
+          total_amount: Math.abs(trade.quantity) * trade.price,
           currency: 'ARS',
-          trade_date: trade.fecha
+          trade_date: trade.date
         });
       } else {
         await tradeService.createTrade(currentPortfolio.id, user.id, {
           ticker: trade.ticker,
-          trade_type: trade.tipo === 'compra' ? 'buy' : 'sell',
-          quantity: Math.abs(trade.cantidad),
-          price: trade.precioCompra,
-          total_amount: Math.abs(trade.cantidad) * trade.precioCompra,
+          trade_type: trade.type === TRANSACTION_TYPES.BUY ? 'buy' : 'sell',
+          quantity: Math.abs(trade.quantity),
+          price: trade.price,
+          total_amount: Math.abs(trade.quantity) * trade.price,
           currency: 'ARS',
-          trade_date: trade.fecha
+          trade_date: trade.date
         });
       }
 
@@ -644,14 +644,14 @@ export default function Dashboard() {
                           <table className="w-full min-w-[700px]">
                             <thead className="sticky top-0 z-10">
                               <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
-                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('fecha')}>
-                                  <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('date')}>
+                                  <div className="flex items-center gap-1">Fecha {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
                                 </th>
                                 <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('ticker')}>
                                   <div className="flex items-center gap-1">Ticker {sortConfig.key === 'ticker' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
                                 </th>
-                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('tipo')}>
-                                  <div className="flex items-center gap-1">Tipo {sortConfig.key === 'tipo' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('type')}>
+                                  <div className="flex items-center gap-1">Tipo {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
                                 </th>
                                 <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Cant.</th>
                                 <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Precio</th>
@@ -666,19 +666,19 @@ export default function Dashboard() {
                                 </td></tr>
                               ) : sortedTrades.map((trade, idx) => (
                                 <tr key={trade.id || idx} className="hover:bg-background-tertiary transition-all duration-200">
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.fechaFormatted}</td>
+                                  <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.dateFormatted}</td>
                                   <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
                                   <td className="px-3 sm:px-4 py-3">
-                                    <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.tipo === 'compra'
+                                    <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.type === 'compra'
                                       ? 'bg-[#10b9811a] text-[#10b981] border-[#10b98133]'
                                       : 'bg-[#ef44441a] text-[#ef4444] border-[#ef444433]'
                                       }`}>
-                                      {trade.tipo === 'compra' ? 'Compra' : 'Venta'}
+                                      {trade.type === 'compra' ? 'Compra' : 'Venta'}
                                     </span>
                                   </td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.cantidad), 2)}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.precioCompra)}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(Math.abs(trade.cantidad) * trade.precioCompra)}</td>
+                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.quantity), 2)}</td>
+                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.price)}</td>
+                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(Math.abs(trade.quantity) * trade.price)}</td>
                                   <td className="px-3 sm:px-4 py-3 text-center">
                                     <div className="flex items-center justify-center gap-1">
                                       <button onClick={() => { setEditingTrade(trade); setModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded transition-colors" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>

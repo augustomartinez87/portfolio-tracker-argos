@@ -49,55 +49,28 @@ export const parseAndImportTrades = (
                     if (!line.trim()) return;
 
                     const cols = line.split(',').map(col => col.trim());
-                    const fecha = cols[0];
+                    const dateStr = cols[0];
                     const ticker = cols[1];
-                    const cantidad = cols[2];
-                    const precio = cols[3];
+                    const quantityRaw = cols[2];
+                    const priceRaw = cols[3];
 
-                    if (!fecha || !ticker || ticker === 'Ticker') return;
+                    if (!dateStr || !ticker || ticker === 'Ticker') return;
 
-                    const parsedDate = parseDateDMY(fecha);
-                    const parsedCantidad = parseARSNumber(cantidad);
-                    const parsedPrecio = parseARSNumber(precio);
+                    const parsedDate = parseDateDMY(dateStr);
+                    const parsedQuantity = parseARSNumber(quantityRaw);
+                    const parsedPrice = parseARSNumber(priceRaw);
 
-                    if (parsedDate && ticker && parsedCantidad > 0) {
+                    if (parsedDate && ticker && parsedQuantity !== 0) {
+                        const absQuantity = Math.abs(parsedQuantity);
+                        const tradeType = parsedQuantity > 0 ? 'buy' : 'sell';
+
                         newTrades.push({
                             ticker: ticker.trim().toUpperCase(),
-                            quantity: parsedCantidad,
-                            price: parsedPrecio,
+                            quantity: absQuantity,
+                            price: parsedPrice,
                             trade_date: parsedDate,
-                            trade_type: 'buy', // Default to buy as per original logic? Logic implies signed quantity if selling? 
-                            // Original logic had: "quantity: parsedCantidad" and "parsedCantidad > 0".
-                            // It also had "trade_type: 'buy'".
-                            // Wait, original: if sell, quantity is reduced. But import logic sets trade_type='buy'.
-                            // Reviewing original:
-                            // lines 145-153 of Dashboard.jsx:
-                            // trade_type: 'buy'
-                            // So import only supports Buys currently? 
-                            // The template example has negative quantity? "15/01/2025,GGAL,-5,4500" (Dashboard.jsx:806)
-                            // But logic says: "if (parsedDate && ticker && parsedCantidad > 0)"
-                            // If parsedCantidad is negative (e.g. -5), then it is skipped!
-                            // Wait, `parseARSNumber` might return positive/abs?
-                            // `const parsedCantidad = parseARSNumber(cantidad);`
-                            // If input is "-5", parseARSNumber likely returns -5.
-                            // So currently import MIGHT NOT support sells or negative numbers properly if `parsedCantidad > 0` check exists.
-                            // Line 144: `if (parsedDate && ticker && parsedCantidad > 0)`
-                            // YES, the original code IGNORES negative quantities.
-                            // AND hardcodes `trade_type: 'buy'`.
-                            // AND calculated `total_amount: parsedCantidad * parsedPrecio`.
-
-                            // However, the "Ejemplo" in UI (Dashboard.jsx:806) shows: `23/12/2024,MELI,10,17220` and `15/01/2025,GGAL,-5,4500`.
-                            // This suggests the USER INTENDS to support Sells.
-                            // BUT the current implementation (which I'm refactoring) seems to BUG/IGNORE it.
-                            // As an Auditor/Refactorer, I should replicate EXISTING logic (even if buggy) OR fix it if obvious.
-                            // The user asked to "extract logic".
-                            // If I fix it, I might change behavior.
-                            // But the UI example explicitly encourages negative numbers.
-                            // I will stick to exact replication for now to be safe, but I will add a TODO or comment.
-                            // Wait, look at line 147: `quantity: parsedCantidad`. 
-
-                            // I will replicate EXACTLY what was there to avoid regressions/unexpected changes during refactor.
-                            total_amount: parsedCantidad * parsedPrecio,
+                            trade_type: tradeType,
+                            total_amount: absQuantity * parsedPrice,
                             currency: 'ARS'
                         });
                     }
@@ -110,7 +83,6 @@ export const parseAndImportTrades = (
 
                     for (const trade of newTrades) {
                         try {
-                            // The Create Trade service likely handles validation
                             await tradeService.createTrade(portfolioId, userId, trade);
                             savedCount++;
                         } catch (err) {
@@ -149,7 +121,7 @@ export const parseAndImportTrades = (
                     success: false,
                     savedCount: 0,
                     errorCount: 0,
-                    message: 'Error al importar archivo' // Matches original catch block message
+                    message: 'Error al importar archivo'
                 });
             }
         };

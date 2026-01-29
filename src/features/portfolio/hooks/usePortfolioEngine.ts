@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '@/utils/bondUtils';
 import { mepService, MepHistoryItem } from '../services/mepService';
-import { usePrices } from '@/features/portfolio/services/priceService';
 import type { AssetClass, Position, PortfolioTotals, TradeInput } from '@/types';
 import Decimal from 'decimal.js';
 
@@ -90,7 +89,7 @@ export const usePortfolioEngine = (
         return mepService.getMepMap();
     }, [mepHistory]);
 
-    const positions = useMemo(() => {
+    const positions = useMemo<Position[]>(() => {
         const grouped: Record<string, any> = {};
 
         // Make a shallow copy to sort
@@ -113,12 +112,12 @@ export const usePortfolioEngine = (
             }
             grouped[ticker].trades.push(trade);
 
-            const quantity = new Decimal(trade.quantity ?? trade.cantidad ?? 0);
-            const price = new Decimal(trade.price ?? trade.precioCompra ?? 0);
-            const tType = trade.trade_type ?? trade.tipo ?? '';
+            const quantity = new Decimal(trade.quantity || 0);
+            const price = new Decimal(trade.price || 0);
+            const tType = trade.trade_type || '';
 
             const cantidadAbs = quantity.abs();
-            const isSell = tType === 'sell' || tType === 'venta';
+            const isSell = tType === 'sell';
 
             if (isSell) {
                 // Venta: reducir cantidad y costo proporcionalmente (WAC)
@@ -153,7 +152,7 @@ export const usePortfolioEngine = (
                 pos.costoTotal = pos.costoTotal.plus(cantidadAbs.times(price));
 
                 // Cálculo USD con precisión histórica
-                const dateStr = trade.trade_date || trade.fecha;
+                const dateStr = trade.trade_date;
                 const formattedDate = dateStr instanceof Date
                     ? dateStr.toISOString().split('T')[0]
                     : String(dateStr).split('T')[0];
