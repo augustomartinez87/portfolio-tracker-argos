@@ -6,23 +6,36 @@ export const userService = {
   // ============================================================================
 
   /**
-   * Obtener perfil del usuario actual
+   * Obtener perfil de un usuario específico
+   * @param {string} userId - ID del usuario de Supabase
    */
-  async getCurrentProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+  async getProfile(userId) {
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (error) {
+      if (error.code === 'PGRST116') {
+        // No hay perfil creado aún, esto es normal para nuevos usuarios
+        return null;
+      }
       console.error('Error fetching profile:', error);
       return null;
     }
     return data;
+  },
+
+  /**
+   * Obtener perfil del usuario actual (legacy, prefiere getProfile)
+   */
+  async getCurrentProfile() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    return this.getProfile(user.id);
   },
 
   /**

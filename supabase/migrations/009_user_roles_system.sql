@@ -30,7 +30,21 @@ CREATE TABLE IF NOT EXISTS user_activity (
 );
 
 -- ============================================================================
--- 3. Índices para mejorar performance
+-- 3. Función Auxiliar (Security Definer) para evitar recursión en RLS
+-- ============================================================================
+-- Security Definer corre con privilegios del creador (postgres), saltando RLS
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.user_profiles
+    WHERE user_id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- 4. Índices para mejorar performance
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
@@ -39,43 +53,33 @@ CREATE INDEX IF NOT EXISTS idx_user_activity_created ON user_activity(created_at
 CREATE INDEX IF NOT EXISTS idx_user_activity_action ON user_activity(action);
 
 -- ============================================================================
--- 4. Habilitar Row Level Security (RLS)
+-- 5. Habilitar Row Level Security (RLS)
 -- ============================================================================
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activity ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 5. Políticas RLS para user_profiles
+-- 6. Políticas RLS para user_profiles
 -- ============================================================================
 
 -- Usuarios pueden ver su propio perfil
 CREATE POLICY "Users can view own profile" ON user_profiles
   FOR SELECT USING (auth.uid() = user_id);
 
--- Admins pueden ver todos los perfiles
+-- Admins pueden ver todos los perfiles (Usa la función para evitar recursión)
 CREATE POLICY "Admins can view all profiles" ON user_profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM user_profiles up
-      WHERE up.user_id = auth.uid() AND up.role = 'admin'
-    )
-  );
+  FOR SELECT USING (public.is_admin());
 
--- Admins pueden actualizar cualquier perfil
+-- Admins pueden actualizar cualquier perfil (Usa la función para evitar recursión)
 CREATE POLICY "Admins can update all profiles" ON user_profiles
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM user_profiles up
-      WHERE up.user_id = auth.uid() AND up.role = 'admin'
-    )
-  );
+  FOR UPDATE USING (public.is_admin());
 
 -- Permitir inserción de perfil propio (para el trigger)
 CREATE POLICY "Allow profile creation" ON user_profiles
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================================
--- 6. Políticas RLS para user_activity
+-- 7. Políticas RLS para user_activity
 -- ============================================================================
 
 -- Usuarios pueden ver su propia actividad
@@ -84,19 +88,14 @@ CREATE POLICY "Users can view own activity" ON user_activity
 
 -- Admins pueden ver toda la actividad
 CREATE POLICY "Admins can view all activity" ON user_activity
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM user_profiles up
-      WHERE up.user_id = auth.uid() AND up.role = 'admin'
-    )
-  );
+  FOR SELECT USING (public.is_admin());
 
 -- Usuarios pueden insertar su propia actividad
 CREATE POLICY "Users can insert own activity" ON user_activity
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================================
--- 7. Función para crear perfil automáticamente al registrarse
+-- 8. Función para crear perfil automáticamente al registrarse
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -120,7 +119,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
--- 8. Trigger para crear perfil automáticamente
+-- 9. Trigger para crear perfil automáticamente
 -- ============================================================================
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -128,7 +127,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================================
--- 9. Función para actualizar updated_at automáticamente
+-- 10. Función para actualizar updated_at automáticamente
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -145,7 +144,7 @@ CREATE TRIGGER update_user_profiles_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================================================
--- 10. Crear perfiles para usuarios existentes
+-- 11. Crear perfiles para usuarios existentes
 -- ============================================================================
 
 -- Primero el admin
@@ -174,7 +173,7 @@ WHERE email != 'martinez.augusto2112@gmail.com'
 ON CONFLICT (user_id) DO NOTHING;
 
 -- ============================================================================
--- 11. Comentarios para documentación
+-- 12. Comentarios para documentación
 -- ============================================================================
 COMMENT ON TABLE user_profiles IS 'Perfiles de usuario con roles y permisos de acceso a módulos';
 COMMENT ON TABLE user_activity IS 'Log de auditoría de acciones del sistema';

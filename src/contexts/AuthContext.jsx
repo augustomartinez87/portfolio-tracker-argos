@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setProfileLoading(true)
-      const profile = await userService.getCurrentProfile()
+      const profile = await userService.getProfile(userId)
       setUserProfile(profile)
 
       // Registrar login
