@@ -3,6 +3,8 @@ dist
 .env
 .env.local
 .env.*.local
+# System files
+nul
 .DS_Store
 *.log
 __pycache__/
