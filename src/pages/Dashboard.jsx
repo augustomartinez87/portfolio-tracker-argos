@@ -291,6 +291,13 @@ export default function Dashboard() {
   const handleSaveTrade = useCallback(async (trade) => {
     if (!currentPortfolio || !user) return;
 
+    console.log('DEBUG handleSaveTrade:', {
+      'auth_user_id': user.id,
+      'portfolio_user_id': currentPortfolio.user_id,
+      'portfolio_id': currentPortfolio.id,
+      'editingTrade': editingTrade
+    });
+
     try {
       if (editingTrade) {
         await tradeService.updateTrade(trade.id, {
