@@ -152,5 +152,13 @@ export const mepService = {
         const older = sorted.find(h => h.date < targetDate);
 
         return older ? older.price : sorted[sorted.length - 1].price;
+    },
+
+    /**
+     * Devuelve el precio MEP actual (más reciente)
+     */
+    getCurrentRate(): number {
+        const history = cachedHistory || localHistory;
+        return history.length > 0 ? history[0].price : 0;
     }
 };
