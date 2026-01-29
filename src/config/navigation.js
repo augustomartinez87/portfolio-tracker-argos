@@ -19,25 +19,15 @@ export const NAV_ITEMS = [
     label: 'Fondos (FCI)',
     icon: PieChart,
     path: '/fci',
-    adminOnly: false,
-    subItems: [
-      {
-        id: 'carry',
-        moduleId: 'carryTrade',
-        label: 'Carry Trade',
-        icon: Activity,
-        path: '/carry-trade',
-        adminOnly: false
-      },
-      {
-        id: 'analisis',
-        moduleId: 'analisis',
-        label: 'Análisis Real',
-        icon: BarChart2,
-        path: '/analisis-real',
-        adminOnly: true
-      }
-    ]
+    adminOnly: true
+  },
+  {
+    id: 'carry',
+    moduleId: 'carryTrade',
+    label: 'Carry Trade',
+    icon: Activity,
+    path: '/carry-trade',
+    adminOnly: false
   },
   {
     id: 'financiacion',

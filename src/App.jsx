@@ -100,16 +100,10 @@ function App() {
               }
             />
 
-            {/* Análisis Real - Solo admin */}
+            {/* Análisis Real - Redirigir a FCI (ahora es una tab) */}
             <Route
               path="/analisis-real"
-              element={
-                <ProtectedRoute adminOnly>
-                  <PortfolioProvider>
-                    <AnalisisReal />
-                  </PortfolioProvider>
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/fci" replace />}
             />
 
             {/* Panel de Administración - Solo admin */}
