@@ -612,7 +612,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Tabla de Transacciones */}
-                  <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden">
+                  <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
                     <div className="p-3 sm:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
                       <div className="flex items-center gap-2 sm:gap-3">
                         <h2 className="text-base sm:text-lg font-semibold text-text-primary">Transacciones</h2>
@@ -677,7 +677,7 @@ export default function Dashboard() {
                       </div>
                     )}
 
-                    <div className="overflow-auto max-h-[500px]">
+                    <div className="overflow-auto flex-1 min-h-0">
                       <table className="w-full min-w-[700px]">
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">

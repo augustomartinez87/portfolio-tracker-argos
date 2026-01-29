@@ -130,28 +130,28 @@ export const PortfolioSelector = () => {
                     setCurrentPortfolio(portfolio)
                     setShowMenu(false)
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-background-tertiary transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 pr-24 hover:bg-background-tertiary transition-colors text-left"
                 >
-                  <div className="flex-1">
-                    <p className="text-text-primary font-medium text-sm">{portfolio.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary font-medium text-sm truncate">{portfolio.name}</p>
                     {portfolio.description && (
-                      <p className="text-text-tertiary text-xs">{portfolio.description}</p>
+                      <p className="text-text-tertiary text-xs truncate">{portfolio.description}</p>
                     )}
                   </div>
                   {portfolio.is_default && (
-                    <Star className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" />
+                    <Star className="w-4 h-4 text-amber-500 flex-shrink-0 group-hover:opacity-0 transition-opacity" fill="currentColor" />
                   )}
                   {currentPortfolio?.id === portfolio.id && (
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    <Check className="w-4 h-4 text-success flex-shrink-0 group-hover:opacity-0 transition-opacity" />
                   )}
                 </button>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-background-tertiary rounded-lg p-0.5">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(portfolio)
                     }}
-                    className="p-1.5 hover:bg-background-tertiary rounded text-text-tertiary hover:text-primary transition-colors"
+                    className="p-1.5 hover:bg-background-secondary rounded text-text-tertiary hover:text-primary transition-colors"
                     title="Editar portfolio"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -162,22 +162,24 @@ export const PortfolioSelector = () => {
                         e.stopPropagation()
                         handleSetDefault(portfolio.id)
                       }}
-                      className="p-1.5 hover:bg-background-tertiary rounded text-text-tertiary hover:text-amber-500 transition-colors"
+                      className="p-1.5 hover:bg-background-secondary rounded text-text-tertiary hover:text-amber-500 transition-colors"
                       title="Establecer como por defecto"
                     >
                       <Star className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeletePortfolio(portfolio.id)
-                    }}
-                    className="p-1.5 hover:bg-background-tertiary rounded text-text-tertiary hover:text-danger transition-colors"
-                    title="Eliminar portfolio"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {portfolios.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeletePortfolio(portfolio.id)
+                      }}
+                      className="p-1.5 hover:bg-background-secondary rounded text-text-tertiary hover:text-danger transition-colors"
+                      title="Eliminar portfolio"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
