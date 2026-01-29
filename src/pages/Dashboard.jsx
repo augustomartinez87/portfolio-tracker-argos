@@ -13,6 +13,7 @@ import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardSummaryCards from '../components/dashboard/DashboardSummaryCards';
 import TotalCard from '../components/dashboard/TotalCard';
 import { PortfolioTabs } from '../components/portfolio/PortfolioTabs';
+import { PortfolioCharts } from '../components/portfolio/PortfolioCharts';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PortfolioSelector } from '../components/PortfolioSelector';
@@ -479,11 +480,8 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'distribution' && (
-                <div className="max-w-3xl mx-auto">
-                  <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
-                    <h2 className="text-lg font-semibold text-text-primary mb-4">Distribución del Portfolio</h2>
-                    <DistributionChart positions={positions} currency={displayCurrency} />
-                  </div>
+                <div className="max-w-6xl mx-auto py-4">
+                  <PortfolioCharts positions={positions} currency={displayCurrency} />
                 </div>
               )}
 

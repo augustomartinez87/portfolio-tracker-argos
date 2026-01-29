@@ -36,8 +36,19 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
       return (
         <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
           <p className="text-text-primary font-semibold text-xs mb-1">{data.name}</p>
-          <p className="text-text-secondary text-xs">{formatCurrency(data.value)}</p>
-          <PercentageDisplay value={data.percentage} iconSize="w-3 h-3" className="text-xs" />
+          <div className="space-y-0.5">
+            <p className="text-text-secondary text-xs">{formatCurrency(data.value)}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-text-tertiary text-[10px] uppercase">Peso:</span>
+              <PercentageDisplay value={data.percentage} iconSize="w-3 h-3" className="text-xs" showArrow={false} neutral={true} />
+            </div>
+            {data.pnlPct !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-text-tertiary text-[10px] uppercase">P&L:</span>
+                <PercentageDisplay value={data.pnlPct} iconSize="w-3 h-3" className="text-xs font-bold" />
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -54,7 +65,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
         <div className="p-1.5 bg-primary/20 rounded">
           <PieChartIcon className="w-4 h-4 text-success" />
         </div>
-        <h3 className="text-sm font-bold text-text-primary">Distribución</h3>
+        <h3 className="text-sm font-bold text-text-primary">Distribución por Activos</h3>
       </div>
 
       <div className="flex-1 flex items-center justify-center min-h-[200px] relative">
@@ -117,7 +128,14 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              <span className="text-sm text-text-primary font-medium">{item.name}</span>
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-sm text-text-primary font-medium">{item.name}</span>
+                {item.pnlPct !== undefined && (
+                  <span className={`text-[10px] font-bold ${item.pnlPct >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {item.pnlPct >= 0 ? '+' : ''}{item.pnlPct.toFixed(1)}% P&L
+                  </span>
+                )}
+              </div>
             </div>
             <PercentageDisplay value={item.percentage} iconSize="w-3 h-3" className="text-sm font-mono font-semibold text-text-primary" showArrow={false} neutral={true} />
           </button>

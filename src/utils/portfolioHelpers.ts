@@ -28,19 +28,21 @@ export function calculateAssetDistribution(positions: Position[], currency: 'ARS
   }
 
   // Agrupar por asset class
-  const grouped = positions.reduce<Record<string, { name: AssetClass; value: number; count: number; color: string }>>((acc, pos) => {
+  const grouped = positions.reduce<Record<string, { name: AssetClass; value: number; count: number; color: string; invested: number }>>((acc, pos) => {
     const className = (pos.assetClass || 'OTROS') as AssetClass;
 
     if (!acc[className]) {
       acc[className] = {
         name: className,
         value: 0,
+        invested: 0,
         count: 0,
         color: ASSET_CLASS_COLORS[className] || ASSET_CLASS_COLORS['OTROS']
       };
     }
 
     acc[className].value += (isUSD ? (pos.valuacionUSD || 0) : (pos.valuacionActual || 0));
+    acc[className].invested += (isUSD ? (pos.costoUSD || 0) : (pos.costoTotal || 0));
     acc[className].count += 1;
 
     return acc;
@@ -52,6 +54,7 @@ export function calculateAssetDistribution(positions: Position[], currency: 'ARS
       name: item.name,
       value: item.value,
       percentage: (item.value / totalValue) * 100,
+      pnlPct: item.invested > 0 ? ((item.value - item.invested) / item.invested) * 100 : 0,
       color: item.color
     }))
     .sort((a, b) => b.value - a.value); // Ordenar de mayor a menor

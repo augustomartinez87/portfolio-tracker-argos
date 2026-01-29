@@ -33,7 +33,7 @@ export const PortfolioTabs = ({ activeTab, setActiveTab, currentPortfolio }) => 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'trades', label: 'Transacciones', icon: FileText },
-    { id: 'distribution', label: 'Distribución', icon: PieChart },
+    { id: 'distribution', label: 'Gráficos', icon: PieChart },
     { id: 'help', label: 'Ayuda', icon: HelpCircle },
   ];
 

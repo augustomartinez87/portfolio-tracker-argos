@@ -322,5 +322,6 @@ export interface DistributionDataItem {
   name: AssetClass;
   value: number;
   percentage: number;
+  pnlPct?: number;
   color: string;
 }
