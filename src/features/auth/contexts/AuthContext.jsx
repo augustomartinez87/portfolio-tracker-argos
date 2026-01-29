@@ -138,6 +138,12 @@ export const AuthProvider = ({ children }) => {
       if (!isMounted) return;
       console.log(`[Auth] Auth state changed: ${event}`);
 
+      // Ignorar INITIAL_SESSION - ya lo manejamos en initSession()
+      if (event === 'INITIAL_SESSION') {
+        console.log('[Auth] Ignoring INITIAL_SESSION (handled by initSession)');
+        return;
+      }
+
       if (isLogoutInProgress.current) return;
 
       const newUserId = session?.user?.id ?? null;
@@ -145,6 +151,7 @@ export const AuthProvider = ({ children }) => {
       // Solo procesar si el usuario realmente cambió
       if (newUserId === currentUserIdRef.current) {
         // Ignorar eventos redundantes
+        console.log('[Auth] Ignoring redundant event (same user)');
         return;
       }
 
