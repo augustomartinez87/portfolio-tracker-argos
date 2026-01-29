@@ -5,11 +5,9 @@ import { usePrices } from '@/features/portfolio/services/priceService';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import CarryTradeHeatmap from '@/features/portfolio/components/CarryTradeHeatmap';
-import { CarryTradeSettings } from '@/features/carry/components/CarryTradeSettings';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Repeat } from 'lucide-react';
+import { Repeat, Loader2 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { Loader2 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';

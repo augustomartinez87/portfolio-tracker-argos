@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2, HandCoins } from 'lucide-react';
+import { TrendingUp, RefreshCw, Upload, Filter, Trash2, Coins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -116,23 +116,21 @@ const Financiacion = () => {
             <PageHeader
               title="Financiación"
               subtitle="Cauciones y Tasas"
-              icon={HandCoins}
+              icon={Coins}
               loading={loading}
               onRefresh={handleRefresh}
               extraActions={
-                process.env.NODE_ENV === 'development' && (
+                import.meta.env.DEV && (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
                         if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro?')) {
-                          import('../features/financing/services/financingService').then(({ financingService }) => {
-                            financingService.clearAllUserCauciones(user.id).then(result => {
-                              if (result.success) {
-                                queryClient.invalidateQueries(['financing-operations']);
-                                queryClient.invalidateQueries(['financing-metrics']);
-                                alert('✅ Limpieza completa.');
-                              }
-                            });
+                          financingService.clearAllUserCauciones(user.id).then(result => {
+                            if (result.success) {
+                              queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
+                              queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
+                              alert('✅ Limpieza completa.');
+                            }
                           });
                         }
                       }}

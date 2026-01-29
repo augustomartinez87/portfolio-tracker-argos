@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, FolderPlus, HelpCircle } from 'lucide-react';
-import { PortfolioSelector } from '../features/portfolio/components/PortfolioSelector';
+import { PortfolioSelector } from '../../features/portfolio/components/PortfolioSelector';
 
 export const PortfolioEmptyState = ({ title = "No tienes portfolios", message = "Crea tu primer portfolio para empezar a trackear tus inversiones." }) => {
     return (
