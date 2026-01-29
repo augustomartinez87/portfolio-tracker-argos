@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info, LayoutDashboard } from 'lucide-react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '@/features/portfolio/hooks/useBondPrices';
@@ -51,9 +52,12 @@ export default function Dashboard() {
 
   const lastUpdateFull = lastUpdate ? lastUpdate.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
 
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  const activeTab = tab || 'resumen';
+
   const [trades, setTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [displayCurrency, setDisplayCurrency] = useState('ARS');
   const [mepHistory, setMepHistory] = useState([]);
 
@@ -437,7 +441,7 @@ export default function Dashboard() {
               onRefresh={handleManualRefresh}
               displayCurrency={displayCurrency}
               onCurrencyChange={setDisplayCurrency}
-              onHelpClick={() => setActiveTab('help')}
+              onHelpClick={() => navigate('/dashboard/help')}
             />
 
             {!currentPortfolio ? (
@@ -448,7 +452,6 @@ export default function Dashboard() {
                 <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
                   <PortfolioTabs
                     activeTab={activeTab}
-                    setActiveTab={setActiveTab}
                     currentPortfolio={currentPortfolio}
                     variant="pills"
                   />
@@ -691,7 +694,7 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {activeTab === 'dashboard' && (
+                  {activeTab === 'resumen' && (
                     <>
                       {/* Portfolio Tabs removed from here - already visible above in the main flow */}
                       <DashboardSummaryCards

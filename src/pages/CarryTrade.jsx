@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { usePrices } from '@/features/portfolio/services/priceService';
@@ -11,8 +12,12 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import MobileNav from '@/components/common/MobileNav';
 
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
+import { CarryTradeTabs } from '@/features/portfolio/components/CarryTradeTabs';
 
 export default function CarryTrade() {
+    const { tab } = useParams();
+    const activeTab = tab || 'analisis';
+
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -62,16 +67,37 @@ export default function CarryTrade() {
                             <PortfolioEmptyState title="Sin Portfolio" message="Selecciona o crea un portfolio para simular estrategias de Carry Trade." />
                         ) : (
                             <>
-                                {isPricesLoading && (
-                                    <div className="flex items-center justify-center p-8">
-                                        <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
-                                        <span className="text-text-tertiary">Cargando precios...</span>
-                                    </div>
-                                )}
+                                {/* Sub-navigation (Tabs) */}
+                                <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
+                                    <CarryTradeTabs activeTab={activeTab} />
+                                </div>
 
-                                {!isPricesLoading && (
-                                    <div className="flex-1 min-h-[400px] bg-background-secondary border border-border-primary rounded-xl p-4 overflow-hidden shadow-2xl">
-                                        <CarryTradeHeatmap positions={[]} />
+                                {activeTab === 'analisis' ? (
+                                    <>
+                                        {isPricesLoading && (
+                                            <div className="flex items-center justify-center p-8">
+                                                <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                                                <span className="text-text-tertiary">Cargando precios...</span>
+                                            </div>
+                                        )}
+                                        {!isPricesLoading && (
+                                            <div className="flex-1 min-h-[400px] bg-background-secondary border border-border-primary rounded-xl p-4 overflow-hidden shadow-2xl">
+                                                <CarryTradeHeatmap positions={[]} />
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex-1 bg-background-secondary border border-border-primary rounded-xl p-8 flex flex-col items-center justify-center text-center">
+                                        <div className="p-4 bg-background-tertiary rounded-full mb-4">
+                                            <Repeat className="w-12 h-12 text-primary animate-pulse" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-text-primary mb-2">Simulador de Carry Trade</h3>
+                                        <p className="text-text-secondary max-w-md">
+                                            Esta sección permitirá simular escenarios dinámicos de tipo de cambio e inflación para optimizar tu estrategia de Carry.
+                                        </p>
+                                        <div className="mt-6 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-medium">
+                                            Fase 2: Próximamente disponible
+                                        </div>
                                     </div>
                                 )}
                             </>

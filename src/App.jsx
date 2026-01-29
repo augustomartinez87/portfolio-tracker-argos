@@ -41,7 +41,7 @@ function App() {
 
             {/* Dashboard - Acceso para todos los usuarios autenticados */}
             <Route
-              path="/dashboard"
+              path="/dashboard/:tab?"
               element={
                 <ProtectedRoute requiredModule="portfolio">
                   <PortfolioProvider>
@@ -49,6 +49,12 @@ function App() {
                   </PortfolioProvider>
                 </ProtectedRoute>
               }
+            />
+
+            {/* Redirigir la base de dashboard a resumen */}
+            <Route
+              path="/dashboard"
+              element={<Navigate to="/dashboard/resumen" replace />}
             />
 
             {/* FCI - Solo admin */}
@@ -89,7 +95,7 @@ function App() {
 
             {/* Carry Trade - Acceso para todos */}
             <Route
-              path="/carry-trade"
+              path="/carry-trade/:tab?"
               element={
                 <ProtectedRoute requiredModule="carryTrade">
                   <PortfolioProvider>
@@ -97,6 +103,12 @@ function App() {
                   </PortfolioProvider>
                 </ProtectedRoute>
               }
+            />
+
+            {/* Redirigir la base de carry trade a analisis */}
+            <Route
+              path="/carry-trade"
+              element={<Navigate to="/carry-trade/analisis" replace />}
             />
 
             {/* Análisis Real - Redirigir a FCI (ahora es una tab) */}

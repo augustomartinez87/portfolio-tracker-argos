@@ -10,7 +10,7 @@ export const NAV_ITEMS = [
     moduleId: 'portfolio',
     label: 'Portfolio',
     icon: Briefcase,
-    path: '/dashboard',
+    path: '/dashboard/resumen',
     adminOnly: false
   },
   {
@@ -26,7 +26,7 @@ export const NAV_ITEMS = [
     moduleId: 'carryTrade',
     label: 'Carry Trade',
     icon: Activity,
-    path: '/carry-trade',
+    path: '/carry-trade/analisis',
     adminOnly: false
   },
   {
