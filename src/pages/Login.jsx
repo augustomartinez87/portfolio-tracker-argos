@@ -1,17 +1,19 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, ArrowRight, Eye, EyeOff, AlertTriangle } from 'lucide-react'
 import loginBg from '../assets/login-bg.jpg'
 
 export const Login = () => {
   const navigate = useNavigate()
   const { signIn } = useAuth()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const params = new URLSearchParams(location.search)
+  const [error, setError] = useState(params.get('error') === 'session_timeout' ? 'La sesión expiró o tardó demasiado en cargar. Por favor, intenta de nuevo.' : '')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -51,8 +53,9 @@ export const Login = () => {
 
         <div className="bg-background-secondary/80 backdrop-blur-md border border-border-primary rounded-xl p-8 shadow-xl">
           {error && (
-            <div className="bg-danger/10 border border-danger/30 text-danger px-4 py-3 rounded-lg mb-6">
-              {error}
+            <div className={`border px-4 py-3 rounded-lg mb-6 flex items-start gap-3 ${error.includes('expiró') ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-danger/10 border-danger/30 text-danger'}`}>
+              {error.includes('expiró') ? <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> : null}
+              <span className="text-sm">{error}</span>
             </div>
           )}
 

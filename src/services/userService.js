@@ -13,7 +13,7 @@ export const userService = {
     if (!userId) return null;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000); // 7s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
     try {
       const { data, error } = await supabase

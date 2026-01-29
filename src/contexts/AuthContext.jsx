@@ -29,24 +29,28 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
-    // Safety timeout para la carga del perfil (5s)
+    // Safety timeout para la carga del perfil (15s)
     const profileTimeout = setTimeout(() => {
       if (profileLoading) {
-        console.warn('Profile loading timed out, proceeding without profile');
+        console.warn('[Auth] Profile loading timed out (15s), proceeding without profile');
         setProfileLoading(false);
       }
-    }, 5000);
+    }, 15000);
 
     try {
+      console.log('[Auth] Fetching profile for user:', userId);
       setProfileLoading(true)
       const profile = await userService.getProfile(userId)
       setUserProfile(profile)
 
       if (profile) {
+        console.log('[Auth] Profile loaded successfully');
         userService.logActivity('login', null, { method: 'session' })
+      } else {
+        console.warn('[Auth] No profile found for user:', userId);
       }
     } catch (err) {
-      console.error('Error loading user profile:', err)
+      console.error('[Auth] Error loading user profile:', err)
       setUserProfile(null)
     } finally {
       clearTimeout(profileTimeout);
@@ -55,32 +59,31 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    // Safety timeout global para el arranque (10s)
+    // Safety timeout global para el arranque (30s)
+    // Aumentado para evitar cierres de sesión por cold starts de Supabase o conexiones lentas
     const globalTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('Auth initialization timed out. Potentially corrupt session, clearing storage for recovery...');
+        console.warn('[Auth] Initialization timed out (30s). Potential server lag or corrupt session.');
 
-        // Limpieza de emergencia de llaves de Supabase
-        Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('-auth-') || key.includes('sb-')) {
-            localStorage.removeItem(key);
-          }
-        });
-
+        // Solo marcamos como cargado para permitir que la app intente renderizar
+        // En lugar de forzar logout inmediato, dejamos que el usuario vea el estado
         setLoading(false);
         setProfileLoading(false);
 
-        // Forzar recarga a login para empezar de cero
-        if (!window.location.pathname.includes('/login')) {
+        // Si realmente no hay usuario después de 30s, redirigimos
+        if (!currentUserIdRef.current && !window.location.pathname.includes('/login')) {
+          console.warn('[Auth] No user detected after timeout, redirecting to login');
           window.location.href = '/login?error=session_timeout';
         }
       }
-    }, 10000);
+    }, 30000);
 
     const getSession = async () => {
       try {
+        console.log('[Auth] Getting initial session...');
         const { data: { session } } = await supabase.auth.getSession()
         const newUser = session?.user ?? null
+        console.log('[Auth] Session result:', newUser ? 'User found' : 'No user');
         currentUserIdRef.current = newUser?.id ?? null
         setUser(newUser)
 
@@ -90,7 +93,7 @@ export const AuthProvider = ({ children }) => {
           setProfileLoading(false)
         }
       } catch (err) {
-        console.error('Error getting session:', err)
+        console.error('[Auth] Error getting initial session:', err)
         currentUserIdRef.current = null
         setUser(null)
         setProfileLoading(false)
@@ -101,12 +104,21 @@ export const AuthProvider = ({ children }) => {
 
     getSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Auth state changed: ${event}`);
       if (isLogoutInProgress.current) return
 
       const newUserId = session?.user?.id ?? null
-      if (newUserId === currentUserIdRef.current) return
+      if (newUserId === currentUserIdRef.current) {
+        // Si el ID es el mismo pero el evento es SIGNED_IN, refrescamos el perfil por si acaso
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('[Auth] Refreshing profile due to state change event');
+          await loadUserProfile(newUserId);
+        }
+        return
+      }
 
+      console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
       currentUserIdRef.current = newUserId
       setUser(session?.user ?? null)
 
