@@ -45,11 +45,11 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('[Auth] Fetching profile for user:', userId);
       setProfileLoading(true)
-      
+
       // Implementar retry con backoff exponencial
       let profile = null;
       let lastError = null;
-      
+
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           profile = await userService.getProfile(userId);
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       }
-      
+
       setUserProfile(profile)
 
       if (profile) {
@@ -81,6 +81,30 @@ export const AuthProvider = ({ children }) => {
       setProfileLoading(false)
     }
   }, [])
+
+  const getSession = useCallback(async () => {
+    try {
+      console.log('[Auth] Getting session...');
+      const { data: { session } } = await supabase.auth.getSession()
+      const newUser = session?.user ?? null
+      console.log('[Auth] Session result:', newUser ? 'User found' : 'No user');
+      currentUserIdRef.current = newUser?.id ?? null
+      setUser(newUser)
+      setAuthLoading(false)
+
+      if (newUser) {
+        await loadUserProfile(newUser.id)
+      } else {
+        setProfileLoading(false)
+      }
+    } catch (err) {
+      console.error('[Auth] Error getting session:', err)
+      currentUserIdRef.current = null
+      setUser(null)
+      setAuthLoading(false)
+      setProfileLoading(false)
+    }
+  }, [loadUserProfile])
 
   useEffect(() => {
     // Timeout diferenciado para auth vs profile
@@ -105,30 +129,6 @@ export const AuthProvider = ({ children }) => {
       }
     }, 20000);
 
-    const getSession = async () => {
-      try {
-        console.log('[Auth] Getting initial session...');
-        const { data: { session } } = await supabase.auth.getSession()
-        const newUser = session?.user ?? null
-        console.log('[Auth] Session result:', newUser ? 'User found' : 'No user');
-        currentUserIdRef.current = newUser?.id ?? null
-        setUser(newUser)
-        setAuthLoading(false) // Marcar auth como cargado independientemente del profile
-
-        if (newUser) {
-          await loadUserProfile(newUser.id)
-        } else {
-          setProfileLoading(false)
-        }
-      } catch (err) {
-        console.error('[Auth] Error getting initial session:', err)
-        currentUserIdRef.current = null
-        setUser(null)
-        setAuthLoading(false)
-        setProfileLoading(false)
-      }
-    }
-
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
       if (isLogoutInProgress.current) return
 
       const newUserId = session?.user?.id ?? null
-      
+
       // Mejorar lógica de concurrencia para multi-pestaña
       if (newUserId === currentUserIdRef.current) {
         // Si el ID es el mismo pero el evento es importante, refrescamos
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }) => {
       clearTimeout(profileTimeout);
       subscription.unsubscribe();
     }
-  }, [loadUserProfile])
+  }, [getSession, loadUserProfile, user])
 
   // Sincronización multi-pestaña
   useEffect(() => {
@@ -175,22 +175,22 @@ export const AuthProvider = ({ children }) => {
         getSession();
       }
     };
-    
+
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
         console.log('[Auth] Tab became visible, refreshing profile...');
         refreshProfile();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, refreshProfile]);
+  }, [user, refreshProfile, getSession]);
 
   const signUp = async (email, password, metadata = {}) => {
     const { data, error } = await supabase.auth.signUp({
