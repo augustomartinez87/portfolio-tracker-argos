@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart3
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
     Activity, ArrowUpRight, ArrowDownRight, Upload, Calendar,
-    RefreshCw, Info, ChevronDown, ChevronUp, TrendingUp
+    BarChart3, RefreshCw, Info, ChevronDown, ChevronUp, TrendingUp
 } from 'lucide-react';
 import { formatARS, formatPercent, formatNumber } from '../../utils/formatters';
 import { macroService } from '../../services/macroService';
