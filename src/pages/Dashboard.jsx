@@ -35,7 +35,7 @@ import MobileNav from '../components/common/MobileNav';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
+  const { currentPortfolio, loading: portfolioLoading, error: portfolioError, refetch: refetchPortfolios } = usePortfolio();
 
   const { prices: rawPrices, mepRate, tickers, lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const prices = rawPrices || {};
@@ -352,6 +352,36 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-text-tertiary">Cargando portfolio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (portfolioError) {
+    return (
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-danger/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-text-primary mb-2">Error al cargar</h2>
+          <p className="text-text-tertiary mb-4 text-sm">{portfolioError}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => refetchPortfolios()}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-background-secondary text-text-primary border border-border-primary rounded-lg hover:bg-background-tertiary transition-colors"
+            >
+              Recargar página
+            </button>
+          </div>
         </div>
       </div>
     );

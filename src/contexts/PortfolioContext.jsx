@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -13,64 +13,113 @@ export const usePortfolio = () => {
 }
 
 export const PortfolioProvider = ({ children }) => {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [portfolios, setPortfolios] = useState([])
   const [currentPortfolio, setCurrentPortfolio] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const lastUserIdRef = useRef(null)
+  const loadAttemptRef = useRef(0)
 
-  const loadPortfolios = async () => {
+  const loadPortfolios = useCallback(async (forceReload = false) => {
+    // Don't load if auth is still loading
+    if (authLoading) {
+      console.log('[PortfolioContext] Auth still loading, waiting...');
+      return;
+    }
+
     if (!user) {
+      console.log('[PortfolioContext] No user, clearing portfolios');
       setPortfolios([])
       setCurrentPortfolio(null)
       setLoading(false)
+      setError(null)
       return
     }
 
-    // Safety timeout: si demora más de 7 segundos, forzar loading false
+    // Track load attempt for debugging
+    const attemptId = ++loadAttemptRef.current;
+    console.log(`[PortfolioContext] Loading portfolios (attempt ${attemptId}) for user:`, user.id);
+
+    // Safety timeout: si demora más de 10 segundos, forzar loading false con error
     const timeoutId = setTimeout(() => {
-      if (setLoading) {
-        console.warn('Portfolio loading timed out, forcing ready state');
-        setLoading(false);
-      }
-    }, 7000);
+      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after 10s`);
+      setError('La carga de portfolios tardó demasiado. Intenta recargar la página.');
+      setLoading(false);
+    }, 10000);
 
     try {
       setLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
+      // Verify session is active before querying
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('[PortfolioContext] Session error:', sessionError);
+        throw new Error('Error de sesión: ' + sessionError.message);
+      }
+
+      if (!session) {
+        console.warn('[PortfolioContext] No active session found');
+        throw new Error('Sesión no encontrada. Por favor, inicia sesión nuevamente.');
+      }
+
+      console.log(`[PortfolioContext] Session verified, querying portfolios...`);
+
+      const { data, error: queryError } = await supabase
         .from('portfolios')
         .select('*')
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (queryError) {
+        console.error('[PortfolioContext] Query error:', queryError);
+        throw queryError;
+      }
+
+      console.log(`[PortfolioContext] Query returned ${data?.length || 0} portfolios`);
 
       setPortfolios(data || [])
 
       const defaultPortfolio = data?.find(p => p.is_default) || data?.[0] || null
       setCurrentPortfolio(defaultPortfolio)
+
+      if (!defaultPortfolio && data?.length === 0) {
+        console.log('[PortfolioContext] No portfolios found for user');
+      }
     } catch (err) {
-      console.error('Error loading portfolios:', err)
-      setError(err.message)
+      console.error('[PortfolioContext] Error loading portfolios:', err)
+      setError(err.message || 'Error desconocido al cargar portfolios')
       setPortfolios([])
       setCurrentPortfolio(null)
     } finally {
       clearTimeout(timeoutId);
       setLoading(false)
     }
-  }
+  }, [user, authLoading])
 
   useEffect(() => {
-    // Solo recargar si el user.id realmente cambió (evita refetch en tab focus)
+    // Wait for auth to finish loading
+    if (authLoading) {
+      console.log('[PortfolioContext] Waiting for auth to complete...');
+      return;
+    }
+
+    // Check if user changed
     const currentUserId = user?.id ?? null
     if (currentUserId === lastUserIdRef.current) {
+      // User hasn't changed, but if we're still in initial loading state, force a load
+      if (loading && currentUserId !== null) {
+        console.log('[PortfolioContext] Same user but still loading, forcing load');
+        loadPortfolios();
+      }
       return
     }
+
+    console.log(`[PortfolioContext] User changed: ${lastUserIdRef.current} -> ${currentUserId}`);
     lastUserIdRef.current = currentUserId
     loadPortfolios()
-  }, [user])
+  }, [user, authLoading, loadPortfolios, loading])
 
   const createPortfolio = async (name, description = '', currency = 'ARS') => {
     if (!user) throw new Error('Usuario no autenticado')
