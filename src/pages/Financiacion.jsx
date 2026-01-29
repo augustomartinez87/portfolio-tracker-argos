@@ -6,8 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
-import FinancingDashboard from '../components/financiacion/FinancingDashboard';
-import financingService from '../services/financingService';
+import FinancingDashboard from '../features/financing/components/FinancingDashboard';
+import financingService from '../features/financing/services/financingService';
 import MobileNav from '../components/common/MobileNav';
 
 const Financiacion = () => {
@@ -153,7 +153,7 @@ const Financiacion = () => {
                       onClick={() => {
                         if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
                           // Importar y llamar al método de limpieza
-                          import('../services/financingService').then(({ financingService }) => {
+                          import('../features/financing/services/financingService').then(({ financingService }) => {
                             financingService.clearAllUserCauciones(user.id).then(result => {
                               if (result.success) {
                                 // Refrescar queries
@@ -178,7 +178,7 @@ const Financiacion = () => {
                       onClick={() => {
                         if (window.confirm('🚨 EMERGENCIA\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS los usuarios?\n\n⚠️ ESTA ACCIÓN AFECTA A TODOS LOS USUARIOS DEL SISTEMA.')) {
                           // Importar y llamar al método de emergencia
-                          import('../services/financingService').then(({ financingService }) => {
+                          import('../features/financing/services/financingService').then(({ financingService }) => {
                             financingService.emergencyDeleteAllCauciones().then(result => {
                               if (result.success) {
                                 // Refrescar queries

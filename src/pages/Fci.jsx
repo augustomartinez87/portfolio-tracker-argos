@@ -2,23 +2,23 @@ import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { PieChart, Plus, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import DashboardSidebar from '../features/portfolio/components/DashboardSidebar';
 import MobileNav from '../components/common/MobileNav';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { LoadingFallback } from '../components/common/LoadingSpinner';
-import { useFciEngine } from '../hooks/useFciEngine';
-import { usePrices } from '../services/priceService';
-import FciTable from '../components/dashboard/FciTable';
-import FciTransactionsList from '../components/dashboard/FciTransactionsList';
-import FciPriceUploadModal from '../components/modals/FciPriceUploadModal';
+import { useFciEngine } from '../features/fci/hooks/useFciEngine';
+import { usePrices } from '../features/portfolio/services/priceService';
+import FciTable from '../features/fci/components/FciTable';
+import FciTransactionsList from '../features/fci/components/FciTransactionsList';
+import FciPriceUploadModal from '../features/fci/components/FciPriceUploadModal';
 import { CurrencySelector } from '../components/dashboard/CurrencySelector';
-import { FciTabs } from '../components/fci/FciTabs';
-import { AnalisisRealContent } from '../components/fci/AnalisisRealContent';
+import { FciTabs } from '../features/fci/components/FciTabs';
+import { AnalisisRealContent } from '../features/fci/components/AnalisisRealContent';
 import SummaryCard from '../components/common/SummaryCard';
 import { formatARS, formatUSD, formatPercent } from '../utils/formatters';
-import { mepService } from '../services/mepService';
+import { mepService } from '../features/portfolio/services/mepService';
 
-const FciTransactionModal = lazy(() => import('../components/modals/FciTransactionModal'));
+const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
 
 export default function Fci() {
   const { user, signOut } = useAuth();

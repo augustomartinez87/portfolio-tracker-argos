@@ -105,27 +105,27 @@ export interface TradeInput {
 export interface Position {
   ticker: string;
   trades: Trade[];
-  cantidadTotal: number;
-  costoTotal: number;
-  precioPromedio: number;
-  precioActual: number;
-  valuacionActual: number;
-  resultado: number;
-  resultadoPct: number;
-  resultadoDiario: number;
-  resultadoDiarioPct: number;
+  totalQuantity: number;
+  totalCost: number;
+  avgPrice: number;
+  currentPrice: number;
+  valuation: number;
+  result: number;
+  resultPct: number;
+  dailyResult: number;
+  dailyResultPct: number;
   assetClass: AssetClass;
   pctChange: number | null;
   isBonoPesos: boolean;
   isBonoHD: boolean;
   isON?: boolean;
   usesONConversion?: boolean;
-  costoUSD: number;
-  valuacionUSD: number;
-  resultadoUSD: number;
-  resultadoDiarioUSD: number;
-  resultadoPctUSD: number;
-  resultadoDiarioPctUSD: number;
+  costUSD: number;
+  valuationUSD: number;
+  resultUSD: number;
+  dailyResultUSD: number;
+  resultPctUSD: number;
+  dailyResultPctUSD: number;
   // P&L Attribution
   mepPromedioPonderado: number;
   resultadoFX: number;
@@ -136,18 +136,18 @@ export interface Position {
  * Totales del portfolio
  */
 export interface PortfolioTotals {
-  invertido: number;
-  valuacion: number;
-  resultado: number;
-  resultadoPct: number;
-  resultadoDiario: number;
-  resultadoDiarioPct: number;
-  invertidoUSD: number;
-  valuacionUSD: number;
-  resultadoUSD: number;
-  resultadoPctUSD: number;
-  resultadoDiarioUSD: number;
-  resultadoDiarioPctUSD: number;
+  invested: number;
+  valuation: number;
+  result: number;
+  resultPct: number;
+  dailyResult: number;
+  dailyResultPct: number;
+  investedUSD: number;
+  valuationUSD: number;
+  resultUSD: number;
+  resultPctUSD: number;
+  dailyResultUSD: number;
+  dailyResultPctUSD: number;
 }
 
 // ============================================
@@ -158,8 +158,8 @@ export interface PortfolioTotals {
  * Datos de precio para un ticker
  */
 export interface PriceData {
-  precio: number;
-  precioRaw: number;
+  price: number;
+  priceRaw: number;
   bid?: number;
   ask?: number;
   close?: number;

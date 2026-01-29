@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../features/auth/contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
-import { usePrices } from '../services/priceService';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
-import { PortfolioSelector } from '../components/PortfolioSelector';
+import { usePrices } from '../features/portfolio/services/priceService';
+import DashboardSidebar from '../features/portfolio/components/DashboardSidebar';
+import { PortfolioSelector } from '../features/portfolio/components/PortfolioSelector';
 import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap.jsx';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';

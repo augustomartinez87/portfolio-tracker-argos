@@ -11,17 +11,11 @@ interface DistributionResult {
   totalValue: number;
 }
 
-/**
- * Agrupa posiciones por asset class y calcula distribución porcentual
- *
- * @param positions - Array de posiciones con assetClass y valuacionActual
- * @returns Objeto con distribución y valor total
- */
 export function calculateAssetDistribution(positions: Position[], currency: 'ARS' | 'USD' = 'ARS'): DistributionResult {
   const isUSD = currency === 'USD';
 
   // Calcular total del portfolio
-  const totalValue = positions.reduce((sum, pos) => sum + (isUSD ? (pos.valuacionUSD || 0) : (pos.valuacionActual || 0)), 0);
+  const totalValue = positions.reduce((sum, pos) => sum + (isUSD ? (pos.valuationUSD || 0) : (pos.valuation || 0)), 0);
 
   if (totalValue === 0 || !positions.length) {
     return { distribution: [], totalValue: 0 };
@@ -41,8 +35,8 @@ export function calculateAssetDistribution(positions: Position[], currency: 'ARS
       };
     }
 
-    acc[className].value += (isUSD ? (pos.valuacionUSD || 0) : (pos.valuacionActual || 0));
-    acc[className].invested += (isUSD ? (pos.costoUSD || 0) : (pos.costoTotal || 0));
+    acc[className].value += (isUSD ? (pos.valuationUSD || 0) : (pos.valuation || 0));
+    acc[className].invested += (isUSD ? (pos.costUSD || 0) : (pos.totalCost || 0));
     acc[className].count += 1;
 
     return acc;

@@ -60,7 +60,7 @@ export const convertToONPesos = (ticker: string): string => {
  */
 export const hasONPesosEquivalent = (ticker: string, priceMap: any): boolean => {
   const pesosEquivalent = convertToONPesos(ticker);
-  return priceMap[pesosEquivalent]?.precio > 0;
+  return priceMap[pesosEquivalent]?.price > 0;
 };
 
 /**
@@ -76,16 +76,16 @@ export const calculateONValueInARS = (
 
   if (isDirectON) {
     // Ya está en ARS
-    const price = priceMap[originalTicker]?.precio || 0;
+    const price = priceMap[originalTicker]?.price || 0;
     return {
       value: price * quantity,
       priceInARS: price,
       usesConversion: false
     };
   } else {
-    // Convertir D/C a O para obtener precio ARS
+    // Convertir D/C a O para obtener price ARS
     const pesosEquivalent = convertToONPesos(originalTicker);
-    const priceInARS = priceMap[pesosEquivalent]?.precio || 0;
+    const priceInARS = priceMap[pesosEquivalent]?.price || 0;
 
     if (priceInARS === 0) {
       // No existe equivalente O
@@ -101,7 +101,7 @@ export const calculateONValueInARS = (
 };
 
 /**
- * Formatea el precio de una posición ON (siempre en ARS)
+ * Formatea el price de una posición ON (siempre en ARS)
  */
 export const formatONPositionPrice = (
   ticker: string,
@@ -109,7 +109,7 @@ export const formatONPositionPrice = (
   formatARS: (value: number) => string
 ): string => {
   const pesosEquivalent = convertToONPesos(ticker);
-  const priceInARS = priceMap[pesosEquivalent]?.precio || 0;
+  const priceInARS = priceMap[pesosEquivalent]?.price || 0;
   return formatARS(priceInARS);
 };
 
