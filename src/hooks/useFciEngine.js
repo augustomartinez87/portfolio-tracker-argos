@@ -95,6 +95,13 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
                 pos.cuotapartes = pos.cuotapartes.minus(cuotasDec);
                 pos.montoInvertido = pos.montoInvertido.minus(cuotasDec.times(avgCostARS));
                 pos.montoInvertidoUSD = pos.montoInvertidoUSD.minus(cuotasDec.times(avgCostUSD));
+
+                // Clean up small dust after redemption (matches usePortfolioEngine.ts pattern)
+                if (pos.cuotapartes.abs().lt(new Decimal(0.0001))) {
+                    pos.cuotapartes = new Decimal(0);
+                    pos.montoInvertido = new Decimal(0);
+                    pos.montoInvertidoUSD = new Decimal(0);
+                }
             }
         });
 
@@ -130,16 +137,35 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
             });
     }, [transactions, latestPrices, mepRate, mepHistory]);
 
-    // 3. Totales Generales
+    // 3. Totales Generales (usando Decimal.js para precisión)
     const totals = useMemo(() => {
-        return positions.reduce((acc, curr) => ({
-            invested: acc.invested + curr.montoInvertido,
-            valuation: acc.valuation + curr.valuacion,
-            pnl: acc.pnl + curr.pnl,
-            investedUSD: acc.investedUSD + curr.montoInvertidoUSD,
-            valuationUSD: acc.valuationUSD + curr.valuacionUSD,
-            pnlUSD: acc.pnlUSD + curr.pnlUSD
-        }), { invested: 0, valuation: 0, pnl: 0, investedUSD: 0, valuationUSD: 0, pnlUSD: 0 });
+        // Initialize accumulators as Decimal
+        let invested = new Decimal(0);
+        let valuation = new Decimal(0);
+        let pnl = new Decimal(0);
+        let investedUSD = new Decimal(0);
+        let valuationUSD = new Decimal(0);
+        let pnlUSD = new Decimal(0);
+
+        // Accumulate using Decimal arithmetic
+        for (const pos of positions) {
+            invested = invested.plus(pos.montoInvertido || 0);
+            valuation = valuation.plus(pos.valuacion || 0);
+            pnl = pnl.plus(pos.pnl || 0);
+            investedUSD = investedUSD.plus(pos.montoInvertidoUSD || 0);
+            valuationUSD = valuationUSD.plus(pos.valuacionUSD || 0);
+            pnlUSD = pnlUSD.plus(pos.pnlUSD || 0);
+        }
+
+        // Convert to Number only at the final output layer
+        return {
+            invested: invested.toNumber(),
+            valuation: valuation.toNumber(),
+            pnl: pnl.toNumber(),
+            investedUSD: investedUSD.toNumber(),
+            valuationUSD: valuationUSD.toNumber(),
+            pnlUSD: pnlUSD.toNumber()
+        };
     }, [positions]);
 
     // 4. Funciones para modificar datos (wrappers del servicio)

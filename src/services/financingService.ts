@@ -9,10 +9,65 @@ import { Caucion, Result, FinancingMetrics } from '../types/finance';
 import Decimal from 'decimal.js';
 
 // ============================================================================
+// AUDIT LOG TYPES
+// ============================================================================
+
+interface AuditLogEntry {
+  user_id: string | null;
+  action: 'EMERGENCY_DELETE_ALL' | 'CLEAR_USER_CAUCIONES' | 'DELETE_ALL_OPERATIONS';
+  details: {
+    deleted_count: number;
+    portfolio_id?: string;
+    timestamp: string;
+    ip_address?: string;
+    user_agent?: string;
+  };
+  created_at?: string;
+}
+
+// ============================================================================
 // MAIN SERVICE CLASS - Single source of truth for financing operations
 // ============================================================================
 
 export class FinancingService {
+
+  /**
+   * Log an audit event for admin/destructive operations
+   * @param entry - Audit log entry to persist
+   */
+  private async _logAuditEvent(entry: AuditLogEntry): Promise<void> {
+    try {
+      // Try to get browser info if available (won't exist in Node/server context)
+      const userAgent = typeof window !== 'undefined' ? window.navigator?.userAgent : 'server';
+
+      const auditRecord = {
+        user_id: entry.user_id,
+        action: entry.action,
+        details: {
+          ...entry.details,
+          user_agent: userAgent,
+        },
+        created_at: new Date().toISOString(),
+      };
+
+      // Attempt to insert into audit_logs table (create if doesn't exist)
+      const { error } = await supabase
+        .from('admin_audit_logs')
+        .insert([auditRecord]);
+
+      if (error) {
+        // If table doesn't exist, log to console as fallback
+        // The audit still happens, just to console instead of DB
+        console.warn('📋 AUDIT LOG (fallback to console - table may not exist):', JSON.stringify(auditRecord, null, 2));
+      } else {
+        console.log('📋 AUDIT LOG recorded:', entry.action, 'deleted:', entry.details.deleted_count);
+      }
+    } catch (err) {
+      // Never fail the main operation due to audit logging errors
+      console.error('⚠️ Audit logging failed (non-blocking):', err);
+      console.warn('📋 AUDIT LOG (fallback):', JSON.stringify(entry, null, 2));
+    }
+  }
 
   /**
    * Parse CSV and persist in database with full type safety
@@ -530,10 +585,22 @@ export class FinancingService {
 
       if (error) throw error;
 
-      console.log('✅ LIMPIEZA TOTAL - Todas las cauciones eliminadas:', count);
+      const deletedCount = count || 0;
+
+      // Audit logging for admin operation
+      await this._logAuditEvent({
+        user_id: userId,
+        action: 'CLEAR_USER_CAUCIONES',
+        details: {
+          deleted_count: deletedCount,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      console.log('✅ LIMPIEZA TOTAL - Todas las cauciones eliminadas:', deletedCount);
       return {
         success: true,
-        data: { deletedCount: count || 0 }
+        data: { deletedCount }
       };
 
     } catch (error) {
@@ -548,9 +615,11 @@ export class FinancingService {
   /**
    * EMERGENCY: Force delete ALL cauciones from database (admin cleanup)
    * This method bypasses user_id and portfolio_id restrictions
+   * IMPORTANT: This operation is audit-logged for security compliance
+   * @param adminUserId - Optional admin user ID for audit trail (strongly recommended)
    * @returns Result with number of deleted operations
    */
-  async emergencyDeleteAllCauciones(): Promise<Result<{ deletedCount: number }>> {
+  async emergencyDeleteAllCauciones(adminUserId?: string): Promise<Result<{ deletedCount: number }>> {
     try {
       console.log('🚨 EMERGENCY DELETE - Eliminando TODAS las cauciones de la base de datos');
 
@@ -558,6 +627,8 @@ export class FinancingService {
         .from('cauciones')
         .delete({ count: 'exact' })
         .neq('id', ''); // Delete ALL records (no restriction)
+
+      let deletedCount = 0;
 
       if (error) {
         console.error('❌ Error en emergencia:', error);
@@ -569,14 +640,26 @@ export class FinancingService {
           throw altError;
         }
 
-        console.log('✅ LIMPIEZA EMERGENCIA por RPC:', altCount);
-        return { success: true, data: { deletedCount: altCount || 0 } };
+        deletedCount = altCount || 0;
+        console.log('✅ LIMPIEZA EMERGENCIA por RPC:', deletedCount);
+      } else {
+        deletedCount = count || 0;
+        console.log('✅ LIMPIEZA EMERGENCIA exitosa:', deletedCount);
       }
 
-      console.log('✅ LIMPIEZA EMERGENCIA exitosa:', count);
+      // CRITICAL: Audit logging for emergency admin operation
+      await this._logAuditEvent({
+        user_id: adminUserId || null,
+        action: 'EMERGENCY_DELETE_ALL',
+        details: {
+          deleted_count: deletedCount,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
       return {
         success: true,
-        data: { deletedCount: count || 0 }
+        data: { deletedCount }
       };
 
     } catch (error) {
@@ -617,10 +700,23 @@ export class FinancingService {
 
       if (error) throw error;
 
-      console.log('✅ Todas las cauciones eliminadas:', count);
+      const deletedCount = count || 0;
+
+      // Audit logging for bulk delete operation
+      await this._logAuditEvent({
+        user_id: userId,
+        action: 'DELETE_ALL_OPERATIONS',
+        details: {
+          deleted_count: deletedCount,
+          portfolio_id: portfolioId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      console.log('✅ Todas las cauciones eliminadas:', deletedCount);
       return {
         success: true,
-        data: { deletedCount: count || 0 }
+        data: { deletedCount }
       };
 
     } catch (error) {

@@ -198,15 +198,34 @@ async function fetchAllPrices(lastValidPricesRef: React.MutableRefObject<LastVal
 
 /**
  * Invoca la Edge Function de Supabase para forzar el fetch de precios.
+ * Incluye timeout de 15 segundos para evitar bloqueos indefinidos.
  */
-export async function invokeFetchPrices() {
+export async function invokeFetchPrices(): Promise<unknown> {
+  const TIMEOUT_MS = 15000; // 15 seconds timeout
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Edge Function timeout: fetch-prices tardó más de 15 segundos'));
+    }, TIMEOUT_MS);
+  });
+
   try {
-    const { data, error } = await supabase.functions.invoke('fetch-prices');
-    if (error) throw error;
+    const fetchPromise = supabase.functions.invoke('fetch-prices');
+
+    // Race between the actual fetch and the timeout
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+    if (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Error en Edge Function fetch-prices: ${errorMessage}`);
+    }
+
     return data;
   } catch (err) {
-    console.error('Error invoking fetch-prices:', err);
-    throw err;
+    const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+    console.error('Error invoking fetch-prices:', errorMessage);
+    // Re-throw with clear message for UI to handle
+    throw new Error(`No se pudieron actualizar los precios: ${errorMessage}`);
   }
 }
 

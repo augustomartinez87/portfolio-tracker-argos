@@ -97,7 +97,7 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
     useEffect(() => {
         if (monto && vcp && !isNaN(monto) && !isNaN(vcp)) {
             const calculated = Number(monto) / Number(vcp);
-            setCuotapartes(calculated.toFixed(6));
+            setCuotapartes(calculated.toFixed(2));
         }
     }, [monto, vcp]);
 
@@ -256,9 +256,9 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                             <RefreshCw className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
                             <input
                                 type="number"
-                                step="0.000001"
+                                step="0.01"
                                 required
-                                placeholder="0.000000"
+                                placeholder="0.00"
                                 value={cuotapartes}
                                 onChange={(e) => setCuotapartes(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors font-mono font-bold"

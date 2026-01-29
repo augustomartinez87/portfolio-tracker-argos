@@ -1,80 +1,29 @@
 import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '../utils/bondUtils';
 import { mepService, MepHistoryItem } from '../services/mepService';
-import { AssetClass } from '../types';
+import type { AssetClass, Position, PortfolioTotals, TradeInput } from '../types';
 import Decimal from 'decimal.js';
 
-// Configuration for Decimal.js
-// Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP }); 
-// Note: Default precision is 20, sufficient for this use case. Removed to avoid type error with IDecimalStatic.
+// Re-export types for backward compatibility with existing imports
+export type { Position, PortfolioTotals };
 
-// Interfaces
-export interface Trade {
-    ticker: string;
-    quantity?: number;
-    cantidad?: number;
-    price?: number;
-    precioCompra?: number;
-    trade_type?: string;
-    tipo?: string;
-    trade_date?: string | Date;
-    fecha?: string | Date;
-    [key: string]: any;
-}
+// Alias TradeInput as Trade for backward compatibility
+export type Trade = TradeInput;
 
+/**
+ * PriceData for engine use - flexible input type that accepts price data
+ * from various sources (API, cache, etc.)
+ * Note: This is a standalone type, not extending @/types/PriceData, to allow
+ * more flexible typing for the engine's internal use.
+ */
 export interface PriceData {
     precio?: number;
-    pctChange?: number;
-    assetClass?: string;
+    pctChange?: number | null;
+    assetClass?: AssetClass | string;
     panel?: string;
     isBonoPesos?: boolean;
     isBonoHD?: boolean;
     isStale?: boolean;
-}
-
-export interface Position {
-    ticker: string;
-    cantidadTotal: number;
-    costoTotal: number;
-    precioPromedio: number;
-    precioActual: number;
-    valuacionActual: number;
-    resultado: number;
-    resultadoPct: number;
-    resultadoDiario: number;
-    resultadoDiarioPct: number;
-    assetClass: string;
-    pctChange: number;
-    isBonoPesos: boolean;
-    isBonoHD: boolean;
-    isON?: boolean;
-    usesONConversion?: boolean;
-    costoUSD: number;
-    valuacionUSD: number;
-    resultadoUSD: number;
-    resultadoDiarioUSD: number;
-    resultadoPctUSD: number;
-    resultadoDiarioPctUSD: number;
-    // P&L Attribution
-    mepPromedioPonderado: number;
-    resultadoFX: number; // Ganancia por suba del MEP
-    resultadoPrecio: number; // Ganancia por suba del activo
-    trades: Trade[];
-}
-
-export interface PortfolioTotals {
-    invertido: number;
-    valuacion: number;
-    resultado: number;
-    resultadoPct: number;
-    resultadoDiario: number;
-    resultadoDiarioPct: number;
-    invertidoUSD: number;
-    valuacionUSD: number;
-    resultadoUSD: number;
-    resultadoPctUSD: number;
-    resultadoDiarioUSD: number;
-    resultadoDiarioPctUSD: number;
 }
 
 // Pure calculation functions

@@ -73,7 +73,7 @@ const FciTransactionsList = ({ transactions, onDelete, currency = 'ARS', mepHist
                                     {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)}`}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary tabular-nums">
-                                    {formatNumber(tx.cuotapartes, 6)}
+                                    {formatNumber(tx.cuotapartes, 2)}
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                     <button

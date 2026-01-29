@@ -44,7 +44,7 @@ const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate 
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                    {formatNumber(pos.cuotapartes, 4)}
+                                    {formatNumber(pos.cuotapartes, 2)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">

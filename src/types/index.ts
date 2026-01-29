@@ -83,6 +83,23 @@ export interface TradeUI extends Trade {
 }
 
 /**
+ * TradeInput - Formato flexible de entrada para el engine
+ * Soporta tanto campos en inglés como en español para compatibilidad con datos legacy
+ */
+export interface TradeInput {
+  ticker: string;
+  quantity?: number;
+  cantidad?: number;
+  price?: number;
+  precioCompra?: number;
+  trade_type?: string;
+  tipo?: string;
+  trade_date?: string | Date;
+  fecha?: string | Date;
+  [key: string]: unknown;
+}
+
+/**
  * Position - Agregación de trades por ticker
  */
 export interface Position {
@@ -107,6 +124,12 @@ export interface Position {
   valuacionUSD: number;
   resultadoUSD: number;
   resultadoDiarioUSD: number;
+  resultadoPctUSD: number;
+  resultadoDiarioPctUSD: number;
+  // P&L Attribution
+  mepPromedioPonderado: number;
+  resultadoFX: number;
+  resultadoPrecio: number;
 }
 
 /**
@@ -122,7 +145,9 @@ export interface PortfolioTotals {
   invertidoUSD: number;
   valuacionUSD: number;
   resultadoUSD: number;
+  resultadoPctUSD: number;
   resultadoDiarioUSD: number;
+  resultadoDiarioPctUSD: number;
 }
 
 // ============================================
