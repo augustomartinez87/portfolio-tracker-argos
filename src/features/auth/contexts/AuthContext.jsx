@@ -106,6 +106,13 @@ export const AuthProvider = ({ children }) => {
     }
   }, [loadUserProfile])
 
+  // Refrescar perfil manualmente
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await loadUserProfile(user.id)
+    }
+  }, [user, loadUserProfile])
+
   useEffect(() => {
     // Timeout diferenciado para auth vs profile
     const authTimeout = setTimeout(() => {
@@ -264,13 +271,6 @@ export const AuthProvider = ({ children }) => {
     if (isAdmin) return true
     return allowedModules.includes(moduleId)
   }, [isAdmin, allowedModules])
-
-  // Refrescar perfil manualmente
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      await loadUserProfile(user.id)
-    }
-  }, [user, loadUserProfile])
 
   return (
     <AuthContext.Provider value={{
