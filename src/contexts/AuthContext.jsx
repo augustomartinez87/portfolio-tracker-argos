@@ -55,14 +55,27 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    // Safety timeout global para el arranque (8s)
+    // Safety timeout global para el arranque (10s)
     const globalTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('Auth initialization timed out, forcing loading false');
+        console.warn('Auth initialization timed out. Potentially corrupt session, clearing storage for recovery...');
+
+        // Limpieza de emergencia de llaves de Supabase
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('-auth-') || key.includes('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+
         setLoading(false);
         setProfileLoading(false);
+
+        // Forzar recarga a login para empezar de cero
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login?error=session_timeout';
+        }
       }
-    }, 8000);
+    }, 10000);
 
     const getSession = async () => {
       try {

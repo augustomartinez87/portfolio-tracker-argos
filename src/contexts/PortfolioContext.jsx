@@ -46,10 +46,11 @@ export const PortfolioProvider = ({ children }) => {
 
     // Create abort controller for timeout
     const controller = new AbortController();
+    const TIMEOUT_MS = 12000; // Increased to 12s
     const timeoutId = setTimeout(() => {
-      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after 8s`);
+      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after ${TIMEOUT_MS / 1000}s`);
       controller.abort();
-    }, 8000);
+    }, TIMEOUT_MS);
 
     try {
       console.log(`[PortfolioContext] Starting query...`);

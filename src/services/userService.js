@@ -12,21 +12,32 @@ export const userService = {
   async getProfile(userId) {
     if (!userId) return null;
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000); // 7s timeout
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No hay perfil creado aún, esto es normal para nuevos usuarios
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .abortSignal(controller.signal)
+        .single();
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        console.error('Error fetching profile:', error);
         return null;
       }
-      console.error('Error fetching profile:', error);
+      return data;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error('Profile fetch aborted or failed:', err);
       return null;
     }
-    return data;
   },
 
   /**

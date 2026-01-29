@@ -24,4 +24,33 @@ localStorage.setItem = function (key, value) {
   }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Debug: Expose connection info (masked) to window
+if (typeof window !== 'undefined') {
+  window.__SUPABASE_DEBUG__ = {
+    url: supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    keyStart: supabaseAnonKey ? supabaseAnonKey.substring(0, 10) : 'none'
+  };
+
+  // Limpieza preventiva de locks de pestañas que suelen causar cuelgues
+  Object.keys(localStorage).forEach(key => {
+    if (key.includes('-auth-token-lock')) {
+      console.warn('[Supabase] Corregido: Detectado lock fantasma, eliminando...', key);
+      localStorage.removeItem(key);
+    }
+  });
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'sb-portfolio-tracker-auth', // Llave única para evitar colisiones
+    flowType: 'pkce'
+  }
+})
+
+if (typeof window !== 'undefined') {
+  console.log('[Supabase] Cliente inicializado.');
+}
