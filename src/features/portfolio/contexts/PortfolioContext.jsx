@@ -17,7 +17,8 @@ export const usePortfolio = () => {
 
 export const PortfolioProvider = ({ children }) => {
   // Solo esperamos authLoading, no profileLoading - los portfolios se pueden cargar en paralelo
-  const { user, authLoading } = useAuth()
+  // Consumimos el estado completo de auth para asegurar sincronización
+  const { user, userProfile, loading: authLoadingCombined } = useAuth()
   const [portfolios, setPortfolios] = useState([])
   const [currentPortfolio, setCurrentPortfolio] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -35,9 +36,9 @@ export const PortfolioProvider = ({ children }) => {
   const [mepHistory, setMepHistory] = useState([])
 
   const loadPortfolios = useCallback(async (forceReload = false) => {
-    // Don't load if auth is still loading
-    if (authLoading) {
-      console.log('[PortfolioContext] Auth still loading, waiting...');
+    // No cargar si el sistema de auth/profile sigue cargando
+    if (authLoadingCombined) {
+      console.log('[PortfolioContext] Auth/Profile still loading, waiting...');
       return;
     }
 
@@ -48,6 +49,13 @@ export const PortfolioProvider = ({ children }) => {
       setLoading(false)
       setError(null)
       return
+    }
+
+    // Bloqueo crítico: Si hay usuario pero no hay perfil, el sistema no está "READY"
+    if (!userProfile) {
+      console.log('[PortfolioContext] User profile not ready yet, skipping load');
+      setLoading(false);
+      return;
     }
 
     // Prevent concurrent loads
@@ -103,7 +111,7 @@ export const PortfolioProvider = ({ children }) => {
       isQueryingRef.current = false;
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [user, userProfile, authLoadingCombined])
 
   // Lógica de carga de FCI integrada
   const loadFciData = useCallback(async (portfolioId) => {
@@ -236,9 +244,15 @@ export const PortfolioProvider = ({ children }) => {
   }, [fciPositions])
 
   useEffect(() => {
-    // Wait for auth to finish loading
-    if (authLoading) {
-      console.log('[PortfolioContext] Waiting for auth to complete...');
+    // Esperar a que el sistema esté totalmente READY (Auth + Profile)
+    if (authLoadingCombined) {
+      console.log('[PortfolioContext] Waiting for complete readiness...');
+      return;
+    }
+
+    // Si hay usuario pero no hay perfil, aún no es seguro operar
+    if (user && !userProfile) {
+      console.log('[PortfolioContext] Auth ready but profile missing, waiting for sync...');
       return;
     }
 
@@ -258,10 +272,10 @@ export const PortfolioProvider = ({ children }) => {
       console.log('[PortfolioContext] Initial load needed for user');
       loadPortfolios();
     }
-  }, [user, authLoading, loadPortfolios])
+  }, [user, userProfile, authLoadingCombined, loadPortfolios])
 
   const createPortfolio = async (name, description = '', currency = 'ARS') => {
-    if (!user) throw new Error('Usuario no autenticado')
+    if (!user || !userProfile) throw new Error('Usuario no autenticado o perfil no listo')
 
     const { data, error } = await supabase
       .from('portfolios')

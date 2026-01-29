@@ -115,13 +115,15 @@ export const AuthProvider = ({ children }) => {
 
         currentUserIdRef.current = currentUser?.id ?? null;
         setUser(currentUser);
-        setAuthLoading(false);
 
         if (currentUser) {
           await loadUserProfile(currentUser.id);
         } else {
           setProfileLoading(false);
         }
+
+        // El sistema solo está listo cuando el perfil (o su ausencia) está procesado
+        setAuthLoading(false);
       } catch (err) {
         console.error('[Auth] Error initializing session:', err);
         if (isMounted) {
@@ -158,7 +160,6 @@ export const AuthProvider = ({ children }) => {
       console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
       currentUserIdRef.current = newUserId;
       setUser(session?.user ?? null);
-      setAuthLoading(false);
 
       if (newUserId) {
         await loadUserProfile(newUserId);
@@ -166,6 +167,9 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(null);
         setProfileLoading(false);
       }
+
+      // Sincronización final: el estado ready depende del perfil cargado
+      setAuthLoading(false);
     });
 
     return () => {

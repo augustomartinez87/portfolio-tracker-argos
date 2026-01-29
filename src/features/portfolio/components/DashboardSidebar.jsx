@@ -14,7 +14,11 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
   const [hoveredItem, setHoveredItem] = useState(null);
 
   // Filtrar items de navegación según permisos del usuario
-  const navItems = getFilteredNavItems(isAdmin, allowedModules);
+  // No renderizar navegación completa si el perfil aún no existe o está cargando
+  // Aunque ProtectedRoute maneja esto, el sidebar debe ser defensivo
+  const navItems = userProfile
+    ? getFilteredNavItems(isAdmin, allowedModules)
+    : getFilteredNavItems(false, ['portfolio']); // Fallback mínimo absoluto
 
   const isActive = (path) => {
     return location.pathname === path;

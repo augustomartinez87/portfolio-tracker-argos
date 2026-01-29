@@ -76,10 +76,11 @@ export const getFilteredNavItems = (isAdmin, allowedModules = []) => {
     // Si el item principal es adminOnly, solo mostrar si tiene sub-items permitidos (un poco contradictorio, mejor seguir el adminOnly del padre)
     // En este caso, si el padre es adminOnly, el usuario no entra.
     // SI queremos que el usuario vea el padre para llegar al hijo, el padre NO debe ser adminOnly.
-    if (item.adminOnly) return false;
+    // Si el item principal es adminOnly, el usuario no-admin no entra.
+    if (!isAdmin && item.adminOnly) return false;
 
-    // Verificar si el usuario tiene acceso al módulo principal
-    return allowedModules.includes(item.moduleId);
+    // Verificar si el usuario tiene acceso al módulo principal de forma explícita
+    return allowedModules && allowedModules.includes(item.moduleId);
   });
 };
 
