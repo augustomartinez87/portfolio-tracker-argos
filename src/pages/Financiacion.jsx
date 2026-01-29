@@ -9,6 +9,8 @@ import { LoadingFallback } from '@/components/common/LoadingSpinner';
 import FinancingDashboard from '@/features/financing/components/FinancingDashboard';
 import { financingService } from '@/features/financing/services/financingService';
 import MobileNav from '@/components/common/MobileNav';
+import { HandCoins, TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
+import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
 const Financiacion = () => {
   const { user, signOut } = useAuth();
@@ -69,7 +71,7 @@ const Financiacion = () => {
     }
   }, [handleRefresh]);
 
-  if (loading) {
+  if (loading && !currentPortfolio) {
     return <LoadingFallback />;
   }
 
@@ -100,119 +102,64 @@ const Financiacion = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
-        {/* Sidebar - Desktop only */}
         <DashboardSidebar
           user={user}
           signOut={signOut}
           activeTab={activeTab}
-          setActiveTab={setActiveTab} // Ahora el sidebar funciona correctamente
+          setActiveTab={setActiveTab}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
         />
 
-        {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-text-primary">Financiación</h1>
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="p-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary disabled:opacity-50"
-              title="Actualizar datos"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'
-          }`}>
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-xl lg:text-2xl font-semibold text-text-primary">Financiación</h1>
-                <p className="text-text-tertiary text-sm mt-1">
-                  Gestión y análisis de operaciones de caución
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors border border-border-primary disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  Actualizar
-                </button>
-
-                {process.env.NODE_ENV === 'development' && (
-                  <>
+            <PageHeader
+              title="Financiación"
+              subtitle="Cauciones y Tasas"
+              icon={HandCoins}
+              loading={loading}
+              onRefresh={handleRefresh}
+              extraActions={
+                process.env.NODE_ENV === 'development' && (
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
-                        if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
-                          // Importar y llamar al método de limpieza
+                        if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro?')) {
                           import('../features/financing/services/financingService').then(({ financingService }) => {
                             financingService.clearAllUserCauciones(user.id).then(result => {
                               if (result.success) {
-                                // Refrescar queries
                                 queryClient.invalidateQueries(['financing-operations']);
                                 queryClient.invalidateQueries(['financing-metrics']);
-                                alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas. Puedes empezar desde 0.`);
-                              } else {
-                                alert('Error en limpieza total. Por favor intenta nuevamente.');
+                                alert('✅ Limpieza completa.');
                               }
                             });
                           });
                         }
                       }}
-                      className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-sm font-medium"
+                      className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-xs font-medium"
                       title="Limpiar todos los datos (solo desarrollo)"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Limpiar Datos
+                      Limpiar
                     </button>
-
-                    <button
-                      onClick={() => {
-                        if (window.confirm('🚨 EMERGENCIA\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS los usuarios?\n\n⚠️ ESTA ACCIÓN AFECTA A TODOS LOS USUARIOS DEL SISTEMA.')) {
-                          // Importar y llamar al método de emergencia
-                          import('../features/financing/services/financingService').then(({ financingService }) => {
-                            financingService.emergencyDeleteAllCauciones().then(result => {
-                              if (result.success) {
-                                // Refrescar queries
-                                queryClient.invalidateQueries(['financing-operations']);
-                                queryClient.invalidateQueries(['financing-metrics']);
-                                alert(`🚨 EMERGENCIA COMPLETA: ${result.data?.deletedCount} cauciones eliminadas de toda la base de datos.`);
-                              } else {
-                                alert('Error en emergencia total. Por favor intenta nuevamente.');
-                              }
-                            });
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-bold animate-pulse"
-                      title="EMERGENCIA: Borrar TODAS las cauciones (solo desarrollo)"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      🚨 BORRAR TODO
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Financing Dashboard Content */}
-            <FinancingDashboard
-              operations={operations}
-              metrics={metrics}
-              loading={loading}
-              onRefresh={handleRefresh}
-              queryClient={queryClient}
-              userId={user?.id}
-              portfolioId={currentPortfolio?.id}
+                  </div>
+                )
+              }
             />
+
+            {!currentPortfolio ? (
+              <PortfolioEmptyState title="Sin Portfolio" message="Crea un portfolio para gestionar tus operaciones de financiación y cauciones." />
+            ) : (
+              <FinancingDashboard
+                operations={operations}
+                metrics={metrics}
+                loading={loading}
+                onRefresh={handleRefresh}
+                queryClient={queryClient}
+                userId={user?.id}
+                portfolioId={currentPortfolio?.id}
+              />
+            )}
           </div>
         </main>
         <MobileNav />

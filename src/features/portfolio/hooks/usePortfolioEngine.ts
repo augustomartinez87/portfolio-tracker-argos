@@ -76,7 +76,8 @@ export const usePortfolioEngine = (
     trades: Trade[],
     prices: Record<string, PriceData>,
     mepRate: number,
-    mepHistory: MepHistoryItem[] = []
+    mepHistory: MepHistoryItem[] = [],
+    fciPositions: any[] = []
 ) => {
     // 1. Prepare MEP Map for O(1) lookups
     const mepMap = useMemo(() => {
@@ -261,7 +262,26 @@ export const usePortfolioEngine = (
                 };
             })
             .sort((a, b) => b.valuation - a.valuation);
-    }, [trades, prices, mepRate, mepMap]);
+
+        // Integrar posiciones de FCI si existen
+        const fciNormalized = fciPositions.map(fci => ({
+            ticker: fci.name,
+            totalQuantity: fci.quantity,
+            totalCost: fci.invested,
+            costUSD: fci.investedUSD,
+            currentPrice: fci.lastVcp,
+            valuation: fci.valuation,
+            valuationUSD: fci.valuationUSD,
+            result: fci.pnl,
+            resultPct: fci.pnlPct,
+            resultUSD: fci.pnlUSD,
+            resultPctUSD: fci.pnlPctUSD,
+            assetClass: 'FCI' as AssetClass,
+            isFci: true
+        }));
+
+        return [...positions, ...fciNormalized].sort((a, b) => b.valuation - a.valuation);
+    }, [trades, prices, mepRate, mepMap, fciPositions]);
 
     const totals = useMemo(() => calculateTotals(positions), [positions]);
 
