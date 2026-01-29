@@ -1,4 +1,4 @@
-import { Briefcase, TrendingUp, Coins, Activity, BarChart2, PiggyBank, Settings } from 'lucide-react';
+import { Briefcase, TrendingUp, Coins, Activity, PieChart, BarChart2, Settings } from 'lucide-react';
 
 /**
  * Configuración centralizada de navegación
@@ -17,9 +17,27 @@ export const NAV_ITEMS = [
     id: 'fci',
     moduleId: 'fci',
     label: 'Fondos (FCI)',
-    icon: PiggyBank,
+    icon: PieChart,
     path: '/fci',
-    adminOnly: true
+    adminOnly: false,
+    subItems: [
+      {
+        id: 'carry',
+        moduleId: 'carryTrade',
+        label: 'Carry Trade',
+        icon: Activity,
+        path: '/carry-trade',
+        adminOnly: false
+      },
+      {
+        id: 'analisis',
+        moduleId: 'analisis',
+        label: 'Análisis Real',
+        icon: BarChart2,
+        path: '/analisis-real',
+        adminOnly: true
+      }
+    ]
   },
   {
     id: 'financiacion',
@@ -35,22 +53,6 @@ export const NAV_ITEMS = [
     label: 'Funding & Carry',
     icon: Coins,
     path: '/funding-engine',
-    adminOnly: true
-  },
-  {
-    id: 'carry',
-    moduleId: 'carryTrade',
-    label: 'Carry Trade',
-    icon: Activity,
-    path: '/carry-trade',
-    adminOnly: false
-  },
-  {
-    id: 'analisis',
-    moduleId: 'analisis',
-    label: 'Análisis Real',
-    icon: BarChart2,
-    path: '/analisis-real',
     adminOnly: true
   },
   {
@@ -70,14 +72,23 @@ export const NAV_ITEMS = [
  * @returns {Array} Items de navegación filtrados
  */
 export const getFilteredNavItems = (isAdmin, allowedModules = []) => {
-  return NAV_ITEMS.filter(item => {
-    // Si es admin, acceso a todo
+  return NAV_ITEMS.map(item => {
+    // Si el item tiene subItems, filtrarlos primero
+    const filteredSubItems = item.subItems
+      ? item.subItems.filter(sub => isAdmin || (!sub.adminOnly && allowedModules.includes(sub.moduleId)))
+      : null;
+
+    return { ...item, subItems: filteredSubItems };
+  }).filter(item => {
+    // Si es admin, tiene acceso a la estructura base
     if (isAdmin) return true;
 
-    // Si el item es solo para admin y el usuario no es admin, ocultar
+    // Si el item principal es adminOnly, solo mostrar si tiene sub-items permitidos (un poco contradictorio, mejor seguir el adminOnly del padre)
+    // En este caso, si el padre es adminOnly, el usuario no entra.
+    // SI queremos que el usuario vea el padre para llegar al hijo, el padre NO debe ser adminOnly.
     if (item.adminOnly) return false;
 
-    // Verificar si el usuario tiene acceso al módulo
+    // Verificar si el usuario tiene acceso al módulo principal
     return allowedModules.includes(item.moduleId);
   });
 };

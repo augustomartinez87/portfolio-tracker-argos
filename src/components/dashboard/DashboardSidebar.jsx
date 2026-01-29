@@ -33,32 +33,47 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
       <div className="flex-1 py-4 overflow-hidden">
         <div className="space-y-1 h-full">
           {navItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-              className={`w-full flex items-center py-2.5 h-10 transition-all duration-300 relative group/item ${isActive(item.path)
-                ? 'bg-text-primary text-background-primary'
-                : hoveredItem === item.id
-                  ? 'bg-background-tertiary text-text-primary'
-                  : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
-                }`}
-              title={item.label}
-            >
-              <span className="w-16 flex justify-center flex-shrink-0">
-                <item.icon className={`w-5 h-5 transition-colors ${isActive(item.path) || hoveredItem === item.id ? 'text-current' : ''
-                  }`} />
-              </span>
-              <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-1 flex items-center">
-                <span className="max-w-28 overflow-hidden">{item.label}</span>
-                {item.adminOnly && (
-                  <span className="ml-2 px-1.5 py-0.5 text-[9px] font-bold bg-primary/20 text-primary rounded">
-                    ADMIN
-                  </span>
-                )}
-              </span>
-            </Link>
+            <div key={item.id} className="w-full">
+              <Link
+                to={item.path}
+                onMouseEnter={() => setHoveredItem(item.id)}
+                onMouseLeave={() => setHoveredItem(null)}
+                className={`w-full flex items-center py-2.5 h-10 transition-all duration-300 relative group/item ${isActive(item.path)
+                  ? 'bg-text-primary text-background-primary'
+                  : hoveredItem === item.id
+                    ? 'bg-background-tertiary text-text-primary'
+                    : 'text-text-tertiary hover:bg-background-tertiary/50 hover:text-text-primary'
+                  }`}
+                title={item.label}
+              >
+                <span className="w-16 flex justify-center flex-shrink-0">
+                  <item.icon className={`w-5 h-5 transition-colors ${isActive(item.path) || hoveredItem === item.id ? 'text-current' : ''
+                    }`} />
+                </span>
+                <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-1">
+                  <span className="max-w-28 overflow-hidden">{item.label}</span>
+                </span>
+              </Link>
+
+              {/* Sub-items (visible when sidebar is expanded) */}
+              {isExpanded && item.subItems && (
+                <div className="bg-background-tertiary/20 py-1">
+                  {item.subItems.map(sub => (
+                    <Link
+                      key={sub.id}
+                      to={sub.path}
+                      className={`w-full flex items-center py-2 pl-12 h-9 transition-all text-xs ${isActive(sub.path)
+                        ? 'text-primary font-bold'
+                        : 'text-text-tertiary hover:text-text-primary'
+                        }`}
+                    >
+                      <sub.icon className="w-3.5 h-3.5 mr-2 opacity-70" />
+                      <span>{sub.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -78,9 +93,6 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
               {userProfile?.display_name || user?.email || 'Usuario'}
             </span>
             <div className="flex items-center gap-2">
-              {isAdmin && (
-                <span className="text-[10px] font-bold text-primary">ADMIN</span>
-              )}
               <button
                 onClick={() => signOut()}
                 className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1"

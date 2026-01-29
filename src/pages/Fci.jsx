@@ -98,8 +98,8 @@ export default function Fci() {
               Fondos (FCI)
             </h1>
             <CurrencySelector
-              currency={displayCurrency}
-              onChange={setDisplayCurrency}
+              currentCurrency={displayCurrency}
+              onCurrencyChange={setDisplayCurrency}
             />
           </div>
         </div>
@@ -127,8 +127,8 @@ export default function Fci() {
               </div>
               <div className="flex items-center gap-3">
                 <CurrencySelector
-                  currency={displayCurrency}
-                  onChange={setDisplayCurrency}
+                  currentCurrency={displayCurrency}
+                  onCurrencyChange={setDisplayCurrency}
                 />
                 <button
                   onClick={refresh}
@@ -170,8 +170,8 @@ export default function Fci() {
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${showHistory
-                        ? 'bg-primary/10 text-primary border-primary/30'
-                        : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary'
+                      ? 'bg-primary/10 text-primary border-primary/30'
+                      : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary'
                       }`}
                   >
                     {showHistory ? 'Ver Posiciones' : 'Ver Historial'}

@@ -34,7 +34,12 @@ export default function CarryTrade() {
     return (
         <ErrorBoundary>
             <div className="min-h-screen bg-background-primary flex">
-                {/* Sidebar */}
+                <DashboardSidebar
+                    user={user}
+                    signOut={signOut}
+                    isExpanded={sidebarExpanded}
+                    setIsExpanded={setSidebarExpanded}
+                />
                 {/* Mobile Header */}
                 <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
                     <div className="flex items-center justify-between">

@@ -13,6 +13,10 @@ import { usePortfolio } from '../contexts/PortfolioContext';
 import Papaparse from 'papaparse';
 import * as XLSX from 'xlsx';
 import Decimal from 'decimal.js';
+import { useAuth } from '../contexts/AuthContext';
+import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import MobileNav from '../components/common/MobileNav';
+import logo from '../assets/logo.png';
 
 const COLORS = {
     fci: '#3b82f6',    // Blue
@@ -23,7 +27,9 @@ const COLORS = {
 };
 
 export default function AnalisisReal() {
+    const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
+    const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
     // States
     const [subDate, setSubDate] = useState('2023-12-01');
@@ -189,271 +195,293 @@ export default function AnalisisReal() {
     }
 
     return (
-        <div className="p-4 lg:p-6 space-y-6 bg-background-primary min-h-screen text-text-primary">
-            {/* Header */}
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <TrendingUp className="text-profit" />
-                        Análisis Real Adcap Balanceado III
-                    </h1>
-                    <p className="text-text-tertiary text-sm">Comparativa de rendimiento vs. Inflación y Benchmarks</p>
-                </div>
+        <div className="min-h-screen bg-background-primary flex">
+            <DashboardSidebar
+                user={user}
+                signOut={signOut}
+                isExpanded={sidebarExpanded}
+                setIsExpanded={setSidebarExpanded}
+            />
 
-                <div className="flex items-center gap-2 bg-background-secondary p-1 rounded-lg border border-border-primary">
-                    <button
-                        onClick={() => setViewMode('nominal')}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'nominal' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
-                    >
-                        Nominal
-                    </button>
-                    <button
-                        onClick={() => setViewMode('real')}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'real' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
-                    >
-                        Real (IPC)
-                    </button>
-                </div>
-            </header>
-
-            {/* Controls Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
-                    <label className="text-xs font-bold text-text-tertiary uppercase">Fecha Suscripción</label>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                        <input
-                            type="date"
-                            value={subDate}
-                            onChange={(e) => setSubDate(e.target.value)}
-                            className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
-                        />
+            {/* Mobile Header */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <img src={logo} alt="Argos Capital" className="w-8 h-8" />
+                        <h1 className="text-lg font-bold text-text-primary">Análisis Real</h1>
                     </div>
-                </div>
-
-                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
-                    <label className="text-xs font-bold text-text-tertiary uppercase">Cuotapartes Iniciales</label>
-                    <input
-                        type="number"
-                        value={cuotapartes}
-                        onChange={(e) => setCuotapartes(e.target.value)}
-                        className="w-full bg-background-tertiary border border-border-secondary rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
-                </div>
-
-                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary flex flex-col justify-center gap-2">
-                    <label className="text-xs font-bold text-text-tertiary uppercase">Cargar VCP (CSV/Excel)</label>
-                    <label className="flex items-center justify-center gap-2 px-4 py-2 bg-background-tertiary border border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors text-sm text-text-secondary">
-                        <Upload className="w-4 h-4" />
-                        Seleccionar Archivo
-                        <input type="file" onChange={handleFileUpload} className="hidden" accept=".csv,.xlsx" />
-                    </label>
                 </div>
             </div>
 
-            {/* Main Chart Card */}
-            <div className="bg-background-secondary rounded-2xl border border-border-primary p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                        <BarChart3 className="text-primary w-5 h-5" />
-                        Evolución {viewMode === 'real' ? 'Poder de Compra' : 'Patrimonio Nominal'}
-                    </h2>
+            <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+                <div className="p-4 lg:p-6 space-y-6 bg-background-primary min-h-screen text-text-primary">
+                    {/* Header */}
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold flex items-center gap-2">
+                                <TrendingUp className="text-profit" />
+                                Análisis Real Adcap Balanceado III
+                            </h1>
+                            <p className="text-text-tertiary text-sm">Comparativa de rendimiento vs. Inflación y Benchmarks</p>
+                        </div>
 
-                    <div className="flex gap-2">
-                        {Object.keys(showBenchmarks).map(key => (
+                        <div className="flex items-center gap-2 bg-background-secondary p-1 rounded-lg border border-border-primary">
                             <button
-                                key={key}
-                                onClick={() => setShowBenchmarks(prev => ({ ...prev, [key]: !prev[key] }))}
-                                className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border transition-all ${showBenchmarks[key] ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-transparent border-border-primary text-text-tertiary'}`}
+                                onClick={() => setViewMode('nominal')}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'nominal' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
                             >
-                                {key}
+                                Nominal
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setViewMode('real')}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'real' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
+                            >
+                                Real (IPC)
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Controls Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
+                            <label className="text-xs font-bold text-text-tertiary uppercase">Fecha Suscripción</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                                <input
+                                    type="date"
+                                    value={subDate}
+                                    onChange={(e) => setSubDate(e.target.value)}
+                                    className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
+                            <label className="text-xs font-bold text-text-tertiary uppercase">Cuotapartes Iniciales</label>
+                            <input
+                                type="number"
+                                value={cuotapartes}
+                                onChange={(e) => setCuotapartes(e.target.value)}
+                                className="w-full bg-background-tertiary border border-border-secondary rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                            />
+                        </div>
+
+                        <div className="bg-background-secondary p-4 rounded-xl border border-border-primary flex flex-col justify-center gap-2">
+                            <label className="text-xs font-bold text-text-tertiary uppercase">Cargar VCP (CSV/Excel)</label>
+                            <label className="flex items-center justify-center gap-2 px-4 py-2 bg-background-tertiary border border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors text-sm text-text-secondary">
+                                <Upload className="w-4 h-4" />
+                                Seleccionar Archivo
+                                <input type="file" onChange={handleFileUpload} className="hidden" accept=".csv,.xlsx" />
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Main Chart Card */}
+                    <div className="bg-background-secondary rounded-2xl border border-border-primary p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <BarChart3 className="text-primary w-5 h-5" />
+                                Evolución {viewMode === 'real' ? 'Poder de Compra' : 'Patrimonio Nominal'}
+                            </h2>
+
+                            <div className="flex gap-2">
+                                {Object.keys(showBenchmarks).map(key => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setShowBenchmarks(prev => ({ ...prev, [key]: !prev[key] }))}
+                                        className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border transition-all ${showBenchmarks[key] ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-transparent border-border-primary text-text-tertiary'}`}
+                                    >
+                                        {key}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="h-[400px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={processedData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#94a3b8"
+                                        fontSize={10}
+                                        tickFormatter={(str) => {
+                                            const d = new Date(str);
+                                            return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+                                        }}
+                                    />
+                                    <YAxis
+                                        stroke="#94a3b8"
+                                        fontSize={10}
+                                        domain={['auto', 'auto']}
+                                        tickFormatter={(val) => `${val.toFixed(0)}`}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
+                                        labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
+                                        itemStyle={{ fontSize: '13px' }}
+                                    />
+                                    <Legend verticalAlign="top" height={36} />
+
+                                    {/* Main Line: FCI */}
+                                    <Line
+                                        type="monotone"
+                                        dataKey={viewMode === 'real' ? 'fci_real' : 'fci'}
+                                        name="Adcap Balanceado III"
+                                        stroke={COLORS.fci}
+                                        strokeWidth={3}
+                                        dot={false}
+                                        activeDot={{ r: 6 }}
+                                    />
+
+                                    {/* Benchmarks */}
+                                    {showBenchmarks.mep && (
+                                        <Line
+                                            type="monotone"
+                                            dataKey={viewMode === 'real' ? 'mep_real' : 'mep'}
+                                            name="Dólar MEP"
+                                            stroke={COLORS.mep}
+                                            strokeWidth={2}
+                                            dot={false}
+                                        />
+                                    )}
+                                    {showBenchmarks.spy && (
+                                        <Line
+                                            type="monotone"
+                                            dataKey={viewMode === 'real' ? 'spy_real' : 'spy'}
+                                            name="SPY (ARS)"
+                                            stroke={COLORS.spy}
+                                            strokeWidth={2}
+                                            dot={false}
+                                        />
+                                    )}
+                                    {showBenchmarks.ibit && (
+                                        <Line
+                                            type="monotone"
+                                            dataKey={viewMode === 'real' ? 'ibit_real' : 'ibit'}
+                                            name="IBIT (ARS)"
+                                            stroke={COLORS.ibit}
+                                            strokeWidth={2}
+                                            dot={false}
+                                        />
+                                    )}
+                                    {showBenchmarks.ipc && viewMode === 'nominal' && (
+                                        <Line
+                                            type="monotone"
+                                            dataKey="ipc"
+                                            name="IPC (Inflación)"
+                                            stroke={COLORS.ipc}
+                                            strokeWidth={2}
+                                            strokeDasharray="5 5"
+                                            dot={false}
+                                        />
+                                    )}
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Insights and Stats Table */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Metrics Table */}
+                        <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
+                            <div className="p-4 border-b border-border-primary">
+                                <h3 className="font-bold flex items-center gap-2">
+                                    <Info className="w-4 h-4 text-text-tertiary" />
+                                    Comparativa de Métricas
+                                </h3>
+                            </div>
+                            <table className="w-full text-sm">
+                                <thead className="bg-background-tertiary">
+                                    <tr className="text-left text-text-tertiary text-[10px] uppercase font-bold tracking-wider">
+                                        <th className="px-4 py-3">Activo</th>
+                                        <th className="px-4 py-3 text-right">Nominal %</th>
+                                        <th className="px-4 py-3 text-right">Real %</th>
+                                        <th className="px-4 py-3 text-right">Múltiplo Real</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border-primary">
+                                    <tr>
+                                        <td className="px-4 py-3 font-semibold flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.fci }}></div>
+                                            FCI Adcap
+                                        </td>
+                                        <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                            {formatPercent(metrics?.fci.nominal)}
+                                        </td>
+                                        <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.real >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                            {formatPercent(metrics?.fci.real)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono font-bold">
+                                            {formatNumber(metrics?.fci.multiple, 2)}x
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-4 py-3 font-semibold flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.mep }}></div>
+                                            Dólar MEP
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono text-text-primary">
+                                            {formatPercent(metrics?.mep.nominal)}
+                                        </td>
+                                        <td className={`px-4 py-3 text-right font-mono ${metrics?.mep.real >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                            {formatPercent(metrics?.mep.real)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono font-bold">
+                                            {formatNumber(metrics?.mep.multiple, 2)}x
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-4 py-3 font-semibold flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.ipc }}></div>
+                                            Inflación (IPC)
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono text-text-primary">
+                                            {formatPercent(metrics?.ipc.nominal)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono text-text-tertiary">0.00%</td>
+                                        <td className="px-4 py-3 text-right font-mono text-text-tertiary">1.00x</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Insights Box */}
+                        <div className="bg-[#1e293b] border border-blue-400/20 rounded-xl p-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Activity className="w-24 h-24" />
+                            </div>
+                            <h3 className="text-blue-400 font-bold mb-4 uppercase tracking-widest text-xs">Automated Alpha Insights</h3>
+                            <div className="space-y-4 text-sm leading-relaxed">
+                                {metrics ? (
+                                    <>
+                                        <p>
+                                            Desde tu suscripción el <span className="text-white font-bold">{new Date(subDate).toLocaleDateString()}</span>,
+                                            el FCI <span className={metrics.fci.real >= 0 ? 'text-profit' : 'text-danger'}>
+                                                {metrics.fci.real >= 0 ? 'gana' : 'pierde'} {formatPercent(Math.abs(metrics.fci.real))} real
+                                            </span> frente a una inflación acumulada del <span className="text-white">{formatPercent(metrics.ipc.nominal)}</span>.
+                                        </p>
+                                        <p>
+                                            Tu poder de compra <span className="text-white">{metrics.fci.multiple >= 1 ? 'creció' : 'disminuyó'} {formatNumber(metrics.fci.multiple, 2)}x</span>.
+                                            En el mismo período, el Dólar MEP {metrics.mep.real >= 0 ? 'superó' : 'quedó debajo de'} la inflación por {formatPercent(Math.abs(metrics.mep.real))},
+                                            confirmando que el FCI <span className="text-profit">fue una cobertura superior</span> al ahorro en moneda dura.
+                                        </p>
+                                        <div className="pt-2">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white">
+                                                <Info className="w-3 h-3 text-blue-400" />
+                                                La cobertura real se calcula deflactando el retorno nominal por el IPC acumulado.
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-text-tertiary italic">Selecciona una fecha y sube el historial de VCP para generar insights...</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={processedData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#94a3b8"
-                                fontSize={10}
-                                tickFormatter={(str) => {
-                                    const d = new Date(str);
-                                    return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-                                }}
-                            />
-                            <YAxis
-                                stroke="#94a3b8"
-                                fontSize={10}
-                                domain={['auto', 'auto']}
-                                tickFormatter={(val) => `${val.toFixed(0)}`}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
-                                itemStyle={{ fontSize: '13px' }}
-                            />
-                            <Legend verticalAlign="top" height={36} />
-
-                            {/* Main Line: FCI */}
-                            <Line
-                                type="monotone"
-                                dataKey={viewMode === 'real' ? 'fci_real' : 'fci'}
-                                name="Adcap Balanceado III"
-                                stroke={COLORS.fci}
-                                strokeWidth={3}
-                                dot={false}
-                                activeDot={{ r: 6 }}
-                            />
-
-                            {/* Benchmarks */}
-                            {showBenchmarks.mep && (
-                                <Line
-                                    type="monotone"
-                                    dataKey={viewMode === 'real' ? 'mep_real' : 'mep'}
-                                    name="Dólar MEP"
-                                    stroke={COLORS.mep}
-                                    strokeWidth={2}
-                                    dot={false}
-                                />
-                            )}
-                            {showBenchmarks.spy && (
-                                <Line
-                                    type="monotone"
-                                    dataKey={viewMode === 'real' ? 'spy_real' : 'spy'}
-                                    name="SPY (ARS)"
-                                    stroke={COLORS.spy}
-                                    strokeWidth={2}
-                                    dot={false}
-                                />
-                            )}
-                            {showBenchmarks.ibit && (
-                                <Line
-                                    type="monotone"
-                                    dataKey={viewMode === 'real' ? 'ibit_real' : 'ibit'}
-                                    name="IBIT (ARS)"
-                                    stroke={COLORS.ibit}
-                                    strokeWidth={2}
-                                    dot={false}
-                                />
-                            )}
-                            {showBenchmarks.ipc && viewMode === 'nominal' && (
-                                <Line
-                                    type="monotone"
-                                    dataKey="ipc"
-                                    name="IPC (Inflación)"
-                                    stroke={COLORS.ipc}
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                    dot={false}
-                                />
-                            )}
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Insights and Stats Table */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Metrics Table */}
-                <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
-                    <div className="p-4 border-b border-border-primary">
-                        <h3 className="font-bold flex items-center gap-2">
-                            <Info className="w-4 h-4 text-text-tertiary" />
-                            Comparativa de Métricas
-                        </h3>
-                    </div>
-                    <table className="w-full text-sm">
-                        <thead className="bg-background-tertiary">
-                            <tr className="text-left text-text-tertiary text-[10px] uppercase font-bold tracking-wider">
-                                <th className="px-4 py-3">Activo</th>
-                                <th className="px-4 py-3 text-right">Nominal %</th>
-                                <th className="px-4 py-3 text-right">Real %</th>
-                                <th className="px-4 py-3 text-right">Múltiplo Real</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border-primary">
-                            <tr>
-                                <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.fci }}></div>
-                                    FCI Adcap
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-danger'}`}>
-                                    {formatPercent(metrics?.fci.nominal)}
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.real >= 0 ? 'text-profit' : 'text-danger'}`}>
-                                    {formatPercent(metrics?.fci.real)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono font-bold">
-                                    {formatNumber(metrics?.fci.multiple, 2)}x
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.mep }}></div>
-                                    Dólar MEP
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-primary">
-                                    {formatPercent(metrics?.mep.nominal)}
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.mep.real >= 0 ? 'text-profit' : 'text-danger'}`}>
-                                    {formatPercent(metrics?.mep.real)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono font-bold">
-                                    {formatNumber(metrics?.mep.multiple, 2)}x
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.ipc }}></div>
-                                    Inflación (IPC)
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-primary">
-                                    {formatPercent(metrics?.ipc.nominal)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-tertiary">0.00%</td>
-                                <td className="px-4 py-3 text-right font-mono text-text-tertiary">1.00x</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Insights Box */}
-                <div className="bg-[#1e293b] border border-blue-400/20 rounded-xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Activity className="w-24 h-24" />
-                    </div>
-                    <h3 className="text-blue-400 font-bold mb-4 uppercase tracking-widest text-xs">Automated Alpha Insights</h3>
-                    <div className="space-y-4 text-sm leading-relaxed">
-                        {metrics ? (
-                            <>
-                                <p>
-                                    Desde tu suscripción el <span className="text-white font-bold">{new Date(subDate).toLocaleDateString()}</span>,
-                                    el FCI <span className={metrics.fci.real >= 0 ? 'text-profit' : 'text-danger'}>
-                                        {metrics.fci.real >= 0 ? 'gana' : 'pierde'} {formatPercent(Math.abs(metrics.fci.real))} real
-                                    </span> frente a una inflación acumulada del <span className="text-white">{formatPercent(metrics.ipc.nominal)}</span>.
-                                </p>
-                                <p>
-                                    Tu poder de compra <span className="text-white">{metrics.fci.multiple >= 1 ? 'creció' : 'disminuyó'} {formatNumber(metrics.fci.multiple, 2)}x</span>.
-                                    En el mismo período, el Dólar MEP {metrics.mep.real >= 0 ? 'superó' : 'quedó debajo de'} la inflación por {formatPercent(Math.abs(metrics.mep.real))},
-                                    confirmando que el FCI <span className="text-profit">fue una cobertura superior</span> al ahorro en moneda dura.
-                                </p>
-                                <div className="pt-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white">
-                                        <Info className="w-3 h-3 text-blue-400" />
-                                        La cobertura real se calcula deflactando el retorno nominal por el IPC acumulado.
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-text-tertiary italic">Selecciona una fecha y sube el historial de VCP para generar insights...</p>
-                        )}
-                    </div>
-                </div>
-            </div>
+            </main>
+            <MobileNav />
         </div>
     );
 }
