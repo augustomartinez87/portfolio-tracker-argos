@@ -11,7 +11,6 @@ import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
 import CarryTrade from './pages/CarryTrade'
-import AnalisisReal from './pages/AnalisisReal'
 import Fci from './pages/Fci'
 import Admin from './pages/Admin'
 

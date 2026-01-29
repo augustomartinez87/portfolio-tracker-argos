@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { PiggyBank, Plus, Download, Loader2, RefreshCw } from 'lucide-react';
+import { PieChart, Plus, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
@@ -97,7 +97,7 @@ export default function Fci() {
         <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background-secondary/95 backdrop-blur-xl border-b border-border-primary px-4 py-3">
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-              <PiggyBank className="w-5 h-5 text-primary" />
+              <PieChart className="w-5 h-5 text-primary" />
               Fondos (FCI)
             </h1>
             <CurrencySelector
