@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { usePortfolio } from '../contexts/PortfolioContext';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { usePortfolio } from '@/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
-import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { LoadingFallback } from '../components/common/LoadingSpinner';
-import FinancingDashboard from '../features/financing/components/FinancingDashboard';
-import financingService from '../features/financing/services/financingService';
-import MobileNav from '../components/common/MobileNav';
+import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { LoadingFallback } from '@/components/common/LoadingSpinner';
+import FinancingDashboard from '@/features/financing/components/FinancingDashboard';
+import { financingService } from '@/features/financing/services/financingService';
+import MobileNav from '@/components/common/MobileNav';
 
 const Financiacion = () => {
   const { user, signOut } = useAuth();

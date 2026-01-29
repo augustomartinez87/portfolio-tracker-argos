@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronUp, ChevronDown, Plus, Minus } from 'lucide-react';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate = 1 }) => {
     if (!positions || positions.length === 0) {

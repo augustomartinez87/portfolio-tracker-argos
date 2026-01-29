@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Briefcase, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../features/auth/contexts/AuthContext';
-import { getFilteredNavItems } from '../../config/navigation';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { getFilteredNavItems } from '@/config/navigation';
 
 export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
   const location = useLocation();

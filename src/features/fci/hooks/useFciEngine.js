@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Decimal from 'decimal.js';
-import { fciService } from '../services/fciService';
+import { fciService } from '@/features/fci/services/fciService';
 import { mepService } from '../../portfolio/services/mepService';
 
 /**

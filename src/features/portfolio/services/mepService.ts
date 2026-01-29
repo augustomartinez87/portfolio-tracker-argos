@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import mepHistoryData from '../data/mepHistory.json';
+import { supabase } from '@/lib/supabase';
+import mepHistoryData from '@/data/mepHistory.json';
 
 export interface MepHistoryItem {
     date: string;

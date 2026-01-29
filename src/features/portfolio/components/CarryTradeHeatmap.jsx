@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Treemap, Tooltip, ResponsiveContainer } from 'recharts';
-import { usePortfolio } from '../../contexts/PortfolioContext';
-import { usePrices } from '../services/priceService';
-import { macroCarryEngine } from '../../macro/services/macroCarryEngine';
-import { formatPercent, formatARS } from '../../utils/formatters';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePrices } from '@/features/portfolio/services/priceService';
+import { macroCarryEngine } from '@/features/macro/services/macroCarryEngine';
+import { formatPercent, formatARS } from '@/utils/formatters';
 import { Loader2, TrendingUp } from 'lucide-react';
 
 const getCarryColor = (carry) => {

@@ -1,5 +1,5 @@
 import { tradeService } from './tradeService';
-import { parseARSNumber, parseDateDMY } from '../utils/parsers';
+import { parseARSNumber, parseDateDMY } from '@/utils/parsers';
 
 export interface ImportResult {
     success: boolean;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, Trash2, AlertTriangle, Check } from 'lucide-react';
-import { formatARS, formatPercent } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const SortHeader = ({ label, sortKey, currentSort, onSort }) => {
   const isActive = currentSort?.key === sortKey;

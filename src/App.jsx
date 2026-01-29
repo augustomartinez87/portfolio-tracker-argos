@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider } from './features/auth/contexts/AuthContext'
+import { AuthProvider } from '@/features/auth/contexts/AuthContext'
 import { PortfolioProvider } from './contexts/PortfolioContext'
 import { ProtectedRoute } from './features/auth/components/ProtectedRoute'
 import { Login } from './features/auth/components/Login'

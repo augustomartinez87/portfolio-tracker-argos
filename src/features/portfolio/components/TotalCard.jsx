@@ -1,6 +1,6 @@
 import React from 'react';
-import { formatARS, formatUSD, formatPercent } from '../../utils/formatters';
-import { PercentageDisplay } from '../common/PercentageDisplay';
+import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
+import { PercentageDisplay } from '@/components/common/PercentageDisplay';
 
 export const TotalCard = ({ totals, columnSettings = { density: 'compact', showPPC: true, showInvertido: true, showDiario: true, showDiarioPct: true }, currency = 'ARS' }) => {
   const paddingY = columnSettings.density === 'compact' ? 'py-3' : 'py-3.5';

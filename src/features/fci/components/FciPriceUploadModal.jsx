@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { fciService } from '../services/fciService';
-import { parseARSNumber } from '../../utils/parsers';
+import { parseARSNumber } from '@/utils/parsers';
 
 const FciPriceUploadModal = ({ isOpen, onClose, onRefresh }) => {
     if (!isOpen) return null;

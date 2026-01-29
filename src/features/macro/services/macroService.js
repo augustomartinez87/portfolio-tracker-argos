@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { mepService } from './mepService';
+import { mepService } from '@/features/portfolio/services/mepService';
 
 const ALPHA_VANTAGE_KEY = 'YOUR_API_KEY'; // User should change this
 const CACHE_PREFIX = 'argos_macro_';
@@ -12,7 +12,7 @@ export const macroService = {
     async getIPC() {
         const cacheKey = `${CACHE_PREFIX}ipc`;
         const cached = this._getCache(cacheKey);
-        
+
         // Refresh monthly (IPC is updated once a month)
         if (cached && !this._isExpired(cached.timestamp, 30 * 24 * 60 * 60 * 1000)) {
             return cached.data;
@@ -25,7 +25,7 @@ export const macroService = {
                 date: item[0],
                 value: item[1] / 100 // Convert percentage to decimal
             }));
-            
+
             this._setCache(cacheKey, data);
             return data;
         } catch (error) {
@@ -50,7 +50,7 @@ export const macroService = {
             const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${ALPHA_VANTAGE_KEY}`;
             const response = await axios.get(url);
             const timeSeries = response.data['Time Series (Daily)'];
-            
+
             if (!timeSeries) throw new Error('No data from Alpha Vantage');
 
             const data = Object.keys(timeSeries).map(date => ({
@@ -71,10 +71,10 @@ export const macroService = {
      */
     calculateAccumulatedIPC(startDate, endDate, ipcData) {
         if (!ipcData || ipcData.length === 0) return 0;
-        
+
         // Filter IPC data between dates
         // Note: IPC is monthly, so we look for months that have passed
-        const relevantIPC = ipcData.filter(item => 
+        const relevantIPC = ipcData.filter(item =>
             item.date >= startDate && item.date <= endDate
         );
 
@@ -92,7 +92,7 @@ export const macroService = {
      */
     async getBenchmarkInARS(symbol, mepHistory) {
         const history = await this.getBenchmarkHistory(symbol);
-        
+
         return history.map(item => {
             const mepRate = mepService.findClosestRate(item.date, mepHistory);
             return {

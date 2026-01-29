@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, RefreshCw, Loader2 } from 'lucide-react';
 import { fciService } from '../services/fciService';
-import { formatNumber } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType = 'SUBSCRIPTION', initialFci = null }) => {
     if (!isOpen) return null;
@@ -159,16 +159,16 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                         <button
                             type="button"
                             onClick={() => setTipo('SUBSCRIPTION')}
-                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${tipo === 'SUBSCRIPTION' ? 'bg-profit text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                                }`}
+                            className={`flex - 1 py - 1.5 text - sm font - medium rounded - md transition - all ${tipo === 'SUBSCRIPTION' ? 'bg-profit text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                                } `}
                         >
                             Suscripción
                         </button>
                         <button
                             type="button"
                             onClick={() => setTipo('REDEMPTION')}
-                            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${tipo === 'REDEMPTION' ? 'bg-loss text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                                }`}
+                            className={`flex - 1 py - 1.5 text - sm font - medium rounded - md transition - all ${tipo === 'REDEMPTION' ? 'bg-loss text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                                } `}
                         >
                             Rescate
                         </button>
@@ -207,8 +207,8 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
                     </div>
 
                     {/* VCP Info Box */}
-                    <div className={`p-3 rounded-lg border text-sm ${vcpError ? 'bg-warning-muted border-warning/30 text-warning' : 'bg-primary/10 border-primary/20 text-text-secondary'
-                        }`}>
+                    <div className={`p - 3 rounded - lg border text - sm ${vcpError ? 'bg-warning-muted border-warning/30 text-warning' : 'bg-primary/10 border-primary/20 text-text-secondary'
+                        } `}>
                         <div className="flex justify-between items-center mb-1">
                             <span className="font-semibold text-xs uppercase">Valor Cuotaparte</span>
                             {vcpLoading && <Loader2 className="w-3 h-3 animate-spin" />}

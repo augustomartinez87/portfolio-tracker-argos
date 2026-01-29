@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { userService } from '../services/userService'
-import { DEFAULT_MODULES } from '../config/navigation'
+import { DEFAULT_MODULES } from '@/config/navigation'
 
 const AuthContext = createContext({})
 

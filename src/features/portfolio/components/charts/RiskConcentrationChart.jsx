@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { Target } from 'lucide-react';
-import { formatARS, formatUSD } from '../../../utils/formatters';
+import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
     const chartData = useMemo(() => {

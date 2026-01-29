@@ -6,11 +6,11 @@ import {
     Activity, ArrowUpRight, ArrowDownRight, Upload, Calendar,
     BarChart3, RefreshCw, Info, ChevronDown, ChevronUp, TrendingUp
 } from 'lucide-react';
-import { formatARS, formatPercent, formatNumber } from '../../utils/formatters';
-import { macroService } from '../../macro/services/macroService';
-import { mepService } from '../../portfolio/services/mepService';
-import { usePortfolio } from '../../../contexts/PortfolioContext';
-import { VIEW_MODES } from '../../../constants';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
+import { macroService } from '@/features/macro/services/macroService';
+import { mepService } from '@/features/portfolio/services/mepService';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { VIEW_MODES } from '@/constants';
 import * as XLSX from 'xlsx';
 
 const COLORS = {

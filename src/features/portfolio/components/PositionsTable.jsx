@@ -1,9 +1,9 @@
 import React, { memo, useState, useMemo, useEffect } from 'react';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '../../utils/formatters';
-import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
+import { isBonoPesos, isBonoHardDollar } from '@/features/portfolio/hooks/useBondPrices';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import ColumnSelector from './ColumnSelector';
-import { PercentageDisplay } from './common/PercentageDisplay';
+import { PercentageDisplay } from '@/components/common/PercentageDisplay';
 
 const SORT_OPTIONS = [
   { key: 'ticker', label: 'Ticker', type: 'string' },

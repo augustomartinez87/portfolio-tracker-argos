@@ -1,15 +1,15 @@
 import React, { memo, useMemo } from 'react';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Percent, 
-  Clock, 
-  BarChart3, 
+import {
+  DollarSign,
+  TrendingUp,
+  Percent,
+  Clock,
+  BarChart3,
   Activity,
   Target,
   Calculator
 } from 'lucide-react';
-import { formatARS, formatPercent } from '../../utils/formatters';
+import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
 
 const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) => {
   if (loading) {
@@ -27,7 +27,7 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
   }
 
   return (
-    <div 
+    <div
       className="bg-background-secondary rounded-lg p-4 border border-border-primary hover:border-border-secondary transition-colors group"
       title={tooltip}
     >
@@ -41,9 +41,8 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
             {value}
           </p>
           {trend !== undefined && (
-            <p className={`text-xs font-medium mt-1 ${
-              trend > 0 ? 'text-success' : trend < 0 ? 'text-danger' : 'text-text-tertiary'
-            }`}>
+            <p className={`text-xs font-medium mt-1 ${trend > 0 ? 'text-success' : trend < 0 ? 'text-danger' : 'text-text-tertiary'
+              }`}>
               {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
             </p>
           )}
@@ -64,7 +63,7 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
     console.log('FinancingKPIs useMemo recalculando...');
     console.log('FinancingKPIs - csvData en useMemo:', csvData);
     console.log('FinancingKPIs - metrics en useMemo:', metrics);
-    
+
     // Si hay datos CSV (prioridad alta - datos del upload)
     if (csvData && csvData.summary) {
       console.log('FinancingKPIs - Usando datos CSV');
@@ -81,7 +80,7 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
       console.log('FinancingKPIs - Resultado desde CSV:', result);
       return result;
     }
-    
+
     // Si hay métricas de la base de datos (fallback)
     if (metrics) {
       console.log('FinancingKPIs - Usando métricas de DB');
@@ -98,7 +97,7 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
       console.log('FinancingKPIs - Resultado desde DB:', result);
       return result;
     }
-    
+
     // Valores por defecto
     console.log('FinancingKPIs - Usando valores por defecto');
     const defaultResult = {

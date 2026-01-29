@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInARS } from '@/utils/bondUtils';
 import { mepService, MepHistoryItem } from '../services/mepService';
+import { usePrices } from '@/features/portfolio/services/priceService';
 import type { AssetClass, Position, PortfolioTotals, TradeInput } from '@/types';
 import Decimal from 'decimal.js';
 

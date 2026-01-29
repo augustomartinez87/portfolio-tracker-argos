@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { getFilteredNavItems } from '../../config/navigation';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { getFilteredNavItems } from '@/config/navigation';
 
 export const MobileNav = () => {
     const location = useLocation();
@@ -21,8 +21,8 @@ export const MobileNav = () => {
                         key={item.id}
                         to={item.path}
                         className={`flex flex-col items-center justify-center flex-1 gap-1 transition-colors ${isActive(item.path)
-                                ? 'text-primary'
-                                : 'text-text-tertiary hover:text-text-primary'
+                            ? 'text-primary'
+                            : 'text-text-tertiary hover:text-text-primary'
                             }`}
                     >
                         <item.icon className={`w-5 h-5 ${isActive(item.path) ? 'text-primary' : ''}`} />

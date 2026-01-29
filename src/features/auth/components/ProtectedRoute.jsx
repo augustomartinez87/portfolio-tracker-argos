@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 /**
  * Componente de protección de rutas con soporte para roles y módulos

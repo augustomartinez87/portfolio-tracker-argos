@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TrendingUp, RefreshCw, Upload, Filter, Trash2, List, BarChart3 } from 'lucide-react';
-import FinancingKPIs from './FinancingKPIs';
-import CSVUploadView from './CSVUploadView';
-import FinancingCharts from './FinancingCharts';
-import CaucionesTable from '../cauciones/CaucionesTable';
-import SummaryCard from '../../../components/common/SummaryCard';
-import financingService from '../services/financingService';
+import FinancingKPIs from '@/features/financing/components/FinancingKPIs';
+import CSVUploadView from '@/features/financing/components/CSVUploadView';
+import FinancingCharts from '@/features/financing/components/FinancingCharts';
+import CaucionesTable from '@/features/financing/components/cauciones/CaucionesTable';
+import SummaryCard from '@/components/common/SummaryCard';
+import { financingService } from '@/features/financing/services/financingService';
 
 const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClient, userId, portfolioId }) => {
   const [activeView, setActiveView] = useState('dashboard');

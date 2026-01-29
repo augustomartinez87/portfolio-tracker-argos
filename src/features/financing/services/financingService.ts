@@ -3,9 +3,9 @@
 // ============================================================================
 
 // @ts-ignore - Supabase types are complex, use any for now
-import { supabase } from '../lib/supabase';
-import { ingestFromCsv } from '../ingest/csvSpreadIngestor';
-import { Caucion, Result, FinancingMetrics } from '../types/finance';
+import { supabase } from '@/lib/supabase';
+import { ingestFromCsv } from '@/ingest/csvSpreadIngestor';
+import { Caucion, Result, FinancingMetrics } from '@/types/finance';
 import Decimal from 'decimal.js';
 
 // ============================================================================
@@ -738,8 +738,8 @@ export class FinancingService {
   async checkDuplicateOperations(
     userId: string,
     portfolioId: string,
-    csvRecords: import('../types/finance').CsvRecord[]
-  ): Promise<Result<{ duplicates: number; duplicateRecords: import('../types/finance').CsvRecord[] }>> {
+    csvRecords: import('@/types/finance').CsvRecord[]
+  ): Promise<Result<{ duplicates: number; duplicateRecords: import('@/types/finance').CsvRecord[] }>> {
     try {
       // Search for existing operations with same fecha_inicio and capital
       const { data, error } = await supabase
@@ -758,7 +758,7 @@ export class FinancingService {
       }
 
       // Find potential duplicates with Decimal comparison for precision
-      const duplicates: import('../types/finance').CsvRecord[] = [];
+      const duplicates: import('@/types/finance').CsvRecord[] = [];
 
       csvRecords.forEach(record => {
         const existing = data.find((existing: any) =>

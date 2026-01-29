@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-import { formatPercent } from '../../../utils/formatters';
+import { formatARS, formatPercent } from '@/utils/formatters';
 
 const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
     const isUSD = currency === 'USD';

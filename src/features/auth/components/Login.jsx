@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, AlertTriangle } from 'lucide-react'
-import loginBg from '../assets/login-bg.jpg'
+import loginBg from '@/assets/login-bg.jpg'
 
 export const Login = () => {
   const navigate = useNavigate()

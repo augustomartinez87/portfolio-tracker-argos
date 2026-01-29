@@ -2,10 +2,10 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
-import { data912 } from '../utils/data912';
-import { isBonoPesos } from '../hooks/useBondPrices';
-import { API_ENDPOINTS } from '../utils/constants';
-import { formatARS, formatUSD } from '../utils/formatters';
+import { data912 } from '@/utils/data912';
+import { isBonoPesos } from '@/features/portfolio/hooks/useBondPrices';
+import { API_ENDPOINTS } from '@/utils/constants';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const formatDateSafe = (dateStr) => {
   if (!dateStr) return '-';

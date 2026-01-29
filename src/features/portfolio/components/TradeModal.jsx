@@ -1,9 +1,9 @@
 // src/components/modals/TradeModal.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { isBonoPesos, isBonoHardDollar } from '../hooks/useBondPrices';
-import { TickerAutocomplete } from '../common/TickerAutocomplete';
-import { TRANSACTION_TYPES } from '../../../constants';
+import { isBonoPesos, isBonoHardDollar } from '@/features/portfolio/hooks/useBondPrices';
+import { TickerAutocomplete } from '@/components/common/TickerAutocomplete';
+import { TRANSACTION_TYPES } from '@/constants';
 
 export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
   const [formData, setFormData] = useState({

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { usePortfolio } from '../contexts/PortfolioContext';
-import DashboardSidebar from '../features/portfolio/components/DashboardSidebar';
-import DashboardHeader from '../features/portfolio/components/DashboardHeader';
-import { useAuth } from '../features/auth/contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { usePrices, invokeFetchPrices } from '../features/portfolio/services/priceService';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { DashboardHeader } from '@/features/portfolio/components/DashboardHeader';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
 import { RefreshCw, Coins } from 'lucide-react';
-import MobileNav from '../components/common/MobileNav';
-import logo from '../assets/logo.png';
+import MobileNav from '@/components/common/MobileNav';
+import logo from '@/assets/logo.png';
 
 export default function FundingEngine() {
     const { user, signOut } = useAuth();

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export const userService = {
   // ============================================================================
@@ -54,7 +54,7 @@ export const userService = {
    */
   async getProfileWithRetry(userId, retries = 3) {
     let lastError = null;
-    
+
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const profile = await this.getProfile(userId);
@@ -68,7 +68,7 @@ export const userService = {
         }
       }
     }
-    
+
     console.error(`[UserService] All retries failed for user ${userId}:`, lastError);
     throw lastError;
   },
@@ -128,13 +128,13 @@ export const userService = {
     const { data, error } = await supabase
       .from('user_profiles')
       .select(`
-        *,
-        user:user_id (
-          email,
-          created_at,
-          last_sign_in_at
-        )
-      `)
+          *,
+          user:user_id (
+            email,
+            created_at,
+            last_sign_in_at
+          )
+        `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -227,12 +227,12 @@ export const userService = {
     let query = supabase
       .from('user_activity')
       .select(`
-        *,
-        profile:user_id (
-          display_name,
-          role
-        )
-      `)
+          *,
+          profile:user_id (
+            display_name,
+            role
+          )
+        `)
       .order('created_at', { ascending: false })
       .limit(limit);
 

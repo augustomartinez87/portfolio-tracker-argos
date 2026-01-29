@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '../features/auth/contexts/AuthContext'
 
 const PortfolioContext = createContext({})

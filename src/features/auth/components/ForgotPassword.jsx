@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
 
 export const ForgotPassword = () => {

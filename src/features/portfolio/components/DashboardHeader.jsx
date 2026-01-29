@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { RefreshCw, Sun, Moon } from 'lucide-react';
 import { CurrencySelector } from './CurrencySelector';
-import logo from '../../assets/logo.png';
-import { formatNumber } from '../../utils/formatters';
-import { useTheme } from '../../contexts/ThemeContext';
+import logo from '@/assets/logo.png';
+import { formatNumber } from '@/utils/formatters';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export const DashboardHeader = ({ mepRate, lastUpdate, isPricesLoading, refetchPrices, compact = false, showLogo = true, hideMep = false, displayCurrency, onCurrencyChange }) => {
   const { theme, toggleTheme } = useTheme();

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Settings, Users, Activity, Shield, Check, X, Loader2, RefreshCw, Search, ChevronDown } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
-import MobileNav from '../components/common/MobileNav';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
-import { userService } from '../services/userService';
+import { userService } from '@/features/auth/services/userService';
 
 export default function Admin() {
   const { user, signOut } = useAuth();
@@ -178,8 +178,8 @@ export default function Admin() {
               <button
                 onClick={() => setActiveTab('users')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'users'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-text-tertiary hover:text-text-primary'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-text-tertiary hover:text-text-primary'
                   }`}
               >
                 <Users className="w-4 h-4" />
@@ -188,8 +188,8 @@ export default function Admin() {
               <button
                 onClick={() => setActiveTab('activity')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'activity'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-text-tertiary hover:text-text-primary'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-text-tertiary hover:text-text-primary'
                   }`}
               >
                 <Activity className="w-4 h-4" />
@@ -258,8 +258,8 @@ export default function Admin() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`inline-flex px-2 py-1 rounded text-xs font-bold ${u.role === 'admin'
-                                    ? 'bg-primary/20 text-primary'
-                                    : 'bg-background-tertiary text-text-secondary'
+                                  ? 'bg-primary/20 text-primary'
+                                  : 'bg-background-tertiary text-text-secondary'
                                   }`}>
                                   {u.role?.toUpperCase()}
                                 </span>
@@ -294,8 +294,8 @@ export default function Admin() {
                                     onClick={() => handleToggleActive(u.user_id, u.is_active, u.email)}
                                     disabled={actionLoading === u.user_id || u.email === user.email}
                                     className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${u.is_active
-                                        ? 'bg-loss/10 text-loss hover:bg-loss/20'
-                                        : 'bg-profit/10 text-profit hover:bg-profit/20'
+                                      ? 'bg-loss/10 text-loss hover:bg-loss/20'
+                                      : 'bg-profit/10 text-profit hover:bg-profit/20'
                                       }`}
                                   >
                                     {u.is_active ? 'Desactivar' : 'Activar'}

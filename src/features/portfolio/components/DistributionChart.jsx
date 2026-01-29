@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChartIcon, X } from 'lucide-react';
-import { calculateAssetDistribution, formatCurrency as legacyFormat, formatPercentage } from '../utils/portfolioHelpers';
-import { PercentageDisplay } from './common/PercentageDisplay';
-import { formatARS, formatUSD } from '../utils/formatters';
+import { calculateAssetDistribution, formatCurrency as legacyFormat, formatPercentage } from '@/utils/portfolioHelpers';
+import { PercentageDisplay } from '@/components/common/PercentageDisplay';
+import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
 
 export const DistributionChart = ({ positions, currency = 'ARS' }) => {
   const formatCurrency = (val) => currency === 'ARS' ? formatARS(val) : formatUSD(val);
@@ -86,7 +86,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
             >
               {distribution.map((entry, index) => (
                 <Cell
-                  key={`cell-${index}`}
+                  key={`cell - ${index} `}
                   fill={entry.color}
                   stroke="#0a0a0a"
                   strokeWidth={2}
@@ -94,7 +94,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                     transform: hoveredIndex === index ? 'scale(1.08)' : 'scale(1)',
                     transformOrigin: 'center',
                     transition: 'transform 0.2s ease-out',
-                    filter: hoveredIndex === index ? `drop-shadow(0 0 10px ${entry.color}80)` : 'none'
+                    filter: hoveredIndex === index ? `drop - shadow(0 0 10px ${entry.color}80)` : 'none'
                   }}
                 />
               ))}
@@ -118,10 +118,10 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
           <button
             key={index}
             onClick={() => setSelectedCategory(selectedCategory === item.name ? null : item.name)}
-            className={`w-full flex justify-between items-center py-1.5 px-3 rounded border transition-all ${selectedCategory === item.name
+            className={`w - full flex justify - between items - center py - 1.5 px - 3 rounded border transition - all ${selectedCategory === item.name
               ? 'bg-background-tertiary border-primary/40'
               : 'bg-background-secondary/30 border-border-primary/10 hover:bg-background-tertiary'
-              }`}
+              } `}
           >
             <div className="flex items-center gap-2">
               <div
@@ -131,7 +131,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
               <div className="flex flex-col items-start leading-tight">
                 <span className="text-sm text-text-primary font-medium">{item.name}</span>
                 {item.pnlPct !== undefined && (
-                  <span className={`text-[10px] font-bold ${item.pnlPct >= 0 ? 'text-profit' : 'text-loss'}`}>
+                  <span className={`text - [10px] font - bold ${item.pnlPct >= 0 ? 'text-profit' : 'text-loss'} `}>
                     {item.pnlPct >= 0 ? '+' : ''}{item.pnlPct.toFixed(1)}% P&L
                   </span>
                 )}

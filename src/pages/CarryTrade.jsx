@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useAuth } from '../features/auth/contexts/AuthContext';
-import { usePortfolio } from '../contexts/PortfolioContext';
-import { usePrices } from '../features/portfolio/services/priceService';
-import DashboardSidebar from '../features/portfolio/components/DashboardSidebar';
-import { PortfolioSelector } from '../features/portfolio/components/PortfolioSelector';
-import CarryTradeHeatmap from '../components/dashboard/CarryTradeHeatmap.jsx';
-import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePrices } from '@/features/portfolio/services/priceService';
+import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
+import CarryTradeHeatmap from '@/features/portfolio/components/CarryTradeHeatmap';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
-import MobileNav from '../components/common/MobileNav';
-import logo from '../assets/logo.png';
+import MobileNav from '@/components/common/MobileNav';
+import logo from '@/assets/logo.png';
 
 export default function CarryTrade() {
     const { user, signOut } = useAuth();
