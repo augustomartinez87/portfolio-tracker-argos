@@ -1,16 +1,15 @@
 import React from 'react';
-import { Briefcase, TrendingUp, Coins, Activity } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { getFilteredNavItems } from '../../config/navigation';
 
 export const MobileNav = () => {
     const location = useLocation();
+    const { isAdmin, allowedModules } = useAuth();
 
-    const navItems = [
-        { id: 'portfolio', label: 'Portafolio', icon: Briefcase, path: '/dashboard' },
-        { id: 'financiacion', label: 'Financiación', icon: TrendingUp, path: '/financiacion' },
-        { id: 'funding', label: 'Funding', icon: Coins, path: '/funding-engine' },
-        { id: 'carry', label: 'Carry', icon: Activity, path: '/carry-trade' },
-    ];
+    // Filtrar items de navegación según permisos del usuario
+    // Limitar a los primeros 5 items para móvil
+    const navItems = getFilteredNavItems(isAdmin, allowedModules).slice(0, 5);
 
     const isActive = (path) => location.pathname === path;
 

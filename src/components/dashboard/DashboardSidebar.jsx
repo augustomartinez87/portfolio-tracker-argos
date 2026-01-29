@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
-import { Briefcase, TrendingUp, LogOut, Coins, Activity, BarChart2 } from 'lucide-react';
-
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Briefcase, LogOut } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { getFilteredNavItems } from '../../config/navigation';
 
 export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin, allowedModules, userProfile } = useAuth();
 
   const handleMouseEnter = () => setIsExpanded(true);
   const handleMouseLeave = () => setIsExpanded(false);
 
   const [hoveredItem, setHoveredItem] = useState(null);
 
-  const navItems = [
-    { id: 'portfolio', label: 'Portafolio', icon: Briefcase, path: '/dashboard' },
-    { id: 'financiacion', label: 'Financiación', icon: TrendingUp, path: '/financiacion' },
-    { id: 'funding', label: 'Funding & Carry', icon: Coins, path: '/funding-engine' },
-    { id: 'carry', label: 'Carry Trade', icon: Activity, path: '/carry-trade' },
-    { id: 'analisis', label: 'Análisis Real', icon: BarChart2, path: '/analisis-real' },
-  ];
+  // Filtrar items de navegación según permisos del usuario
+  const navItems = getFilteredNavItems(isAdmin, allowedModules);
 
-  const isActive = (id) => {
-    return location.pathname === navItems.find(item => item.id === id)?.path;
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   return (
@@ -42,7 +38,7 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
               to={item.path}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
-              className={`w-full flex items-center py-2.5 h-10 transition-all duration-300 relative group/item ${isActive(item.id)
+              className={`w-full flex items-center py-2.5 h-10 transition-all duration-300 relative group/item ${isActive(item.path)
                 ? 'bg-text-primary text-background-primary'
                 : hoveredItem === item.id
                   ? 'bg-background-tertiary text-text-primary'
@@ -51,11 +47,16 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
               title={item.label}
             >
               <span className="w-16 flex justify-center flex-shrink-0">
-                <item.icon className={`w-5 h-5 transition-colors ${isActive(item.id) || hoveredItem === item.id ? 'text-current' : ''
+                <item.icon className={`w-5 h-5 transition-colors ${isActive(item.path) || hoveredItem === item.id ? 'text-current' : ''
                   }`} />
               </span>
-              <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 max-w-36 overflow-hidden">
-                {item.label}
+              <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-1 flex items-center">
+                <span className="max-w-28 overflow-hidden">{item.label}</span>
+                {item.adminOnly && (
+                  <span className="ml-2 px-1.5 py-0.5 text-[9px] font-bold bg-primary/20 text-primary rounded">
+                    ADMIN
+                  </span>
+                )}
               </span>
             </Link>
           ))}
@@ -74,15 +75,20 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
           </div>
           <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 truncate max-w-36 overflow-hidden">
             <span className="text-sm font-medium text-text-primary truncate block">
-              {user?.email || 'Usuario'}
+              {userProfile?.display_name || user?.email || 'Usuario'}
             </span>
-            <button
-              onClick={() => signOut()}
-              className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1"
-            >
-              <LogOut className="w-3 h-3" />
-              Cerrar sesión
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <span className="text-[10px] font-bold text-primary">ADMIN</span>
+              )}
+              <button
+                onClick={() => signOut()}
+                className="text-xs text-text-tertiary hover:text-text-primary flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                Salir
+              </button>
+            </div>
           </span>
         </div>
       </div>

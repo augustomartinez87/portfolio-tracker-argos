@@ -12,6 +12,8 @@ import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
 import CarryTrade from './pages/CarryTrade'
 import AnalisisReal from './pages/AnalisisReal'
+import Fci from './pages/Fci'
+import Admin from './pages/Admin'
 
 
 // Configuración de React Query
@@ -38,10 +40,11 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
+            {/* Dashboard - Acceso para todos los usuarios autenticados */}
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredModule="portfolio">
                   <PortfolioProvider>
                     <Dashboard />
                   </PortfolioProvider>
@@ -49,10 +52,23 @@ function App() {
               }
             />
 
+            {/* FCI - Solo admin */}
+            <Route
+              path="/fci"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PortfolioProvider>
+                    <Fci />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Financiación - Solo admin */}
             <Route
               path="/financiacion"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly>
                   <PortfolioProvider>
                     <Financiacion />
                   </PortfolioProvider>
@@ -60,10 +76,11 @@ function App() {
               }
             />
 
+            {/* Funding Engine - Solo admin */}
             <Route
               path="/funding-engine"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly>
                   <PortfolioProvider>
                     <FundingEngine />
                   </PortfolioProvider>
@@ -71,10 +88,11 @@ function App() {
               }
             />
 
+            {/* Carry Trade - Acceso para todos */}
             <Route
               path="/carry-trade"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredModule="carryTrade">
                   <PortfolioProvider>
                     <CarryTrade />
                   </PortfolioProvider>
@@ -82,13 +100,24 @@ function App() {
               }
             />
 
+            {/* Análisis Real - Solo admin */}
             <Route
               path="/analisis-real"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly>
                   <PortfolioProvider>
                     <AnalisisReal />
                   </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Panel de Administración - Solo admin */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute adminOnly>
+                  <Admin />
                 </ProtectedRoute>
               }
             />
