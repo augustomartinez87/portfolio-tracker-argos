@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       const profile = await userService.getProfile(userId)
       setUserProfile(profile)
 
-      // Registrar login
+      // Registrar login (sin bloquear el arranque)
       if (profile) {
         userService.logActivity('login', null, { method: 'session' })
       }

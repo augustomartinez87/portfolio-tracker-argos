@@ -31,7 +31,7 @@ export const PortfolioCharts = ({ positions, currency = 'ARS' }) => {
                 </div>
 
                 <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm">
-                    <TopPerformersChart positions={filteredPositions} />
+                    <TopPerformersChart positions={filteredPositions} currency={currency} />
                 </div>
             </div>
 

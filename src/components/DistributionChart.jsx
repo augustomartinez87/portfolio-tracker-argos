@@ -69,14 +69,14 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
       </div>
 
       <div className="flex-1 flex items-center justify-center min-h-[200px] relative">
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={260}>
           <PieChart>
             <Pie
               data={distribution}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={85}
+              innerRadius={65}
+              outerRadius={100}
               paddingAngle={2}
               dataKey="value"
               onMouseEnter={(_, index) => setHoveredIndex(index)}
@@ -88,8 +88,8 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                 <Cell
                   key={`cell-${index}`}
                   fill={entry.color}
-                  stroke={entry.color}
-                  strokeWidth={hoveredIndex === index ? 1 : 0}
+                  stroke="#0a0a0a"
+                  strokeWidth={2}
                   style={{
                     transform: hoveredIndex === index ? 'scale(1.08)' : 'scale(1)',
                     transformOrigin: 'center',
@@ -106,7 +106,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <p className="text-xs text-text-tertiary">Total</p>
-            <p className="text-sm font-bold text-text-primary font-mono">
+            <p className="text-base font-bold text-text-primary font-mono whitespace-nowrap">
               {currency === 'ARS' ? formatARS(totalValue).replace('ARS', '').trim() : formatUSD(totalValue).replace('US$', '').trim()}
             </p>
           </div>

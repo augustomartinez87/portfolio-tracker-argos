@@ -8,7 +8,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
         return positions.map(p => ({
             name: p.ticker,
             size: currency === 'ARS' ? p.valuacionActual : p.valuacionUSD,
-            pnl: p.resultadoPct
+            pnl: currency === 'ARS' ? p.resultadoPct : (p.resultadoPctUSD || 0)
         }));
     }, [positions, currency]);
 
@@ -57,7 +57,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                 <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
                     <p className="text-text-primary font-semibold text-xs mb-1">{data.name}</p>
                     <p className="text-text-secondary text-xs">
-                        Valuación: {currency === 'ARS' ? formatARS(data.value) : formatUSD(data.value)}
+                        Valuación: {currency === 'ARS' ? formatARS(data.size || 0) : formatUSD(data.size || 0)}
                     </p>
                     <p className={`text-xs font-bold ${data?.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                         P&L: {data?.pnl?.toFixed(2) || '0.00'}%
@@ -73,7 +73,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
     return (
         <div className="h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                <div className="p-1.5 bg-danger/20 rounded">
+                <div className="p-1.5 bg-background-tertiary rounded">
                     <Target className="w-4 h-4 text-danger" />
                 </div>
                 <h3 className="text-sm font-bold text-text-primary">Concentración de Riesgo (Treemap)</h3>

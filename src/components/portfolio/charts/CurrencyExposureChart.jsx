@@ -66,7 +66,7 @@ const CurrencyExposureChart = ({ positions, currency = 'ARS' }) => {
     return (
         <div className="h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                <div className="p-1.5 bg-warning/20 rounded">
+                <div className="p-1.5 bg-background-tertiary rounded">
                     <ShieldCheck className="w-4 h-4 text-warning" />
                 </div>
                 <h3 className="text-sm font-bold text-text-primary">Exposición Cambiaria / Cobertura</h3>

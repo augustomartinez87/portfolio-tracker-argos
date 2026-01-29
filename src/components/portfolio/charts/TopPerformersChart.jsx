@@ -3,17 +3,25 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp } from 'lucide-react';
 import { formatPercent } from '../../../utils/formatters';
 
-const TopPerformersChart = ({ positions }) => {
+const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
+    const isUSD = currency === 'USD';
     const chartData = useMemo(() => {
         return [...positions]
-            .sort((a, b) => b.resultadoPct - a.resultadoPct)
+            .sort((a, b) => {
+                const aVal = isUSD ? a.resultadoPctUSD : a.resultadoPct;
+                const bVal = isUSD ? b.resultadoPctUSD : b.resultadoPct;
+                return bVal - aVal;
+            })
             .slice(0, 10) // Top 10
-            .map(p => ({
-                name: p.ticker,
-                value: p.resultadoPct,
-                color: p.resultadoPct >= 0 ? '#10b981' : '#ef4444'
-            }));
-    }, [positions]);
+            .map(p => {
+                const value = isUSD ? p.resultadoPctUSD : p.resultadoPct;
+                return {
+                    name: p.ticker,
+                    value: value,
+                    color: value >= 0 ? '#10b981' : '#ef4444'
+                };
+            });
+    }, [positions, isUSD]);
 
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
@@ -34,8 +42,8 @@ const TopPerformersChart = ({ positions }) => {
     return (
         <div className="h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                <div className="p-1.5 bg-primary/20 rounded">
-                    <TrendingUp className="w-4 h-4 text-primary" />
+                <div className="p-1.5 bg-background-tertiary rounded">
+                    <TrendingUp className="w-4 h-4 text-profit" />
                 </div>
                 <h3 className="text-sm font-bold text-text-primary">Top Performers (P&L %)</h3>
             </div>
@@ -62,7 +70,7 @@ const TopPerformersChart = ({ positions }) => {
                             fontSize={10}
                             width={50}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
                         <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                             {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />

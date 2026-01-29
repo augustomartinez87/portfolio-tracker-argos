@@ -480,7 +480,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'distribution' && (
-                <div className="max-w-6xl mx-auto py-4">
+                <div className="flex-1 overflow-y-auto max-w-6xl mx-auto w-full py-4 pr-1">
                   <PortfolioCharts positions={positions} currency={displayCurrency} />
                 </div>
               )}

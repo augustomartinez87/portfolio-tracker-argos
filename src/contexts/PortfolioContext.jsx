@@ -28,6 +28,14 @@ export const PortfolioProvider = ({ children }) => {
       return
     }
 
+    // Safety timeout: si demora más de 7 segundos, forzar loading false
+    const timeoutId = setTimeout(() => {
+      if (setLoading) {
+        console.warn('Portfolio loading timed out, forcing ready state');
+        setLoading(false);
+      }
+    }, 7000);
+
     try {
       setLoading(true)
       setError(null)
@@ -49,6 +57,7 @@ export const PortfolioProvider = ({ children }) => {
       setPortfolios([])
       setCurrentPortfolio(null)
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false)
     }
   }

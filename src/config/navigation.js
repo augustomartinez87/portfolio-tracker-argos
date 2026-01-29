@@ -8,7 +8,7 @@ export const NAV_ITEMS = [
   {
     id: 'portfolio',
     moduleId: 'portfolio',
-    label: 'Portafolio',
+    label: 'Portfolio',
     icon: Briefcase,
     path: '/dashboard',
     adminOnly: false
