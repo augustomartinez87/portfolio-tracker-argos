@@ -11,6 +11,8 @@ import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
 import CarryTrade from './pages/CarryTrade'
+import AnalisisReal from './pages/AnalisisReal'
+
 
 // Configuración de React Query
 const queryClient = new QueryClient({
@@ -75,6 +77,17 @@ function App() {
                 <ProtectedRoute>
                   <PortfolioProvider>
                     <CarryTrade />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/analisis-real"
+              element={
+                <ProtectedRoute>
+                  <PortfolioProvider>
+                    <AnalisisReal />
                   </PortfolioProvider>
                 </ProtectedRoute>
               }

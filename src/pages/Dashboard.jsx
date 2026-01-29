@@ -677,9 +677,9 @@ export default function Dashboard() {
                       </div>
                     )}
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[500px]">
                       <table className="w-full min-w-[700px]">
-                        <thead>
+                        <thead className="sticky top-0 z-10">
                           <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
                             <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('fecha')}>
                               <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
