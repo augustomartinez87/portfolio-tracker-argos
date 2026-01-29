@@ -10,9 +10,7 @@ import { formatARS, formatPercent, formatNumber } from '../../utils/formatters';
 import { macroService } from '../../services/macroService';
 import { mepService } from '../../services/mepService';
 import { usePortfolio } from '../../contexts/PortfolioContext';
-import Papaparse from 'papaparse';
 import * as XLSX from 'xlsx';
-import Decimal from 'decimal.js';
 
 const COLORS = {
     fci: '#3b82f6',    // Blue
