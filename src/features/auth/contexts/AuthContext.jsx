@@ -82,122 +82,108 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
-  const getSession = useCallback(async () => {
-    try {
-      console.log('[Auth] Getting session...');
-      const { data: { session } } = await supabase.auth.getSession()
-      const newUser = session?.user ?? null
-      console.log('[Auth] Session result:', newUser ? 'User found' : 'No user');
-      currentUserIdRef.current = newUser?.id ?? null
-      setUser(newUser)
-      setAuthLoading(false)
-
-      if (newUser) {
-        await loadUserProfile(newUser.id)
-      } else {
-        setProfileLoading(false)
-      }
-    } catch (err) {
-      console.error('[Auth] Error getting session:', err)
-      currentUserIdRef.current = null
-      setUser(null)
-      setAuthLoading(false)
-      setProfileLoading(false)
-    }
-  }, [loadUserProfile])
-
-  // Refrescar perfil manualmente
+  // Refrescar perfil manualmente (para uso externo si es necesario)
   const refreshProfile = useCallback(async () => {
-    if (user) {
-      await loadUserProfile(user.id)
+    const userId = currentUserIdRef.current;
+    if (userId) {
+      await loadUserProfile(userId);
     }
-  }, [user, loadUserProfile])
+  }, [loadUserProfile]);
 
   useEffect(() => {
-    // Timeout diferenciado para auth vs profile
+    // Flag para evitar ejecuciones múltiples
+    let isMounted = true;
+
+    // Timeout de seguridad para auth
     const authTimeout = setTimeout(() => {
-      if (authLoading) {
-        console.warn('[Auth] Auth initialization taking too long (15s), checking network status...');
-        if (!navigator.onLine) {
-          console.warn('[Auth] Offline detected, proceeding with cached session');
-          setAuthLoading(false);
-        } else {
-          console.warn('[Auth] Online but auth slow, proceeding anyway');
-          setAuthLoading(false);
-        }
+      if (isMounted && authLoading) {
+        console.warn('[Auth] Auth initialization taking too long (15s)');
+        setAuthLoading(false);
       }
     }, 15000);
 
-    const profileTimeout = setTimeout(() => {
-      if (profileLoading && user) {
-        console.warn('[Auth] Profile loading timeout (10s), proceeding with minimal profile');
-        setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
-        setProfileLoading(false);
-      }
-    }, 10000);
+    // Inicializar sesión una sola vez
+    const initSession = async () => {
+      try {
+        console.log('[Auth] Initializing session...');
+        const { data: { session } } = await supabase.auth.getSession();
 
-    getSession()
+        if (!isMounted) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[Auth] Auth state changed: ${event}`);
-      if (isLogoutInProgress.current) return
+        const currentUser = session?.user ?? null;
+        console.log('[Auth] Initial session:', currentUser ? 'User found' : 'No user');
 
-      const newUserId = session?.user?.id ?? null
+        currentUserIdRef.current = currentUser?.id ?? null;
+        setUser(currentUser);
+        setAuthLoading(false);
 
-      // Mejorar lógica de concurrencia para multi-pestaña
-      if (newUserId === currentUserIdRef.current) {
-        // Si el ID es el mismo pero el evento es importante, refrescamos
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log('[Auth] Refreshing profile due to state change event');
-          await loadUserProfile(newUserId);
+        if (currentUser) {
+          await loadUserProfile(currentUser.id);
+        } else {
+          setProfileLoading(false);
         }
-        return
-      }
-
-      console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
-      currentUserIdRef.current = newUserId
-      setUser(session?.user ?? null)
-      setAuthLoading(false)
-
-      if (newUserId) {
-        await loadUserProfile(newUserId)
-      } else {
-        setUserProfile(null)
-        setProfileLoading(false)
-      }
-    })
-
-    return () => {
-      clearTimeout(authTimeout);
-      clearTimeout(profileTimeout);
-      subscription.unsubscribe();
-    }
-  }, [getSession, loadUserProfile, user])
-
-  // Sincronización multi-pestaña
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key?.includes('supabase.auth.token') || e.key?.includes('sb-')) {
-        console.log('[Auth] Storage changed in another tab, refreshing session...');
-        getSession();
+      } catch (err) {
+        console.error('[Auth] Error initializing session:', err);
+        if (isMounted) {
+          setAuthLoading(false);
+          setProfileLoading(false);
+        }
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        console.log('[Auth] Tab became visible, refreshing profile...');
-        refreshProfile();
+    initSession();
+
+    // Listener para cambios de auth (login/logout desde otras pestañas, etc)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      console.log(`[Auth] Auth state changed: ${event}`);
+
+      if (isLogoutInProgress.current) return;
+
+      const newUserId = session?.user?.id ?? null;
+
+      // Solo procesar si el usuario realmente cambió
+      if (newUserId === currentUserIdRef.current) {
+        // Ignorar eventos redundantes
+        return;
+      }
+
+      console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
+      currentUserIdRef.current = newUserId;
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+
+      if (newUserId) {
+        await loadUserProfile(newUserId);
+      } else {
+        setUserProfile(null);
+        setProfileLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
+  }, [loadUserProfile]) // Solo loadUserProfile como dependencia
+
+  // Sincronización multi-pestaña (sin dependencias que causen loops)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key?.includes('supabase.auth.token') || e.key?.includes('sb-')) {
+        console.log('[Auth] Storage changed in another tab, reloading page...');
+        // Recargar la página es más seguro que intentar sincronizar estado
+        window.location.reload();
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, refreshProfile, getSession]);
+  }, []); // Sin dependencias - solo se ejecuta una vez
 
   const signUp = async (email, password, metadata = {}) => {
     const { data, error } = await supabase.auth.signUp({
