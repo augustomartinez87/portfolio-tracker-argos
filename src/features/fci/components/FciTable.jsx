@@ -30,21 +30,21 @@ const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate 
                 <tbody className="divide-y divide-border-primary">
                     {positions.map((pos) => {
                         const isPositive = pos.pnl >= 0;
-                        const vcpDisplay = currency === 'ARS' ? pos.ultimoVcp : (pos.ultimoVcp / mepRate);
+                        const vcpDisplay = currency === 'ARS' ? pos.lastVcp : (pos.lastVcp / mepRate);
 
                         return (
                             <tr key={pos.fciId} className="hover:bg-background-tertiary transition-all duration-200 group">
                                 <td className="px-4 py-3">
                                     <div className="flex flex-col">
-                                        <span className="font-bold text-text-primary text-sm">{pos.nombre}</span>
+                                        <span className="font-bold text-text-primary text-sm">{pos.name}</span>
                                         <span className="text-[10px] text-text-tertiary">
-                                            {pos.fechaPrecios ? `VCP al ${new Date(pos.fechaPrecios + 'T00:00:00').toLocaleDateString('es-AR')}` : 'Sin precio'}
+                                            {pos.priceDate ? `VCP al ${new Date(pos.priceDate + 'T00:00:00').toLocaleDateString('es-AR')}` : 'Sin precio'}
                                         </span>
                                     </div>
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                    {formatNumber(pos.cuotapartes, 2)}
+                                    {formatNumber(pos.quantity, 2)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
@@ -52,11 +52,11 @@ const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate 
                                 </td>
 
                                 <td className="px-4 py-3 text-right font-mono font-bold text-text-primary">
-                                    {formatVal(pos.valuacion, pos.valuacionUSD)}
+                                    {formatVal(pos.valuation, pos.valuationUSD)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                    {formatVal(pos.montoInvertido, pos.montoInvertidoUSD)}
+                                    {formatVal(pos.invested, pos.investedUSD)}
                                 </td>
 
                                 <td className="px-4 py-3 text-right">
@@ -66,7 +66,7 @@ const FciTable = ({ positions, onSubscribe, onRedeem, currency = 'ARS', mepRate 
                                         </span>
                                         <span className={`text-xs font-mono flex items-center ${isPositive ? 'text-profit' : 'text-loss'}`}>
                                             {isPositive ? <ChevronUp className="w-3 h-3 mr-0.5" /> : <ChevronDown className="w-3 h-3 mr-0.5" />}
-                                            {formatPercent(pos.pnlPct)}
+                                            {formatPercent(currency === 'ARS' ? pos.pnlPct : (pos.pnlPctUSD ?? pos.pnlPct))}
                                         </span>
                                     </div>
                                 </td>

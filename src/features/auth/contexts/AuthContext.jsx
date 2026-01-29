@@ -211,9 +211,15 @@ export const AuthProvider = ({ children }) => {
     })
     if (error) throw error
 
-    // Cargar perfil después del login
+    // El perfil se carga automáticamente via onAuthStateChange
+    // No bloquear el login esperando el perfil
     if (data.user) {
-      await loadUserProfile(data.user.id)
+      currentUserIdRef.current = data.user.id
+      setUser(data.user)
+      // Cargar perfil en background sin bloquear
+      loadUserProfile(data.user.id).catch(err => {
+        console.error('[Auth] Error loading profile after login:', err)
+      })
     }
 
     return data

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import { Plus, MoreVertical, Check, Star, Edit2, Trash2, X } from 'lucide-react'
 
 export const PortfolioSelector = () => {

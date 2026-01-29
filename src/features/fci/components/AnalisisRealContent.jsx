@@ -9,7 +9,7 @@ import {
 import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 import { macroService } from '@/features/macro/services/macroService';
 import { mepService } from '@/features/portfolio/services/mepService';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { VIEW_MODES } from '@/constants';
 import * as XLSX from 'xlsx';
 

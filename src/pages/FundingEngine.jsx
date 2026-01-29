@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { DashboardHeader } from '@/features/portfolio/components/DashboardHeader';
 import { useAuth } from '@/features/auth/contexts/AuthContext';

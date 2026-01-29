@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { usePrices } from '@/features/portfolio/services/priceService';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';

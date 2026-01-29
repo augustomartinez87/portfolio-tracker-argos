@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';

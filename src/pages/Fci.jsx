@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { PieChart, Plus, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';

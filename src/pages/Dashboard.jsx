@@ -15,7 +15,7 @@ import TotalCard from '@/features/portfolio/components/TotalCard';
 import { PortfolioTabs } from '@/features/portfolio/components/PortfolioTabs';
 import { PortfolioCharts } from '@/features/portfolio/components/PortfolioCharts';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePortfolio } from '@/contexts/PortfolioContext';
+import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import { tradeService } from '@/features/portfolio/services/tradeService';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';

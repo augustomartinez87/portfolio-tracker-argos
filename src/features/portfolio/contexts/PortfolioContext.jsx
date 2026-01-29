@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseFetch } from '@/lib/supabase'
 import { useAuth } from '../features/auth/contexts/AuthContext'
 
 const PortfolioContext = createContext({})
@@ -53,52 +53,39 @@ export const PortfolioProvider = ({ children }) => {
     setError(null)
     isQueryingRef.current = true;
 
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const TIMEOUT_MS = 12000; // Increased to 12s
-    const timeoutId = setTimeout(() => {
-      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after ${TIMEOUT_MS / 1000}s`);
-      controller.abort();
-    }, TIMEOUT_MS);
-
     try {
-      console.log(`[PortfolioContext] Starting query...`);
+      console.log(`[PortfolioContext] Starting query (using direct fetch)...`);
 
-      const { data, error: queryError } = await supabase
-        .from('portfolios')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .abortSignal(controller.signal)
-
-      clearTimeout(timeoutId);
+      // Usar fetch directo para evitar el bloqueo del cliente de Supabase
+      const { data, error: queryError } = await supabaseFetch('portfolios', {
+        select: '*',
+        eq: { user_id: user.id }
+      });
 
       if (queryError) {
         console.error('[PortfolioContext] Query error:', queryError);
         throw queryError;
       }
 
-      console.log(`[PortfolioContext] Query returned ${data?.length || 0} portfolios`);
+      // Ordenar por created_at manualmente
+      const sortedData = (data || []).sort((a, b) =>
+        new Date(a.created_at) - new Date(b.created_at)
+      );
 
-      setPortfolios(data || [])
+      console.log(`[PortfolioContext] Query returned ${sortedData.length} portfolios`);
 
-      const defaultPortfolio = data?.find(p => p.is_default) || data?.[0] || null
+      setPortfolios(sortedData)
+
+      const defaultPortfolio = sortedData.find(p => p.is_default) || sortedData[0] || null
       setCurrentPortfolio(defaultPortfolio)
 
-      if (!defaultPortfolio && data?.length === 0) {
+      if (!defaultPortfolio && sortedData.length === 0) {
         console.log('[PortfolioContext] No portfolios found for user');
       }
       setError(null)
     } catch (err) {
-      clearTimeout(timeoutId);
       console.error('[PortfolioContext] Error loading portfolios:', err)
-
-      // Handle abort/timeout specifically
-      if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-        setError('La conexión con el servidor está lenta. Verifica tu conexión a internet e intenta de nuevo.');
-      } else {
-        setError(err.message || 'Error desconocido al cargar portfolios')
-      }
+      setError(err.message || 'Error desconocido al cargar portfolios')
       setPortfolios([])
       setCurrentPortfolio(null)
     } finally {

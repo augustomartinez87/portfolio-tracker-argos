@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseFetch } from '@/lib/supabase';
 
 export const userService = {
   // ============================================================================
@@ -50,39 +50,35 @@ export const userService = {
   async getProfile(userId) {
     if (!userId) return null;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // Reducido a 8s
-
     try {
-      console.log(`[UserService] Fetching profile for user ${userId}`);
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .abortSignal(controller.signal)
-        .single();
+      console.log(`[UserService] Fetching profile for user ${userId} (using direct fetch)`);
 
-      clearTimeout(timeoutId);
+      // Usar fetch directo para evitar el bloqueo del cliente de Supabase
+      const { data, error } = await supabaseFetch('user_profiles', {
+        select: '*',
+        eq: { user_id: userId },
+        single: true
+      });
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === '406' || error.code === 'PGRST116') {
           console.log(`[UserService] No profile found for user ${userId}, creating one...`);
-          // Intentar crear el perfil automáticamente
           return this.createProfileIfNotExists(userId);
         }
         console.error('[UserService] Error fetching profile:', error);
-        throw error; // Propagar error para retry mechanism
+        throw error;
       }
+
       console.log(`[UserService] Profile loaded successfully for user ${userId}`);
       return data;
     } catch (err) {
-      clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
-        console.warn(`[UserService] Profile fetch timeout for user ${userId}`);
-        throw new Error('Profile fetch timeout');
+      // Si es un 406 (no encontrado con single), crear perfil
+      if (err.code === '406') {
+        console.log(`[UserService] No profile found for user ${userId}, creating one...`);
+        return this.createProfileIfNotExists(userId);
       }
       console.error('[UserService] Profile fetch failed:', err);
-      throw err; // Propagar error para retry mechanism
+      throw err;
     }
   },
 
@@ -162,32 +158,37 @@ export const userService = {
 
   /**
    * Listar todos los usuarios (admin only)
+   * Nota: No podemos hacer join con auth.users desde el cliente,
+   * así que solo devolvemos los datos de user_profiles
    */
   async getAllUsers() {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select(`
-          *,
-          user:user_id (
-            email,
-            created_at,
-            last_sign_in_at
-          )
-        `)
-      .order('created_at', { ascending: false });
+    try {
+      // Usar fetch directo para evitar bloqueo del cliente
+      const { data, error } = await supabaseFetch('user_profiles', {
+        select: '*'
+      });
 
-    if (error) {
-      console.error('Error fetching users:', error);
-      throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+
+      // Ordenar por created_at descendente
+      const sorted = (data || []).sort((a, b) =>
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      // El email debería estar almacenado en user_profiles o podemos usar display_name
+      return sorted.map(profile => ({
+        ...profile,
+        email: profile.email || profile.display_name || 'Sin email',
+        last_sign_in: profile.last_sign_in_at,
+        user_created_at: profile.created_at
+      }));
+    } catch (err) {
+      console.error('Error in getAllUsers:', err);
+      return [];
     }
-
-    // Transformar datos para incluir email directamente
-    return data.map(profile => ({
-      ...profile,
-      email: profile.user?.email,
-      last_sign_in: profile.user?.last_sign_in_at,
-      user_created_at: profile.user?.created_at
-    }));
   },
 
   /**
@@ -263,69 +264,82 @@ export const userService = {
    * Obtener actividad del sistema (admin only)
    */
   async getSystemActivity(limit = 100, filters = {}) {
-    let query = supabase
-      .from('user_activity')
-      .select(`
-          *,
-          profile:user_id (
-            display_name,
-            role
-          )
-        `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    try {
+      // Usar fetch directo para evitar bloqueo del cliente
+      const { data, error } = await supabaseFetch('user_activity', {
+        select: '*',
+        limit
+      });
 
-    // Aplicar filtros opcionales
-    if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
-    }
-    if (filters.module) {
-      query = query.eq('module', filters.module);
-    }
-    if (filters.action) {
-      query = query.eq('action', filters.action);
-    }
-    if (filters.fromDate) {
-      query = query.gte('created_at', filters.fromDate);
-    }
-    if (filters.toDate) {
-      query = query.lte('created_at', filters.toDate);
-    }
+      if (error) {
+        console.error('Error fetching activity:', error);
+        throw error;
+      }
 
-    const { data, error } = await query;
+      // Ordenar y filtrar manualmente
+      let filtered = data || [];
 
-    if (error) {
-      console.error('Error fetching activity:', error);
-      throw error;
+      if (filters.userId) {
+        filtered = filtered.filter(a => a.user_id === filters.userId);
+      }
+      if (filters.module) {
+        filtered = filtered.filter(a => a.module === filters.module);
+      }
+      if (filters.action) {
+        filtered = filtered.filter(a => a.action === filters.action);
+      }
+      if (filters.fromDate) {
+        filtered = filtered.filter(a => new Date(a.created_at) >= new Date(filters.fromDate));
+      }
+      if (filters.toDate) {
+        filtered = filtered.filter(a => new Date(a.created_at) <= new Date(filters.toDate));
+      }
+
+      // Ordenar por fecha descendente
+      filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      return filtered.slice(0, limit).map(activity => ({
+        ...activity,
+        display_name: activity.display_name || 'Usuario'
+      }));
+    } catch (err) {
+      console.error('Error in getSystemActivity:', err);
+      return [];
     }
-
-    return data.map(activity => ({
-      ...activity,
-      display_name: activity.profile?.display_name,
-      user_role: activity.profile?.role
-    }));
   },
 
   /**
    * Obtener estadísticas del sistema (admin only)
    */
   async getSystemStats() {
-    const [usersResult, activityResult] = await Promise.all([
-      supabase.from('user_profiles').select('role, is_active'),
-      supabase
-        .from('user_activity')
-        .select('created_at')
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-    ]);
+    try {
+      // Usar fetch directo para evitar bloqueo del cliente
+      const [usersResult, activityResult] = await Promise.all([
+        supabaseFetch('user_profiles', { select: 'role,is_active' }),
+        supabaseFetch('user_activity', { select: 'created_at' })
+      ]);
 
-    const users = usersResult.data || [];
-    const recentActivity = activityResult.data || [];
+      const users = usersResult.data || [];
+      // Filtrar actividad de últimos 7 días manualmente
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentActivity = (activityResult.data || []).filter(a =>
+        new Date(a.created_at) >= sevenDaysAgo
+      );
 
-    return {
-      totalUsers: users.length,
-      activeUsers: users.filter(u => u.is_active).length,
-      adminUsers: users.filter(u => u.role === 'admin').length,
-      activityLast7Days: recentActivity.length
-    };
+      return {
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.is_active).length,
+        adminUsers: users.filter(u => u.role === 'admin').length,
+        activityLast7Days: recentActivity.length
+      };
+    } catch (err) {
+      console.error('Error in getSystemStats:', err);
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        adminUsers: 0,
+        activityLast7Days: 0
+      };
+    }
   }
 };

@@ -69,10 +69,10 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
             if (!posMap[fci_id]) {
                 posMap[fci_id] = {
                     fciId: fci_id,
-                    nombre: fci_master?.nombre || 'Desconocido',
-                    cuotapartes: new Decimal(0),
-                    montoInvertido: new Decimal(0), // Cash Flow neto (Suscripciones - Rescates)
-                    montoInvertidoUSD: new Decimal(0)
+                    name: fci_master?.nombre || 'Desconocido',
+                    quantity: new Decimal(0),
+                    invested: new Decimal(0), // Cash Flow neto (Suscripciones - Rescates)
+                    investedUSD: new Decimal(0)
                 };
             }
 
@@ -80,59 +80,61 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
             const cuotasDec = new Decimal(cuotapartes || 0);
 
             if (tipo === 'SUBSCRIPTION') {
-                posMap[fci_id].cuotapartes = posMap[fci_id].cuotapartes.plus(cuotasDec);
-                posMap[fci_id].montoInvertido = posMap[fci_id].montoInvertido.plus(montoDec);
+                posMap[fci_id].quantity = posMap[fci_id].quantity.plus(cuotasDec);
+                posMap[fci_id].invested = posMap[fci_id].invested.plus(montoDec);
 
                 // Cálculo USD con precisión histórica usando el Map
                 const dateStr = tx.fecha;
                 const historicalMep = new Decimal(mepService.findClosestRate(dateStr, mepMap) || mepRate || 1);
-                posMap[fci_id].montoInvertidoUSD = posMap[fci_id].montoInvertidoUSD.plus(montoDec.dividedBy(historicalMep));
+                posMap[fci_id].investedUSD = posMap[fci_id].investedUSD.plus(montoDec.dividedBy(historicalMep));
             } else if (tipo === 'REDEMPTION') {
                 const pos = posMap[fci_id];
-                const avgCostARS = pos.cuotapartes.gt(0) ? pos.montoInvertido.dividedBy(pos.cuotapartes) : new Decimal(0);
-                const avgCostUSD = pos.cuotapartes.gt(0) ? pos.montoInvertidoUSD.dividedBy(pos.cuotapartes) : new Decimal(0);
+                const avgCostARS = pos.quantity.gt(0) ? pos.invested.dividedBy(pos.quantity) : new Decimal(0);
+                const avgCostUSD = pos.quantity.gt(0) ? pos.investedUSD.dividedBy(pos.quantity) : new Decimal(0);
 
-                pos.cuotapartes = pos.cuotapartes.minus(cuotasDec);
-                pos.montoInvertido = pos.montoInvertido.minus(cuotasDec.times(avgCostARS));
-                pos.montoInvertidoUSD = pos.montoInvertidoUSD.minus(cuotasDec.times(avgCostUSD));
+                pos.quantity = pos.quantity.minus(cuotasDec);
+                pos.invested = pos.invested.minus(cuotasDec.times(avgCostARS));
+                pos.investedUSD = pos.investedUSD.minus(cuotasDec.times(avgCostUSD));
 
                 // Clean up small dust after redemption (matches usePortfolioEngine.ts pattern)
-                if (pos.cuotapartes.abs().lt(new Decimal(0.0001))) {
-                    pos.cuotapartes = new Decimal(0);
-                    pos.montoInvertido = new Decimal(0);
-                    pos.montoInvertidoUSD = new Decimal(0);
+                if (pos.quantity.abs().lt(new Decimal(0.0001))) {
+                    pos.quantity = new Decimal(0);
+                    pos.invested = new Decimal(0);
+                    pos.investedUSD = new Decimal(0);
                 }
             }
         });
 
         // Convertir a array y valuar
         return Object.values(posMap)
-            .filter(p => p.cuotapartes.abs().gt(0.0001)) // Ocultar saldos cero
+            .filter(p => p.quantity.abs().gt(0.0001)) // Ocultar saldos cero
             .map(p => {
                 const lastPrice = latestPrices[p.fciId];
                 const vcpActual = new Decimal(lastPrice ? (lastPrice.vcp || 0) : 0);
                 const fechaPrecios = lastPrice ? lastPrice.fecha : null;
 
-                const valuacion = p.cuotapartes.times(vcpActual);
-                const pnl = valuacion.minus(p.montoInvertido);
-                const pnlPct = p.montoInvertido.isZero() ? new Decimal(0) : pnl.dividedBy(p.montoInvertido.abs()).times(100);
+                const valuation = p.quantity.times(vcpActual);
+                const pnl = valuation.minus(p.invested);
+                const pnlPct = p.invested.isZero() ? new Decimal(0) : pnl.dividedBy(p.invested.abs()).times(100);
 
                 const currentMepDec = new Decimal(mepRate || 1);
-                const valuacionUSD = currentMepDec.gt(0) ? valuacion.dividedBy(currentMepDec) : new Decimal(0);
-                const pnlUSD = valuacionUSD.minus(p.montoInvertidoUSD);
+                const valuationUSD = currentMepDec.gt(0) ? valuation.dividedBy(currentMepDec) : new Decimal(0);
+                const pnlUSD = valuationUSD.minus(p.investedUSD);
+                const pnlPctUSD = p.investedUSD.isZero() ? new Decimal(0) : pnlUSD.dividedBy(p.investedUSD.abs()).times(100);
 
                 return {
                     ...p,
-                    cuotapartes: p.cuotapartes.toNumber(),
-                    montoInvertido: p.montoInvertido.toNumber(),
-                    montoInvertidoUSD: p.montoInvertidoUSD.toNumber(),
-                    ultimoVcp: vcpActual.toNumber(),
-                    fechaPrecios,
-                    valuacion: valuacion.toNumber(),
+                    quantity: p.quantity.toNumber(),
+                    invested: p.invested.toNumber(),
+                    investedUSD: p.investedUSD.toNumber(),
+                    lastVcp: vcpActual.toNumber(),
+                    priceDate: fechaPrecios,
+                    valuation: valuation.toNumber(),
                     pnl: pnl.toNumber(),
                     pnlPct: pnlPct.toNumber(),
-                    valuacionUSD: valuacionUSD.toNumber(),
-                    pnlUSD: pnlUSD.toNumber()
+                    valuationUSD: valuationUSD.toNumber(),
+                    pnlUSD: pnlUSD.toNumber(),
+                    pnlPctUSD: pnlPctUSD.toNumber()
                 };
             });
     }, [transactions, latestPrices, mepRate, mepHistory]);
@@ -149,11 +151,11 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
 
         // Accumulate using Decimal arithmetic
         for (const pos of positions) {
-            invested = invested.plus(pos.montoInvertido || 0);
-            valuation = valuation.plus(pos.valuacion || 0);
+            invested = invested.plus(pos.invested || 0);
+            valuation = valuation.plus(pos.valuation || 0);
             pnl = pnl.plus(pos.pnl || 0);
-            investedUSD = investedUSD.plus(pos.montoInvertidoUSD || 0);
-            valuationUSD = valuationUSD.plus(pos.valuacionUSD || 0);
+            investedUSD = investedUSD.plus(pos.investedUSD || 0);
+            valuationUSD = valuationUSD.plus(pos.valuationUSD || 0);
             pnlUSD = pnlUSD.plus(pos.pnlUSD || 0);
         }
 

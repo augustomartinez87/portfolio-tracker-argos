@@ -4,7 +4,7 @@
 
 // @ts-ignore - Supabase types are complex, use any for now
 import { supabase } from '@/lib/supabase';
-import { ingestFromCsv } from '@/ingest/csvSpreadIngestor';
+import { ingestFromCsv } from '../utils/csvSpreadIngestor';
 import { Caucion, Result, FinancingMetrics } from '@/types/finance';
 import Decimal from 'decimal.js';
 
