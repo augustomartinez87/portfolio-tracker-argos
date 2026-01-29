@@ -6,6 +6,44 @@ export const userService = {
   // ============================================================================
 
   /**
+   * Crear perfil para un usuario si no existe
+   * @param {string} userId - ID del usuario de Supabase
+   */
+  async createProfileIfNotExists(userId) {
+    if (!userId) return null;
+
+    try {
+      console.log(`[UserService] Creating profile for user ${userId}`);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          role: 'user',
+          modules: ['portfolio', 'carryTrade'],
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        // Si ya existe (violación de unique constraint), intentar obtenerlo
+        if (error.code === '23505') {
+          console.log(`[UserService] Profile already exists for user ${userId}`);
+          return this.getProfile(userId);
+        }
+        console.error('[UserService] Error creating profile:', error);
+        return null;
+      }
+
+      console.log(`[UserService] Profile created successfully for user ${userId}`);
+      return data;
+    } catch (err) {
+      console.error('[UserService] Error in createProfileIfNotExists:', err);
+      return null;
+    }
+  },
+
+  /**
    * Obtener perfil de un usuario específico
    * @param {string} userId - ID del usuario de Supabase
    */
@@ -13,7 +51,7 @@ export const userService = {
     if (!userId) return null;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // Reducido a 8s
 
     try {
       console.log(`[UserService] Fetching profile for user ${userId}`);
@@ -28,8 +66,9 @@ export const userService = {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log(`[UserService] No profile found for user ${userId}`);
-          return null;
+          console.log(`[UserService] No profile found for user ${userId}, creating one...`);
+          // Intentar crear el perfil automáticamente
+          return this.createProfileIfNotExists(userId);
         }
         console.error('[UserService] Error fetching profile:', error);
         throw error; // Propagar error para retry mechanism

@@ -32,15 +32,15 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
-    // Safety timeout para la carga del perfil (20s)
+    // Safety timeout para la carga del perfil (10s)
     const profileTimeout = setTimeout(() => {
       if (profileLoading) {
-        console.warn('[Auth] Profile loading timed out (20s), proceeding with minimal profile');
+        console.warn('[Auth] Profile loading timed out (10s), proceeding with minimal profile');
         // Perfil mínimo para permitir funcionamiento básico
         setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
         setProfileLoading(false);
       }
-    }, 20000);
+    }, 10000);
 
     try {
       console.log('[Auth] Fetching profile for user:', userId);
@@ -130,11 +130,11 @@ export const AuthProvider = ({ children }) => {
 
     const profileTimeout = setTimeout(() => {
       if (profileLoading && user) {
-        console.warn('[Auth] Profile loading timeout (20s), proceeding with minimal profile');
+        console.warn('[Auth] Profile loading timeout (10s), proceeding with minimal profile');
         setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
         setProfileLoading(false);
       }
-    }, 20000);
+    }, 10000);
 
     getSession()
 

@@ -13,7 +13,8 @@ export const usePortfolio = () => {
 }
 
 export const PortfolioProvider = ({ children }) => {
-  const { user, loading: authLoading } = useAuth()
+  // Solo esperamos authLoading, no profileLoading - los portfolios se pueden cargar en paralelo
+  const { user, authLoading } = useAuth()
   const [portfolios, setPortfolios] = useState([])
   const [currentPortfolio, setCurrentPortfolio] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -66,6 +67,7 @@ export const PortfolioProvider = ({ children }) => {
       const { data, error: queryError } = await supabase
         .from('portfolios')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .abortSignal(controller.signal)
 

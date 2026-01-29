@@ -5,6 +5,9 @@ import './index.css'
 
 import { ThemeProvider } from './contexts/ThemeContext'
 
+// Debug utilities (disponibles en consola como window.debugAuth())
+import './utils/debugAuth'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
