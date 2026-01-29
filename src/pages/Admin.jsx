@@ -271,11 +271,11 @@ export default function Admin() {
                                   {u.is_active ? 'Activo' : 'Inactivo'}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-sm text-text-tertiary">
-                                {formatDateShort(u.created_at)}
+                              <td className="px-4 py-3 text-sm text-text-tertiary font-mono">
+                                {formatDate(u.user_created_at)}
                               </td>
-                              <td className="px-4 py-3 text-sm text-text-tertiary">
-                                {formatDateShort(u.last_sign_in)}
+                              <td className="px-4 py-3 text-sm text-text-tertiary font-mono">
+                                {formatDate(u.last_sign_in)}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-center gap-2">

@@ -178,12 +178,12 @@ export const userService = {
         new Date(b.created_at) - new Date(a.created_at)
       );
 
-      // El email debería estar almacenado en user_profiles o podemos usar display_name
+      // El email y fechas ahora vienen directamente de user_profiles gracias a la sincronización
       return sorted.map(profile => ({
         ...profile,
         email: profile.email || profile.display_name || 'Sin email',
         last_sign_in: profile.last_sign_in_at,
-        user_created_at: profile.created_at
+        user_created_at: profile.registered_at || profile.created_at
       }));
     } catch (err) {
       console.error('Error in getAllUsers:', err);
