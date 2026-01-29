@@ -9,15 +9,22 @@ import { useAuth } from '../contexts/AuthContext'
  * @param {boolean} props.adminOnly - Si la ruta es solo para administradores (opcional)
  */
 export const ProtectedRoute = ({ children, requiredModule = null, adminOnly = false }) => {
-  const { user, loading, isAdmin, hasModuleAccess, userProfile } = useAuth()
+  const { user, loading, authLoading, profileLoading, isAdmin, hasModuleAccess, userProfile } = useAuth()
 
-  // Mostrar loading mientras se carga la sesión y el perfil
+  // Mostrar loading específico según el estado
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-primary">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-text-tertiary">Cargando...</p>
+          <p className="mt-4 text-text-tertiary">
+            {authLoading ? 'Verificando sesión...' : 'Cargando perfil...'}
+          </p>
+          {profileLoading && (
+            <p className="mt-2 text-text-quaternary text-sm">
+              Esto puede tomar unos segundos
+            </p>
+          )}
         </div>
       </div>
     )

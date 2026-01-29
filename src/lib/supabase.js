@@ -9,16 +9,24 @@ localStorage.setItem = function (key, value) {
     originalSetItem(key, value)
   } catch (e) {
     if (e.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded, clearing price caches...')
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('data912') || key.includes('price_') || key.includes('hist_')) {
-          localStorage.removeItem(key)
-        }
-      })
+      console.warn('[LocalStorage] Quota exceeded, clearing non-essential caches...')
+      
+      // Priorizar: NO eliminar claves de autenticación
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        !key.includes('supabase') && 
+        !key.includes('auth') && 
+        !key.includes('sb-') &&
+        (key.includes('data912') || key.includes('price_') || key.includes('hist_') || key.includes('portfolio-'))
+      )
+      
+      console.log(`[LocalStorage] Removing ${keysToRemove.length} non-essential keys`)
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      
       try {
         originalSetItem(key, value)
+        console.log('[LocalStorage] Successfully saved after cleanup')
       } catch (e2) {
-        console.warn('localStorage still full, skipping save')
+        console.warn('[LocalStorage] Still full after cleanup, critical data may be lost')
       }
     }
   }
@@ -32,13 +40,9 @@ if (typeof window !== 'undefined') {
     keyStart: supabaseAnonKey ? supabaseAnonKey.substring(0, 10) : 'none'
   };
 
-  // Limpieza preventiva de locks de pestañas que suelen causar cuelgues
-  Object.keys(localStorage).forEach(key => {
-    if (key.includes('-auth-token-lock')) {
-      console.warn('[Supabase] Corregido: Detectado lock fantasma, eliminando...', key);
-      localStorage.removeItem(key);
-    }
-  });
+  // REMOVIDO: No eliminar locks de auth automáticamente
+  // Esto causaba problemas de sincronización multi-pestaña
+  // Los locks son necesarios para prevenir race conditions
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

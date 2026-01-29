@@ -13,9 +13,10 @@ export const userService = {
     if (!userId) return null;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
     try {
+      console.log(`[UserService] Fetching profile for user ${userId}`);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -27,17 +28,49 @@ export const userService = {
 
       if (error) {
         if (error.code === 'PGRST116') {
+          console.log(`[UserService] No profile found for user ${userId}`);
           return null;
         }
-        console.error('Error fetching profile:', error);
-        return null;
+        console.error('[UserService] Error fetching profile:', error);
+        throw error; // Propagar error para retry mechanism
       }
+      console.log(`[UserService] Profile loaded successfully for user ${userId}`);
       return data;
     } catch (err) {
       clearTimeout(timeoutId);
-      console.error('Profile fetch aborted or failed:', err);
-      return null;
+      if (err.name === 'AbortError') {
+        console.warn(`[UserService] Profile fetch timeout for user ${userId}`);
+        throw new Error('Profile fetch timeout');
+      }
+      console.error('[UserService] Profile fetch failed:', err);
+      throw err; // Propagar error para retry mechanism
     }
+  },
+
+  /**
+   * Obtener perfil con retry exponencial
+   * @param {string} userId - ID del usuario de Supabase
+   * @param {number} retries - Número de intentos
+   */
+  async getProfileWithRetry(userId, retries = 3) {
+    let lastError = null;
+    
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const profile = await this.getProfile(userId);
+        return profile;
+      } catch (err) {
+        lastError = err;
+        if (attempt < retries - 1) {
+          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          console.log(`[UserService] Retry attempt ${attempt + 1} for user ${userId} in ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    console.error(`[UserService] All retries failed for user ${userId}:`, lastError);
+    throw lastError;
   },
 
   /**

@@ -16,12 +16,15 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(true)
   const isLogoutInProgress = useRef(false)
   const currentUserIdRef = useRef(null)
 
-  // Cargar perfil del usuario
+  // Estado combinado para backward compatibility
+  const loading = authLoading || profileLoading
+
+  // Cargar perfil del usuario con retry exponencial
   const loadUserProfile = useCallback(async (userId) => {
     if (!userId) {
       setUserProfile(null)
@@ -29,29 +32,50 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
-    // Safety timeout para la carga del perfil (15s)
+    // Safety timeout para la carga del perfil (20s)
     const profileTimeout = setTimeout(() => {
       if (profileLoading) {
-        console.warn('[Auth] Profile loading timed out (15s), proceeding without profile');
+        console.warn('[Auth] Profile loading timed out (20s), proceeding with minimal profile');
+        // Perfil mínimo para permitir funcionamiento básico
+        setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
         setProfileLoading(false);
       }
-    }, 15000);
+    }, 20000);
 
     try {
       console.log('[Auth] Fetching profile for user:', userId);
       setProfileLoading(true)
-      const profile = await userService.getProfile(userId)
+      
+      // Implementar retry con backoff exponencial
+      let profile = null;
+      let lastError = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          profile = await userService.getProfile(userId);
+          if (profile) break;
+        } catch (err) {
+          lastError = err;
+          if (attempt < 2) {
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            console.log(`[Auth] Profile retry attempt ${attempt + 1}`);
+          }
+        }
+      }
+      
       setUserProfile(profile)
 
       if (profile) {
         console.log('[Auth] Profile loaded successfully');
         userService.logActivity('login', null, { method: 'session' })
       } else {
-        console.warn('[Auth] No profile found for user:', userId);
+        console.warn('[Auth] No profile found after retries for user:', userId, lastError);
+        // Perfil mínimo como fallback
+        setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
       }
     } catch (err) {
       console.error('[Auth] Error loading user profile:', err)
-      setUserProfile(null)
+      setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
     } finally {
       clearTimeout(profileTimeout);
       setProfileLoading(false)
@@ -59,24 +83,27 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    // Safety timeout global para el arranque (30s)
-    // Aumentado para evitar cierres de sesión por cold starts de Supabase o conexiones lentas
-    const globalTimeout = setTimeout(() => {
-      if (loading) {
-        console.warn('[Auth] Initialization timed out (30s). Potential server lag or corrupt session.');
-
-        // Solo marcamos como cargado para permitir que la app intente renderizar
-        // En lugar de forzar logout inmediato, dejamos que el usuario vea el estado
-        setLoading(false);
-        setProfileLoading(false);
-
-        // Si realmente no hay usuario después de 30s, redirigimos
-        if (!currentUserIdRef.current && !window.location.pathname.includes('/login')) {
-          console.warn('[Auth] No user detected after timeout, redirecting to login');
-          window.location.href = '/login?error=session_timeout';
+    // Timeout diferenciado para auth vs profile
+    const authTimeout = setTimeout(() => {
+      if (authLoading) {
+        console.warn('[Auth] Auth initialization taking too long (15s), checking network status...');
+        if (!navigator.onLine) {
+          console.warn('[Auth] Offline detected, proceeding with cached session');
+          setAuthLoading(false);
+        } else {
+          console.warn('[Auth] Online but auth slow, proceeding anyway');
+          setAuthLoading(false);
         }
       }
-    }, 30000);
+    }, 15000);
+
+    const profileTimeout = setTimeout(() => {
+      if (profileLoading && user) {
+        console.warn('[Auth] Profile loading timeout (20s), proceeding with minimal profile');
+        setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
+        setProfileLoading(false);
+      }
+    }, 20000);
 
     const getSession = async () => {
       try {
@@ -86,6 +113,7 @@ export const AuthProvider = ({ children }) => {
         console.log('[Auth] Session result:', newUser ? 'User found' : 'No user');
         currentUserIdRef.current = newUser?.id ?? null
         setUser(newUser)
+        setAuthLoading(false) // Marcar auth como cargado independientemente del profile
 
         if (newUser) {
           await loadUserProfile(newUser.id)
@@ -96,9 +124,8 @@ export const AuthProvider = ({ children }) => {
         console.error('[Auth] Error getting initial session:', err)
         currentUserIdRef.current = null
         setUser(null)
+        setAuthLoading(false)
         setProfileLoading(false)
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -109,8 +136,10 @@ export const AuthProvider = ({ children }) => {
       if (isLogoutInProgress.current) return
 
       const newUserId = session?.user?.id ?? null
+      
+      // Mejorar lógica de concurrencia para multi-pestaña
       if (newUserId === currentUserIdRef.current) {
-        // Si el ID es el mismo pero el evento es SIGNED_IN, refrescamos el perfil por si acaso
+        // Si el ID es el mismo pero el evento es importante, refrescamos
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           console.log('[Auth] Refreshing profile due to state change event');
           await loadUserProfile(newUserId);
@@ -121,6 +150,7 @@ export const AuthProvider = ({ children }) => {
       console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
       currentUserIdRef.current = newUserId
       setUser(session?.user ?? null)
+      setAuthLoading(false)
 
       if (newUserId) {
         await loadUserProfile(newUserId)
@@ -128,15 +158,39 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(null)
         setProfileLoading(false)
       }
-
-      setLoading(false)
     })
 
     return () => {
-      clearTimeout(globalTimeout);
+      clearTimeout(authTimeout);
+      clearTimeout(profileTimeout);
       subscription.unsubscribe();
     }
   }, [loadUserProfile])
+
+  // Sincronización multi-pestaña
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key?.includes('supabase.auth.token') || e.key?.includes('sb-')) {
+        console.log('[Auth] Storage changed in another tab, refreshing session...');
+        getSession();
+      }
+    };
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('[Auth] Tab became visible, refreshing profile...');
+        refreshProfile();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, refreshProfile]);
 
   const signUp = async (email, password, metadata = {}) => {
     const { data, error } = await supabase.auth.signUp({
@@ -222,7 +276,9 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{
       user,
       userProfile,
-      loading: loading || profileLoading,
+      loading,
+      authLoading,
+      profileLoading,
       isAdmin,
       allowedModules,
       hasModuleAccess,
