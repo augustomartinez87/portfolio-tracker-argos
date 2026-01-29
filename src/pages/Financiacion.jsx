@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
+import { TrendingUp, RefreshCw, Upload, Filter, Trash2, HandCoins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { LoadingFallback } from '@/components/common/LoadingSpinner';
 import FinancingDashboard from '@/features/financing/components/FinancingDashboard';
 import { financingService } from '@/features/financing/services/financingService';
 import MobileNav from '@/components/common/MobileNav';
-import { HandCoins, TrendingUp, RefreshCw, Upload, Filter, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/common/PageHeader';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
 const Financiacion = () => {

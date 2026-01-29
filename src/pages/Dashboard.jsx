@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info } from 'lucide-react';
+import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info, LayoutDashboard } from 'lucide-react';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 import { isBonoPesos, isBonoHardDollar, getAssetClass } from '@/features/portfolio/hooks/useBondPrices';
 import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
@@ -18,7 +18,7 @@ import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import MobileNav from '@/components/common/MobileNav';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
-import { LayoutDashboard } from 'lucide-react';
+// Consolidated LayoutDashboard above
 import { tradeService } from '@/features/portfolio/services/tradeService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { PageHeader } from '@/components/common/PageHeader';

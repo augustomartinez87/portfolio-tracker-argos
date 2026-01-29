@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
 import { useFciEngine } from '@/features/fci/hooks/useFciEngine';
 import { usePrices } from '@/features/portfolio/services/priceService';
+import { tradeService } from '@/features/portfolio/services/tradeService';
 import FciTable from '@/features/fci/components/FciTable';
 import FciTransactionsList from '@/features/fci/components/FciTransactionsList';
 import FciPriceUploadModal from '@/features/fci/components/FciPriceUploadModal';
@@ -18,6 +19,7 @@ import SummaryCard from '@/components/common/SummaryCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
 import { fciService } from '@/features/fci/services/fciService';
+import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
 const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
 
