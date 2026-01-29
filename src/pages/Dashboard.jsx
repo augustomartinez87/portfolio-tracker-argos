@@ -35,6 +35,7 @@ import { DateRangeSelector, getDateRange } from '@/components/common/DateRangeSe
 import { useSearch } from '@/features/portfolio/hooks/useSearch';
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { mepService } from '@/features/portfolio/services/mepService';
+import { TRANSACTION_TYPES } from '@/constants';
 
 
 export default function Dashboard() {
