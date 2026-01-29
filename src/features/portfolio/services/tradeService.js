@@ -32,7 +32,20 @@ export const tradeService = {
       .select()
 
     if (error) {
-      console.error('Supabase insert error:', error);
+      console.error('Supabase insert error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        payload: {
+          portfolio_id: portfolioId,
+          user_id: userId,
+          ticker: trade.ticker,
+          trade_type: trade.trade_type,
+          quantity: trade.quantity,
+          price: trade.price
+        }
+      });
       throw new Error(`Supabase error: ${error.message} (code: ${error.code})`);
     }
     return data;

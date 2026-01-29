@@ -291,9 +291,12 @@ export default function Dashboard() {
   const handleSaveTrade = useCallback(async (trade) => {
     if (!currentPortfolio || !user) return;
 
-    console.log('DEBUG handleSaveTrade:', {
+    const userId = currentPortfolio.user_id || user.id;
+
+    console.log('DEBUG handleSaveTrade - PRE-SAVE:', {
       'auth_user_id': user.id,
-      'portfolio_user_id': currentPortfolio.user_id,
+      'portfolio_owner_id': currentPortfolio.user_id,
+      'using_user_id': userId,
       'portfolio_id': currentPortfolio.id,
       'editingTrade': editingTrade
     });
@@ -310,7 +313,7 @@ export default function Dashboard() {
           trade_date: trade.date
         });
       } else {
-        await tradeService.createTrade(currentPortfolio.id, user.id, {
+        await tradeService.createTrade(currentPortfolio.id, userId, {
           ticker: trade.ticker,
           trade_type: trade.type === TRANSACTION_TYPES.BUY ? 'buy' : 'sell',
           quantity: Math.abs(trade.quantity),
