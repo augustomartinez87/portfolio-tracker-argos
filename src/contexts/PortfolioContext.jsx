@@ -20,6 +20,7 @@ export const PortfolioProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const lastUserIdRef = useRef(null)
   const loadAttemptRef = useRef(0)
+  const isQueryingRef = useRef(false)
 
   const loadPortfolios = useCallback(async (forceReload = false) => {
     // Don't load if auth is still loading
@@ -37,12 +38,19 @@ export const PortfolioProvider = ({ children }) => {
       return
     }
 
+    // Prevent concurrent loads
+    if (isQueryingRef.current) {
+      console.log('[PortfolioContext] Query already in progress, skipping...');
+      return;
+    }
+
     // Track load attempt for debugging
     const attemptId = ++loadAttemptRef.current;
     console.log(`[PortfolioContext] Loading portfolios (attempt ${attemptId}) for user:`, user.id);
 
     setLoading(true)
     setError(null)
+    isQueryingRef.current = true;
 
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -92,6 +100,7 @@ export const PortfolioProvider = ({ children }) => {
       setPortfolios([])
       setCurrentPortfolio(null)
     } finally {
+      isQueryingRef.current = false;
       setLoading(false)
     }
   }, [user, authLoading])
@@ -105,19 +114,21 @@ export const PortfolioProvider = ({ children }) => {
 
     // Check if user changed
     const currentUserId = user?.id ?? null
-    if (currentUserId === lastUserIdRef.current) {
-      // User hasn't changed, but if we're still in initial loading state, force a load
-      if (loading && currentUserId !== null) {
-        console.log('[PortfolioContext] Same user but still loading, forcing load');
-        loadPortfolios();
-      }
-      return
+    const hasUserChanged = currentUserId !== lastUserIdRef.current;
+
+    if (hasUserChanged) {
+      console.log(`[PortfolioContext] User changed: ${lastUserIdRef.current} -> ${currentUserId}`);
+      lastUserIdRef.current = currentUserId;
+      loadPortfolios();
+      return;
     }
 
-    console.log(`[PortfolioContext] User changed: ${lastUserIdRef.current} -> ${currentUserId}`);
-    lastUserIdRef.current = currentUserId
-    loadPortfolios()
-  }, [user, authLoading, loadPortfolios, loading])
+    // Only force load if we have a user and we are stuck in initial loading state
+    if (loading && currentUserId !== null && !isQueryingRef.current) {
+      console.log('[PortfolioContext] Initial load needed for user');
+      loadPortfolios();
+    }
+  }, [user, authLoading, loadPortfolios])
 
   const createPortfolio = async (name, description = '', currency = 'ARS') => {
     if (!user) throw new Error('Usuario no autenticado')

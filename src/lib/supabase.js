@@ -46,7 +46,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'sb-portfolio-tracker-auth', // Llave única para evitar colisiones
     flowType: 'pkce'
   }
 })
