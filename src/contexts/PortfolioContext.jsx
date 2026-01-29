@@ -41,36 +41,26 @@ export const PortfolioProvider = ({ children }) => {
     const attemptId = ++loadAttemptRef.current;
     console.log(`[PortfolioContext] Loading portfolios (attempt ${attemptId}) for user:`, user.id);
 
-    // Safety timeout: si demora más de 10 segundos, forzar loading false con error
+    setLoading(true)
+    setError(null)
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after 10s`);
-      setError('La carga de portfolios tardó demasiado. Intenta recargar la página.');
-      setLoading(false);
-    }, 10000);
+      console.warn(`[PortfolioContext] Attempt ${attemptId} timed out after 8s`);
+      controller.abort();
+    }, 8000);
 
     try {
-      setLoading(true)
-      setError(null)
-
-      // Verify session is active before querying
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('[PortfolioContext] Session error:', sessionError);
-        throw new Error('Error de sesión: ' + sessionError.message);
-      }
-
-      if (!session) {
-        console.warn('[PortfolioContext] No active session found');
-        throw new Error('Sesión no encontrada. Por favor, inicia sesión nuevamente.');
-      }
-
-      console.log(`[PortfolioContext] Session verified, querying portfolios...`);
+      console.log(`[PortfolioContext] Starting query...`);
 
       const { data, error: queryError } = await supabase
         .from('portfolios')
         .select('*')
         .order('created_at', { ascending: true })
+        .abortSignal(controller.signal)
+
+      clearTimeout(timeoutId);
 
       if (queryError) {
         console.error('[PortfolioContext] Query error:', queryError);
@@ -87,13 +77,20 @@ export const PortfolioProvider = ({ children }) => {
       if (!defaultPortfolio && data?.length === 0) {
         console.log('[PortfolioContext] No portfolios found for user');
       }
+      setError(null)
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('[PortfolioContext] Error loading portfolios:', err)
-      setError(err.message || 'Error desconocido al cargar portfolios')
+
+      // Handle abort/timeout specifically
+      if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+        setError('La conexión con el servidor está lenta. Verifica tu conexión a internet e intenta de nuevo.');
+      } else {
+        setError(err.message || 'Error desconocido al cargar portfolios')
+      }
       setPortfolios([])
       setCurrentPortfolio(null)
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false)
     }
   }, [user, authLoading])
