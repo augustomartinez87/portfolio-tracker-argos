@@ -29,12 +29,19 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
+    // Safety timeout para la carga del perfil (5s)
+    const profileTimeout = setTimeout(() => {
+      if (profileLoading) {
+        console.warn('Profile loading timed out, proceeding without profile');
+        setProfileLoading(false);
+      }
+    }, 5000);
+
     try {
       setProfileLoading(true)
       const profile = await userService.getProfile(userId)
       setUserProfile(profile)
 
-      // Registrar login (sin bloquear el arranque)
       if (profile) {
         userService.logActivity('login', null, { method: 'session' })
       }
@@ -42,11 +49,21 @@ export const AuthProvider = ({ children }) => {
       console.error('Error loading user profile:', err)
       setUserProfile(null)
     } finally {
+      clearTimeout(profileTimeout);
       setProfileLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    // Safety timeout global para el arranque (8s)
+    const globalTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth initialization timed out, forcing loading false');
+        setLoading(false);
+        setProfileLoading(false);
+      }
+    }, 8000);
+
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -54,7 +71,6 @@ export const AuthProvider = ({ children }) => {
         currentUserIdRef.current = newUser?.id ?? null
         setUser(newUser)
 
-        // Cargar perfil si hay usuario
         if (newUser) {
           await loadUserProfile(newUser.id)
         } else {
@@ -73,18 +89,14 @@ export const AuthProvider = ({ children }) => {
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (isLogoutInProgress.current) {
-        return
-      }
+      if (isLogoutInProgress.current) return
+
       const newUserId = session?.user?.id ?? null
-      // Solo actualizar si el usuario realmente cambió (evita re-render en tab focus)
-      if (newUserId === currentUserIdRef.current) {
-        return
-      }
+      if (newUserId === currentUserIdRef.current) return
+
       currentUserIdRef.current = newUserId
       setUser(session?.user ?? null)
 
-      // Recargar perfil si cambió el usuario
       if (newUserId) {
         await loadUserProfile(newUserId)
       } else {
@@ -95,7 +107,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(globalTimeout);
+      subscription.unsubscribe();
+    }
   }, [loadUserProfile])
 
   const signUp = async (email, password, metadata = {}) => {

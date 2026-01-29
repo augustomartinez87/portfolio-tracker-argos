@@ -211,6 +211,8 @@ export default function Fci() {
                       <FciTransactionsList
                         transactions={transactions}
                         onDelete={deleteTransaction}
+                        currency={displayCurrency}
+                        mepHistory={mepHistory}
                       />
                     ) : (
                       <FciTable

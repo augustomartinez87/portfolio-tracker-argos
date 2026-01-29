@@ -57,6 +57,12 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
     const positions = useMemo(() => {
         const posMap = {};
 
+        // Crear un Map para lookups O(1) si mepHistory es un array
+        const mepMap = new Map();
+        if (Array.isArray(mepHistory)) {
+            mepHistory.forEach(h => mepMap.set(h.date, h.price));
+        }
+
         transactions.forEach(tx => {
             const { fci_id, fci_master, tipo, monto, cuotapartes } = tx;
 
@@ -77,9 +83,9 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
                 posMap[fci_id].cuotapartes = posMap[fci_id].cuotapartes.plus(cuotasDec);
                 posMap[fci_id].montoInvertido = posMap[fci_id].montoInvertido.plus(montoDec);
 
-                // Cálculo USD con precisión histórica
+                // Cálculo USD con precisión histórica usando el Map
                 const dateStr = tx.fecha;
-                const historicalMep = new Decimal(mepService.findClosestRate(dateStr, mepHistory) || mepRate || 1);
+                const historicalMep = new Decimal(mepService.findClosestRate(dateStr, mepMap) || mepRate || 1);
                 posMap[fci_id].montoInvertidoUSD = posMap[fci_id].montoInvertidoUSD.plus(montoDec.dividedBy(historicalMep));
             } else if (tipo === 'REDEMPTION') {
                 const pos = posMap[fci_id];
