@@ -26,7 +26,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                     width={width}
                     height={height}
                     style={{
-                        fill: payload.pnl >= 0 ? '#10b981' : '#ef4444',
+                        fill: payload?.pnl >= 0 ? '#10b981' : '#ef4444',
                         fillOpacity: 0.8,
                         stroke: '#111827',
                         strokeWidth: 2 / (depth + 1),
@@ -59,8 +59,8 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                     <p className="text-text-secondary text-xs">
                         Valuación: {currency === 'ARS' ? formatARS(data.value) : formatUSD(data.value)}
                     </p>
-                    <p className={`text-xs font-bold ${data.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        P&L: {data.pnl.toFixed(2)}%
+                    <p className={`text-xs font-bold ${data?.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                        P&L: {data?.pnl?.toFixed(2) || '0.00'}%
                     </p>
                 </div>
             );

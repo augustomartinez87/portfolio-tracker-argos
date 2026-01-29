@@ -58,13 +58,21 @@ function loadFromLocalStorage(): PriceServiceResult | null {
     if (!stored) return null;
 
     const cache: PriceCache = JSON.parse(stored);
+
+    // Validar antigüedad del cache (max 2 horas)
+    const cacheAge = Date.now() - new Date(cache.lastUpdate).getTime();
+    if (cacheAge > 1000 * 60 * 60 * 2) {
+      console.log('Cache de precios expirado, ignorando...');
+      return null;
+    }
+
     return {
       prices: cache.prices,
-      mepRate: cache.mepRate,
+      mepRate: cache.mepRate || CONSTANTS.MEP_DEFAULT,
       tickers: Object.keys(cache.prices).map(ticker => ({
         ticker,
-        panel: cache.prices[ticker].panel,
-        assetClass: cache.prices[ticker].assetClass
+        panel: cache.prices[ticker]?.panel,
+        assetClass: cache.prices[ticker]?.assetClass
       })),
       lastUpdate: new Date(cache.lastUpdate)
     };

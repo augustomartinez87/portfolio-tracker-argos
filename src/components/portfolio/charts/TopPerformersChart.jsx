@@ -19,9 +19,9 @@ const TopPerformersChart = ({ positions }) => {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
-                    <p className="text-text-primary font-semibold text-xs mb-1">{payload[0].payload.name}</p>
+                    <p className="text-text-primary font-semibold text-xs mb-1">{payload[0].payload?.name || '---'}</p>
                     <p className={`text-xs font-bold ${payload[0].value >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        P&L: {formatPercent(payload[0].value)}
+                        P&L: {formatPercent(payload[0].value || 0)}
                     </p>
                 </div>
             );

@@ -50,11 +50,11 @@ const CurrencyExposureChart = ({ positions, currency = 'ARS' }) => {
             const data = payload[0].payload;
             return (
                 <div className="bg-background-secondary border border-border-primary rounded-lg p-2 shadow-xl">
-                    <p className="text-text-primary font-semibold text-xs mb-1">{data.name}</p>
+                    <p className="text-text-primary font-semibold text-xs mb-1">{data?.name || '---'}</p>
                     <p className="text-text-secondary text-xs">
-                        {currency === 'ARS' ? formatARS(data.value) : formatUSD(data.value)}
+                        {currency === 'ARS' ? formatARS(data?.value || 0) : formatUSD(data?.value || 0)}
                     </p>
-                    <p className="text-primary text-xs font-bold">{data.percentage.toFixed(1)}%</p>
+                    <p className="text-primary text-xs font-bold">{data?.percentage?.toFixed(1) || '0.0'}%</p>
                 </div>
             );
         }
