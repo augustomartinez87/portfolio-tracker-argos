@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as pdfParse from 'https://deno.land/x/pdfparse@v2.4.5/mod.ts';
+import pdfParse from 'https://esm.sh/pdf-parse@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
