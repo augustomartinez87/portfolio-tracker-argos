@@ -11,17 +11,19 @@ import { usePrices } from '@/features/portfolio/services/priceService';
 import { tradeService } from '@/features/portfolio/services/tradeService';
 import FciTable from '@/features/fci/components/FciTable';
 import FciTransactionsList from '@/features/fci/components/FciTransactionsList';
-import FciPriceUploadModal from '@/features/fci/components/FciPriceUploadModal';
+// Importaciones diferidas para mayor resiliencia
+const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent').then(m => ({ default: m.AnalisisRealContent })));
+const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
+const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { FciTabs } from '@/features/fci/components/FciTabs';
-import { AnalisisRealContent } from '@/features/fci/components/AnalisisRealContent';
 import SummaryCard from '@/components/common/SummaryCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
 import { fciService } from '@/features/fci/services/fciService';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
-const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
+
 
 export default function Fci() {
   const { user, signOut } = useAuth();
@@ -225,7 +227,9 @@ export default function Fci() {
                       )}
                     </div>
                   ) : (
-                    <AnalisisRealContent />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AnalisisRealContent />
+                    </Suspense>
                   )}
                 </div>
               </>
@@ -244,11 +248,13 @@ export default function Fci() {
           />
         </Suspense>
 
-        <FciPriceUploadModal
-          isOpen={uploadModalOpen}
-          onClose={() => setUploadModalOpen(false)}
-          onRefresh={refresh}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <FciPriceUploadModal
+            isOpen={uploadModalOpen}
+            onClose={() => setUploadModalOpen(false)}
+            onRefresh={refresh}
+          />
+        </Suspense>
 
         <MobileNav />
       </div>

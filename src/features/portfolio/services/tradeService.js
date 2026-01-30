@@ -37,13 +37,17 @@ export const tradeService = {
         code: error.code,
         details: error.details,
         hint: error.hint,
+        table: 'trades',
         payload: {
           portfolio_id: portfolioId,
           user_id: userId,
           ticker: trade.ticker,
           trade_type: trade.trade_type,
           quantity: trade.quantity,
-          price: trade.price
+          price: trade.price,
+          total_amount: trade.total_amount,
+          currency: trade.currency,
+          trade_date: trade.trade_date
         }
       });
       throw new Error(`Supabase error: ${error.message} (code: ${error.code})`);

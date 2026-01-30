@@ -106,7 +106,12 @@ export const AuthProvider = ({ children }) => {
     const initSession = async () => {
       try {
         console.log('[Auth] Initializing session...');
+        const initStartTime = Date.now();
+
         const { data: { session } } = await supabase.auth.getSession();
+
+        const sessionTime = Date.now() - initStartTime;
+        console.log(`[Auth] getSession took ${sessionTime}ms`);
 
         if (!isMounted) return;
 
@@ -117,13 +122,17 @@ export const AuthProvider = ({ children }) => {
         setUser(currentUser);
 
         if (currentUser) {
+          console.log('[Auth] Loading profile after session init...');
           await loadUserProfile(currentUser.id);
         } else {
           setProfileLoading(false);
+          setAuthLoading(false);
         }
 
-        // El sistema solo está listo cuando el perfil (o su ausencia) está procesado
+        // El sistema de auth base ya terminó su intento inicial
         setAuthLoading(false);
+
+        console.log(`[Auth] Total init time: ${Date.now() - initStartTime}ms`);
       } catch (err) {
         console.error('[Auth] Error initializing session:', err);
         if (isMounted) {
@@ -152,8 +161,9 @@ export const AuthProvider = ({ children }) => {
 
       // Solo procesar si el usuario realmente cambió
       if (newUserId === currentUserIdRef.current) {
-        // Ignorar eventos redundantes
+        // Ignorar eventos redundantes pero asegurar que no bloqueamos el estado loading
         console.log('[Auth] Ignoring redundant event (same user)');
+        setAuthLoading(false);
         return;
       }
 
