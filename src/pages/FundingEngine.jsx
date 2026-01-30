@@ -43,8 +43,8 @@ export default function FundingEngine() {
                 setIsExpanded={setSidebarExpanded}
             />
 
-            <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-                <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+            <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 h-screen ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+                <div className="p-4 lg:p-6 flex flex-col flex-1 h-full overflow-hidden">
                     <PageHeader
                         title="Funding"
                         subtitle="Caja y Liquidez"
@@ -57,16 +57,13 @@ export default function FundingEngine() {
                     {!currentPortfolio ? (
                         <PortfolioEmptyState title="Sin Portfolio" message="Selecciona o crea un portfolio para ver tus flujos de caja y liquidez." />
                     ) : (
-                        <div className="flex-1 w-full relative min-h-[600px] bg-background-secondary border border-border-primary rounded-xl overflow-hidden shadow-2xl">
+                        <div className="flex-1 w-full mt-4 bg-background-secondary border border-border-primary rounded-xl overflow-hidden shadow-2xl">
                             {iframeSrc && (
                                 <iframe
                                     src={iframeSrc}
-                                    width="100%"
-                                    height="100%"
-                                    frameBorder="0"
                                     title="Funding Engine"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    style={{ display: 'block', height: '100%', width: '100%', minHeight: '600px' }}
+                                    className="w-full h-full border-0"
                                 />
                             )}
                         </div>
