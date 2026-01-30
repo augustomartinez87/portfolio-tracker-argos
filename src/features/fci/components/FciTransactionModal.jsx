@@ -4,8 +4,7 @@ import { fciService } from '../services/fciService';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType = 'SUBSCRIPTION', initialFci = null }) => {
-    if (!isOpen) return null;
-
+    // ALL hooks must be called before any conditional returns
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -19,11 +18,13 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
 
     // VCP State
     const [vcp, setVcp] = useState(null);
-    const [vcpLoading, setVcpLoading] = useState(false); // Para mostrar carga al buscar VCP
+    const [vcpLoading, setVcpLoading] = useState(false);
     const [vcpError, setVcpError] = useState(null);
 
     // 1. Cargar lista de fondos al abrir
     useEffect(() => {
+        if (!isOpen) return;
+
         const loadFcis = async () => {
             setLoading(true);
             try {
@@ -43,34 +44,19 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
 
     // 2. Buscar VCP cuando cambia fecha o FCI
     useEffect(() => {
-        if (!selectedFciId || !fecha) return;
+        if (!isOpen || !selectedFciId || !fecha) return;
 
         const findVcp = async () => {
             setVcpLoading(true);
             setVcp(null);
             setVcpError(null);
             try {
-                // Buscar precio exacto o más reciente hasta esa fecha
-                // Nota: El servicio getPrices ya soporta filtrar, pero aquí queremos algo específico
-                // Usaremos getPrices(id, fecha) que retorna >= fecha.
-                // Pero para "histórico puntual" necesitamos lógica... 
-                // Por simplicidad en este MVP, buscamos TODO y filtramos en JS o el servicio nos da el array.
-
-                // Optimización: Pedir al backend "el precio de tal fecha".
-                // Como fciService.getPrices retorna >= fecha, no nos sirve directo para "el de esa fecha".
-                // Usaremos una consulta ad-hoc o asumiremos que el usuario carga precios al día.
-
-                // ESTRATEGIA: Traer todos y buscar. No es eficiente a largo plazo pero OK para MVP.
                 const prices = await fciService.getPrices(selectedFciId);
-
-                // Buscar coincidencia exacta
                 const match = prices.find(p => p.fecha === fecha);
 
                 if (match) {
                     setVcp(match.vcp);
                 } else {
-                    // Si no hay exacto, buscar el anterior más cercano (Previo Cierre)
-                    // Asumimos prices ordenado ASC
                     const prevPrices = prices.filter(p => p.fecha < fecha);
                     if (prevPrices.length > 0) {
                         const last = prevPrices[prevPrices.length - 1];
@@ -88,10 +74,10 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
             }
         };
 
-        const timeout = setTimeout(findVcp, 300); // Debounce
+        const timeout = setTimeout(findVcp, 300);
         return () => clearTimeout(timeout);
 
-    }, [selectedFciId, fecha]);
+    }, [isOpen, selectedFciId, fecha]);
 
     // 3. Calcular cuotapartes automáticamente (editable)
     useEffect(() => {
@@ -100,6 +86,9 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
             setCuotapartes(calculated.toFixed(2));
         }
     }, [monto, vcp]);
+
+    // Conditional return AFTER all hooks
+    if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();

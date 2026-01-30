@@ -12,7 +12,7 @@ import { tradeService } from '@/features/portfolio/services/tradeService';
 const FciTable = lazy(() => import('@/features/fci/components/FciTable'));
 const FciTransactionsList = lazy(() => import('@/features/fci/components/FciTransactionsList'));
 // Importaciones diferidas para mayor resiliencia
-const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent').then(m => ({ default: m.AnalisisRealContent })));
+const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent'));
 const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
 const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
@@ -72,10 +72,7 @@ export default function Fci() {
     }
   };
 
-  const formatVal = useCallback((ars, usd) => {
-    return displayCurrency === 'ARS' ? formatARS(ars || 0) : formatUSD(usd || 0);
-  }, [displayCurrency]);
-
+  // useState declarations must come before useCallback that depends on them
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState('ARS');
   const [showHistory, setShowHistory] = useState(false);
@@ -84,6 +81,10 @@ export default function Fci() {
   const [selectedFci, setSelectedFci] = useState(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen');
+
+  const formatVal = useCallback((ars, usd) => {
+    return displayCurrency === 'ARS' ? formatARS(ars || 0) : formatUSD(usd || 0);
+  }, [displayCurrency]);
 
   const pnlPercent = (totals?.invested && totals.invested > 0) ? (totals.pnl / totals.invested) * 100 : 0;
 
