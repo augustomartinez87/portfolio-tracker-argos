@@ -6,11 +6,11 @@ import { DashboardSidebar } from '@/features/portfolio/components/DashboardSideb
 import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
-import { useFciEngine } from '@/features/fci/hooks/useFciEngine';
-import { usePrices } from '@/features/portfolio/services/priceService';
 import { tradeService } from '@/features/portfolio/services/tradeService';
-import FciTable from '@/features/fci/components/FciTable';
-import FciTransactionsList from '@/features/fci/components/FciTransactionsList';
+// useFciEngine y usePrices eliminados por redundancia con el contexto
+// Importaciones diferidas para evitar TDZ
+const FciTable = lazy(() => import('@/features/fci/components/FciTable'));
+const FciTransactionsList = lazy(() => import('@/features/fci/components/FciTransactionsList'));
 // Importaciones diferidas para mayor resiliencia
 const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent').then(m => ({ default: m.AnalisisRealContent })));
 const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
@@ -85,7 +85,7 @@ export default function Fci() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen');
 
-  const pnlPercent = totals.invested > 0 ? (totals.pnl / totals.invested) * 100 : 0;
+  const pnlPercent = (totals?.invested && totals.invested > 0) ? (totals.pnl / totals.invested) * 100 : 0;
 
   if (portfolioLoading && !currentPortfolio) {
     return (
@@ -189,20 +189,24 @@ export default function Fci() {
                             <Loader2 className="w-6 h-6 animate-spin text-primary" />
                           </div>
                         ) : showHistory ? (
-                          <FciTransactionsList
-                            transactions={transactions}
-                            onDelete={deleteTransaction}
-                            currency={displayCurrency}
-                            mepHistory={mepHistory}
-                          />
+                          <Suspense fallback={<LoadingFallback />}>
+                            <FciTransactionsList
+                              transactions={transactions}
+                              onDelete={deleteTransaction}
+                              currency={displayCurrency}
+                              mepHistory={mepHistory}
+                            />
+                          </Suspense>
                         ) : (
-                          <FciTable
-                            positions={positions}
-                            onSubscribe={handleOpenSubscription}
-                            onRedeem={handleOpenRedemption}
-                            currency={displayCurrency}
-                            mepRate={mepRate}
-                          />
+                          <Suspense fallback={<LoadingFallback />}>
+                            <FciTable
+                              positions={positions}
+                              onSubscribe={handleOpenSubscription}
+                              onRedeem={handleOpenRedemption}
+                              currency={displayCurrency}
+                              mepRate={mepRate}
+                            />
+                          </Suspense>
                         )}
                       </div>
 

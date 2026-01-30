@@ -1,3 +1,4 @@
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/features/auth/contexts/AuthContext'
@@ -11,7 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
 import CarryTrade from './pages/CarryTrade'
-import Fci from './pages/Fci'
+const Fci = lazy(() => import('./pages/Fci'));
 import Admin from './pages/Admin'
 
 
@@ -63,7 +64,9 @@ function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <PortfolioProvider>
-                    <Fci />
+                    <Suspense fallback={<div className="min-h-screen bg-background-primary flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <Fci />
+                    </Suspense>
                   </PortfolioProvider>
                 </ProtectedRoute>
               }
