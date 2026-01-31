@@ -110,6 +110,12 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     const carryPerdidoAnual = carryPerdidoDia.times(365);
 
     // =========================================================================
+    // 9b. GANANCIA DIARIA DEL CAPITAL PRODUCTIVO
+    // =========================================================================
+    // Ganancia del capital productivo = capitalProductivo * spread / 365
+    const gananciaProductivaDia = capitalProductivo.times(bufferTasa).dividedBy(365);
+
+    // =========================================================================
     // 10. SPREAD NETO DIARIO
     // =========================================================================
     // Ganancia FCI por día = saldo FCI * (TNA FCI / 365)
@@ -214,6 +220,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       roeCaucion: roeCaucion.toNumber(),
       carryPerdidoDia: carryPerdidoDia.toNumber(),
       carryPerdidoAnual: carryPerdidoAnual.toNumber(),
+      gananciaProductivaDia: gananciaProductivaDia.toNumber(),
       spreadAcumulado: spreadAcumulado.toNumber(),
       fullDeploymentAcumulado: fullDeploymentAcumulado.toNumber(),
       oportunidadPerdida: oportunidadPerdida.toNumber(),
