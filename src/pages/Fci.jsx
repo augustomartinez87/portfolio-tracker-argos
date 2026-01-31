@@ -19,6 +19,7 @@ import { FciTabs } from '@/features/fci/components/FciTabs';
 import SummaryCard from '@/components/common/SummaryCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
+import { PercentageDisplay } from '@/components/common/PercentageDisplay';
 import { fciService } from '@/features/fci/services/fciService';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
@@ -248,25 +249,33 @@ export default function Fci() {
                   {activeTab === 'resumen' ? (
                     <div className="space-y-6">
                       {/* Summary Cards */}
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <SummaryCard
-                          label="Valuación Total"
-                          value={formatVal(totals.valuation, totals.valuationUSD)}
-                          variant="primary"
-                        />
-                        <SummaryCard
-                          label="Invertido"
+                          title="Invertido"
                           value={formatVal(totals.invested, totals.investedUSD)}
+                          subtitle="Total invertido"
                         />
                         <SummaryCard
-                          label="Resultado"
+                          title="Valuación"
+                          value={formatVal(totals.valuation, totals.valuationUSD)}
+                        />
+                        <SummaryCard
+                          title="P&L"
                           value={formatVal(totals.pnl, totals.pnlUSD)}
-                          variant={totals.pnl >= 0 ? 'success' : 'danger'}
+                          trend={totals.pnl}
+                          showBadge
+                          badgeValue={
+                            <PercentageDisplay
+                              value={pnlPercent}
+                              className="!text-current"
+                              iconSize="w-2.5 h-2.5"
+                            />
+                          }
                         />
                         <SummaryCard
-                          label="Rendimiento"
+                          title="Rendimiento"
                           value={formatPercent(pnlPercent)}
-                          variant={totals.pnl >= 0 ? 'success' : 'danger'}
+                          trend={pnlPercent}
                         />
                       </div>
 
