@@ -21,7 +21,7 @@ const COLORS = {
     ipc: '#94a3b8',    // Gray
 };
 
-export const AnalisisRealContent = () => {
+const AnalisisRealContent = () => {
     const { currentPortfolio } = usePortfolio();
 
     // States
@@ -391,3 +391,5 @@ export const AnalisisRealContent = () => {
         </div>
     );
 };
+
+export default AnalisisRealContent;

@@ -34,12 +34,12 @@ export default function FundingEngine() {
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const mainFciId = useMemo(() => {
     if (!fciPositions || fciPositions.length === 0) return null;
-    
+
     // Si solo hay un FCI, usar ese
     if (fciPositions.length === 1) return fciPositions[0].fciId;
-    
+
     // Si hay múltiples, usar el de mayor valuación
-    const mainFci = fciPositions.reduce((max, current) => 
+    const mainFci = fciPositions.reduce((max, current) =>
       (current.valuation > max.valuation) ? current : max
     );
     return mainFci.fciId;
@@ -157,11 +157,10 @@ export default function FundingEngine() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => setActiveTab('dashboard')}
-                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                      activeTab === 'dashboard'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'dashboard'
                         ? 'border-primary text-primary bg-primary/5'
                         : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-                    }`}
+                      }`}
                   >
                     <span className="flex items-center gap-2">
                       <LayoutDashboard className="w-4 h-4" />
@@ -170,11 +169,10 @@ export default function FundingEngine() {
                   </button>
                   <button
                     onClick={() => setActiveTab('analysis')}
-                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                      activeTab === 'analysis'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'analysis'
                         ? 'border-primary text-primary bg-primary/5'
                         : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-                    }`}
+                      }`}
                   >
                     <span className="flex items-center gap-2">
                       <BarChart2 className="w-4 h-4" />
@@ -190,7 +188,12 @@ export default function FundingEngine() {
               )}
 
               {activeTab === 'analysis' && (
-                <AnalysisTab carryMetrics={carryMetrics} />
+                <AnalysisTab
+                  carryMetrics={carryMetrics}
+                  fciId={mainFciId}
+                  portfolioId={currentPortfolio?.id}
+                  userId={user?.id}
+                />
               )}
             </div>
           )}
