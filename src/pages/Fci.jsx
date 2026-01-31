@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { PieChart, Plus, Download, Loader2, RefreshCw } from 'lucide-react';
+import { PieChart, Plus, Download, Loader2, RefreshCw, Upload, FileUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
@@ -50,6 +50,14 @@ export default function Fci() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen');
 
+  // Estados para Carga VCP
+  const [vcpFile, setVcpFile] = useState(null);
+  const [vcpFciList, setVcpFciList] = useState([]);
+  const [vcpSelectedFci, setVcpSelectedFci] = useState('');
+  const [vcpUploading, setVcpUploading] = useState(false);
+  const [vcpResult, setVcpResult] = useState(null);
+  const [vcpLoadingFcis, setVcpLoadingFcis] = useState(false);
+
   const deleteTransaction = async (id) => {
     await fciService.deleteTransaction(id);
     refresh();
@@ -80,6 +88,114 @@ export default function Fci() {
       console.error('Error saving FCI transaction:', e);
       throw e;
     }
+  };
+
+  // Cargar lista de FCIs para Carga VCP
+  useEffect(() => {
+    const loadFcis = async () => {
+      setVcpLoadingFcis(true);
+      try {
+        const data = await fciService.getFcis();
+        setVcpFciList(data || []);
+        if (data.length > 0) setVcpSelectedFci(data[0].id);
+      } catch (err) {
+        console.error('Error loading FCIs:', err);
+      } finally {
+        setVcpLoadingFcis(false);
+      }
+    };
+    loadFcis();
+  }, []);
+
+  // Funciones para Carga VCP
+  const handleVcpFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setVcpFile(selectedFile);
+      setVcpResult(null);
+    }
+  };
+
+  const handleVcpUpload = async () => {
+    if (!vcpFile || !vcpSelectedFci) return;
+
+    setVcpUploading(true);
+    setVcpResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const prices = [];
+        let skipCount = 0;
+
+        // Simple parser: fecha,vcp
+        // Saltar primera línea si es header
+        const startIdx = lines[0].toLowerCase().includes('fecha') ? 1 : 0;
+
+        for (let i = startIdx; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          // Usar un separador dinámico si es posible, o probar los comunes
+          let cols = [];
+          if (line.includes(';')) {
+            cols = line.split(';').map(s => s.trim());
+          } else if (line.includes('\t')) {
+            cols = line.split('\t').map(s => s.trim());
+          } else {
+            cols = line.split(',').map(s => s.trim());
+          }
+
+          let fechaRaw, vcpRaw;
+          if (cols.length >= 3) {
+            // Formato: fci, fecha, vcp (como genera process_bala.py)
+            fechaRaw = cols[1];
+            vcpRaw = cols[2];
+          } else if (cols.length === 2) {
+            // Formato: fecha, vcp
+            fechaRaw = cols[0];
+            vcpRaw = cols[1];
+          } else {
+            skipCount++;
+            continue;
+          }
+
+          const vcp = parseFloat(vcpRaw.replace(/\./g, '').replace(',', '.'));
+
+          if (fechaRaw && !isNaN(vcp)) {
+            prices.push({ fecha: fechaRaw, vcp });
+          } else {
+            skipCount++;
+          }
+        }
+
+        if (prices.length === 0) {
+          setVcpResult({ type: 'error', message: 'No se encontraron datos válidos en el CSV.' });
+          setVcpUploading(false);
+          return;
+        }
+
+        await fciService.upsertPrices(vcpSelectedFci, prices);
+
+        setVcpResult({
+          type: 'success',
+          message: `Carga exitosa: ${prices.length} registros procesados.${skipCount > 0 ? ` (${skipCount} omitidos por formato)` : ''}`
+        });
+
+        // Limpiar archivo después de carga exitosa
+        setVcpFile(null);
+        if (onRefresh) onRefresh();
+
+      } catch (err) {
+        console.error(err);
+        setVcpResult({ type: 'error', message: 'Error procesando el archivo: ' + err.message });
+      } finally {
+        setVcpUploading(false);
+      }
+    };
+    reader.readAsText(vcpFile);
   };
 
   const formatVal = useCallback((ars, usd) => {
@@ -226,7 +342,7 @@ export default function Fci() {
                     </div>
                   ) : activeTab === 'carga-vcp' ? (
                     <div className="space-y-6">
-                      {/* Sección de Carga VCP */}
+                      {/* Sección de Carga VCP - Funcional */}
                       <div className="bg-background-secondary rounded-xl border border-border-primary p-6">
                         <h3 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
                           <Upload className="w-5 h-5 text-primary" />
@@ -236,37 +352,108 @@ export default function Fci() {
                           Sube el historial de Valor Cuotaparte (VCP) para calcular la TNA real del FCI.
                         </p>
                         
+                        {/* Selector de FCI */}
+                        <div className="mb-6">
+                          <label className="block text-xs font-semibold text-text-tertiary uppercase mb-2">
+                            Seleccionar Fondo
+                          </label>
+                          <select
+                            value={vcpSelectedFci}
+                            onChange={(e) => setVcpSelectedFci(e.target.value)}
+                            disabled={vcpLoadingFcis || vcpUploading}
+                            className="w-full px-3 py-2 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
+                          >
+                            {vcpLoadingFcis ? (
+                              <option>Cargando fondos...</option>
+                            ) : vcpFciList.length === 0 ? (
+                              <option>No hay fondos disponibles</option>
+                            ) : (
+                              vcpFciList.map(f => (
+                                <option key={f.id} value={f.id}>{f.nombre}</option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+                        
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Upload Area */}
+                          {/* Upload Area - Funcional */}
                           <div className="bg-background-tertiary rounded-xl border border-border-primary p-6">
-                            <label className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors">
-                              <Download className="w-12 h-12 text-text-tertiary" />
-                              <div className="text-center">
-                                <p className="text-sm font-medium text-text-primary mb-1">
-                                  Arrastra tu archivo aquí o haz clic para seleccionar
-                                </p>
-                                <p className="text-xs text-text-tertiary">
-                                  Formatos soportados: .csv, .xlsx
-                                </p>
-                              </div>
+                            <label className={`flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-all ${vcpFile ? 'border-primary/50 bg-primary/5' : 'border-border-secondary hover:border-primary/30'}`}>
+                              {vcpFile ? (
+                                <>
+                                  <FileUp className="w-12 h-12 text-primary" />
+                                  <div className="text-center">
+                                    <p className="text-sm font-medium text-text-primary mb-1">
+                                      {vcpFile.name}
+                                    </p>
+                                    <p className="text-xs text-text-tertiary">
+                                      Click para cambiar archivo
+                                    </p>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-12 h-12 text-text-tertiary" />
+                                  <div className="text-center">
+                                    <p className="text-sm font-medium text-text-primary mb-1">
+                                      Arrastra tu archivo aquí o haz clic para seleccionar
+                                    </p>
+                                    <p className="text-xs text-text-tertiary">
+                                      Formatos soportados: .csv, .xlsx
+                                    </p>
+                                  </div>
+                                </>
+                              )}
                               <input 
                                 type="file" 
                                 accept=".csv,.xlsx" 
                                 className="hidden" 
-                                onChange={(e) => {
-                                  // Handle file upload logic
-                                  console.log('File selected:', e.target.files[0]);
-                                }}
+                                onChange={handleVcpFileChange}
+                                disabled={vcpUploading}
                               />
                             </label>
                             
+                            {/* Botón de Carga */}
                             <button
-                              onClick={() => setUploadModalOpen(true)}
-                              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
+                              onClick={handleVcpUpload}
+                              disabled={!vcpFile || !vcpSelectedFci || vcpUploading || vcpFciList.length === 0}
+                              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Upload className="w-4 h-4" />
-                              Abrir Modal de Carga
+                              {vcpUploading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Procesando...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-4 h-4" />
+                                  {vcpFile ? 'Subir VCP' : 'Selecciona un archivo'}
+                                </>
+                              )}
                             </button>
+                            
+                            {/* Feedback */}
+                            {vcpResult && (
+                              <div className={`mt-4 p-3 rounded-lg flex items-start gap-3 text-sm ${vcpResult.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                {vcpResult.type === 'success' ? (
+                                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                                ) : (
+                                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                )}
+                                <p>{vcpResult.message}</p>
+                              </div>
+                            )}
+                            
+                            {/* Botón alternativo: Abrir Modal */}
+                            <div className="mt-4 pt-4 border-t border-border-primary">
+                              <button
+                                onClick={() => setUploadModalOpen(true)}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-background-secondary border border-border-primary text-text-secondary rounded-lg hover:bg-background-primary hover:text-text-primary transition-all text-xs font-medium"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                Abrir Modal de Carga Avanzada
+                              </button>
+                            </div>
                           </div>
                           
                           {/* Template Info */}
