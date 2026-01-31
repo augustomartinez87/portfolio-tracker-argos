@@ -168,13 +168,6 @@ export default function Fci() {
                             >
                               {showHistory ? 'Ver Posiciones' : 'Ver Historial'}
                             </button>
-                            <button
-                              onClick={() => setUploadModalOpen(true)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-background-tertiary text-text-secondary border border-border-primary rounded-lg hover:text-text-primary transition-all text-xs font-medium"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              Subir VCP
-                            </button>
                           </div>
                           <button
                             onClick={() => handleOpenSubscription()}
@@ -230,6 +223,131 @@ export default function Fci() {
                           </button>
                         </div>
                       )}
+                    </div>
+                  ) : activeTab === 'carga-vcp' ? (
+                    <div className="space-y-6">
+                      {/* Sección de Carga VCP */}
+                      <div className="bg-background-secondary rounded-xl border border-border-primary p-6">
+                        <h3 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
+                          <Upload className="w-5 h-5 text-primary" />
+                          Cargar VCP (CSV/Excel)
+                        </h3>
+                        <p className="text-sm text-text-tertiary mb-6">
+                          Sube el historial de Valor Cuotaparte (VCP) para calcular la TNA real del FCI.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Upload Area */}
+                          <div className="bg-background-tertiary rounded-xl border border-border-primary p-6">
+                            <label className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors">
+                              <Download className="w-12 h-12 text-text-tertiary" />
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-text-primary mb-1">
+                                  Arrastra tu archivo aquí o haz clic para seleccionar
+                                </p>
+                                <p className="text-xs text-text-tertiary">
+                                  Formatos soportados: .csv, .xlsx
+                                </p>
+                              </div>
+                              <input 
+                                type="file" 
+                                accept=".csv,.xlsx" 
+                                className="hidden" 
+                                onChange={(e) => {
+                                  // Handle file upload logic
+                                  console.log('File selected:', e.target.files[0]);
+                                }}
+                              />
+                            </label>
+                            
+                            <button
+                              onClick={() => setUploadModalOpen(true)}
+                              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
+                            >
+                              <Upload className="w-4 h-4" />
+                              Abrir Modal de Carga
+                            </button>
+                          </div>
+                          
+                          {/* Template Info */}
+                          <div className="bg-background-tertiary rounded-xl border border-border-primary p-6">
+                            <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
+                              <PieChart className="w-4 h-4 text-warning" />
+                              Formato del CSV
+                            </h4>
+                            
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-xs text-text-tertiary mb-2">Columnas requeridas:</p>
+                                <div className="bg-background-secondary rounded-lg p-3 font-mono text-xs text-text-secondary space-y-1">
+                                  <div className="flex justify-between">
+                                    <span className="text-primary">Fecha</span>
+                                    <span className="text-text-tertiary">YYYY-MM-DD</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-primary">ValorCuotaparte</span>
+                                    <span className="text-text-tertiary">0.0000</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <p className="text-xs text-text-tertiary mb-2">Ejemplo:</p>
+                                <div className="bg-background-secondary rounded-lg p-3 font-mono text-[10px] text-text-secondary">
+                                  <div className="text-text-tertiary border-b border-border-primary pb-2 mb-2">
+                                    Fecha,ValorCuotaparte
+                                  </div>
+                                  <div>2024-01-15,1.0234</div>
+                                  <div>2024-01-16,1.0241</div>
+                                  <div>2024-01-17,1.0248</div>
+                                  <div>2024-01-18,1.0255</div>
+                                  <div className="text-text-tertiary mt-2">...</div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const csvContent = `Fecha,ValorCuotaparte\n2024-01-01,1.0000\n2024-01-02,1.0005\n2024-01-03,1.0010`;
+                                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'template-vcp.csv';
+                                    a.click();
+                                  }}
+                                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-background-secondary border border-border-primary rounded-lg hover:bg-background-primary transition-all text-xs font-medium"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  Descargar Template
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Info Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-background-secondary rounded-xl border border-border-primary p-4">
+                          <h4 className="text-sm font-bold text-text-primary mb-2">¿Para qué sirve?</h4>
+                          <p className="text-xs text-text-tertiary">
+                            El historial de VCP permite calcular la TNA real del FCI para compararla con la caución y optimizar tu estrategia de carry trade.
+                          </p>
+                        </div>
+                        <div className="bg-background-secondary rounded-xl border border-border-primary p-4">
+                          <h4 className="text-sm font-bold text-text-primary mb-2">Frecuencia</h4>
+                          <p className="text-xs text-text-tertiary">
+                            Recomendamos cargar los VCP diarios. Puedes subir archivos con múltiples días de una sola vez.
+                          </p>
+                        </div>
+                        <div className="bg-background-secondary rounded-xl border border-border-primary p-4">
+                          <h4 className="text-sm font-bold text-text-primary mb-2">Fuentes</h4>
+                          <p className="text-xs text-text-tertiary">
+                            Descarga el VCP desde la web de tu fondo (Adcap, Balanz, etc.) o usa el estado de cuenta mensual.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <Suspense fallback={<LoadingFallback />}>

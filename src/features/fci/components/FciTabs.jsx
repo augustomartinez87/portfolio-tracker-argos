@@ -1,9 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Upload } from 'lucide-react';
 
 export const FciTabs = ({ activeTab, setActiveTab }) => {
     const tabs = [
         { id: 'resumen', label: 'Resumen de Fondos', icon: LayoutDashboard },
+        { id: 'carga-vcp', label: 'Carga VCP', icon: Upload },
         { id: 'analisis', label: 'Análisis Real', icon: BarChart2 },
     ];
 
