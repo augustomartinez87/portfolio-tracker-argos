@@ -94,9 +94,9 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
 
           return {
             fecha: dateStr,
-            tnaFCI: tnaFCI ? Number(tnaFCI.toFixed(2)) : null,
-            tnaCaucion: tnaCaucion ? Number(tnaCaucion.toFixed(2)) : null,
-            spread: spread ? Number(spread.toFixed(2)) : null
+            tnaFCI: tnaFCI !== null ? Number(tnaFCI.toFixed(2)) : null,
+            tnaCaucion: tnaCaucion !== null ? Number(tnaCaucion.toFixed(2)) : null,
+            spread: spread !== null ? Number(spread.toFixed(2)) : null
           };
         }).filter(d => d.tnaFCI !== null || d.tnaCaucion !== null);
 
