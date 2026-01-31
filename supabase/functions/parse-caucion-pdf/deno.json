@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "pdf-parse": "https://deno.land/x/pdfparse@v2.4.5/mod.ts"
-  }
-}

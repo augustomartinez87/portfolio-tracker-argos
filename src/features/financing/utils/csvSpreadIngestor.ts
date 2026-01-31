@@ -120,8 +120,8 @@ function parseDateSafe(dateStr: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-/** Validate that required headers exist in the first row */
-function validateHeaders(headers: string[]): boolean {
+/** Validate that required headers exist in the first row - STRICT MODE */
+function validateHeaders(headers: string[]): void {
   console.log('Headers encontrados:', headers);
 
   const required = [
@@ -131,10 +131,11 @@ function validateHeaders(headers: string[]): boolean {
 
   const missing = required.filter(r => !lower.includes(r.toLowerCase()));
   if (missing.length > 0) {
-    console.warn('Headers faltantes:', missing);
+    throw new Error(
+      `CSV inválido. Headers faltantes: ${missing.join(', ')}.\n` +
+      `Headers requeridos: ${required.join(', ')}`
+    );
   }
-
-  return required.every(r => lower.includes(r.toLowerCase()));
 }
 
 /** Helpers to safely convert to number, handling comma decimals */
@@ -175,14 +176,8 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     throw new Error('CSV must have header and at least one data row');
   }
   const headers = rows[0] as string[];
-  // Loose validation for backward compatibility if needed, but strict for now as per req
-  if (!validateHeaders(headers)) {
-    // Optional: Allow fallback if operation_key is missing? No, user wants strict idempotency.
-    // However, if manual upload doesn't have key, it will fail.
-    // The ETL adds it. If user uploads manual non-ETL csv, it fails.
-    // We assume ETL is the source.
-    console.warn('Headers faltantes para idempotencia completa.');
-  }
+  // Strict validation: all headers required, no fallback
+  validateHeaders(headers);
 
   const normalizedHeaders = headers.map(h => h.trim().toLowerCase());
   const getIdx = (key: string) => normalizedHeaders.indexOf(key.toLowerCase());
@@ -226,7 +221,15 @@ export async function ingestFromCsv(csvText: string): Promise<IngestResult> {
     const tna_real = toNumber(row[idx.tna_real]);
 
     const archivo = row[idx.archivo] ?? '';
-    const operation_key = idx.operation_key >= 0 ? (row[idx.operation_key] ?? '') : '';
+    const operation_key = row[idx.operation_key];
+    
+    // Strict validation: operation_key is mandatory
+    if (!operation_key || operation_key.trim() === '') {
+      throw new Error(
+        `Fila ${i}: operation_key es obligatorio y no puede estar vacío.\n` +
+        `Datos: ${fecha_apertura}, ${capital}, ${monto_devolver}`
+      );
+    }
 
     // Basic validation
     if (!(capital > 0) || !(monto_devolver > 0) || !Number.isFinite(dias) || !Number.isFinite(tna_real)) {

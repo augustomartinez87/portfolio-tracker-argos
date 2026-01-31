@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2, List, BarChart3 } from 'lucide-react';
+import { TrendingUp, RefreshCw, Upload, Filter, Trash2, BarChart3 } from 'lucide-react';
 import FinancingKPIs from '@/features/financing/components/FinancingKPIs';
 import CSVUploadView from '@/features/financing/components/CSVUploadView';
 import FinancingCharts from '@/features/financing/components/FinancingCharts';
@@ -150,50 +150,10 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
     }
   }, [userId, loadCauciones, queryClient]);
 
-  // Función para sincronizar desde Google Sheets
-  const handleSyncFromSheets = useCallback(async () => {
-    if (!userId || !portfolioId) return;
-
-    const url = prompt("Ingresa la URL del CSV publicado de Google Sheets:\n(Archivo > Compartir > Publicar en la web > CSV)");
-    if (!url) return;
-
-    if (!url.includes('docs.google.com') && !url.includes('output=csv')) {
-      if (!window.confirm("La URL no parece ser de un Google Sheet CSV estándar. ¿Deseas continuar igual?")) {
-        return;
-      }
-    }
-
-    // Usamos el loading de kpis para bloquear UI globalmente o uno local
-    // Como el dashboard usa 'loading' prop para bloquear todo, vamos a usar un toast o alert al final
-    // Idealmente tendríamos un estado 'isSyncing'
-    const loadingToast = document.createElement('div');
-    loadingToast.className = 'fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded shadow-lg z-50 animate-bounce';
-    loadingToast.textContent = '⏳ Sincronizando con Google Sheets...';
-    document.body.appendChild(loadingToast);
-
-    try {
-      const result = await financingService.ingestFromUrl(userId, portfolioId, url);
-      document.body.removeChild(loadingToast);
-
-      if (result.success) {
-        const count = result.data?.totalInserted || 0;
-        alert(`✅ Sincronización exitosa!\n\nSe procesaron ${count} registros.`);
-        await onRefresh();
-      } else {
-        console.error('Error sync:', result.error);
-        alert(`❌ Error al sincronizar: ${result.error?.message || 'Error desconocido'} `);
-      }
-    } catch (error) {
-      if (document.body.contains(loadingToast)) document.body.removeChild(loadingToast);
-      console.error('Error sync:', error);
-      alert(`❌ Error inesperado: ${error.message} `);
-    }
-  }, [userId, portfolioId, onRefresh]);
-
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'charts', label: 'Análisis', icon: TrendingUp },
-    { id: 'cauciones', label: 'Cauciones', icon: List },
+    { id: 'cauciones', label: 'Cauciones', icon: Upload },
     { id: 'upload', label: 'Cargar CSV', icon: Upload },
   ];
 
@@ -215,14 +175,6 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
               {option.label}
             </button>
           ))}
-          <button
-            onClick={handleSyncFromSheets}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0F9D58]/10 text-[#0F9D58] rounded-lg hover:bg-[#0F9D58]/20 transition-colors border border-[#0F9D58]/30 disabled:opacity-50 font-medium text-sm"
-          >
-            <List className="w-4 h-4" />
-            Sincronizar Sheets
-          </button>
           <button
             onClick={onRefresh}
             disabled={loading}

@@ -115,8 +115,8 @@ export class FinancingService {
         dias: r.dias,
         tna_real: r.tna_real,
         archivo: r.archivo,
-        // Use provided key or generate a deterministic backup if missing (for safety)
-        operation_key: r.operation_key || `${r.fecha_apertura}_${r.capital}_${r.monto_devolver}_${r.interes}`
+        // STRICT: operation_key must come from CSV, no fallback
+        operation_key: r.operation_key
       }));
 
       console.log('📝 Upserting', dbRecords.length, 'registros en Supabase (Idempotency Active)...');
@@ -166,40 +166,6 @@ export class FinancingService {
 
     } catch (error) {
       console.error('❌ Error en ingestFromCsv:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error : new Error(String(error))
-      };
-    }
-  }
-
-  /**
-   * Fetch CSV from a public URL (e.g. published Google Sheet) and ingest it.
-   * @param userId - User ID
-   * @param portfolioId - Portfolio ID
-   * @param csvUrl - Public URL of the CSV
-   */
-  async ingestFromUrl(
-    userId: string,
-    portfolioId: string,
-    csvUrl: string
-  ): Promise<Result<{ success: true; records: Caucion[]; totalInserted: number; summary: any }>> {
-    try {
-      console.log('🌐 Fetching CSV from URL:', csvUrl);
-
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`Error descargando CSV: ${response.status} ${response.statusText}`);
-      }
-
-      const csvText = await response.text();
-      console.log('✅ CSV descargado, longitud:', csvText.length);
-
-      // Reuse existing CSV ingestion logic
-      return this.ingestFromCsv(userId, csvText, portfolioId);
-
-    } catch (error) {
-      console.error('❌ Error ingesting from URL:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
