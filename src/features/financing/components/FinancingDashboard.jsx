@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2, BarChart3 } from 'lucide-react';
+import { TrendingUp, Upload, Filter, Trash2, BarChart3 } from 'lucide-react';
 import FinancingKPIs from '@/features/financing/components/FinancingKPIs';
 import CSVUploadView from '@/features/financing/components/CSVUploadView';
 import FinancingCharts from '@/features/financing/components/FinancingCharts';
@@ -7,7 +7,7 @@ import CaucionesTable from '@/features/financing/components/cauciones/CaucionesT
 import SummaryCard from '@/components/common/SummaryCard';
 import { financingService } from '@/features/financing/services/financingService';
 
-const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClient, userId, portfolioId }) => {
+const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId, portfolioId }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [kpisData, setKpisData] = useState(null);
   const csvDataRef = useRef(null); // Ref persistente para datos CSV
@@ -175,14 +175,6 @@ const FinancingDashboard = ({ operations, metrics, loading, onRefresh, queryClie
               {option.label}
             </button>
           ))}
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/30 disabled:opacity-50 font-medium text-sm"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Actualizar
-          </button>
         </div>
       </div>
 
