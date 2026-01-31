@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -22,12 +22,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 import { useCauciones } from '@/features/financing/hooks/useCauciones';
 import { useCarryMetrics } from '@/hooks/useCarryMetrics';
+import { useFciTNA } from '@/hooks/useFciTNA';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
-
-// ===========================================================================
-// CONFIGURACIÓN TNA FCI - Ajustar según el fondo utilizado
-// ===========================================================================
-const TNA_FCI_DEFAULT = 0.32; // 32% TNA para fondos money market (Balanz Capital, por ejemplo)
 
 // ===========================================================================
 // COMPONENTES DE UI
@@ -74,16 +70,28 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, status, trend }) => {
 /**
  * Badge de estado
  */
-const StatusBadge = ({ status, label }) => {
+const StatusBadge = ({ status, label, variant = 'default' }) => {
   const styles = {
+    // Estados de cobertura
     sobrecapitalizado: 'bg-success/10 text-success border-success/30',
     optimo: 'bg-success/10 text-success border-success/30',
     ajustado: 'bg-warning/10 text-warning border-warning/30',
     deficit: 'bg-danger/10 text-danger border-danger/30',
+    // Estados de spread
+    'optimo-spread': 'bg-success/10 text-success border-success/30',
+    'saludable-spread': 'bg-emerald-100 text-emerald-700 border-emerald-300',
+    'ajustado-spread': 'bg-warning/10 text-warning border-warning/30',
+    'critico-spread': 'bg-orange-100 text-orange-700 border-orange-300',
+    'negativo-spread': 'bg-danger/10 text-danger border-danger/30',
+    // Estados legacy
     amplio: 'bg-success/10 text-success border-success/30',
     medio: 'bg-primary/10 text-primary border-primary/30',
     estrecho: 'bg-warning/10 text-warning border-warning/30',
     critico: 'bg-danger/10 text-danger border-danger/30',
+    success: 'bg-success/10 text-success border-success/30',
+    'success-light': 'bg-emerald-100 text-emerald-700 border-emerald-300',
+    warning: 'bg-warning/10 text-warning border-warning/30',
+    danger: 'bg-danger/10 text-danger border-danger/30',
   };
 
   const icons = {
@@ -91,10 +99,19 @@ const StatusBadge = ({ status, label }) => {
     optimo: CheckCircle,
     ajustado: AlertTriangle,
     deficit: AlertTriangle,
+    'optimo-spread': CheckCircle,
+    'saludable-spread': CheckCircle,
+    'ajustado-spread': AlertTriangle,
+    'critico-spread': AlertTriangle,
+    'negativo-spread': AlertTriangle,
     amplio: Shield,
     medio: Shield,
     estrecho: AlertTriangle,
     critico: AlertTriangle,
+    success: CheckCircle,
+    'success-light': CheckCircle,
+    warning: AlertTriangle,
+    danger: AlertTriangle,
   };
 
   const Icon = icons[status] || Shield;
@@ -156,9 +173,26 @@ const Section = ({ title, icon: Icon, children }) => (
 
 export default function FundingEngine() {
   const { user, signOut } = useAuth();
-  const { currentPortfolio, fciTotals } = usePortfolio();
+  const { currentPortfolio, fciTotals, fciPositions } = usePortfolio();
   const { lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  // Obtener el fciId del FCI con mayor valuación (el principal)
+  const mainFciId = useMemo(() => {
+    if (!fciPositions || fciPositions.length === 0) return null;
+    
+    // Si solo hay un FCI, usar ese
+    if (fciPositions.length === 1) return fciPositions[0].fciId;
+    
+    // Si hay múltiples, usar el de mayor valuación
+    const mainFci = fciPositions.reduce((max, current) => 
+      (current.valuation > max.valuation) ? current : max
+    );
+    return mainFci.fciId;
+  }, [fciPositions]);
+
+  // Calcular TNA dinámica del FCI principal
+  const { tnaFCI: tnaFCIDynamic, loading: tnaLoading, error: tnaError, isFallback } = useFciTNA(mainFciId);
 
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
@@ -171,11 +205,11 @@ export default function FundingEngine() {
     totals: fciTotals || { valuation: 0 },
   };
 
-  // Calcular métricas de carry
+  // Calcular métricas de carry con TNA dinámica
   const carryMetrics = useCarryMetrics({
     cauciones,
     fciEngine,
-    tnaFCI: TNA_FCI_DEFAULT,
+    tnaFCI: tnaFCIDynamic,
   });
 
   // ===========================================================================
@@ -213,19 +247,40 @@ export default function FundingEngine() {
 
   const isLoading = isPricesLoading || isPricesFetching || caucionesLoading;
 
-  // Estado de cobertura para colores
+  // ===========================================================================
+  // FUNCIONES DE ESTADO PARA SEMÁFOROS
+  // ===========================================================================
+  
+  // % Cobertura: Estado para colores del semáforo
   const getCoverageStatus = (ratio) => {
-    if (ratio >= 115) return 'success';
     if (ratio >= 100) return 'success';
     if (ratio >= 90) return 'warning';
     return 'danger';
   };
 
-  const getBufferStatus = (bufferPct) => {
-    if (bufferPct > 8) return 'success';
-    if (bufferPct > 4) return 'info';
-    if (bufferPct > 2) return 'warning';
+  // % Cobertura: Label según el rango
+  const getCoverageLabel = (ratio) => {
+    if (ratio >= 100) return 'Óptimo';
+    if (ratio >= 90) return 'Casi cubierto';
+    return 'Déficit';
+  };
+
+  // Spread: Estado para colores del semáforo
+  const getSpreadStatus = (spreadPct) => {
+    if (spreadPct >= 2.0) return 'success';
+    if (spreadPct >= 1.0) return 'success-light';
+    if (spreadPct >= 0.5) return 'warning';
+    if (spreadPct > 0) return 'danger';
     return 'danger';
+  };
+
+  // Spread: Label según el rango
+  const getSpreadLabel = (spreadPct) => {
+    if (spreadPct >= 2.0) return 'Óptimo';
+    if (spreadPct >= 1.0) return 'Saludable';
+    if (spreadPct >= 0.5) return 'Ajustado';
+    if (spreadPct > 0) return 'Crítico';
+    return 'Negativo';
   };
 
   return (
@@ -279,8 +334,19 @@ export default function FundingEngine() {
             </div>
           ) : (
             <div className="mt-6 space-y-6">
+              {/* Warning de TNA Fallback */}
+              {isFallback && (
+                <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+                  <p className="text-sm text-warning">
+                    <span className="font-medium">TNA estimada:</span> No hay suficientes datos históricos del FCI. Se está usando una TNA de referencia del 32%. Cargá precios históricos en la sección FCI para obtener una TNA calculada.
+                  </p>
+                </div>
+              )}
+              
               {/* KPIs Principales */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* KPI 1: Total Caución - Sin cambios */}
                 <MetricCard
                   title="Total Caución"
                   value={formatARS(carryMetrics.totalCaucion)}
@@ -288,27 +354,41 @@ export default function FundingEngine() {
                   icon={DollarSign}
                   status="info"
                 />
+                
+                {/* KPI 2: Saldo FCI - Con TNA dinámica y warning si es fallback */}
                 <MetricCard
                   title="Saldo FCI"
                   value={formatARS(carryMetrics.saldoFCI)}
-                  subtitle={`TNA ${formatPercent(carryMetrics.tnaFCI * 100)}`}
+                  subtitle={
+                    <span className="flex items-center gap-1">
+                      TNA {formatPercent(carryMetrics.tnaFCI * 100)}
+                      {isFallback && (
+                        <span className="text-warning" title="Usando TNA estimada (sin datos históricos)">
+                          <AlertTriangle className="inline w-3 h-3" />
+                        </span>
+                      )}
+                    </span>
+                  }
                   icon={BarChart3}
-                  status="info"
+                  status={isFallback ? 'warning' : 'info'}
                 />
+                
+                {/* KPI 3: % Cobertura (antes Ratio Cobertura) - Mostrar porcentaje positivo con nuevo semáforo */}
                 <MetricCard
-                  title="Ratio Cobertura"
-                  value={formatPercent(carryMetrics.ratioCobertura - 100).replace('+', '') + ' cob.'}
-                  subtitle={<StatusBadge status={carryMetrics.estadoCobertura} />}
+                  title="% Cobertura"
+                  value={`${formatNumber(carryMetrics.ratioCobertura, 1)}%`}
+                  subtitle={<StatusBadge status={getCoverageStatus(carryMetrics.ratioCobertura)} label={getCoverageLabel(carryMetrics.ratioCobertura)} />}
                   icon={Shield}
                   status={getCoverageStatus(carryMetrics.ratioCobertura)}
-                  trend={carryMetrics.ratioCobertura - 100}
                 />
+                
+                {/* KPI 4: Spread (antes Buffer Tasa) - Con semáforo de 5 niveles */}
                 <MetricCard
-                  title="Buffer Tasa"
+                  title="Spread"
                   value={formatPercent(carryMetrics.bufferTasaPct)}
-                  subtitle={<StatusBadge status={carryMetrics.estadoBuffer} />}
+                  subtitle={<StatusBadge status={getSpreadStatus(carryMetrics.bufferTasaPct)} label={getSpreadLabel(carryMetrics.bufferTasaPct)} />}
                   icon={Zap}
-                  status={getBufferStatus(carryMetrics.bufferTasaPct)}
+                  status={getSpreadStatus(carryMetrics.bufferTasaPct).replace('-light', '')}
                   trend={carryMetrics.bufferTasaPct}
                 />
               </div>
@@ -437,7 +517,13 @@ export default function FundingEngine() {
                 <p>
                   {carryMetrics.totalOperaciones} operaciones analizadas
                   {' | '}
-                  TNA FCI configurada: {formatPercent(TNA_FCI_DEFAULT * 100)}
+                  TNA FCI: {formatPercent(carryMetrics.tnaFCI * 100)}
+                  {isFallback && (
+                    <span className="text-warning ml-1">(estimada - sin datos históricos)</span>
+                  )}
+                  {tnaError && (
+                    <span className="text-danger ml-1">(error al cargar TNA)</span>
+                  )}
                 </p>
               </div>
             </div>
