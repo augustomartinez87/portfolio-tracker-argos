@@ -1,15 +1,12 @@
 import React, { memo, useMemo } from 'react';
 import {
   DollarSign,
-  TrendingUp,
   Percent,
   Clock,
   BarChart3,
-  Activity,
-  Target,
   Calculator
 } from 'lucide-react';
-import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
+import { formatARS, formatPercent } from '@/utils/formatters';
 
 const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) => {
   if (loading) {
@@ -72,9 +69,6 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
         costoTotal: csvData.summary.totalInteres || 0,
         tnaPromedio: csvData.summary.tnaPromedioPonderado || 0,
         duracionPromedio: csvData.summary.diasPromedio || 0,
-        desviacionTasa: csvData.summary.desviacionTasa || 0,
-        eficiencia: csvData.summary.eficiencia || 0,
-        spreadBADLAR: csvData.summary.spreadBADLAR || 0,
         operaciones: csvData.summary.totalRecords || 0,
       };
       console.log('FinancingKPIs - Resultado desde CSV:', result);
@@ -89,9 +83,6 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
         costoTotal: metrics.interesTotal || 0,
         tnaPromedio: metrics.tnaPromedioPonderada || 0,
         duracionPromedio: metrics.diasPromedio || 0,
-        desviacionTasa: metrics.desviacionTasa || 0,
-        eficiencia: metrics.eficiencia || 0,
-        spreadBADLAR: metrics.spreadBADLAR || 0,
         operaciones: metrics.totalOperaciones || 0,
       };
       console.log('FinancingKPIs - Resultado desde DB:', result);
@@ -105,14 +96,11 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
       costoTotal: 0,
       tnaPromedio: 0,
       duracionPromedio: 0,
-      desviacionTasa: 0,
-      eficiencia: 0,
-      spreadBADLAR: 0,
       operaciones: 0,
     };
     console.log('FinancingKPIs - Resultado por defecto:', defaultResult);
     return defaultResult;
-  }, [csvData, metrics, operations]); // Agregar operations a las dependencias
+  }, [csvData, metrics]);
   console.log('FinancingKPIs kpiData calculado:', kpiData);
 
   return (
@@ -144,29 +132,6 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
         icon={Clock}
         loading={loading}
         tooltip="Plazo promedio de las operaciones de caución"
-      />
-      <MetricCard
-        title="Spread vs BADLAR"
-        value={formatPercent(kpiData.spreadBADLAR, 2)}
-        icon={TrendingUp}
-        loading={loading}
-        tooltip="Diferencia entre tasa de caución y BADLAR"
-        trend={kpiData.spreadBADLAR > 0 ? kpiData.spreadBADLAR : -Math.abs(kpiData.spreadBADLAR)}
-      />
-      <MetricCard
-        title="Volatilidad de Tasas"
-        value={formatPercent(kpiData.desviacionTasa, 2)}
-        icon={Activity}
-        loading={loading}
-        tooltip="Desviación estándar de las tasas de interés"
-      />
-      <MetricCard
-        title="Eficiencia de Fondeo"
-        value={`${kpiData.eficiencia.toFixed(0)}%`}
-        icon={Target}
-        loading={loading}
-        tooltip="Score de eficiencia en la gestión de fondeo (0-100)"
-        trend={kpiData.eficiencia - 80}
       />
       <MetricCard
         title="Total Operaciones"
