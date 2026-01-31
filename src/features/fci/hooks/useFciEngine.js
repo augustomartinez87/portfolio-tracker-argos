@@ -245,6 +245,6 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
                 setLoading(false);
             }
         },
-        getVcpForDate: fciService.getPrices // Exponer servicio directo para búsquedas
+        getVcpForDate // Exponer función local para búsquedas
     };
 }

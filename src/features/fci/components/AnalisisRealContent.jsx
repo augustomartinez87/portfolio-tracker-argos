@@ -110,24 +110,33 @@ export const AnalisisRealContent = () => {
         reader.readAsBinaryString(file);
     };
 
+    // Crear Map de MEP para lookups eficientes
+    const mepMap = useMemo(() => {
+        const map = new Map();
+        if (Array.isArray(mepHistory)) {
+            mepHistory.forEach(h => map.set(h.date, h.price));
+        }
+        return map;
+    }, [mepHistory]);
+
     const processedData = useMemo(() => {
         if (!vcpHistory.length || !ipcData.length) return [];
 
         const startVCP = vcpHistory.find(h => h.date >= subDate) || vcpHistory[0];
-        const startMEP = mepService.findClosestRate(subDate, mepHistory);
-        const startSPY = benchmarks.spy.find(h => h.date >= subDate) || benchmarks.spy[0];
-        const startIBIT = benchmarks.ibit.find(h => h.date >= subDate) || benchmarks.ibit[0];
+        const startMEP = mepService.findClosestRate(subDate, mepMap);
+        const startSPY = benchmarks.spy.find(h => h.date >= subDate) || benchmarks.spy[0] || { priceARS: 0 };
+        const startIBIT = benchmarks.ibit.find(h => h.date >= subDate) || benchmarks.ibit[0] || { priceARS: 0 };
 
         return vcpHistory.filter(h => h.date >= subDate).map(h => {
             const date = h.date;
-            const nomFCI = (h.vcp / startVCP.vcp);
-            const currentMEP = mepService.findClosestRate(date, mepHistory);
-            const nomMEP = (currentMEP / startMEP);
-            const spyData = benchmarks.spy.find(s => s.date === date) || { priceARS: startSPY?.priceARS };
+            const nomFCI = (h.vcp / (startVCP?.vcp || 1));
+            const currentMEP = mepService.findClosestRate(date, mepMap);
+            const nomMEP = (currentMEP / (startMEP || 1));
+            const spyData = benchmarks.spy.find(s => s.date === date) || { priceARS: startSPY?.priceARS || 0 };
             const nomSPY = (spyData.priceARS / (startSPY?.priceARS || 1));
-            const ibitData = benchmarks.ibit.find(i => i.date === date) || { priceARS: startIBIT?.priceARS };
+            const ibitData = benchmarks.ibit.find(i => i.date === date) || { priceARS: startIBIT?.priceARS || 0 };
             const nomIBIT = (ibitData.priceARS / (startIBIT?.priceARS || 1));
-            const ipcAcum = 1 + macroService.calculateAccumulatedIPC(subDate, date, ipcData);
+            const ipcAcum = 1 + (macroService.calculateAccumulatedIPC(subDate, date, ipcData) || 0);
 
             return {
                 date,
@@ -143,7 +152,7 @@ export const AnalisisRealContent = () => {
                 ipc_real: 100
             };
         });
-    }, [vcpHistory, ipcData, benchmarks, subDate, mepHistory]);
+    }, [vcpHistory, ipcData, benchmarks, subDate, mepMap]);
 
     const metrics = useMemo(() => {
         if (!processedData.length) return null;
@@ -313,10 +322,10 @@ export const AnalisisRealContent = () => {
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.fci }}></div>
                                     FCI Adcap
                                 </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     {formatPercent(metrics?.fci.nominal)}
                                 </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.real >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.real >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     {formatPercent(metrics?.fci.real)}
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono font-bold">
@@ -331,7 +340,7 @@ export const AnalisisRealContent = () => {
                                 <td className="px-4 py-3 text-right font-mono text-text-primary">
                                     {formatPercent(metrics?.mep.nominal)}
                                 </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.mep.real >= 0 ? 'text-profit' : 'text-danger'}`}>
+                                <td className={`px-4 py-3 text-right font-mono ${metrics?.mep.real >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     {formatPercent(metrics?.mep.real)}
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono font-bold">

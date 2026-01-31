@@ -14,7 +14,7 @@ const FciTransactionsList = lazy(() => import('@/features/fci/components/FciTran
 // Importaciones diferidas para mayor resiliencia
 const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent'));
 const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
-const FciTransactionModal = lazy(() => import('../features/fci/components/FciTransactionModal'));
+const FciTransactionModal = lazy(() => import('@/features/fci/components/FciTransactionModal'));
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { FciTabs } from '@/features/fci/components/FciTabs';
 import SummaryCard from '@/components/common/SummaryCard';
@@ -39,6 +39,16 @@ export default function Fci() {
   } = usePortfolio();
 
   const fciLoading = portfolioLoading; // Ahora se maneja centralizado
+
+  // useState declarations must come before useCallback that depends on them
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState('ARS');
+  const [showHistory, setShowHistory] = useState(false);
+  const [fciModalOpen, setFciModalOpen] = useState(false);
+  const [fciModalType, setFciModalType] = useState('SUBSCRIPTION');
+  const [selectedFci, setSelectedFci] = useState(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('resumen');
 
   const deleteTransaction = async (id) => {
     await fciService.deleteTransaction(id);
@@ -71,16 +81,6 @@ export default function Fci() {
       throw e;
     }
   };
-
-  // useState declarations must come before useCallback that depends on them
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [displayCurrency, setDisplayCurrency] = useState('ARS');
-  const [showHistory, setShowHistory] = useState(false);
-  const [fciModalOpen, setFciModalOpen] = useState(false);
-  const [fciModalType, setFciModalType] = useState('SUBSCRIPTION');
-  const [selectedFci, setSelectedFci] = useState(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('resumen');
 
   const formatVal = useCallback((ars, usd) => {
     return displayCurrency === 'ARS' ? formatARS(ars || 0) : formatUSD(usd || 0);

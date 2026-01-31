@@ -58,10 +58,10 @@ const FciTransactionsList = ({ transactions, onDelete, currency = 'ARS', mepHist
                                     {tx.fci_master?.nombre || 'FCI'}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className={`inline - flex items - center gap - 1 px - 2 py - 1 rounded - md text - [10px] font - bold uppercase transition - colors ${isSub
+                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors ${isSub
                                             ? 'bg-profit/10 text-profit border border-profit/20'
                                             : 'bg-loss/10 text-loss border border-loss/20'
-                                        } `}>
+                                        }`}>
                                         {isSub ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                         {isSub ? 'Suscripción' : 'Rescate'}
                                     </span>
@@ -70,7 +70,7 @@ const FciTransactionsList = ({ transactions, onDelete, currency = 'ARS', mepHist
                                     {formatVal(tx, tx.monto)}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-tertiary tabular-nums">
-                                    {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)} `}
+                                    {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)}`}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary tabular-nums">
                                     {formatNumber(tx.cuotapartes, 2)}
