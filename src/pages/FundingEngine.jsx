@@ -17,6 +17,7 @@ import {
   Target,
   Zap,
   Sliders,
+  Sparkles,
 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -26,6 +27,7 @@ import { useCarryMetrics } from '@/hooks/useCarryMetrics';
 import { useFciTNA } from '@/hooks/useFciTNA';
 import { AlertsPanel } from '@/components/funding/AlertsPanel';
 import { ScenarioSimulator } from '@/components/funding/ScenarioSimulator';
+import { CompoundProjection } from '@/components/funding/CompoundProjection';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 // ===========================================================================
@@ -709,6 +711,16 @@ export default function FundingEngine() {
                     spreadMensualActual={carryMetrics.spreadMensualProyectado}
                     spreadAnualActual={carryMetrics.spreadAnualProyectado}
                     bufferTasaActual={carryMetrics.bufferTasaPct}
+                  />
+                </div>
+              </Section>
+
+              {/* Proyección de Interés Compuesto */}
+              <Section title="Proyección de Interés Compuesto" icon={Sparkles}>
+                <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
+                  <CompoundProjection
+                    capitalProductivo={carryMetrics.capitalProductivo}
+                    bufferTasa={carryMetrics.bufferTasa}
                   />
                 </div>
               </Section>
