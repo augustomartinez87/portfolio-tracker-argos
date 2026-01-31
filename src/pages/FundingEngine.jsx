@@ -23,6 +23,7 @@ import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 import { useCauciones } from '@/features/financing/hooks/useCauciones';
 import { useCarryMetrics } from '@/hooks/useCarryMetrics';
 import { useFciTNA } from '@/hooks/useFciTNA';
+import { AlertsPanel } from '@/components/funding/AlertsPanel';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 // ===========================================================================
@@ -392,6 +393,9 @@ export default function FundingEngine() {
                   trend={carryMetrics.bufferTasaPct}
                 />
               </div>
+
+              {/* Alertas y Acciones */}
+              <AlertsPanel carryMetrics={carryMetrics} isFallback={isFallback} />
 
               {/* Cobertura y Targets */}
               <Section title="Cobertura de Capital" icon={Target}>
