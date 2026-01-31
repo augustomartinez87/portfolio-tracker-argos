@@ -6,7 +6,6 @@ import { DashboardSidebar } from '@/features/portfolio/components/DashboardSideb
 import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
-import { tradeService } from '@/features/portfolio/services/tradeService';
 // useFciEngine y usePrices eliminados por redundancia con el contexto
 // Importaciones diferidas para evitar TDZ
 const FciTable = lazy(() => import('@/features/fci/components/FciTable'));
@@ -186,7 +185,7 @@ export default function Fci() {
 
         // Limpiar archivo después de carga exitosa
         setVcpFile(null);
-        if (onRefresh) onRefresh();
+        refresh();
 
       } catch (err) {
         console.error(err);
