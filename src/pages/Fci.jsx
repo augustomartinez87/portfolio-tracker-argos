@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { PieChart, Plus, Download, Loader2, RefreshCw, Upload, FileUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -202,7 +202,12 @@ export default function Fci() {
     return displayCurrency === 'ARS' ? formatARS(ars || 0) : formatUSD(usd || 0);
   }, [displayCurrency]);
 
-  const pnlPercent = (totals?.invested && totals.invested > 0) ? (totals.pnl / totals.invested) * 100 : 0;
+  const pnlPercent = useMemo(() => {
+    if (displayCurrency === 'USD') {
+      return (totals?.investedUSD && totals.investedUSD > 0) ? (totals.pnlUSD / totals.investedUSD) * 100 : 0;
+    }
+    return (totals?.invested && totals.invested > 0) ? (totals.pnl / totals.invested) * 100 : 0;
+  }, [totals, displayCurrency]);
 
   if (portfolioLoading && !currentPortfolio) {
     return (
