@@ -16,6 +16,7 @@ import {
   BarChart3,
   Target,
   Zap,
+  Sliders,
 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -24,6 +25,7 @@ import { useCauciones } from '@/features/financing/hooks/useCauciones';
 import { useCarryMetrics } from '@/hooks/useCarryMetrics';
 import { useFciTNA } from '@/hooks/useFciTNA';
 import { AlertsPanel } from '@/components/funding/AlertsPanel';
+import { ScenarioSimulator } from '@/components/funding/ScenarioSimulator';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 // ===========================================================================
@@ -690,6 +692,24 @@ export default function FundingEngine() {
                       </div>
                     </div>
                   )}
+                </div>
+              </Section>
+
+              {/* Simulador de Escenarios */}
+              <Section title="Simulador de Escenarios" icon={Sliders}>
+                <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
+                  <p className="text-sm text-text-secondary mb-4">
+                    Ajustá las tasas para ver el impacto en tu carry trade
+                  </p>
+                  <ScenarioSimulator
+                    tnaFCIActual={carryMetrics.tnaFCI}
+                    tnaCaucionActual={carryMetrics.tnaCaucionPonderada}
+                    capitalProductivo={carryMetrics.capitalProductivo}
+                    spreadNetoDiaActual={carryMetrics.spreadNetoDia}
+                    spreadMensualActual={carryMetrics.spreadMensualProyectado}
+                    spreadAnualActual={carryMetrics.spreadAnualProyectado}
+                    bufferTasaActual={carryMetrics.bufferTasaPct}
+                  />
                 </div>
               </Section>
 
