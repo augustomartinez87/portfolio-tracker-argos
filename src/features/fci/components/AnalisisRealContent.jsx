@@ -12,6 +12,7 @@ import { mepService } from '@/features/portfolio/services/mepService';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { VIEW_MODES } from '@/constants';
 import * as XLSX from 'xlsx';
+import { fciService } from '@/features/fci/services/fciService';
 
 const COLORS = {
     fci: '#3b82f6',    // Blue
@@ -39,6 +40,9 @@ const AnalisisRealContent = () => {
         ibit: true,
         ipc: true
     });
+    const [fcis, setFcis] = useState([]);
+    const [selectedFciId, setSelectedFciId] = useState(null);
+    const [selectedFci, setSelectedFci] = useState(null);
 
     // Excel Serial Date to JS Date
     const excelToJSDate = (serial) => {
@@ -74,6 +78,48 @@ const AnalisisRealContent = () => {
         };
         loadInitialData();
     }, []);
+
+    // Load FCI list and auto-select if only one
+    useEffect(() => {
+        const loadFcis = async () => {
+            try {
+                const data = await fciService.getFcis();
+                setFcis(data || []);
+                
+                // Auto-select if only one FCI
+                if (data && data.length === 1) {
+                    setSelectedFciId(data[0].id);
+                    setSelectedFci(data[0]);
+                }
+            } catch (error) {
+                console.error("Error loading FCIs:", error);
+            }
+        };
+        loadFcis();
+    }, []);
+
+    // Load VCP prices when FCI is selected
+    useEffect(() => {
+        const loadPrices = async () => {
+            if (!selectedFciId) return;
+            
+            try {
+                const prices = await fciService.getPrices(selectedFciId);
+                if (prices && prices.length > 0) {
+                    // Transform DB format to component format
+                    const parsedVCP = prices.map(p => ({
+                        date: p.fecha,
+                        vcp: p.vcp
+                    })).sort((a, b) => a.date.localeCompare(b.date));
+                    
+                    setVcpHistory(parsedVCP);
+                }
+            } catch (error) {
+                console.error("Error loading prices:", error);
+            }
+        };
+        loadPrices();
+    }, [selectedFciId]);
 
     // Handle CSV/Excel Upload
     const handleFileUpload = (e) => {
@@ -190,7 +236,7 @@ const AnalisisRealContent = () => {
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2">
                         <TrendingUp className="text-profit" />
-                        Análisis Real Adcap Balanceado III
+                        Análisis Real {selectedFci ? selectedFci.nombre : 'FCI'}
                     </h1>
                     <p className="text-text-tertiary text-xs">Comparativa de rendimiento vs. Inflación y Benchmarks</p>
                 </div>
@@ -289,7 +335,7 @@ const AnalisisRealContent = () => {
                                 itemStyle={{ fontSize: '12px' }}
                             />
                             <Legend verticalAlign="top" height={36} />
-                            <Line type="monotone" dataKey={viewMode === 'real' ? 'fci_real' : 'fci'} name="Adcap Balanceado III" stroke={COLORS.fci} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                            <Line type="monotone" dataKey={viewMode === 'real' ? 'fci_real' : 'fci'} name={selectedFci ? selectedFci.nombre : 'FCI'} stroke={COLORS.fci} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                             {showBenchmarks.mep && <Line type="monotone" dataKey={viewMode === 'real' ? 'mep_real' : 'mep'} name="Dólar MEP" stroke={COLORS.mep} strokeWidth={2} dot={false} />}
                             {showBenchmarks.spy && <Line type="monotone" dataKey={viewMode === 'real' ? 'spy_real' : 'spy'} name="SPY (ARS)" stroke={COLORS.spy} strokeWidth={2} dot={false} />}
                             {showBenchmarks.ibit && <Line type="monotone" dataKey={viewMode === 'real' ? 'ibit_real' : 'ibit'} name="IBIT (ARS)" stroke={COLORS.ibit} strokeWidth={2} dot={false} />}
@@ -320,7 +366,7 @@ const AnalisisRealContent = () => {
                             <tr>
                                 <td className="px-4 py-3 font-semibold flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.fci }}></div>
-                                    FCI Adcap
+                                    {selectedFci ? selectedFci.nombre : 'FCI'}
                                 </td>
                                 <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     {formatPercent(metrics?.fci.nominal)}
