@@ -590,41 +590,106 @@ export default function FundingEngine() {
                 </div>
               </Section>
 
-              {/* Performance */}
+              {/* Performance de Carry - Versión Mejorada */}
               <Section title="Performance de Carry" icon={Activity}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {/* Spread Diario */}
+                {/* 4 Cards de Spread */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {/* Card 1: Spread Diario */}
                   <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-                    <h4 className="text-sm font-medium text-text-tertiary mb-3">Spread Neto Diario</h4>
-                    <p className={`text-3xl font-bold font-mono ${carryMetrics.spreadNetoDia >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Diario</h4>
+                    <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadNetoDia >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(carryMetrics.spreadNetoDia)}
                     </p>
-                    <p className="text-xs text-text-tertiary mt-1">
-                      ROE Anualizado: <span className="font-mono text-primary">{formatPercent(carryMetrics.roeCaucion)}</span>
+                    <p className="text-xs text-text-tertiary mt-2">
+                      TNA: <span className={`font-mono font-medium ${carryMetrics.bufferTasaPct >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatPercent(carryMetrics.bufferTasaPct)}
+                      </span>
                     </p>
                   </div>
 
-                  {/* Carry Perdido */}
+                  {/* Card 2: Spread Mensual (Proyectado) */}
                   <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-                    <h4 className="text-sm font-medium text-text-tertiary mb-3">Carry Perdido</h4>
-                    <p className="text-3xl font-bold font-mono text-danger">
-                      {formatARS(carryMetrics.carryPerdidoDia)}<span className="text-sm text-text-tertiary">/día</span>
+                    <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Mensual</h4>
+                    <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadMensualProyectado >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {formatARS(carryMetrics.spreadMensualProyectado)}
                     </p>
-                    <p className="text-xs text-text-tertiary mt-1">
-                      Anual: <span className="font-mono text-danger">{formatARS(carryMetrics.carryPerdidoAnual)}</span>
+                    <p className="text-xs text-text-tertiary mt-2">
+                      (proyectado)
                     </p>
                   </div>
 
-                  {/* Spread Acumulado */}
+                  {/* Card 3: Spread Anual (Proyectado) */}
                   <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-                    <h4 className="text-sm font-medium text-text-tertiary mb-3">Spread Acumulado</h4>
-                    <p className={`text-3xl font-bold font-mono ${carryMetrics.spreadAcumulado >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Anual</h4>
+                    <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadAnualProyectado >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {formatARS(carryMetrics.spreadAnualProyectado)}
+                    </p>
+                    <p className="text-xs text-text-tertiary mt-2">
+                      ROE: <span className="font-mono font-medium text-primary">
+                        {formatPercent(carryMetrics.roeCaucion)}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Card 4: Spread Acumulado */}
+                  <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
+                    <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Acumulado</h4>
+                    <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadAcumulado >= 0 ? 'text-success' : 'text-danger'}`}>
                       {formatARS(carryMetrics.spreadAcumulado)}
                     </p>
-                    <p className="text-xs text-text-tertiary mt-1">
-                      Oportunidad perdida: <span className="font-mono text-warning">{formatARS(carryMetrics.oportunidadPerdida)}</span>
+                    <p className="text-xs text-text-tertiary mt-2">
+                      Total histórico
                     </p>
                   </div>
+                </div>
+
+                {/* Subsección: Costo de Oportunidad */}
+                <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingDown className="w-4 h-4 text-danger" />
+                    <h3 className="text-sm font-medium text-text-secondary">Costo de Oportunidad</h3>
+                  </div>
+
+                  {carryMetrics.ratioCobertura >= 115 ? (
+                    <div className="p-3 bg-success/10 border border-success/30 rounded-lg">
+                      <p className="text-success text-sm font-medium flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Sin costo de oportunidad - Meta óptima alcanzada
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Por capital improductivo */}
+                      <div className="space-y-1">
+                        <p className="text-xs text-text-tertiary">Por capital improductivo:</p>
+                        <p className="text-lg font-mono font-semibold text-danger">
+                          {formatARS(carryMetrics.carryPerdidoDia)}/día
+                        </p>
+                        <p className="text-xs text-text-secondary">
+                          → {formatARS(carryMetrics.carryPerdidoAnual)}/año
+                        </p>
+                      </div>
+
+                      {/* Por no alcanzar meta óptima */}
+                      <div className="space-y-1">
+                        <p className="text-xs text-text-tertiary">Por no alcanzar meta óptima:</p>
+                        <p className="text-lg font-mono font-semibold text-warning">
+                          {formatARS(carryMetrics.costoNoOptimoDia)}/día
+                        </p>
+                        <p className="text-xs text-text-secondary">
+                          → {formatARS(carryMetrics.costoNoOptimoAnual)}/año
+                        </p>
+                      </div>
+
+                      {/* Total histórico */}
+                      <div className="space-y-1">
+                        <p className="text-xs text-text-tertiary">Total oportunidad perdida histórica:</p>
+                        <p className="text-lg font-mono font-semibold text-danger">
+                          {formatARS(carryMetrics.oportunidadPerdida)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Section>
 

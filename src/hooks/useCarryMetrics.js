@@ -162,7 +162,23 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     const oportunidadPerdida = fullDeploymentAcumulado.minus(spreadAcumulado);
 
     // =========================================================================
-    // 13. CLASIFICACIONES
+    // 13. PROYECCIONES DE SPREAD
+    // =========================================================================
+    // Proyecciones mensual y anual basadas en spread diario
+    const spreadMensualProyectado = spreadNetoDia.times(30);
+    const spreadAnualProyectado = spreadNetoDia.times(365);
+
+    // =========================================================================
+    // 14. COSTO POR NO ALCANZAR COBERTURA ÓPTIMA
+    // =========================================================================
+    // Costo diario y anual por no tener cobertura óptima (115%)
+    const costoNoOptimoDia = deficitOptimo.gt(0)
+      ? deficitOptimo.times(bufferTasa).dividedBy(365)
+      : new Decimal(0);
+    const costoNoOptimoAnual = costoNoOptimoDia.times(365);
+
+    // =========================================================================
+    // 15. CLASIFICACIONES
     // =========================================================================
     const estadoCobertura =
       ratioCobertura.gte(115) ? 'sobrecapitalizado' :
@@ -217,6 +233,8 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
 
       // Performance
       spreadNetoDia: spreadNetoDia.toNumber(),
+      spreadMensualProyectado: spreadMensualProyectado.toNumber(),
+      spreadAnualProyectado: spreadAnualProyectado.toNumber(),
       roeCaucion: roeCaucion.toNumber(),
       carryPerdidoDia: carryPerdidoDia.toNumber(),
       carryPerdidoAnual: carryPerdidoAnual.toNumber(),
@@ -224,6 +242,8 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       spreadAcumulado: spreadAcumulado.toNumber(),
       fullDeploymentAcumulado: fullDeploymentAcumulado.toNumber(),
       oportunidadPerdida: oportunidadPerdida.toNumber(),
+      costoNoOptimoDia: costoNoOptimoDia.toNumber(),
+      costoNoOptimoAnual: costoNoOptimoAnual.toNumber(),
 
       // Metadata
       diasPromedio,
