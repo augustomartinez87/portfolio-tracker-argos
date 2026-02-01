@@ -179,9 +179,9 @@ export default function Dashboard() {
   }, [showFormatHelp]);
 
   // Portfolio Engine - handles calculations with historical precision
-  const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(trades,
+  const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(
+    trades,
     prices,
-    lastUpdate,
     mepRate,
     mepHistory,
     fciPositions
