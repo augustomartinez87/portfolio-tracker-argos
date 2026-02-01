@@ -5,11 +5,13 @@ import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 /**
  * Simulador de Escenarios para Carry Trade
  * Permite ajustar TNA FCI y TNA Caución para ver el impacto en ganancias
- * 
+ *
  * @param {Object} props
- * @param {number} props.tnaFCIActual - TNA actual del FCI
- * @param {number} props.tnaCaucionActual - TNA actual ponderado de cauciones
- * @param {number} props.capitalProductivo - Capital productivo actual
+ * @param {number} props.tnaFCIActual - TNA actual del FCI (decimal, ej: 0.32)
+ * @param {number} props.tnaCaucionActual - TNA actual ponderado de cauciones (decimal)
+ * @param {number} props.saldoFCI - Saldo actual del FCI
+ * @param {number} props.costoCaucionDia - Costo diario fijo de cauciones vigentes
+ * @param {number} props.totalCaucion - Total capital en cauciones vigentes
  * @param {number} props.spreadNetoDiaActual - Spread neto diario actual
  * @param {number} props.spreadMensualActual - Spread mensual proyectado actual
  * @param {number} props.spreadAnualActual - Spread anual proyectado actual
@@ -18,7 +20,9 @@ import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 export function ScenarioSimulator({
   tnaFCIActual,
   tnaCaucionActual,
-  capitalProductivo,
+  saldoFCI,
+  costoCaucionDia,
+  totalCaucion,
   spreadNetoDiaActual,
   spreadMensualActual,
   spreadAnualActual,
@@ -39,22 +43,35 @@ export function ScenarioSimulator({
     diffAnual,
     breakevenTnaFCI,
   } = useMemo(() => {
-    // Spread simulado (TNA FCI - TNA Caución)
+    // Spread simulado (diferencial de tasas)
     const spreadSim = tnaFCISimulado - tnaCaucionSimulado;
-    
-    // Ganancias simuladas usando capital productivo
-    const gananciaDia = capitalProductivo * spreadSim / 365;
+
+    // Ganancia FCI simulada = saldoFCI * tnaFCISimulado / 365
+    const gananciaFCISimDia = saldoFCI * tnaFCISimulado / 365;
+
+    // Para cauciones existentes: costo fijo
+    // Para cauciones futuras: costo proporcional a nueva tasa
+    // Usamos proporcionalidad: costoCaucionSimDia = costoCaucionDia * (tnaCaucionSimulado / tnaCaucionActual)
+    // Esto simula "si renovara las cauciones a la nueva tasa"
+    const costoCaucionSimDia = tnaCaucionActual > 0
+      ? costoCaucionDia * (tnaCaucionSimulado / tnaCaucionActual)
+      : totalCaucion * tnaCaucionSimulado / 365;
+
+    // Spread neto simulado = ganancia FCI - costo caución
+    const gananciaDia = gananciaFCISimDia - costoCaucionSimDia;
     const gananciaMes = gananciaDia * 30;
     const gananciaAnual = gananciaDia * 365;
-    
+
     // Diferencias vs actual
     const dDia = gananciaDia - spreadNetoDiaActual;
     const dMes = gananciaMes - spreadMensualActual;
     const dAnual = gananciaAnual - spreadAnualActual;
-    
-    // Breakeven: TNA FCI = TNA Caución actual
-    const breakeven = tnaCaucionActual;
-    
+
+    // Breakeven: cuando gananciaFCI = costoCaucion
+    // saldoFCI * tnaFCI / 365 = costoCaucionDia
+    // tnaFCI = costoCaucionDia * 365 / saldoFCI
+    const breakeven = saldoFCI > 0 ? (costoCaucionDia * 365 / saldoFCI) : 0;
+
     return {
       spreadSimulado: spreadSim,
       gananciaSimDia: gananciaDia,
@@ -65,7 +82,7 @@ export function ScenarioSimulator({
       diffAnual: dAnual,
       breakevenTnaFCI: breakeven,
     };
-  }, [tnaFCISimulado, tnaCaucionSimulado, capitalProductivo, tnaCaucionActual, 
+  }, [tnaFCISimulado, tnaCaucionSimulado, saldoFCI, costoCaucionDia, totalCaucion, tnaCaucionActual,
       spreadNetoDiaActual, spreadMensualActual, spreadAnualActual]);
 
   // Handlers para sliders

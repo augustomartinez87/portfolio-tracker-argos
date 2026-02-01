@@ -555,7 +555,9 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           <ScenarioSimulator
             tnaFCIActual={carryMetrics.tnaFCI}
             tnaCaucionActual={carryMetrics.tnaCaucionPonderada}
-            capitalProductivo={carryMetrics.capitalProductivo}
+            saldoFCI={carryMetrics.saldoFCI}
+            costoCaucionDia={carryMetrics.costoCaucionDia}
+            totalCaucion={carryMetrics.totalCaucion}
             spreadNetoDiaActual={carryMetrics.spreadNetoDia}
             spreadMensualActual={carryMetrics.spreadMensualProyectado}
             spreadAnualActual={carryMetrics.spreadAnualProyectado}

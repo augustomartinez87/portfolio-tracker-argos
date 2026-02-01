@@ -74,24 +74,21 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       : new Decimal(0);
 
     // =========================================================================
-    // 7. TNA CAUCIÓN PROMEDIO PONDERADA
+    // 7. TNA CAUCIÓN PROMEDIO PONDERADA (solo cauciones vigentes)
     // =========================================================================
-    // Ponderado por capital para mayor precisión
-    const totalCapitalCauciones = cauciones.reduce((sum, c) =>
-      sum.plus(new Decimal(c.capital || 0)), new Decimal(0));
-
-    const tnaCaucionPonderada = totalCapitalCauciones.gt(0)
-      ? cauciones.reduce((sum, c) => {
+    // Ponderado por capital para mayor precisión - SOLO cauciones vigentes
+    const tnaCaucionPonderada = totalCaucion.gt(0)
+      ? caucionesVigentes.reduce((sum, c) => {
           const capital = new Decimal(c.capital || 0);
           const tna = new Decimal(c.tna_real || 0).dividedBy(100); // Convertir de % a decimal
           return sum.plus(capital.times(tna));
-        }, new Decimal(0)).dividedBy(totalCapitalCauciones)
+        }, new Decimal(0)).dividedBy(totalCaucion)
       : new Decimal(0);
 
-    // TNA promedio simple (para referencia)
-    const tnaCaucionPromedio = cauciones.length > 0
-      ? cauciones.reduce((sum, c) => sum.plus(new Decimal(c.tna_real || 0)), new Decimal(0))
-          .dividedBy(cauciones.length)
+    // TNA promedio simple (para referencia) - SOLO cauciones vigentes
+    const tnaCaucionPromedio = caucionesVigentes.length > 0
+      ? caucionesVigentes.reduce((sum, c) => sum.plus(new Decimal(c.tna_real || 0)), new Decimal(0))
+          .dividedBy(caucionesVigentes.length)
           .dividedBy(100) // Convertir de % a decimal
       : new Decimal(0);
 
@@ -121,11 +118,11 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     // Ganancia FCI por día = saldo FCI * (TNA FCI / 365)
     const gananciaFCIDia = saldoFCI.times(tnaFCIDec).dividedBy(365);
 
-    // Costo caución por día (última caución activa)
-    const ultimaCaucionVigente = caucionesVigentes[caucionesVigentes.length - 1];
-    const costoCaucionDia = ultimaCaucionVigente
-      ? new Decimal(ultimaCaucionVigente.interes || 0).dividedBy(ultimaCaucionVigente.dias || 1)
-      : new Decimal(0);
+    // Costo caución por día (suma de TODAS las cauciones vigentes)
+    const costoCaucionDia = caucionesVigentes.reduce((sum, c) => {
+      const interesDiario = new Decimal(c.interes || 0).dividedBy(c.dias || 1);
+      return sum.plus(interesDiario);
+    }, new Decimal(0));
 
     // Spread neto diario
     const spreadNetoDia = gananciaFCIDia.minus(costoCaucionDia);
@@ -232,6 +229,8 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       estadoBuffer,
 
       // Performance
+      gananciaFCIDia: gananciaFCIDia.toNumber(),
+      costoCaucionDia: costoCaucionDia.toNumber(),
       spreadNetoDia: spreadNetoDia.toNumber(),
       spreadMensualProyectado: spreadMensualProyectado.toNumber(),
       spreadAnualProyectado: spreadAnualProyectado.toNumber(),

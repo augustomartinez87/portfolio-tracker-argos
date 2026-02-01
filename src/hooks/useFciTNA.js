@@ -80,11 +80,12 @@ export function useFciTNA(fciId, minRecords = 2) {
       const fechaFinal = new Date(lastPrice.fecha);
       const dias = Math.max(1, Math.floor((fechaFinal - fechaInicial) / (1000 * 60 * 60 * 24)));
 
-      // Calcular rendimiento: (VCP_final / VCP_inicial) - 1
-      const rendimiento = vcpFinal.dividedBy(vcpInicial).minus(1);
+      // Calcular ratio de crecimiento
+      const ratio = vcpFinal.dividedBy(vcpInicial);
 
-      // Anualizar: rendimiento * (365 / dias)
-      const tna = rendimiento.times(365).dividedBy(dias);
+      // Anualizar con fórmula compuesta: (ratio ^ (365/dias)) - 1
+      const exponent = new Decimal(365).dividedBy(dias);
+      const tna = ratio.pow(exponent).minus(1);
 
       // Validar que la TNA sea razonable (entre -50% y 200%)
       const tnaNum = tna.toNumber();

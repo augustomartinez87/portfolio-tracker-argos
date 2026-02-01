@@ -31,13 +31,13 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
         const cauciones = caucionesResult.data;
 
         // 2. Process FCI TNA
-        // tnaFCI = ((vcp_hoy / vcp_ayer) - 1) * 365 * 100
+        // tnaFCI = ((vcp_hoy / vcp_ayer) ^ 365 - 1) * 100 (anualización compuesta)
         const fciTnaMap = new Map();
         for (let i = 1; i < prices.length; i++) {
           const hoy = prices[i];
           const ayer = prices[i - 1];
-          const factor = (hoy.vcp / ayer.vcp) - 1;
-          const tna = factor * 365 * 100;
+          const ratio = hoy.vcp / ayer.vcp;
+          const tna = (Math.pow(ratio, 365) - 1) * 100;
           fciTnaMap.set(hoy.fecha, tna);
         }
 
