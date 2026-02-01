@@ -3,9 +3,9 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    TrendingUp, Calendar, BarChart3, RefreshCw, Wallet
+    TrendingUp, Calendar, BarChart3, RefreshCw, Wallet, Briefcase, AlertCircle
 } from 'lucide-react';
-import { formatARS, formatPercent } from '@/utils/formatters';
+import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 import { mepService } from '@/features/portfolio/services/mepService';
 import { fciService } from '@/features/fci/services/fciService';
 import { data912 } from '@/utils/data912';
@@ -28,20 +28,24 @@ const AnalisisRealContent = () => {
     const [fcis, setFcis] = useState([]);
     const [selectedFci, setSelectedFci] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Función auxiliar para encontrar precio más cercano (definida antes de usarla)
-    const findClosestPrice = (targetDate, priceMap, historyArray) => {
+    // Función auxiliar para encontrar precio más cercano
+    // Optimizada: busca hacia atrás máximo 10 días en O(k) en lugar de ordenar O(n log n)
+    const findClosestPrice = (targetDate, priceMap) => {
+        // O(1) - coincidencia exacta
         if (priceMap.has(targetDate)) return priceMap.get(targetDate);
-        
-        // Buscar el precio de la fecha más cercana anterior
-        const sortedDates = historyArray.map(h => h.date).sort();
-        const targetIndex = sortedDates.findIndex(d => d > targetDate);
-        
-        if (targetIndex > 0) {
-            const closestDate = sortedDates[targetIndex - 1];
-            return priceMap.get(closestDate);
+
+        // Buscar fecha anterior más cercana (máximo 10 días atrás)
+        const dateObj = new Date(targetDate);
+        for (let i = 1; i <= 10; i++) {
+            dateObj.setDate(dateObj.getDate() - 1);
+            const prevDate = dateObj.toISOString().split('T')[0];
+            if (priceMap.has(prevDate)) {
+                return priceMap.get(prevDate);
+            }
         }
-        
+
         return null;
     };
 
@@ -55,60 +59,88 @@ const AnalisisRealContent = () => {
 
     // Cargar lista de FCI
     useEffect(() => {
+        let cancelled = false;
+
         const loadFcis = async () => {
             try {
                 const data = await fciService.getFcis();
+                if (cancelled) return;
+
                 setFcis(data || []);
-                
+
                 if (data && data.length === 1) {
                     setSelectedFci(data[0]);
                 }
-            } catch (error) {
-                console.error("Error loading FCIs:", error);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Error loading FCIs:", err);
+                setError("No se pudieron cargar los fondos disponibles");
             }
         };
         loadFcis();
+
+        return () => { cancelled = true; };
     }, []);
 
     // Cargar datos históricos (SPY y MEP)
     useEffect(() => {
+        let cancelled = false;
+
         const loadData = async () => {
             setLoading(true);
+            setError(null); // Limpiar error previo
             try {
                 const [mep, spyData] = await Promise.all([
                     mepService.getHistory(),
                     fetchSpyHistory()
                 ]);
+                if (cancelled) return;
+
                 setMepHistory(mep);
                 setSpyHistory(spyData);
-            } catch (error) {
-                console.error("Error loading data:", error);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Error loading data:", err);
+                setError("Error al cargar datos históricos de MEP o SPY");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
         loadData();
+
+        return () => { cancelled = true; };
     }, [startDate]);
 
     // Cargar precios del FCI seleccionado
     useEffect(() => {
+        if (!selectedFci) return;
+
+        let cancelled = false;
+
         const loadFciPrices = async () => {
-            if (!selectedFci) return;
-            
             try {
                 const prices = await fciService.getPrices(selectedFci.id);
+                if (cancelled) return;
+
                 if (prices && prices.length > 0) {
                     const parsedVCP = prices.map(p => ({
                         date: p.fecha,
                         vcp: p.vcp
                     })).sort((a, b) => a.date.localeCompare(b.date));
                     setVcpHistory(parsedVCP);
+                    setError(null); // Limpiar error si cargó bien
+                } else {
+                    setError(`No hay datos de precios para ${selectedFci.nombre}`);
                 }
-            } catch (error) {
-                console.error("Error loading FCI prices:", error);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Error loading FCI prices:", err);
+                setError(`Error al cargar precios del FCI: ${selectedFci.nombre}`);
             }
         };
         loadFciPrices();
+
+        return () => { cancelled = true; };
     }, [selectedFci]);
 
     // Fetch SPY desde data912 usando el helper
@@ -142,6 +174,16 @@ const AnalisisRealContent = () => {
 
         if (!startVCP || !startMEP || !startSPY) return [];
 
+        // Validar que los precios iniciales no sean 0 (evitar división por cero)
+        if (!startVCP.vcp || !startMEP.price || !startSPY.price) {
+            console.warn('[AnalisisReal] Precios iniciales inválidos:', {
+                vcp: startVCP.vcp,
+                mep: startMEP.price,
+                spy: startSPY.price
+            });
+            return [];
+        }
+
         // Crear mapa de fechas para lookups
         const mepMap = new Map(mepHistory.map(h => [h.date, h.price]));
         const spyMap = new Map(spyHistory.map(h => [h.date, h.price]));
@@ -155,12 +197,12 @@ const AnalisisRealContent = () => {
                 // Normalizar a base 100
                 const fciIndex = (h.vcp / startVCP.vcp) * 100;
                 
-                // Buscar MEP más cercano
-                const mepPrice = findClosestPrice(date, mepMap, mepHistory);
+                // Buscar MEP más cercano (O(1) o O(k) con k <= 10)
+                const mepPrice = findClosestPrice(date, mepMap);
                 const mepIndex = mepPrice ? (mepPrice / startMEP.price) * 100 : null;
-                
-                // Buscar SPY más cercano
-                const spyPrice = findClosestPrice(date, spyMap, spyHistory);
+
+                // Buscar SPY más cercano (O(1) o O(k) con k <= 10)
+                const spyPrice = findClosestPrice(date, spyMap);
                 const spyIndex = spyPrice ? (spyPrice / startSPY.price) * 100 : null;
 
                 return {
@@ -238,6 +280,19 @@ const AnalisisRealContent = () => {
         );
     }
 
+    // Componente de error reutilizable
+    const ErrorBanner = () => error ? (
+        <div className="bg-loss/10 border border-loss/30 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-loss flex-shrink-0 mt-0.5" />
+            <div>
+                <p className="text-sm font-medium text-loss">{error}</p>
+                <p className="text-xs text-text-tertiary mt-1">
+                    Verificá tu conexión o intentá de nuevo más tarde.
+                </p>
+            </div>
+        </div>
+    ) : null;
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -252,6 +307,9 @@ const AnalisisRealContent = () => {
                     </p>
                 </div>
             </header>
+
+            {/* Error Banner */}
+            <ErrorBanner />
 
             {/* Controles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -315,6 +373,38 @@ const AnalisisRealContent = () => {
                     </div>
                 </div>
 
+                {/* Selector de FCI */}
+                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
+                        Fondo (FCI)
+                    </label>
+                    <div className="relative">
+                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                        <select
+                            value={selectedFci?.id || ''}
+                            onChange={(e) => {
+                                const fci = fcis.find(f => f.id === e.target.value);
+                                setSelectedFci(fci || null);
+                            }}
+                            className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer"
+                            disabled={fcis.length === 0}
+                        >
+                            {fcis.length === 0 ? (
+                                <option value="">Cargando...</option>
+                            ) : (
+                                <>
+                                    <option value="">Seleccionar FCI</option>
+                                    {fcis.map(fci => (
+                                        <option key={fci.id} value={fci.id}>
+                                            {fci.nombre}
+                                        </option>
+                                    ))}
+                                </>
+                            )}
+                        </select>
+                    </div>
+                </div>
+
             </div>
 
             {/* Gráfico */}
@@ -325,7 +415,7 @@ const AnalisisRealContent = () => {
                         Evolución del Rendimiento (%)
                     </h2>
                     <p className="text-xs text-text-tertiary">
-                        Base 100 = {formatARS(initialAmount, 0)} al {new Date(startDate).toLocaleDateString('es-AR')}
+                        Base 100 = $ {formatNumber(initialAmount, 0)} al {new Date(startDate).toLocaleDateString('es-AR')}
                     </p>
                 </div>
 
@@ -393,7 +483,7 @@ const AnalisisRealContent = () => {
                         Resultado Final: ¿Dónde te convenía invertir?
                     </h3>
                     <p className="text-xs text-text-tertiary mt-1">
-                        Si invertías {formatARS(initialAmount, 0)} el {new Date(startDate).toLocaleDateString('es-AR')}:
+                        Si invertías $ {formatNumber(initialAmount, 0)} el {new Date(startDate).toLocaleDateString('es-AR')}:
                     </p>
                 </div>
                 <table className="w-full text-sm">
@@ -417,7 +507,7 @@ const AnalisisRealContent = () => {
                                     {item.isWinner && <span className="text-profit">🏆</span>}
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono font-bold">
-                                    {formatARS(item.finalValue, 0)}
+                                    $ {formatNumber(item.finalValue, 0)}
                                 </td>
                                 <td className={`px-4 py-3 text-right font-mono ${item.return_pct >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     {formatPercent(item.return_pct)}
