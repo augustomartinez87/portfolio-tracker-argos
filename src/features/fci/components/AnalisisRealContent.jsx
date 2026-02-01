@@ -29,6 +29,22 @@ const AnalisisRealContent = () => {
     const [selectedFci, setSelectedFci] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Función auxiliar para encontrar precio más cercano (definida antes de usarla)
+    const findClosestPrice = (targetDate, priceMap, historyArray) => {
+        if (priceMap.has(targetDate)) return priceMap.get(targetDate);
+        
+        // Buscar el precio de la fecha más cercana anterior
+        const sortedDates = historyArray.map(h => h.date).sort();
+        const targetIndex = sortedDates.findIndex(d => d > targetDate);
+        
+        if (targetIndex > 0) {
+            const closestDate = sortedDates[targetIndex - 1];
+            return priceMap.get(closestDate);
+        }
+        
+        return null;
+    };
+
     // Cargar fecha de hoy por defecto
     useEffect(() => {
         const today = new Date().toISOString().split('T')[0];
@@ -158,22 +174,6 @@ const AnalisisRealContent = () => {
             })
             .filter(h => h.fci !== null);
     }, [vcpHistory, mepHistory, spyHistory, startDate, endDate, useTodayAsEnd]);
-
-    // Función auxiliar para encontrar precio más cercano
-    const findClosestPrice = (targetDate, priceMap, historyArray) => {
-        if (priceMap.has(targetDate)) return priceMap.get(targetDate);
-        
-        // Buscar el precio de la fecha más cercana anterior
-        const sortedDates = historyArray.map(h => h.date).sort();
-        const targetIndex = sortedDates.findIndex(d => d > targetDate);
-        
-        if (targetIndex > 0) {
-            const closestDate = sortedDates[targetIndex - 1];
-            return priceMap.get(closestDate);
-        }
-        
-        return null;
-    };
 
     // Calcular valores finales para la tabla comparativa
     const comparisonData = useMemo(() => {
