@@ -3,12 +3,12 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    TrendingUp, Upload, Calendar, BarChart3, RefreshCw, Wallet
+    TrendingUp, Calendar, BarChart3, RefreshCw, Wallet
 } from 'lucide-react';
 import { formatARS, formatPercent } from '@/utils/formatters';
 import { mepService } from '@/features/portfolio/services/mepService';
 import { fciService } from '@/features/fci/services/fciService';
-import * as XLSX from 'xlsx';
+import { data912 } from '@/utils/data912';
 
 const COLORS = {
     fci: '#3b82f6',    // Blue
@@ -70,7 +70,7 @@ const AnalisisRealContent = () => {
         loadFcis();
     }, []);
 
-    // Cargar datos históricos
+    // Cargar datos históricos (SPY y MEP)
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
@@ -88,7 +88,7 @@ const AnalisisRealContent = () => {
             }
         };
         loadData();
-    }, []);
+    }, [startDate]);
 
     // Cargar precios del FCI seleccionado
     useEffect(() => {
@@ -111,17 +111,15 @@ const AnalisisRealContent = () => {
         loadFciPrices();
     }, [selectedFci]);
 
-    // Fetch SPY desde data912
+    // Fetch SPY desde data912 usando el helper
     const fetchSpyHistory = async () => {
         try {
-            const response = await fetch('https://data912.com/historical/cedears/SPY');
-            if (!response.ok) throw new Error('Failed to fetch SPY');
-            const data = await response.json();
+            const data = await data912.getHistorical('SPY', startDate);
             
-            // Transformar datos de data912 al formato esperado
+            // Transformar datos de data912 al formato esperado (date + c=close)
             return data.map(item => ({
                 date: item.date,
-                price: item.close // o el campo correcto según la respuesta de data912
+                price: item.c  // 'c' es el campo de cierre (close)
             })).sort((a, b) => a.date.localeCompare(b.date));
         } catch (error) {
             console.error("Error fetching SPY:", error);
@@ -317,48 +315,6 @@ const AnalisisRealContent = () => {
                     </div>
                 </div>
 
-                {/* Cargar VCP */}
-                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary flex flex-col justify-center gap-2">
-                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
-                        Cargar VCP (CSV)
-                    </label>
-                    <label className="flex items-center justify-center gap-2 px-4 py-2 bg-background-tertiary border border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors text-xs text-text-secondary">
-                        <Upload className="w-4 h-4" />
-                        Seleccionar Archivo
-                        <input 
-                            type="file" 
-                            onChange={(e) => {
-                                // Handler existente para carga manual
-                                const file = e.target.files[0];
-                                if (!file) return;
-                                const reader = new FileReader();
-                                reader.onload = (evt) => {
-                                    const bstr = evt.target.result;
-                                    const wb = XLSX.read(bstr, { type: 'binary' });
-                                    const ws = wb.Sheets[wb.SheetNames[0]];
-                                    const data = XLSX.utils.sheet_to_json(ws);
-                                    const parsedVCP = data.map(row => {
-                                        const dateRaw = row.Fecha || row.Date || row.fecha;
-                                        const vcpRaw = row.ValorCuotaparte || row.VCP || row.valor;
-                                        let date = '';
-                                        if (typeof dateRaw === 'number') {
-                                            const utc_days = Math.floor(dateRaw - 25569);
-                                            const utc_value = utc_days * 86400;
-                                            date = new Date(utc_value * 1000).toISOString().split('T')[0];
-                                        } else {
-                                            date = new Date(dateRaw).toISOString().split('T')[0];
-                                        }
-                                        return { date, vcp: parseFloat(vcpRaw) };
-                                    }).sort((a, b) => a.date.localeCompare(b.date));
-                                    setVcpHistory(parsedVCP);
-                                };
-                                reader.readAsBinaryString(file);
-                            }} 
-                            className="hidden" 
-                            accept=".csv,.xlsx" 
-                        />
-                    </label>
-                </div>
             </div>
 
             {/* Gráfico */}
