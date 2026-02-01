@@ -1,94 +1,50 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    Activity, ArrowUpRight, ArrowDownRight, Upload, Calendar,
-    BarChart3, RefreshCw, Info, ChevronDown, ChevronUp, TrendingUp
+    TrendingUp, Upload, Calendar, BarChart3, RefreshCw, Wallet
 } from 'lucide-react';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
-import { macroService } from '@/features/macro/services/macroService';
+import { formatARS, formatPercent } from '@/utils/formatters';
 import { mepService } from '@/features/portfolio/services/mepService';
-import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
-import { VIEW_MODES } from '@/constants';
-import * as XLSX from 'xlsx';
 import { fciService } from '@/features/fci/services/fciService';
+import * as XLSX from 'xlsx';
 
 const COLORS = {
     fci: '#3b82f6',    // Blue
     mep: '#ef4444',    // Red
     spy: '#10b981',    // Green
-    ibit: '#f59e0b',   // Orange
-    ipc: '#94a3b8',    // Gray
 };
 
 const AnalisisRealContent = () => {
-    const { currentPortfolio } = usePortfolio();
-
-    // States
-    const [subDate, setSubDate] = useState('2023-12-01');
-    const [shares, setShares] = useState(5963821);
+    // Estados principales
+    const [startDate, setStartDate] = useState('2025-01-01');
+    const [endDate, setEndDate] = useState('');
+    const [useTodayAsEnd, setUseTodayAsEnd] = useState(true);
+    const [initialAmount, setInitialAmount] = useState(1000000);
     const [vcpHistory, setVcpHistory] = useState([]);
-    const [ipcData, setIpcData] = useState([]);
-    const [benchmarks, setBenchmarks] = useState({ spy: [], ibit: [] });
+    const [spyHistory, setSpyHistory] = useState([]);
     const [mepHistory, setMepHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState(VIEW_MODES.NOMINAL); // 'nominal' | 'real'
-    const [showBenchmarks, setShowBenchmarks] = useState({
-        mep: true,
-        spy: true,
-        ibit: true,
-        ipc: true
-    });
     const [fcis, setFcis] = useState([]);
-    const [selectedFciId, setSelectedFciId] = useState(null);
     const [selectedFci, setSelectedFci] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Excel Serial Date to JS Date
-    const excelToJSDate = (serial) => {
-        const utc_days = Math.floor(serial - 25569);
-        const utc_value = utc_days * 86400;
-        const date_info = new Date(utc_value * 1000);
-        return date_info.toISOString().split('T')[0];
-    };
-
-    // Load Initial Data
+    // Cargar fecha de hoy por defecto
     useEffect(() => {
-        const loadInitialData = async () => {
-            setLoading(true);
-            try {
-                const [ipc, mep] = await Promise.all([
-                    macroService.getIPC(),
-                    mepService.getHistory()
-                ]);
-                setIpcData(ipc);
-                setMepHistory(mep);
+        const today = new Date().toISOString().split('T')[0];
+        if (useTodayAsEnd) {
+            setEndDate(today);
+        }
+    }, [useTodayAsEnd]);
 
-                // Load benchmarks in background
-                const [spy, ibit] = await Promise.all([
-                    macroService.getBenchmarkInARS('SPY', mep),
-                    macroService.getBenchmarkInARS('IBIT', mep)
-                ]);
-                setBenchmarks({ spy, ibit });
-            } catch (error) {
-                console.error("Error loading data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadInitialData();
-    }, []);
-
-    // Load FCI list and auto-select if only one
+    // Cargar lista de FCI
     useEffect(() => {
         const loadFcis = async () => {
             try {
                 const data = await fciService.getFcis();
                 setFcis(data || []);
                 
-                // Auto-select if only one FCI
                 if (data && data.length === 1) {
-                    setSelectedFciId(data[0].id);
                     setSelectedFci(data[0]);
                 }
             } catch (error) {
@@ -98,129 +54,183 @@ const AnalisisRealContent = () => {
         loadFcis();
     }, []);
 
-    // Load VCP prices when FCI is selected
+    // Cargar datos históricos
     useEffect(() => {
-        const loadPrices = async () => {
-            if (!selectedFciId) return;
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [mep, spyData] = await Promise.all([
+                    mepService.getHistory(),
+                    fetchSpyHistory()
+                ]);
+                setMepHistory(mep);
+                setSpyHistory(spyData);
+            } catch (error) {
+                console.error("Error loading data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
+
+    // Cargar precios del FCI seleccionado
+    useEffect(() => {
+        const loadFciPrices = async () => {
+            if (!selectedFci) return;
             
             try {
-                const prices = await fciService.getPrices(selectedFciId);
+                const prices = await fciService.getPrices(selectedFci.id);
                 if (prices && prices.length > 0) {
-                    // Transform DB format to component format
                     const parsedVCP = prices.map(p => ({
                         date: p.fecha,
                         vcp: p.vcp
                     })).sort((a, b) => a.date.localeCompare(b.date));
-                    
                     setVcpHistory(parsedVCP);
                 }
             } catch (error) {
-                console.error("Error loading prices:", error);
+                console.error("Error loading FCI prices:", error);
             }
         };
-        loadPrices();
-    }, [selectedFciId]);
+        loadFciPrices();
+    }, [selectedFci]);
 
-    // Handle CSV/Excel Upload
-    const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    // Fetch SPY desde data912
+    const fetchSpyHistory = async () => {
+        try {
+            const response = await fetch('https://data912.com/historical/cedears/SPY');
+            if (!response.ok) throw new Error('Failed to fetch SPY');
+            const data = await response.json();
+            
+            // Transformar datos de data912 al formato esperado
+            return data.map(item => ({
+                date: item.date,
+                price: item.close // o el campo correcto según la respuesta de data912
+            })).sort((a, b) => a.date.localeCompare(b.date));
+        } catch (error) {
+            console.error("Error fetching SPY:", error);
+            return [];
+        }
+    };
 
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const bstr = evt.target.result;
-            const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws);
+    // Procesar datos para el gráfico (base 100 desde fecha inicio)
+    const processedData = useMemo(() => {
+        if (!vcpHistory.length || !mepHistory.length || !spyHistory.length) return [];
 
-            const parsedVCP = data.map(row => {
-                const dateRaw = row.Fecha || row.Date || row.fecha;
-                const vcpRaw = row.ValorCuotaparte || row.VCP || row.valor;
+        const effectiveEndDate = useTodayAsEnd 
+            ? new Date().toISOString().split('T')[0] 
+            : endDate;
 
-                let date = '';
-                if (typeof dateRaw === 'number') {
-                    date = excelToJSDate(dateRaw);
-                } else {
-                    date = new Date(dateRaw).toISOString().split('T')[0];
-                }
+        // Encontrar valores iniciales
+        const startVCP = vcpHistory.find(h => h.date >= startDate) || vcpHistory[0];
+        const startMEP = mepHistory.find(h => h.date >= startDate) || mepHistory[0];
+        const startSPY = spyHistory.find(h => h.date >= startDate) || spyHistory[0];
+
+        if (!startVCP || !startMEP || !startSPY) return [];
+
+        // Crear mapa de fechas para lookups
+        const mepMap = new Map(mepHistory.map(h => [h.date, h.price]));
+        const spyMap = new Map(spyHistory.map(h => [h.date, h.price]));
+
+        // Procesar solo datos desde fecha inicio hasta fecha fin
+        return vcpHistory
+            .filter(h => h.date >= startDate && h.date <= effectiveEndDate)
+            .map(h => {
+                const date = h.date;
+                
+                // Normalizar a base 100
+                const fciIndex = (h.vcp / startVCP.vcp) * 100;
+                
+                // Buscar MEP más cercano
+                const mepPrice = findClosestPrice(date, mepMap, mepHistory);
+                const mepIndex = mepPrice ? (mepPrice / startMEP.price) * 100 : null;
+                
+                // Buscar SPY más cercano
+                const spyPrice = findClosestPrice(date, spyMap, spyHistory);
+                const spyIndex = spyPrice ? (spyPrice / startSPY.price) * 100 : null;
 
                 return {
                     date,
-                    vcp: parseFloat(vcpRaw)
+                    fci: fciIndex,
+                    mep: mepIndex,
+                    spy: spyIndex
                 };
-            }).sort((a, b) => a.date.localeCompare(b.date));
+            })
+            .filter(h => h.fci !== null);
+    }, [vcpHistory, mepHistory, spyHistory, startDate, endDate, useTodayAsEnd]);
 
-            setVcpHistory(parsedVCP);
-        };
-        reader.readAsBinaryString(file);
+    // Función auxiliar para encontrar precio más cercano
+    const findClosestPrice = (targetDate, priceMap, historyArray) => {
+        if (priceMap.has(targetDate)) return priceMap.get(targetDate);
+        
+        // Buscar el precio de la fecha más cercana anterior
+        const sortedDates = historyArray.map(h => h.date).sort();
+        const targetIndex = sortedDates.findIndex(d => d > targetDate);
+        
+        if (targetIndex > 0) {
+            const closestDate = sortedDates[targetIndex - 1];
+            return priceMap.get(closestDate);
+        }
+        
+        return null;
     };
 
-    // Crear Map de MEP para lookups eficientes
-    const mepMap = useMemo(() => {
-        const map = new Map();
-        if (Array.isArray(mepHistory)) {
-            mepHistory.forEach(h => map.set(h.date, h.price));
-        }
-        return map;
-    }, [mepHistory]);
+    // Calcular valores finales para la tabla comparativa
+    const comparisonData = useMemo(() => {
+        if (!processedData.length) return [];
 
-    const processedData = useMemo(() => {
-        if (!vcpHistory.length || !ipcData.length) return [];
-
-        const startVCP = vcpHistory.find(h => h.date >= subDate) || vcpHistory[0];
-        const startMEP = mepService.findClosestRate(subDate, mepMap);
-        const startSPY = benchmarks.spy.find(h => h.date >= subDate) || benchmarks.spy[0] || { priceARS: 0 };
-        const startIBIT = benchmarks.ibit.find(h => h.date >= subDate) || benchmarks.ibit[0] || { priceARS: 0 };
-
-        return vcpHistory.filter(h => h.date >= subDate).map(h => {
-            const date = h.date;
-            const nomFCI = (h.vcp / (startVCP?.vcp || 1));
-            const currentMEP = mepService.findClosestRate(date, mepMap);
-            const nomMEP = (currentMEP / (startMEP || 1));
-            const spyData = benchmarks.spy.find(s => s.date === date) || { priceARS: startSPY?.priceARS || 0 };
-            const nomSPY = (spyData.priceARS / (startSPY?.priceARS || 1));
-            const ibitData = benchmarks.ibit.find(i => i.date === date) || { priceARS: startIBIT?.priceARS || 0 };
-            const nomIBIT = (ibitData.priceARS / (startIBIT?.priceARS || 1));
-            const ipcAcum = 1 + (macroService.calculateAccumulatedIPC(subDate, date, ipcData) || 0);
-
-            return {
-                date,
-                fci: nomFCI * 100,
-                mep: nomMEP * 100,
-                spy: nomSPY * 100,
-                ibit: nomIBIT * 100,
-                ipc: ipcAcum * 100,
-                fci_real: (nomFCI / ipcAcum) * 100,
-                mep_real: (nomMEP / ipcAcum) * 100,
-                spy_real: (nomSPY / ipcAcum) * 100,
-                ibit_real: (nomIBIT / ipcAcum) * 100,
-                ipc_real: 100
-            };
-        });
-    }, [vcpHistory, ipcData, benchmarks, subDate, mepMap]);
-
-    const metrics = useMemo(() => {
-        if (!processedData.length) return null;
         const latest = processedData[processedData.length - 1];
+        const data = [];
 
-        return {
-            fci: {
-                nominal: latest.fci - 100,
-                real: latest.fci_real - 100,
-                multiple: latest.fci_real / 100
-            },
-            mep: {
-                nominal: latest.mep - 100,
-                real: latest.mep_real - 100,
-                multiple: latest.mep_real / 100
-            },
-            ipc: {
-                nominal: latest.ipc - 100,
-                real: 0
-            }
-        };
-    }, [processedData]);
+        // FCI
+        if (latest.fci) {
+            const finalValue = initialAmount * (latest.fci / 100);
+            const return_pct = latest.fci - 100;
+            data.push({
+                name: selectedFci ? selectedFci.nombre : 'FCI',
+                color: COLORS.fci,
+                finalValue,
+                return_pct,
+                isWinner: false
+            });
+        }
+
+        // MEP
+        if (latest.mep) {
+            const finalValue = initialAmount * (latest.mep / 100);
+            const return_pct = latest.mep - 100;
+            data.push({
+                name: 'Dólar MEP',
+                color: COLORS.mep,
+                finalValue,
+                return_pct,
+                isWinner: false
+            });
+        }
+
+        // SPY
+        if (latest.spy) {
+            const finalValue = initialAmount * (latest.spy / 100);
+            const return_pct = latest.spy - 100;
+            data.push({
+                name: 'SPY (CEDEAR)',
+                color: COLORS.spy,
+                finalValue,
+                return_pct,
+                isWinner: false
+            });
+        }
+
+        // Ordenar de mejor a peor rendimiento
+        const sorted = data.sort((a, b) => b.return_pct - a.return_pct);
+        
+        // Marcar ganador
+        if (sorted.length > 0) {
+            sorted[0].isWinner = true;
+        }
+
+        return sorted;
+    }, [processedData, initialAmount, selectedFci]);
 
     if (loading) {
         return (
@@ -232,82 +242,135 @@ const AnalisisRealContent = () => {
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2">
                         <TrendingUp className="text-profit" />
-                        Análisis Real {selectedFci ? selectedFci.nombre : 'FCI'}
+                        Comparador de Inversiones
                     </h1>
-                    <p className="text-text-tertiary text-xs">Comparativa de rendimiento vs. Inflación y Benchmarks</p>
-                </div>
-
-                <div className="flex items-center gap-2 bg-background-secondary p-1 rounded-lg border border-border-primary">
-                    <button
-                        onClick={() => setViewMode('nominal')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'nominal' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
-                    >
-                        Nominal
-                    </button>
-                    <button
-                        onClick={() => setViewMode('real')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'real' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
-                    >
-                        Real (IPC)
-                    </button>
+                    <p className="text-text-tertiary text-xs">
+                        ¿Dónde te convenía invertir? Compará el rendimiento histórico
+                    </p>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Controles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Fecha Inicio */}
                 <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
-                    <label className="text-[10px] font-bold text-text-tertiary uppercase">Fecha Suscripción</label>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
+                        Fecha Inicio
+                    </label>
                     <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
                         <input
                             type="date"
-                            value={subDate}
-                            onChange={(e) => setSubDate(e.target.value)}
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
                             className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
                         />
                     </div>
                 </div>
 
+                {/* Fecha Fin */}
                 <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
-                    <label className="text-[10px] font-bold text-text-tertiary uppercase">Cuotapartes Iniciales</label>
-                    <input
-                        type="number"
-                        value={shares}
-                        onChange={(e) => setShares(e.target.value)}
-                        className="w-full bg-background-tertiary border border-border-secondary rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
+                        Fecha Fin
+                    </label>
+                    <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            disabled={useTodayAsEnd}
+                            className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary disabled:opacity-50"
+                        />
+                    </div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={useTodayAsEnd}
+                            onChange={(e) => setUseTodayAsEnd(e.target.checked)}
+                            className="rounded border-border-secondary"
+                        />
+                        <span className="text-text-secondary">Hasta hoy</span>
+                    </label>
                 </div>
 
+                {/* Monto Inicial */}
+                <div className="bg-background-secondary p-4 rounded-xl border border-border-primary space-y-2">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
+                        Monto Inicial (ARS)
+                    </label>
+                    <div className="relative">
+                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                        <input
+                            type="number"
+                            value={initialAmount}
+                            onChange={(e) => setInitialAmount(Number(e.target.value))}
+                            className="w-full bg-background-tertiary border border-border-secondary rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary"
+                            min="0"
+                            step="1000"
+                        />
+                    </div>
+                </div>
+
+                {/* Cargar VCP */}
                 <div className="bg-background-secondary p-4 rounded-xl border border-border-primary flex flex-col justify-center gap-2">
-                    <label className="text-[10px] font-bold text-text-tertiary uppercase">Cargar VCP (CSV/Excel)</label>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">
+                        Cargar VCP (CSV)
+                    </label>
                     <label className="flex items-center justify-center gap-2 px-4 py-2 bg-background-tertiary border border-dashed border-border-secondary rounded-lg cursor-pointer hover:border-primary transition-colors text-xs text-text-secondary">
                         <Upload className="w-4 h-4" />
                         Seleccionar Archivo
-                        <input type="file" onChange={handleFileUpload} className="hidden" accept=".csv,.xlsx" />
+                        <input 
+                            type="file" 
+                            onChange={(e) => {
+                                // Handler existente para carga manual
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (evt) => {
+                                    const bstr = evt.target.result;
+                                    const wb = XLSX.read(bstr, { type: 'binary' });
+                                    const ws = wb.Sheets[wb.SheetNames[0]];
+                                    const data = XLSX.utils.sheet_to_json(ws);
+                                    const parsedVCP = data.map(row => {
+                                        const dateRaw = row.Fecha || row.Date || row.fecha;
+                                        const vcpRaw = row.ValorCuotaparte || row.VCP || row.valor;
+                                        let date = '';
+                                        if (typeof dateRaw === 'number') {
+                                            const utc_days = Math.floor(dateRaw - 25569);
+                                            const utc_value = utc_days * 86400;
+                                            date = new Date(utc_value * 1000).toISOString().split('T')[0];
+                                        } else {
+                                            date = new Date(dateRaw).toISOString().split('T')[0];
+                                        }
+                                        return { date, vcp: parseFloat(vcpRaw) };
+                                    }).sort((a, b) => a.date.localeCompare(b.date));
+                                    setVcpHistory(parsedVCP);
+                                };
+                                reader.readAsBinaryString(file);
+                            }} 
+                            className="hidden" 
+                            accept=".csv,.xlsx" 
+                        />
                     </label>
                 </div>
             </div>
 
+            {/* Gráfico */}
             <div className="bg-background-secondary rounded-2xl border border-border-primary p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                     <h2 className="text-base font-bold flex items-center gap-2">
                         <BarChart3 className="text-primary w-5 h-5" />
-                        Evolución {viewMode === 'real' ? 'Poder de Compra' : 'Patrimonio Nominal'}
+                        Evolución del Rendimiento (%)
                     </h2>
-                    <div className="flex gap-2">
-                        {Object.keys(showBenchmarks).map(key => (
-                            <button
-                                key={key}
-                                onClick={() => setShowBenchmarks(prev => ({ ...prev, [key]: !prev[key] }))}
-                                className={`px-3 py-1 text-[9px] font-bold uppercase rounded-full border transition-all ${showBenchmarks[key] ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-transparent border-border-primary text-text-tertiary'}`}
-                            >
-                                {key}
-                            </button>
-                        ))}
-                    </div>
+                    <p className="text-xs text-text-tertiary">
+                        Base 100 = {formatARS(initialAmount, 0)} al {new Date(startDate).toLocaleDateString('es-AR')}
+                    </p>
                 </div>
 
                 <div className="h-[350px] w-full">
@@ -333,106 +396,91 @@ const AnalisisRealContent = () => {
                                 contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
                                 labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '11px' }}
                                 itemStyle={{ fontSize: '12px' }}
+                                formatter={(value) => [`${value?.toFixed(2)}`, '']}
                             />
                             <Legend verticalAlign="top" height={36} />
-                            <Line type="monotone" dataKey={viewMode === 'real' ? 'fci_real' : 'fci'} name={selectedFci ? selectedFci.nombre : 'FCI'} stroke={COLORS.fci} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                            {showBenchmarks.mep && <Line type="monotone" dataKey={viewMode === 'real' ? 'mep_real' : 'mep'} name="Dólar MEP" stroke={COLORS.mep} strokeWidth={2} dot={false} />}
-                            {showBenchmarks.spy && <Line type="monotone" dataKey={viewMode === 'real' ? 'spy_real' : 'spy'} name="SPY (ARS)" stroke={COLORS.spy} strokeWidth={2} dot={false} />}
-                            {showBenchmarks.ibit && <Line type="monotone" dataKey={viewMode === 'real' ? 'ibit_real' : 'ibit'} name="IBIT (ARS)" stroke={COLORS.ibit} strokeWidth={2} dot={false} />}
-                            {showBenchmarks.ipc && viewMode === 'nominal' && <Line type="monotone" dataKey="ipc" name="IPC (Inflación)" stroke={COLORS.ipc} strokeWidth={2} strokeDasharray="5 5" dot={false} />}
+                            <Line 
+                                type="monotone" 
+                                dataKey="fci" 
+                                name={selectedFci ? selectedFci.nombre : 'FCI'} 
+                                stroke={COLORS.fci} 
+                                strokeWidth={3} 
+                                dot={false} 
+                                activeDot={{ r: 6 }} 
+                            />
+                            <Line 
+                                type="monotone" 
+                                dataKey="mep" 
+                                name="Dólar MEP" 
+                                stroke={COLORS.mep} 
+                                strokeWidth={2} 
+                                dot={false} 
+                            />
+                            <Line 
+                                type="monotone" 
+                                dataKey="spy" 
+                                name="SPY (CEDEAR)" 
+                                stroke={COLORS.spy} 
+                                strokeWidth={2} 
+                                dot={false} 
+                            />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
-                    <div className="p-4 border-b border-border-primary">
-                        <h3 className="text-sm font-bold flex items-center gap-2">
-                            <Info className="w-4 h-4 text-text-tertiary" />
-                            Comparativa de Métricas
-                        </h3>
-                    </div>
-                    <table className="w-full text-xs">
-                        <thead className="bg-background-tertiary">
-                            <tr className="text-left text-text-tertiary text-[9px] uppercase font-bold tracking-wider">
-                                <th className="px-4 py-3">Activo</th>
-                                <th className="px-4 py-3 text-right">Nominal %</th>
-                                <th className="px-4 py-3 text-right">Real %</th>
-                                <th className="px-4 py-3 text-right">Múltiplo Real</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border-primary">
-                            <tr>
+            {/* Tabla Comparativa */}
+            <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
+                <div className="p-4 border-b border-border-primary">
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-text-tertiary" />
+                        Resultado Final: ¿Dónde te convenía invertir?
+                    </h3>
+                    <p className="text-xs text-text-tertiary mt-1">
+                        Si invertías {formatARS(initialAmount, 0)} el {new Date(startDate).toLocaleDateString('es-AR')}:
+                    </p>
+                </div>
+                <table className="w-full text-sm">
+                    <thead className="bg-background-tertiary">
+                        <tr className="text-left text-text-tertiary text-[10px] uppercase font-bold tracking-wider">
+                            <th className="px-4 py-3">Activo</th>
+                            <th className="px-4 py-3 text-right">Valor Final</th>
+                            <th className="px-4 py-3 text-right">Rendimiento</th>
+                            <th className="px-4 py-3 text-center">Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-primary">
+                        {comparisonData.map((item, index) => (
+                            <tr 
+                                key={item.name} 
+                                className={item.isWinner ? 'bg-profit/10' : ''}
+                            >
                                 <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.fci }}></div>
-                                    {selectedFci ? selectedFci.nombre : 'FCI'}
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.nominal >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {formatPercent(metrics?.fci.nominal)}
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.fci.real >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {formatPercent(metrics?.fci.real)}
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                                    {item.name}
+                                    {item.isWinner && <span className="text-profit">🏆</span>}
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono font-bold">
-                                    {formatNumber(metrics?.fci.multiple, 2)}x
+                                    {formatARS(item.finalValue, 0)}
+                                </td>
+                                <td className={`px-4 py-3 text-right font-mono ${item.return_pct >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                    {formatPercent(item.return_pct)}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    {item.isWinner ? (
+                                        <span className="text-xs font-bold text-profit bg-profit/20 px-2 py-1 rounded">
+                                            MEJOR OPCIÓN
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-text-tertiary">
+                                            {index === 1 ? '2° lugar' : index === 2 ? '3° lugar' : `${index + 1}° lugar`}
+                                        </span>
+                                    )}
                                 </td>
                             </tr>
-                            <tr>
-                                <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.mep }}></div>
-                                    Dólar MEP
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-primary">
-                                    {formatPercent(metrics?.mep.nominal)}
-                                </td>
-                                <td className={`px-4 py-3 text-right font-mono ${metrics?.mep.real >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {formatPercent(metrics?.mep.real)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono font-bold">
-                                    {formatNumber(metrics?.mep.multiple, 2)}x
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="px-4 py-3 font-semibold flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.ipc }}></div>
-                                    Inflación (IPC)
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-primary">
-                                    {formatPercent(metrics?.ipc.nominal)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono text-text-tertiary">0.00%</td>
-                                <td className="px-4 py-3 text-right font-mono text-text-tertiary">1.00x</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="bg-[#1e293b] border border-blue-400/20 rounded-xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Activity className="w-24 h-24" />
-                    </div>
-                    <h3 className="text-blue-400 font-bold mb-4 uppercase tracking-widest text-[10px]">Automated Alpha Insights</h3>
-                    <div className="space-y-4 text-xs leading-relaxed">
-                        {metrics ? (
-                            <>
-                                <p>
-                                    Desde tu suscripción el <span className="text-white font-bold">{new Date(subDate).toLocaleDateString()}</span>,
-                                    el FCI <span className={metrics.fci.real >= 0 ? 'text-profit' : 'text-danger'}>
-                                        {metrics.fci.real >= 0 ? 'gana' : 'pierde'} {formatPercent(Math.abs(metrics.fci.real))} real
-                                    </span> frente a una inflación acumulada del <span className="text-white">{formatPercent(metrics.ipc.nominal)}</span>.
-                                </p>
-                                <p>
-                                    Tu poder de compra <span className="text-white">{metrics.fci.multiple >= 1 ? 'creció' : 'disminuyó'} {formatNumber(metrics.fci.multiple, 2)}x</span>.
-                                    En el mismo período, el Dólar MEP {metrics.mep.real >= 0 ? 'superó' : 'quedó debajo de'} la inflación por {formatPercent(Math.abs(metrics.mep.real))},
-                                    confirmando que el FCI <span className="text-profit">fue una cobertura superior</span> al ahorro en moneda dura.
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-text-tertiary italic">Selecciona una fecha y sube el historial de VCP para generar insights...</p>
-                        )}
-                    </div>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
