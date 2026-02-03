@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Decimal from 'decimal.js';
 import { TrendingUp, TrendingDown, Info } from 'lucide-react';
-import { formatARS, formatNumber } from '@/utils/formatters';
+import { formatARS, formatNumber, formatCompactNumber } from '@/utils/formatters';
 import {
   LineChart,
   Line,
@@ -77,17 +77,6 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
       isLowGrowth: spreadDecimal.gt(0) && spreadDecimal.lt(0.005),
     };
   }, [capitalProductivo, bufferTasa]);
-
-  // Función auxiliar para formatear números grandes en formato compacto
-  function formatCompactNumber(num) {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toFixed(0);
-  }
 
   // Componente para card de proyección
   const ProjectionCard = ({ titulo, proyeccion }) => {

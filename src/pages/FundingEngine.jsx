@@ -7,6 +7,7 @@ import {
   Database,
   LayoutDashboard,
   BarChart2,
+  AlertTriangle,
 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -65,29 +66,6 @@ export default function FundingEngine() {
     fciEngine,
     tnaFCI: tnaFCIDynamic,
   });
-
-  // ===========================================================================
-  // VALIDACIÓN - Console.log para verificar cálculos (remover en producción)
-  // ===========================================================================
-  useEffect(() => {
-    if (carryMetrics) {
-      console.log('=== MÉTRICAS DE CARRY CALCULADAS ===');
-      console.log('FCI Mínimo:', carryMetrics.fciMinimo.toLocaleString('es-AR'), '(esperado: ~27M)');
-      console.log('FCI Óptimo:', carryMetrics.fciOptimo.toLocaleString('es-AR'), '(esperado: ~31M)');
-      console.log('Ratio Cobertura:', carryMetrics.ratioCobertura.toFixed(2) + '%', '(esperado: ~90%)');
-      console.log('Estado Cobertura:', carryMetrics.estadoCobertura);
-      console.log('---');
-      console.log('Spread Neto Día:', carryMetrics.spreadNetoDia.toLocaleString('es-AR'), '(esperado: ~27k)');
-      console.log('ROE Caución:', carryMetrics.roeCaucion.toFixed(2) + '%');
-      console.log('Buffer Tasa:', (carryMetrics.bufferTasa * 100).toFixed(2) + '%', '(esperado: ~6.5%)');
-      console.log('Estado Buffer:', carryMetrics.estadoBuffer);
-      console.log('---');
-      console.log('Capital Productivo:', carryMetrics.capitalProductivo.toLocaleString('es-AR'));
-      console.log('Capital Improductivo:', carryMetrics.capitalImproductivo.toLocaleString('es-AR'));
-      console.log('Carry Perdido/Día:', carryMetrics.carryPerdidoDia.toLocaleString('es-AR'));
-      console.log('===================================');
-    }
-  }, [carryMetrics]);
 
   const handleManualRefresh = async () => {
     try {

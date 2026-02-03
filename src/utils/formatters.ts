@@ -94,3 +94,20 @@ export const formatBondPrice = (value: number | null | undefined): string => {
   }).format(value);
   return `$${formatted}`;
 };
+
+/**
+ * Formatea un número en formato compacto (K, M)
+ * @example formatCompactNumber(1234567) => "1.2M"
+ * @example formatCompactNumber(12345) => "12.3K"
+ * @example formatCompactNumber(123) => "123"
+ */
+export const formatCompactNumber = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  }
+  if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toFixed(0);
+};

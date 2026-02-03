@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import Decimal from 'decimal.js';
 import { Sliders, AlertTriangle, TrendingUp, TrendingDown, CheckCircle, RotateCcw } from 'lucide-react';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
@@ -32,7 +33,7 @@ export function ScenarioSimulator({
   const [tnaFCISimulado, setTnaFCISimulado] = useState(tnaFCIActual);
   const [tnaCaucionSimulado, setTnaCaucionSimulado] = useState(tnaCaucionActual);
 
-  // Cálculos de la simulación
+  // Cálculos de la simulación usando Decimal.js para precisión financiera
   const {
     spreadSimulado,
     gananciaSimDia,
@@ -43,44 +44,53 @@ export function ScenarioSimulator({
     diffAnual,
     breakevenTnaFCI,
   } = useMemo(() => {
+    const tnaFCI = new Decimal(tnaFCISimulado || 0);
+    const tnaCaucion = new Decimal(tnaCaucionSimulado || 0);
+    const saldo = new Decimal(saldoFCI || 0);
+    const costoDia = new Decimal(costoCaucionDia || 0);
+    const caucionActual = new Decimal(tnaCaucionActual || 0);
+    const total = new Decimal(totalCaucion || 0);
+
     // Spread simulado (diferencial de tasas)
-    const spreadSim = tnaFCISimulado - tnaCaucionSimulado;
+    const spreadSim = tnaFCI.minus(tnaCaucion);
 
     // Ganancia FCI simulada = saldoFCI * tnaFCISimulado / 365
-    const gananciaFCISimDia = saldoFCI * tnaFCISimulado / 365;
+    const gananciaFCISimDia = saldo.times(tnaFCI).dividedBy(365);
 
     // Para cauciones existentes: costo fijo
     // Para cauciones futuras: costo proporcional a nueva tasa
     // Usamos proporcionalidad: costoCaucionSimDia = costoCaucionDia * (tnaCaucionSimulado / tnaCaucionActual)
     // Esto simula "si renovara las cauciones a la nueva tasa"
-    const costoCaucionSimDia = tnaCaucionActual > 0
-      ? costoCaucionDia * (tnaCaucionSimulado / tnaCaucionActual)
-      : totalCaucion * tnaCaucionSimulado / 365;
+    const costoCaucionSimDia = caucionActual.gt(0)
+      ? costoDia.times(tnaCaucion.dividedBy(caucionActual))
+      : total.times(tnaCaucion).dividedBy(365);
 
     // Spread neto simulado = ganancia FCI - costo caución
-    const gananciaDia = gananciaFCISimDia - costoCaucionSimDia;
-    const gananciaMes = gananciaDia * 30;
-    const gananciaAnual = gananciaDia * 365;
+    const gananciaDia = gananciaFCISimDia.minus(costoCaucionSimDia);
+    const gananciaMes = gananciaDia.times(30);
+    const gananciaAnual = gananciaDia.times(365);
 
     // Diferencias vs actual
-    const dDia = gananciaDia - spreadNetoDiaActual;
-    const dMes = gananciaMes - spreadMensualActual;
-    const dAnual = gananciaAnual - spreadAnualActual;
+    const dDia = gananciaDia.minus(spreadNetoDiaActual || 0);
+    const dMes = gananciaMes.minus(spreadMensualActual || 0);
+    const dAnual = gananciaAnual.minus(spreadAnualActual || 0);
 
     // Breakeven: cuando gananciaFCI = costoCaucion
     // saldoFCI * tnaFCI / 365 = costoCaucionDia
     // tnaFCI = costoCaucionDia * 365 / saldoFCI
-    const breakeven = saldoFCI > 0 ? (costoCaucionDia * 365 / saldoFCI) : 0;
+    const breakeven = saldo.gt(0)
+      ? costoDia.times(365).dividedBy(saldo)
+      : new Decimal(0);
 
     return {
-      spreadSimulado: spreadSim,
-      gananciaSimDia: gananciaDia,
-      gananciaSimMes: gananciaMes,
-      gananciaSimAnual: gananciaAnual,
-      diffDia: dDia,
-      diffMes: dMes,
-      diffAnual: dAnual,
-      breakevenTnaFCI: breakeven,
+      spreadSimulado: spreadSim.toNumber(),
+      gananciaSimDia: gananciaDia.toNumber(),
+      gananciaSimMes: gananciaMes.toNumber(),
+      gananciaSimAnual: gananciaAnual.toNumber(),
+      diffDia: dDia.toNumber(),
+      diffMes: dMes.toNumber(),
+      diffAnual: dAnual.toNumber(),
+      breakevenTnaFCI: breakeven.toNumber(),
     };
   }, [tnaFCISimulado, tnaCaucionSimulado, saldoFCI, costoCaucionDia, totalCaucion, tnaCaucionActual,
       spreadNetoDiaActual, spreadMensualActual, spreadAnualActual]);
@@ -120,33 +130,54 @@ export function ScenarioSimulator({
     return 'border-border-primary';
   };
 
-  // Componente reutilizable para slider
-  const SliderControl = ({ label, value, onChange, min = 20, max = 50, step = 0.25 }) => (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-medium text-text-secondary">{label}</label>
-        <span className="text-sm font-mono font-semibold text-primary">
-          {formatPercent(value * 100)}
-        </span>
+  // Componente reutilizable para slider con accesibilidad mejorada
+  const SliderControl = ({ label, value, onChange, min = 20, max = 50, step = 0.25 }) => {
+    const sliderId = `slider-${label.toLowerCase().replace(/\s+/g, '-')}`;
+    const valuePercent = value * 100;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label
+            htmlFor={sliderId}
+            className="text-sm font-medium text-text-secondary"
+          >
+            {label}
+          </label>
+          <span
+            id={`${sliderId}-value`}
+            className="text-sm font-mono font-semibold text-primary"
+            aria-live="polite"
+          >
+            {formatPercent(valuePercent)}
+          </span>
+        </div>
+        <input
+          id={sliderId}
+          type="range"
+          role="slider"
+          min={min}
+          max={max}
+          step={step}
+          value={valuePercent}
+          onChange={onChange}
+          aria-label={`${label}: ${formatPercent(valuePercent)}`}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={valuePercent}
+          aria-describedby={`${sliderId}-value`}
+          className="w-full h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
+          style={{
+            background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${((valuePercent - min) / (max - min)) * 100}%, var(--background-tertiary) ${((valuePercent - min) / (max - min)) * 100}%, var(--background-tertiary) 100%)`
+          }}
+        />
+        <div className="flex justify-between text-xs text-text-tertiary" aria-hidden="true">
+          <span>{min}%</span>
+          <span>{max}%</span>
+        </div>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value * 100}
-        onChange={onChange}
-        className="w-full h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
-        style={{
-          background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${((value * 100 - min) / (max - min)) * 100}%, var(--background-tertiary) ${((value * 100 - min) / (max - min)) * 100}%, var(--background-tertiary) 100%)`
-        }}
-      />
-      <div className="flex justify-between text-xs text-text-tertiary">
-        <span>{min}%</span>
-        <span>{max}%</span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Componente para card de comparación
   const ComparisonCard = ({ title, simulado, actual, diff }) => {

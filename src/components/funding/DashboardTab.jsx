@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  TrendingUp,
   TrendingDown,
   Shield,
   AlertTriangle,
@@ -17,132 +16,10 @@ import {
 import { AlertsPanel } from './AlertsPanel';
 import { ScenarioSimulator } from './ScenarioSimulator';
 import { CompoundProjection } from './CompoundProjection';
+import { MetricCard } from '@/components/common/MetricCard';
+import { StatusBadge } from '@/components/common/StatusBadge';
+import { Section } from '@/components/common/Section';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
-
-/**
- * Tarjeta de métrica con estado visual
- */
-const MetricCard = ({ title, value, subtitle, icon: Icon, status, trend }) => {
-  const statusColors = {
-    success: 'border-l-success bg-success/5',
-    warning: 'border-l-warning bg-warning/5',
-    danger: 'border-l-danger bg-danger/5',
-    info: 'border-l-primary bg-primary/5',
-    neutral: 'border-l-border-secondary bg-background-tertiary',
-  };
-
-  const trendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : null;
-  const trendColor = trend > 0 ? 'text-success' : trend < 0 ? 'text-danger' : 'text-text-tertiary';
-
-  return (
-    <div className={`bg-background-secondary rounded-lg p-4 border border-border-primary border-l-4 ${statusColors[status] || statusColors.neutral}`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-text-tertiary text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
-          <p className="text-2xl font-bold font-mono text-text-primary">{value}</p>
-          {subtitle && (
-            <p className={`text-xs mt-1 ${trendColor}`}>
-              {trendIcon && <trendIcon className="inline w-3 h-3 mr-1" />}
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {Icon && (
-          <div className={`p-2 rounded-lg ${status === 'success' ? 'bg-success/10 text-success' : status === 'danger' ? 'bg-danger/10 text-danger' : status === 'warning' ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'}`}>
-            <Icon className="w-5 h-5" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/**
- * Badge de estado
- */
-const StatusBadge = ({ status, label, variant = 'default' }) => {
-  const styles = {
-    // Estados de cobertura
-    sobrecapitalizado: 'bg-success/10 text-success border-success/30',
-    optimo: 'bg-success/10 text-success border-success/30',
-    ajustado: 'bg-warning/10 text-warning border-warning/30',
-    deficit: 'bg-danger/10 text-danger border-danger/30',
-    // Estados de spread
-    'optimo-spread': 'bg-success/10 text-success border-success/30',
-    'saludable-spread': 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    'ajustado-spread': 'bg-warning/10 text-warning border-warning/30',
-    'critico-spread': 'bg-orange-100 text-orange-700 border-orange-300',
-    'negativo-spread': 'bg-danger/10 text-danger border-danger/30',
-    // Estados legacy
-    amplio: 'bg-success/10 text-success border-success/30',
-    medio: 'bg-primary/10 text-primary border-primary/30',
-    estrecho: 'bg-warning/10 text-warning border-warning/30',
-    critico: 'bg-danger/10 text-danger border-danger/30',
-    success: 'bg-success/10 text-success border-success/30',
-    'success-light': 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    warning: 'bg-warning/10 text-warning border-warning/30',
-    danger: 'bg-danger/10 text-danger border-danger/30',
-  };
-
-  const icons = {
-    sobrecapitalizado: CheckCircle,
-    optimo: CheckCircle,
-    ajustado: AlertTriangle,
-    deficit: AlertTriangle,
-    'optimo-spread': CheckCircle,
-    'saludable-spread': CheckCircle,
-    'ajustado-spread': AlertTriangle,
-    'critico-spread': AlertTriangle,
-    'negativo-spread': AlertTriangle,
-    amplio: Shield,
-    medio: Shield,
-    estrecho: AlertTriangle,
-    critico: AlertTriangle,
-    success: CheckCircle,
-    'success-light': CheckCircle,
-    warning: AlertTriangle,
-    danger: AlertTriangle,
-  };
-
-  const Icon = icons[status] || Shield;
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || 'bg-background-tertiary text-text-secondary border-border-primary'}`}>
-      <Icon className="w-3 h-3" />
-      {label || status}
-    </span>
-  );
-};
-
-/**
- * Barra de progreso visual
- */
-const ProgressBar = ({ value, max, label, color = 'primary' }) => {
-  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  const colors = {
-    primary: 'bg-primary',
-    success: 'bg-success',
-    warning: 'bg-warning',
-    danger: 'bg-danger',
-  };
-
-  return (
-    <div className="space-y-1">
-      {label && (
-        <div className="flex justify-between text-xs">
-          <span className="text-text-tertiary">{label}</span>
-          <span className="text-text-secondary font-mono">{formatPercent(percentage - 100).replace('+', '')}</span>
-        </div>
-      )}
-      <div className="h-2 bg-background-tertiary rounded-full overflow-hidden">
-        <div
-          className={`h-full ${colors[color]} rounded-full transition-all duration-500`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-};
 
 /**
  * Barra de progreso con marcadores (para cobertura de capital)
@@ -199,29 +76,16 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
           </div>
         </div>
         
-        {/* Leyenda debajo de la barra */}
-        <div className="flex justify-between text-[10px] text-text-tertiary mt-4">
+        {/* Leyenda debajo de la barra - responsive */}
+        <div className="flex flex-wrap justify-between text-[10px] text-text-tertiary mt-4 gap-x-4 gap-y-1">
           <span>0%</span>
-          <span className="ml-[90%]">100% (Meta 1:1)</span>
-          <span className="ml-[5%]">115% (Meta Óptima)</span>
+          <span className="text-center">100% (Meta 1:1)</span>
+          <span className="text-right">115% (Meta Óptima)</span>
         </div>
       </div>
     </div>
   );
 };
-
-/**
- * Sección con título
- */
-const Section = ({ title, icon: Icon, children }) => (
-  <div className="space-y-4">
-    <div className="flex items-center gap-2">
-      {Icon && <Icon className="w-5 h-5 text-primary" />}
-      <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
-    </div>
-    {children}
-  </div>
-);
 
 export function DashboardTab({ carryMetrics, isFallback }) {
   // Funciones de estado para semáforos
