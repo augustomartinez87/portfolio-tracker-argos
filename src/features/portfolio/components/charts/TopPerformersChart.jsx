@@ -55,10 +55,10 @@ const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
                         layout="vertical"
                         margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
                         <XAxis
                             type="number"
-                            stroke="#94a3b8"
+                            stroke="var(--text-tertiary)"
                             fontSize={10}
                             tickFormatter={(val) => `${val}%`}
                             domain={['auto', 'auto']}
@@ -66,11 +66,11 @@ const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
                         <YAxis
                             dataKey="name"
                             type="category"
-                            stroke="#94a3b8"
+                            stroke="var(--text-tertiary)"
                             fontSize={10}
                             width={50}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-tertiary)' }} />
                         <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                             {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />

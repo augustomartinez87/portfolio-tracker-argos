@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ShieldCheck } from 'lucide-react';
-import { formatARS, formatPercent } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
 
 const COLORS = {
     'Dólar': '#f59e0b',      // Amber

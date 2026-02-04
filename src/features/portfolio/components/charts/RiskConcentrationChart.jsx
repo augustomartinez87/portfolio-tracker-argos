@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { Target } from 'lucide-react';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
     const chartData = useMemo(() => {
@@ -28,7 +28,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                     style={{
                         fill: payload?.pnl >= 0 ? '#10b981' : '#ef4444',
                         fillOpacity: 0.8,
-                        stroke: '#111827',
+                        stroke: 'var(--border-primary)',
                         strokeWidth: 2 / (depth + 1),
                         strokeOpacity: 1,
                     }}
@@ -38,7 +38,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                         x={x + width / 2}
                         y={y + height / 2 + 4}
                         textAnchor="middle"
-                        fill="#fff"
+                        fill="var(--text-primary)"
                         fontSize={12}
                         fontWeight="bold"
                         className="pointer-events-none"
@@ -85,7 +85,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                         data={chartData}
                         dataKey="size"
                         ratio={4 / 3}
-                        stroke="#fff"
+                        stroke="var(--border-primary)"
                         fill="#8884d8"
                         content={<CustomizedContent />}
                     >

@@ -88,7 +88,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                 <Cell
                   key={`cell - ${index} `}
                   fill={entry.color}
-                  stroke="#0a0a0a"
+                  stroke="var(--border-primary)"
                   strokeWidth={2}
                   style={{
                     transform: hoveredIndex === index ? 'scale(1.08)' : 'scale(1)',
