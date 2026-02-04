@@ -432,7 +432,7 @@ export function DashboardTab({ carryMetrics, isFallback }) {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Por capital improductivo */}
               <div className="space-y-1">
                 <p className="text-xs text-text-tertiary">Por capital improductivo:</p>
@@ -452,14 +452,6 @@ export function DashboardTab({ carryMetrics, isFallback }) {
                 </p>
                 <p className="text-xs text-text-secondary">
                   → {formatARS(carryMetrics.costoNoOptimoAnual)}/año
-                </p>
-              </div>
-
-              {/* Total histórico */}
-              <div className="space-y-1">
-                <p className="text-xs text-text-tertiary">Total oportunidad perdida histórica:</p>
-                <p className="text-lg font-mono font-semibold text-danger">
-                  {formatARS(carryMetrics.oportunidadPerdida)}
                 </p>
               </div>
             </div>

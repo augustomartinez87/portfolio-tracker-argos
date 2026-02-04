@@ -60,12 +60,6 @@ export default function FundingEngine() {
     totals: fciTotals || { valuation: 0 },
   };
 
-  // Última caución por fecha_fin (para banner cuando no hay vigentes)
-  const ultimaCaucion = useMemo(() => {
-    if (!cauciones?.length) return null;
-    return [...cauciones].sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))[0];
-  }, [cauciones]);
-
   // Calcular métricas de carry con TNA dinámica
   const carryMetrics = useCarryMetrics({
     cauciones,
@@ -168,7 +162,7 @@ export default function FundingEngine() {
 
               {/* Contenido según tab activo */}
               {activeTab === 'dashboard' && (
-                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} ultimaCaucion={ultimaCaucion} />
+                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} />
               )}
 
               {activeTab === 'analysis' && (
