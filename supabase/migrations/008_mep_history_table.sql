@@ -19,7 +19,7 @@ ALTER TABLE mep_history ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for authenticated users" ON mep_history
   FOR SELECT USING (auth.role() = 'authenticated');
 
--- Política de lectura pública para anon (Streamlit usa service_role pero por si acaso)
+-- Política de lectura pública para anon
 CREATE POLICY "Enable read access for anon" ON mep_history
   FOR SELECT USING (true);
 

@@ -10,21 +10,61 @@ import Decimal from 'decimal.js';
  * @param {number} params.tnaFCI - TNA del FCI como decimal (ej: 0.284849 para 28.48%)
  * @returns {Object|null} Métricas de carry trade o null si no hay datos suficientes
  */
-export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
+export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto' }) {
   return useMemo(() => {
     if (!cauciones?.length || !fciEngine?.totals) {
       return null;
     }
 
     const hoy = new Date();
+    const hoyDate = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+    const parseDate = (value) => {
+      if (!value) return null;
+      const datePart = String(value).split('T')[0];
+      const [y, m, d] = datePart.split('-').map(Number);
+      if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)) {
+        return new Date(y, m - 1, d);
+      }
+      const fallback = new Date(value);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    };
 
     // =========================================================================
     // 1. TOTAL CAUCIÓN ACTIVA (solo cauciones vigentes)
     // =========================================================================
-    const caucionesVigentes = cauciones.filter(c => {
-      const fechaFin = new Date(c.fecha_fin);
-      return fechaFin >= hoy;
+    const caucionesActivasHoy = cauciones.filter(c => {
+      const fechaInicio = parseDate(c.fecha_inicio);
+      const fechaFin = parseDate(c.fecha_fin);
+      if (!fechaInicio || !fechaFin) return false;
+      return fechaInicio <= hoyDate && fechaFin >= hoyDate;
     });
+
+    const ultimaCaucionFecha = cauciones.length > 0
+      ? cauciones.reduce((max, c) => {
+          const fecha = parseDate(c.fecha_fin);
+          if (!fecha) return max;
+          return !max || fecha > max ? fecha : max;
+        }, null)
+      : null;
+
+    let cutoffFecha = null;
+    if (caucionCutoffMode === 'today') {
+      cutoffFecha = hoyDate;
+    } else if (caucionCutoffMode === 'last') {
+      cutoffFecha = ultimaCaucionFecha;
+    } else if (caucionCutoffMode === 'auto') {
+      cutoffFecha = caucionesActivasHoy.length > 0 ? hoyDate : ultimaCaucionFecha;
+    }
+
+    const caucionesVigentes = cutoffFecha
+      ? cauciones.filter(c => {
+          const fechaInicio = parseDate(c.fecha_inicio);
+          const fechaFin = parseDate(c.fecha_fin);
+          if (!fechaInicio || !fechaFin) return false;
+          return fechaInicio <= cutoffFecha && fechaFin >= cutoffFecha;
+        })
+      : cauciones;
 
     const totalCaucion = caucionesVigentes.reduce((sum, c) => {
       return sum.plus(new Decimal(c.capital || 0));
@@ -204,17 +244,12 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     // =========================================================================
     // 15. METADATA DE CAUCIONES (para UX mejorada)
     // =========================================================================
-    const ultimaCaucionFecha = cauciones.length > 0
-      ? cauciones.reduce((max, c) => {
-          const fecha = new Date(c.fecha_fin);
-          return fecha > max ? fecha : max;
-        }, new Date(0))
-      : null;
-
     const metadata = {
       tieneCaucionesHistoricas: cauciones.length > 0,
-      todasVencidas: cauciones.length > 0 && caucionesVigentes.length === 0,
+      todasVencidas: cauciones.length > 0 && caucionesActivasHoy.length === 0,
       ultimaCaucionFecha,
+      cutoffFecha,
+      cutoffMode: caucionCutoffMode,
       caucionesVencidas: cauciones.length - caucionesVigentes.length,
       totalCaucionesHistoricas: cauciones.length,
     };
@@ -273,7 +308,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       ultimaActualizacion: new Date().toISOString(),
       metadata,
     };
-  }, [cauciones, fciEngine, tnaFCI]);
+  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode]);
 }
 
 export default useCarryMetrics;

@@ -31,6 +31,7 @@ export default function FundingEngine() {
 
   // Estado para tabs
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [caucionCutoffMode, setCaucionCutoffMode] = useState('auto');
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const mainFciId = useMemo(() => {
@@ -65,6 +66,7 @@ export default function FundingEngine() {
     cauciones,
     fciEngine,
     tnaFCI: tnaFCIDynamic,
+    caucionCutoffMode,
   });
 
   const handleManualRefresh = async () => {
@@ -162,7 +164,12 @@ export default function FundingEngine() {
 
               {/* Contenido según tab activo */}
               {activeTab === 'dashboard' && (
-                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} />
+                <DashboardTab
+                  carryMetrics={carryMetrics}
+                  isFallback={isFallback}
+                  caucionCutoffMode={caucionCutoffMode}
+                  onCaucionCutoffModeChange={setCaucionCutoffMode}
+                />
               )}
 
               {activeTab === 'analysis' && (

@@ -99,7 +99,12 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
   );
 };
 
-export function DashboardTab({ carryMetrics, isFallback }) {
+export function DashboardTab({
+  carryMetrics,
+  isFallback,
+  caucionCutoffMode,
+  onCaucionCutoffModeChange,
+}) {
   // Funciones de estado para semáforos
   const getCoverageStatus = (ratio) => {
     if (ratio >= 100) return 'success';
@@ -129,6 +134,21 @@ export function DashboardTab({ carryMetrics, isFallback }) {
     return 'Negativo';
   };
 
+  const cutoffOptions = [
+    { id: 'auto', label: 'Auto', hint: 'Recomendado' },
+    { id: 'today', label: 'Hoy', hint: 'Corte al d?a' },
+    { id: 'last', label: '?ltimo venc.', hint: '?ltima fecha' },
+    { id: 'all', label: 'Hist?rico', hint: 'Todas' },
+  ];
+
+  const cutoffDateLabel = carryMetrics.metadata?.cutoffFecha
+    ? formatDate(carryMetrics.metadata.cutoffFecha)
+    : '';
+
+  const showCutoffLabel = Boolean(cutoffDateLabel) && caucionCutoffMode !== 'today';
+
+
+
   return (
     <div className="space-y-6">
       {/* Warning de TNA Fallback */}
@@ -155,7 +175,34 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           </p>
         </div>
       )}
-      
+
+      {/* Toggle de corte para cauciones */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs text-text-tertiary uppercase tracking-wider">Corte cauciones</span>
+        <div className="inline-flex items-center bg-background-secondary border border-border-primary rounded-lg p-1">
+          {cutoffOptions.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => onCaucionCutoffModeChange?.(opt.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                caucionCutoffMode === opt.id
+                  ? 'bg-primary text-white'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+              }`}
+              title={opt.hint}
+              type="button"
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {cutoffDateLabel && caucionCutoffMode !== 'today' && (
+          <span className="text-xs text-text-tertiary">
+            Corte: {cutoffDateLabel}
+          </span>
+        )}
+      </div>
+
       {/* Hero Card - Spread Principal */}
       <div className={`rounded-xl p-6 border-2 ${
         carryMetrics.bufferTasaPct >= 2
@@ -230,10 +277,14 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           title="Total Caución"
           value={formatARS(carryMetrics.totalCaucion)}
           subtitle={
-            carryMetrics.metadata?.todasVencidas ? (
+            showCutoffLabel ? (
+              <span className="flex items-center gap-1 text-text-tertiary">
+                Corte: {cutoffDateLabel}
+              </span>
+            ) : carryMetrics.metadata?.todasVencidas ? (
               <span className="flex items-center gap-1 text-warning">
                 <Clock className="w-3 h-3" />
-                Última: {formatDate(carryMetrics.metadata.ultimaCaucionFecha)}
+                ?ltima: {formatDate(carryMetrics.metadata.ultimaCaucionFecha)}
               </span>
             ) : (
               `${carryMetrics.caucionesVigentes} vigentes`
