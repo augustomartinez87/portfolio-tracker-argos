@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, LogOut } from 'lucide-react';
+import { Briefcase, Layers, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
@@ -31,7 +31,7 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded }) =
       onMouseLeave={handleMouseLeave}
     >
       <div className="h-20 flex items-center justify-center border-b border-border-primary">
-        <Briefcase className="w-5 h-5 text-text-tertiary group-hover:text-primary transition-colors" />
+        <Layers className="w-5 h-5 text-text-tertiary group-hover:text-primary transition-colors" />
       </div>
 
       <div className="flex-1 py-4 overflow-hidden">
