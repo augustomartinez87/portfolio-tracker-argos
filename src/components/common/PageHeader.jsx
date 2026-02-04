@@ -1,7 +1,8 @@
 import React from 'react';
-import { RefreshCw, HelpCircle, Shield } from 'lucide-react';
+import { RefreshCw, HelpCircle, Shield, Sun, Moon } from 'lucide-react';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * PageHeader Unificado
@@ -28,6 +29,8 @@ export const PageHeader = ({
     extraActions,
     onHelpClick
 }) => {
+    const { theme, toggleTheme } = useTheme();
+
     return (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 lg:mb-6">
             <div className="flex items-center gap-3">
@@ -90,6 +93,15 @@ export const PageHeader = ({
                             <HelpCircle className="w-4 h-4" />
                         </button>
                     )}
+
+                    <button
+                        onClick={toggleTheme}
+                        className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded-md transition-all border-l border-border-primary ml-1 pl-2"
+                        title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                        aria-label="Cambiar tema"
+                    >
+                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
                 </div>
             </div>
         </div>
