@@ -14,6 +14,8 @@ const COLORS = {
     fci: '#3b82f6',    // Blue
     mep: '#ef4444',    // Red
     spy: '#10b981',    // Green
+    fciArs: '#10b981', // Green
+    fciUsd: '#6366f1', // Indigo
 };
 
 const AnalisisRealContent = () => {
@@ -22,6 +24,7 @@ const AnalisisRealContent = () => {
     const [endDate, setEndDate] = useState('');
     const [useTodayAsEnd, setUseTodayAsEnd] = useState(true);
     const [initialAmount, setInitialAmount] = useState(1000000);
+    const [fciCurrencyMode, setFciCurrencyMode] = useState('ARS');
     const [vcpHistory, setVcpHistory] = useState([]);
     const [spyHistory, setSpyHistory] = useState([]);
     const [mepHistory, setMepHistory] = useState([]);
@@ -214,6 +217,60 @@ const AnalisisRealContent = () => {
             })
             .filter(h => h.fci !== null);
     }, [vcpHistory, mepHistory, spyHistory, startDate, endDate, useTodayAsEnd]);
+
+    // Procesar datos para el gráfico FCI ARS vs USD (base 100)
+    const { data: fciRealSeries, hasUsd: fciHasUsd } = useMemo(() => {
+        if (!vcpHistory.length) return { data: [], hasUsd: false };
+
+        const effectiveEndDate = useTodayAsEnd 
+            ? new Date().toISOString().split('T')[0] 
+            : endDate;
+
+        const vcpRange = vcpHistory.filter(h => h.date >= startDate && h.date <= effectiveEndDate);
+        if (!vcpRange.length) return { data: [], hasUsd: false };
+
+        // Orden ascendente para forward-fill del MEP
+        const mepAsc = [...mepHistory].sort((a, b) => a.date.localeCompare(b.date));
+        let mepIdx = 0;
+        let lastMep = null;
+
+        const raw = vcpRange.map(h => {
+            while (mepIdx < mepAsc.length && mepAsc[mepIdx].date <= h.date) {
+                lastMep = mepAsc[mepIdx].price;
+                mepIdx++;
+            }
+
+            const fciArs = h.vcp;
+            const fciUsd = lastMep ? (h.vcp / lastMep) : null;
+
+            return {
+                date: h.date,
+                fciArs,
+                fciUsd
+            };
+        });
+
+        const baseArs = raw[0]?.fciArs || null;
+        const baseUsdEntry = raw.find(r => r.fciUsd !== null);
+        const baseUsd = baseUsdEntry ? baseUsdEntry.fciUsd : null;
+
+        const data = raw.map(r => ({
+            date: r.date,
+            fci_ars: baseArs ? (r.fciArs / baseArs) * 100 : null,
+            fci_usd: baseUsd ? (r.fciUsd / baseUsd) * 100 : null
+        }));
+
+        return {
+            data,
+            hasUsd: Boolean(baseUsd)
+        };
+    }, [vcpHistory, mepHistory, startDate, endDate, useTodayAsEnd]);
+
+    useEffect(() => {
+        if (fciCurrencyMode === 'USD' && !fciHasUsd) {
+            setFciCurrencyMode('ARS');
+        }
+    }, [fciCurrencyMode, fciHasUsd]);
 
     // Calcular valores finales para la tabla comparativa
     const comparisonData = useMemo(() => {
@@ -470,6 +527,107 @@ const AnalisisRealContent = () => {
                                 strokeWidth={2} 
                                 dot={false} 
                             />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Evolución real del FCI */}
+            <div className="bg-background-secondary rounded-2xl border border-border-primary p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
+                    <div>
+                        <h2 className="text-base font-bold flex items-center gap-2">
+                            <BarChart3 className="text-primary w-5 h-5" />
+                            Evolución real del FCI
+                        </h2>
+                        <p className="text-xs text-text-tertiary">
+                            Comparación del valor del fondo en pesos y en dólares MEP
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="inline-flex rounded-lg bg-background-tertiary p-1 border border-border-secondary">
+                            <button
+                                onClick={() => setFciCurrencyMode('ARS')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                                    fciCurrencyMode === 'ARS'
+                                        ? 'bg-text-primary text-background-primary'
+                                        : 'text-text-tertiary hover:text-text-primary'
+                                }`}
+                            >
+                                ARS
+                            </button>
+                            <button
+                                onClick={() => fciHasUsd && setFciCurrencyMode('USD')}
+                                disabled={!fciHasUsd}
+                                title={
+                                    fciHasUsd
+                                        ? 'USD = valor del FCI dividido por el dólar MEP del mismo día'
+                                        : 'USD = valor del FCI dividido por el dólar MEP del mismo día. No hay datos de MEP disponibles.'
+                                }
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                                    fciCurrencyMode === 'USD'
+                                        ? 'bg-text-primary text-background-primary'
+                                        : 'text-text-tertiary hover:text-text-primary'
+                                } ${!fciHasUsd ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                USD
+                            </button>
+                        </div>
+                        {!fciHasUsd && (
+                            <span className="text-[10px] text-text-tertiary">
+                                MEP no disponible
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="h-[320px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={fciRealSeries}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                            <XAxis
+                                dataKey="date"
+                                stroke="#94a3b8"
+                                fontSize={10}
+                                tickFormatter={(str) => {
+                                    const d = new Date(str);
+                                    return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+                                }}
+                            />
+                            <YAxis
+                                stroke="#94a3b8"
+                                fontSize={10}
+                                domain={['auto', 'auto']}
+                                tickFormatter={(val) => `${val.toFixed(0)}`}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
+                                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '11px' }}
+                                itemStyle={{ fontSize: '12px' }}
+                                formatter={(value) => [`${value?.toFixed(2)}`, '']}
+                            />
+                            <Legend verticalAlign="top" height={36} />
+                            {fciCurrencyMode === 'ARS' ? (
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="fci_ars" 
+                                    name={selectedFci ? `${selectedFci.nombre} (ARS)` : 'FCI (ARS)'} 
+                                    stroke={COLORS.fciArs} 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    activeDot={{ r: 6 }} 
+                                />
+                            ) : (
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="fci_usd" 
+                                    name={selectedFci ? `${selectedFci.nombre} (USD MEP)` : 'FCI (USD MEP)'} 
+                                    stroke={COLORS.fciUsd} 
+                                    strokeWidth={3} 
+                                    dot={false} 
+                                    activeDot={{ r: 6 }} 
+                                />
+                            )}
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
