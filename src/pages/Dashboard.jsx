@@ -11,6 +11,8 @@ import PositionsTable from '@/features/portfolio/components/PositionsTable';
 import ColumnSelector from '@/features/portfolio/components/ColumnSelector';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import DashboardSummaryCards from '@/features/portfolio/components/DashboardSummaryCards';
+import PerformanceMetricsCards from '@/features/portfolio/components/PerformanceMetricsCards';
+import { usePerformanceMetrics } from '@/features/portfolio/hooks/usePerformanceMetrics';
 import TotalCard from '@/features/portfolio/components/TotalCard';
 import { PortfolioTabs } from '@/features/portfolio/components/PortfolioTabs';
 import { PortfolioCharts } from '@/features/portfolio/components/PortfolioCharts';
@@ -185,6 +187,13 @@ export default function Dashboard() {
     mepRate,
     mepHistory,
     fciPositions
+  );
+
+  // Performance Metrics (XIRR, YTD, TWR)
+  const performanceMetrics = usePerformanceMetrics(
+    trades,
+    allTotals,
+    { enabled: isPricesReady && trades.length > 0, currency: displayCurrency }
   );
 
   // Filtrar posiciones dinámicamente según búsqueda
@@ -715,7 +724,11 @@ export default function Dashboard() {
                         currency={displayCurrency}
                       />
 
-
+                      {/* Performance Metrics (XIRR, YTD, TWR) */}
+                      <PerformanceMetricsCards
+                        metrics={performanceMetrics}
+                        isLoading={!isPricesReady || isPricesLoading}
+                      />
 
                       {/* Tabla de Posiciones - contenedor con scroll interno limitado - FLEX GROW para llenar espacio */}
                       <div className="bg-background-secondary border border-border-primary rounded-xl flex flex-col flex-1 min-h-0 mt-3 overflow-hidden">
