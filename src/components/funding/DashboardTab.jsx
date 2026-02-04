@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   TrendingDown,
   Shield,
@@ -12,6 +13,7 @@ import {
   Zap,
   Sliders,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { AlertsPanel } from './AlertsPanel';
 import { ScenarioSimulator } from './ScenarioSimulator';
@@ -20,6 +22,16 @@ import { MetricCard } from '@/components/common/MetricCard';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Section } from '@/components/common/Section';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+
+// Helper para formatear fecha
+const formatDate = (date) => {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
 
 /**
  * Barra de progreso con marcadores (para cobertura de capital)
@@ -128,18 +140,109 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           </p>
         </div>
       )}
+
+      {/* Warning de Cauciones Vencidas */}
+      {carryMetrics.metadata?.todasVencidas && (
+        <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2">
+          <Clock className="w-5 h-5 text-warning flex-shrink-0" />
+          <p className="text-sm text-warning">
+            <span className="font-medium">Sin cauciones vigentes.</span>
+            {' '}Última caución venció el {formatDate(carryMetrics.metadata.ultimaCaucionFecha)}.
+            {' '}
+            <Link to="/financiacion" className="underline hover:text-warning/80">
+              Cargar nuevas cauciones
+            </Link>
+          </p>
+        </div>
+      )}
       
-      {/* KPIs Principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Total Caución - Sin cambios */}
+      {/* Hero Card - Spread Principal */}
+      <div className={`rounded-xl p-6 border-2 ${
+        carryMetrics.bufferTasaPct >= 2
+          ? 'bg-gradient-to-r from-success/10 to-primary/5 border-success/30'
+          : carryMetrics.bufferTasaPct >= 0.5
+            ? 'bg-gradient-to-r from-warning/10 to-primary/5 border-warning/30'
+            : 'bg-gradient-to-r from-danger/10 to-primary/5 border-danger/30'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-text-tertiary text-sm uppercase tracking-wider mb-1">Spread Actual</p>
+            <p className={`text-4xl font-bold font-mono ${
+              carryMetrics.bufferTasaPct >= 0 ? 'text-success' : 'text-danger'
+            }`}>
+              {formatPercent(carryMetrics.bufferTasaPct)}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge
+              status={getSpreadStatus(carryMetrics.bufferTasaPct)}
+              label={getSpreadLabel(carryMetrics.bufferTasaPct)}
+            />
+            <div className={`p-3 rounded-lg ${
+              carryMetrics.bufferTasaPct >= 0 ? 'bg-success/10' : 'bg-danger/10'
+            }`}>
+              <Zap className={`w-6 h-6 ${
+                carryMetrics.bufferTasaPct >= 0 ? 'text-success' : 'text-danger'
+              }`} />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-6 pt-4 border-t border-border-secondary">
+          <div>
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Diario</p>
+            <p className={`font-mono font-semibold text-lg ${
+              carryMetrics.spreadNetoDia >= 0 ? 'text-success' : 'text-danger'
+            }`}>
+              {formatARS(carryMetrics.spreadNetoDia)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Mensual</p>
+            <p className={`font-mono font-semibold text-lg ${
+              carryMetrics.spreadMensualProyectado >= 0 ? 'text-success' : 'text-danger'
+            }`}>
+              {formatARS(carryMetrics.spreadMensualProyectado)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Anual</p>
+            <p className={`font-mono font-semibold text-lg ${
+              carryMetrics.spreadAnualProyectado >= 0 ? 'text-success' : 'text-danger'
+            }`}>
+              {formatARS(carryMetrics.spreadAnualProyectado)}
+            </p>
+          </div>
+          <div className="ml-auto">
+            <p className="text-xs text-text-tertiary uppercase tracking-wider">Acumulado</p>
+            <p className={`font-mono font-semibold text-lg ${
+              carryMetrics.spreadAcumulado >= 0 ? 'text-success' : 'text-danger'
+            }`}>
+              {formatARS(carryMetrics.spreadAcumulado)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPIs Secundarios */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* KPI 1: Total Caución - Con mensaje de cauciones vencidas */}
         <MetricCard
           title="Total Caución"
           value={formatARS(carryMetrics.totalCaucion)}
-          subtitle={`${carryMetrics.caucionesVigentes} vigentes`}
+          subtitle={
+            carryMetrics.metadata?.todasVencidas ? (
+              <span className="flex items-center gap-1 text-warning">
+                <Clock className="w-3 h-3" />
+                Última: {formatDate(carryMetrics.metadata.ultimaCaucionFecha)}
+              </span>
+            ) : (
+              `${carryMetrics.caucionesVigentes} vigentes`
+            )
+          }
           icon={DollarSign}
-          status="info"
+          status={carryMetrics.metadata?.todasVencidas ? 'warning' : 'info'}
         />
-        
+
         {/* KPI 2: Saldo FCI - Con TNA dinámica y warning si es fallback */}
         <MetricCard
           title="Saldo FCI"
@@ -157,7 +260,7 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           icon={BarChart3}
           status={isFallback ? 'warning' : 'info'}
         />
-        
+
         {/* KPI 3: % Cobertura - Mostrar porcentaje positivo con nuevo semáforo */}
         <MetricCard
           title="% Cobertura"
@@ -165,16 +268,6 @@ export function DashboardTab({ carryMetrics, isFallback }) {
           subtitle={<StatusBadge status={getCoverageStatus(carryMetrics.ratioCobertura)} label={getCoverageLabel(carryMetrics.ratioCobertura)} />}
           icon={Shield}
           status={getCoverageStatus(carryMetrics.ratioCobertura)}
-        />
-        
-        {/* KPI 4: Spread - Con semáforo de 5 niveles */}
-        <MetricCard
-          title="Spread"
-          value={formatPercent(carryMetrics.bufferTasaPct)}
-          subtitle={<StatusBadge status={getSpreadStatus(carryMetrics.bufferTasaPct)} label={getSpreadLabel(carryMetrics.bufferTasaPct)} />}
-          icon={Zap}
-          status={getSpreadStatus(carryMetrics.bufferTasaPct).replace('-light', '')}
-          trend={carryMetrics.bufferTasaPct}
         />
       </div>
 
@@ -307,55 +400,19 @@ export function DashboardTab({ carryMetrics, isFallback }) {
         </div>
       </Section>
 
-      {/* Performance de Carry */}
+      {/* Performance de Carry - Costo de Oportunidad */}
       <Section title="Performance de Carry" icon={Activity}>
-        {/* 4 Cards de Spread */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Card 1: Spread Diario */}
-          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-            <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Diario</h4>
-            <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadNetoDia >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatARS(carryMetrics.spreadNetoDia)}
-            </p>
-            <p className="text-xs text-text-tertiary mt-2">
-              TNA: <span className={`font-mono font-medium ${carryMetrics.bufferTasaPct >= 0 ? 'text-success' : 'text-danger'}`}>
-                {formatPercent(carryMetrics.bufferTasaPct)}
-              </span>
-            </p>
-          </div>
-
-          {/* Card 2: Spread Mensual (Proyectado) */}
-          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-            <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Mensual</h4>
-            <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadMensualProyectado >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatARS(carryMetrics.spreadMensualProyectado)}
-            </p>
-            <p className="text-xs text-text-tertiary mt-2">
-              (proyectado)
-            </p>
-          </div>
-
-          {/* Card 3: Spread Anual (Proyectado) */}
-          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-            <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Spread Anual</h4>
-            <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadAnualProyectado >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatARS(carryMetrics.spreadAnualProyectado)}
-            </p>
-            <p className="text-xs text-text-tertiary mt-2">
-              ROE: <span className="font-mono font-medium text-primary">
+        {/* ROE Card */}
+        <div className="bg-background-secondary rounded-xl p-4 border border-border-primary mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-text-tertiary uppercase tracking-wider">ROE Caución (Anualizado)</p>
+              <p className="text-2xl font-bold font-mono text-primary">
                 {formatPercent(carryMetrics.roeCaucion)}
-              </span>
-            </p>
-          </div>
-
-          {/* Card 4: Spread Acumulado */}
-          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-            <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Acumulado</h4>
-            <p className={`text-2xl font-bold font-mono ${carryMetrics.spreadAcumulado >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatARS(carryMetrics.spreadAcumulado)}
-            </p>
-            <p className="text-xs text-text-tertiary mt-2">
-              Total histórico
+              </p>
+            </div>
+            <p className="text-xs text-text-secondary">
+              Retorno sobre capital caucionado
             </p>
           </div>
         </div>

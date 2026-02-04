@@ -196,6 +196,24 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       : 0;
 
     // =========================================================================
+    // 15. METADATA DE CAUCIONES (para UX mejorada)
+    // =========================================================================
+    const ultimaCaucionFecha = cauciones.length > 0
+      ? cauciones.reduce((max, c) => {
+          const fecha = new Date(c.fecha_fin);
+          return fecha > max ? fecha : max;
+        }, new Date(0))
+      : null;
+
+    const metadata = {
+      tieneCaucionesHistoricas: cauciones.length > 0,
+      todasVencidas: cauciones.length > 0 && caucionesVigentes.length === 0,
+      ultimaCaucionFecha,
+      caucionesVencidas: cauciones.length - caucionesVigentes.length,
+      totalCaucionesHistoricas: cauciones.length,
+    };
+
+    // =========================================================================
     // RETURN - Convertir todo a Number para UI
     // =========================================================================
     return {
@@ -248,6 +266,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       diasPromedio,
       totalOperaciones: cauciones.length,
       ultimaActualizacion: new Date().toISOString(),
+      metadata,
     };
   }, [cauciones, fciEngine, tnaFCI]);
 }
