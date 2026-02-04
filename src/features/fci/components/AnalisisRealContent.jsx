@@ -510,10 +510,10 @@ const AnalisisRealContent = () => {
                 <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={processedData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
                             <XAxis
                                 dataKey="date"
-                                stroke="#94a3b8"
+                                stroke="var(--text-tertiary)"
                                 fontSize={10}
                                 tickFormatter={(str) => {
                                     const d = new Date(str);
@@ -521,14 +521,14 @@ const AnalisisRealContent = () => {
                                 }}
                             />
                             <YAxis
-                                stroke="#94a3b8"
+                                stroke="var(--text-tertiary)"
                                 fontSize={10}
                                 domain={['auto', 'auto']}
                                 tickFormatter={(val) => `${val.toFixed(0)}`}
                             />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '11px' }}
+                                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}
+                                labelStyle={{ color: 'var(--text-tertiary)', marginBottom: '4px', fontSize: '11px' }}
                                 itemStyle={{ fontSize: '12px' }}
                                 formatter={(value) => [`${value?.toFixed(2)}`, '']}
                             />
@@ -631,10 +631,10 @@ const AnalisisRealContent = () => {
                 <div className="h-[320px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={fciRealSeries}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
                             <XAxis
                                 dataKey="date"
-                                stroke="#94a3b8"
+                                stroke="var(--text-tertiary)"
                                 fontSize={10}
                                 tickFormatter={(str) => {
                                     const d = new Date(str);
@@ -642,14 +642,14 @@ const AnalisisRealContent = () => {
                                 }}
                             />
                             <YAxis
-                                stroke="#94a3b8"
+                                stroke="var(--text-tertiary)"
                                 fontSize={10}
                                 domain={['auto', 'auto']}
                                 tickFormatter={(val) => `${val.toFixed(0)}`}
                             />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '11px' }}
+                                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}
+                                labelStyle={{ color: 'var(--text-tertiary)', marginBottom: '4px', fontSize: '11px' }}
                                 itemStyle={{ fontSize: '12px' }}
                                 formatter={(value) => [`${value?.toFixed(2)}`, '']}
                             />

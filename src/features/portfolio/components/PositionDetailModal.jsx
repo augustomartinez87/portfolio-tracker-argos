@@ -542,18 +542,18 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                   <ComposedChart data={chartData}>
                     <defs>
                       <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
                     <XAxis
                       dataKey="date"
-                      tick={{ fontSize: 12, fill: '#6b6b6b' }}
-                      stroke="#2a2a2a"
+                      tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }}
+                      stroke="var(--border-secondary)"
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: '#6b6b6b' }}
+                      tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }}
                       tickFormatter={(value) => {
                         try {
                           const isARS = currency === 'ARS';
@@ -563,14 +563,14 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                           return '$0';
                         }
                       }}
-                      stroke="#2a2a2a"
+                      stroke="var(--border-secondary)"
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#0a0a0a',
-                        border: '1px solid #1a1a1a',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-primary)',
                         borderRadius: '8px',
-                        color: '#fff'
+                        color: 'var(--text-primary)'
                       }}
                       formatter={(value) => {
                         try {
@@ -601,10 +601,10 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                     <Line
                       type="monotone"
                       dataKey="price"
-                      stroke="#10b981"
+                      stroke="var(--color-success)"
                       strokeWidth={2}
                       dot={false}
-                      activeDot={{ r: 6, fill: '#10b981' }}
+                      activeDot={{ r: 6, fill: 'var(--color-success)' }}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

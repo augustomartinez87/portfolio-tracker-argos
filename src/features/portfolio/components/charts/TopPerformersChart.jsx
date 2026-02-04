@@ -18,7 +18,7 @@ const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
                 return {
                     name: p.ticker,
                     value: value,
-                    color: value >= 0 ? '#10b981' : '#ef4444'
+                    color: value >= 0 ? 'var(--color-success)' : 'var(--color-danger)'
                 };
             });
     }, [positions, isUSD]);

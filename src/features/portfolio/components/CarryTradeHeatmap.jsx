@@ -95,7 +95,7 @@ const CustomizedContent = (props) => {
                 height={height}
                 style={{
                     fill: payload.fill,
-                    stroke: '#fff',
+                    stroke: 'var(--border-primary)',
                     strokeWidth: 2 / (depth + 1e-10),
                     strokeOpacity: 1 / (depth + 1e-10),
                 }}

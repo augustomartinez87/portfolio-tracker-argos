@@ -32,7 +32,7 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
     if (error) {
         return (
             <div className="bg-background-secondary rounded-xl p-8 border border-border-primary border-dashed flex flex-col items-center justify-center min-h-[400px]">
-                <AlertCircle className="w-12 h-12 text-error mb-4 opacity-50" />
+                <AlertCircle className="w-12 h-12 text-danger mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold text-text-primary mb-2">Error al cargar datos</h3>
                 <p className="text-text-secondary text-center max-w-sm">{error}</p>
             </div>
@@ -65,7 +65,7 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
                             <span className="text-xs font-mono font-bold text-text-primary">{payload[0].value}%</span>
                         </div>
                         <div className="flex justify-between gap-4">
-                            <span className="text-xs text-error font-medium">TNA Caución:</span>
+                            <span className="text-xs text-danger font-medium">TNA Caución:</span>
                             <span className="text-xs font-mono font-bold text-text-primary">{payload[1].value}%</span>
                         </div>
                         <div className="pt-1 mt-1 border-t border-border-secondary flex justify-between gap-4">
@@ -113,31 +113,31 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
                         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorFci" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
                                 </linearGradient>
                                 <linearGradient id="colorCaucion" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--color-danger)" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="var(--color-danger)" stopOpacity={0} />
                                 </linearGradient>
                                 <linearGradient id="colorSpread" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+                                    <stop offset="5%" stopColor="var(--color-info)" stopOpacity={0.2} />
+                                    <stop offset="95%" stopColor="var(--color-info)" stopOpacity={0.05} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
                             <XAxis
                                 dataKey="fecha"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#737373', fontSize: 10 }}
+                                tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
                                 tickFormatter={(str) => format(new Date(str), 'd MMM', { locale: es })}
                                 minTickGap={30}
                             />
                              <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#737373', fontSize: 10 }}
+                                tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
                                 tickFormatter={(val) => `${val}%`}
                                 domain={['dataMin - 2', 'dataMax + 2']}
                             />
@@ -148,21 +148,21 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
                                 type="monotone"
                                 dataKey="tnaFCI"
                                 name="TNA FCI"
-                                stroke="#10b981"
+                                stroke="var(--color-success)"
                                 strokeWidth={2}
                                 fillOpacity={1}
                                 fill="url(#colorFci)"
-                                activeDot={{ r: 4, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
+                                activeDot={{ r: 4, stroke: 'var(--color-success)', strokeWidth: 2, fill: 'var(--bg-primary)' }}
                             />
                             <Area
                                 type="monotone"
                                 dataKey="tnaCaucion"
                                 name="TNA Caución"
-                                stroke="#ef4444"
+                                stroke="var(--color-danger)"
                                 strokeWidth={2}
                                 fillOpacity={1}
                                 fill="url(#colorCaucion)"
-                                activeDot={{ r: 4, stroke: '#ef4444', strokeWidth: 2, fill: '#fff' }}
+                                activeDot={{ r: 4, stroke: 'var(--color-danger)', strokeWidth: 2, fill: 'var(--bg-primary)' }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -187,7 +187,7 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
                         title="SPREAD MÍN"
                         value={`${stats.spreadMin.valor}%`}
                         subtitle={format(new Date(stats.spreadMin.fecha), "dd MMM yy", { locale: es })}
-                        icon={<TrendingDown className="w-5 h-5 text-error" />}
+                        icon={<TrendingDown className="w-5 h-5 text-danger" />}
                     />
                     <StatCard
                         title="SPREAD ACTUAL"

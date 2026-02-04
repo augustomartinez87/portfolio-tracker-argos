@@ -26,7 +26,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                     width={width}
                     height={height}
                     style={{
-                        fill: payload?.pnl >= 0 ? '#10b981' : '#ef4444',
+                        fill: payload?.pnl >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
                         fillOpacity: 0.8,
                         stroke: 'var(--border-primary)',
                         strokeWidth: 2 / (depth + 1),
@@ -86,7 +86,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                         dataKey="size"
                         ratio={4 / 3}
                         stroke="var(--border-primary)"
-                        fill="#8884d8"
+                        fill="var(--color-info)"
                         content={<CustomizedContent />}
                     >
                         <Tooltip content={<CustomTooltip />} />

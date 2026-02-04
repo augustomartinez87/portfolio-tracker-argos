@@ -680,10 +680,10 @@ export default function Dashboard() {
                                   <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.dateFormatted}</td>
                                   <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
                                   <td className="px-3 sm:px-4 py-3">
-                                    <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.type === 'compra'
-                                      ? 'bg-[#10b9811a] text-[#10b981] border-[#10b98133]'
-                                      : 'bg-[#ef44441a] text-[#ef4444] border-[#ef444433]'
-                                      }`}>
+                                      <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.type === 'compra'
+                                        ? 'bg-success/10 text-success border-success/30'
+                                        : 'bg-danger/10 text-danger border-danger/30'
+                                        }`}>
                                       {trade.type === 'compra' ? 'Compra' : 'Venta'}
                                     </span>
                                   </td>

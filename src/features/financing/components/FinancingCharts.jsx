@@ -221,10 +221,10 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData.tnaEvolution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
               <XAxis
                 dataKey="dateStr"
-                stroke="#666"
+                stroke="var(--text-tertiary)"
                 fontSize={12}
                 tickMargin={10}
                 tickFormatter={(value) => {
@@ -233,23 +233,23 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
                 }}
               />
               <YAxis
-                stroke="#666"
+                stroke="var(--text-tertiary)"
                 fontSize={12}
                 width={40}
                 tickFormatter={(val) => `${val}%`}
               />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', color: '#fff' }}
-                itemStyle={{ color: '#fff' }}
+                contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+                itemStyle={{ color: 'var(--text-primary)' }}
                 formatter={(value) => [`${value.toFixed(2)}%`, 'TNA Real']}
                 labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
               />
               <Line
                 type="monotone"
                 dataKey="tna"
-                stroke="#10b981"
+                stroke="var(--color-success)"
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#10b981' }}
+                dot={{ r: 3, fill: 'var(--color-success)' }}
                 activeDot={{ r: 5 }}
               />
             </LineChart>

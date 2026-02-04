@@ -132,8 +132,8 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
   const { proyeccion3m, proyeccion6m, proyeccion12m, datosGrafico, isPositiveGrowth, isLowGrowth } = proyecciones;
 
   // Determinar color de la línea según el tipo de crecimiento
-  const lineColor = isPositiveGrowth ? '#22c55e' : '#ef4444'; // success o danger
-  const areaColor = isPositiveGrowth ? '#22c55e' : '#ef4444';
+  const lineColor = isPositiveGrowth ? 'var(--color-success)' : 'var(--color-danger)'; // success o danger
+  const areaColor = isPositiveGrowth ? 'var(--color-success)' : 'var(--color-danger)';
 
   return (
     <div className="space-y-6">

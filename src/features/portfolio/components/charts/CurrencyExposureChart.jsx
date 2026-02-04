@@ -85,7 +85,7 @@ const CurrencyExposureChart = ({ positions, currency = 'ARS' }) => {
                             dataKey="value"
                         >
                             {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#6b7280'} />
+                                <Cell key={`cell-${index}`} fill={COLORS[entry.name] || 'var(--text-tertiary)'} />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
