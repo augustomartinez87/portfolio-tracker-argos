@@ -328,6 +328,41 @@ export function ScenarioSimulator({
         </div>
       </div>
 
+      {/* Tabla de Sensibilidad */}
+      <div className="p-4 bg-background-tertiary rounded-lg border border-border-secondary">
+        <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
+          Sensibilidad TNA FCI
+        </h5>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          {[-2, 0, +2].map((delta) => {
+            const tnaFCITest = tnaFCISimulado + delta / 100;
+            const spreadTest = new Decimal(tnaFCITest).minus(tnaCaucionSimulado);
+            const gananciaTest = new Decimal(saldoFCI || 0)
+              .times(tnaFCITest)
+              .dividedBy(365)
+              .minus(costoCaucionDia || 0);
+            const isPositive = spreadTest.gt(0);
+            return (
+              <div
+                key={delta}
+                className={`p-2 rounded text-center ${
+                  delta === 0
+                    ? 'bg-primary/10 border border-primary/30'
+                    : 'bg-background-secondary'
+                }`}
+              >
+                <p className="text-text-tertiary mb-1">
+                  {delta === 0 ? 'Actual' : `TNA ${delta > 0 ? '+' : ''}${delta}%`}
+                </p>
+                <p className={`font-mono font-semibold ${isPositive ? 'text-success' : 'text-danger'}`}>
+                  {formatARS(gananciaTest.toNumber())}/d
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Botón Reset */}
       <button
         onClick={handleReset}

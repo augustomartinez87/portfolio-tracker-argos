@@ -15,6 +15,7 @@ import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 import { useCauciones } from '@/features/financing/hooks/useCauciones';
 import { useCarryMetrics } from '@/hooks/useCarryMetrics';
 import { useFciTNA } from '@/hooks/useFciTNA';
+import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 import { DashboardTab } from '@/components/funding/DashboardTab';
 import { AnalysisTab } from '@/components/funding/AnalysisTab';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
@@ -68,6 +69,14 @@ export default function FundingEngine() {
     tnaFCI: tnaFCIDynamic,
     caucionCutoffMode,
   });
+
+  // Cargar datos históricos para benchmark (30 días)
+  const { stats: historicalStats } = useHistoricalRates(
+    mainFciId,
+    currentPortfolio?.id,
+    user?.id,
+    30
+  );
 
   const handleManualRefresh = async () => {
     try {
@@ -169,6 +178,7 @@ export default function FundingEngine() {
                   isFallback={isFallback}
                   caucionCutoffMode={caucionCutoffMode}
                   onCaucionCutoffModeChange={setCaucionCutoffMode}
+                  historicalStats={historicalStats}
                 />
               )}
 

@@ -7,8 +7,9 @@ import { CheckCircle, AlertTriangle, Shield } from 'lucide-react';
  * @param {Object} props
  * @param {string} props.status - Clave del estado (determina estilo e icono)
  * @param {string} props.label - Texto a mostrar (opcional, usa status si no se provee)
+ * @param {string} props.tooltip - Texto explicativo al hacer hover (opcional)
  */
-export function StatusBadge({ status, label }) {
+export function StatusBadge({ status, label, tooltip }) {
   const styles = {
     // Estados de cobertura
     sobrecapitalizado: 'bg-success/10 text-success border-success/30',
@@ -61,7 +62,10 @@ export function StatusBadge({ status, label }) {
   const styleClass = styles[status] || styles.neutral;
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${styleClass}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${styleClass} ${tooltip ? 'cursor-help' : ''}`}
+      title={tooltip}
+    >
       <Icon className="w-3 h-3" />
       {label || status}
     </span>

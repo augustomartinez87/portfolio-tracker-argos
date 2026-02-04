@@ -21,7 +21,7 @@ import { CompoundProjection } from './CompoundProjection';
 import { MetricCard } from '@/components/common/MetricCard';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Section } from '@/components/common/Section';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatPercent, formatNumber, formatDateTime } from '@/utils/formatters';
 
 // Helper para formatear fecha
 const formatDate = (date) => {
@@ -104,6 +104,7 @@ export function DashboardTab({
   isFallback,
   caucionCutoffMode,
   onCaucionCutoffModeChange,
+  historicalStats,
 }) {
   // Funciones de estado para semáforos
   const getCoverageStatus = (ratio) => {
@@ -219,12 +220,50 @@ export function DashboardTab({
             }`}>
               {formatPercent(carryMetrics.bufferTasaPct)}
             </p>
+            {/* Timestamp y benchmark */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px]">
+              <span className="text-text-tertiary">
+                {formatDateTime(carryMetrics.ultimaActualizacion, 'full')}
+              </span>
+              {historicalStats && (
+                <>
+                  <span className={`font-medium ${
+                    carryMetrics.bufferTasaPct > historicalStats.spreadPromedio
+                      ? 'text-success'
+                      : 'text-warning'
+                  }`}>
+                    {carryMetrics.bufferTasaPct > historicalStats.spreadPromedio ? '↑' : '↓'}{' '}
+                    {formatNumber(Math.abs(carryMetrics.bufferTasaPct - historicalStats.spreadPromedio), 2)}pp vs 30d
+                  </span>
+                  <span className="text-primary font-medium">
+                    Top {100 - historicalStats.percentilActual}%
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <StatusBadge
               status={getSpreadStatus(carryMetrics.bufferTasaPct)}
               label={getSpreadLabel(carryMetrics.bufferTasaPct)}
+              tooltip=">=2%: Óptimo | >=1%: Saludable | >=0.5%: Ajustado | >0%: Crítico | <=0%: Negativo"
             />
+            {/* CTA contextual */}
+            {carryMetrics.estadoCobertura === 'deficit' && (
+              <Link
+                to="/financiacion"
+                className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1"
+              >
+                <Target className="w-3 h-3" />
+                Suscribir {formatARS(carryMetrics.deficitMinimo)}
+              </Link>
+            )}
+            {carryMetrics.estadoCobertura === 'sobrecapitalizado' && (
+              <div className="px-3 py-1.5 bg-success/10 text-success text-xs font-medium rounded-lg flex items-center gap-1 border border-success/30">
+                <CheckCircle className="w-3 h-3" />
+                Excedente disponible
+              </div>
+            )}
             <div className={`p-3 rounded-lg ${
               carryMetrics.bufferTasaPct >= 0 ? 'bg-success/10' : 'bg-danger/10'
             }`}>
@@ -236,7 +275,7 @@ export function DashboardTab({
         </div>
         <div className="flex flex-wrap gap-6 pt-4 border-t border-border-secondary">
           <div>
-            <p className="text-xs text-text-tertiary uppercase tracking-wider">Diario</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wider">Diario</p>
             <p className={`font-mono font-semibold text-lg ${
               carryMetrics.spreadNetoDia >= 0 ? 'text-success' : 'text-danger'
             }`}>
@@ -244,7 +283,7 @@ export function DashboardTab({
             </p>
           </div>
           <div>
-            <p className="text-xs text-text-tertiary uppercase tracking-wider">Mensual</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wider">Mensual</p>
             <p className={`font-mono font-semibold text-lg ${
               carryMetrics.spreadMensualProyectado >= 0 ? 'text-success' : 'text-danger'
             }`}>
@@ -252,7 +291,7 @@ export function DashboardTab({
             </p>
           </div>
           <div>
-            <p className="text-xs text-text-tertiary uppercase tracking-wider">Anual</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wider">Anual</p>
             <p className={`font-mono font-semibold text-lg ${
               carryMetrics.spreadAnualProyectado >= 0 ? 'text-success' : 'text-danger'
             }`}>
@@ -260,7 +299,7 @@ export function DashboardTab({
             </p>
           </div>
           <div className="ml-auto">
-            <p className="text-xs text-text-tertiary uppercase tracking-wider">Acumulado</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wider font-medium">Acumulado</p>
             <p className={`font-mono font-semibold text-lg ${
               carryMetrics.spreadAcumulado >= 0 ? 'text-success' : 'text-danger'
             }`}>
