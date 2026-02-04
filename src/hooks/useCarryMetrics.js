@@ -76,13 +76,20 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     // =========================================================================
     // 7. TNA CAUCIÓN PROMEDIO PONDERADA (solo cauciones vigentes)
     // =========================================================================
-    // Ponderado por capital para mayor precisión - SOLO cauciones vigentes
+    // Ponderado por capital×días - SOLO cauciones vigentes
     const tnaCaucionPonderada = totalCaucion.gt(0)
-      ? caucionesVigentes.reduce((sum, c) => {
-          const capital = new Decimal(c.capital || 0);
-          const tna = new Decimal(c.tna_real || 0).dividedBy(100); // Convertir de % a decimal
-          return sum.plus(capital.times(tna));
-        }, new Decimal(0)).dividedBy(totalCaucion)
+      ? (() => {
+          const { numerator, denominator } = caucionesVigentes.reduce((acc, c) => {
+            const capital = new Decimal(c.capital || 0);
+            const tna = new Decimal(c.tna_real || 0).dividedBy(100); // Convertir de % a decimal
+            const dias = new Decimal(c.dias || 1);
+            return {
+              numerator: acc.numerator.plus(capital.times(tna).times(dias)),
+              denominator: acc.denominator.plus(capital.times(dias)),
+            };
+          }, { numerator: new Decimal(0), denominator: new Decimal(0) });
+          return denominator.gt(0) ? numerator.dividedBy(denominator) : new Decimal(0);
+        })()
       : new Decimal(0);
 
     // TNA promedio simple (para referencia) - SOLO cauciones vigentes
@@ -136,9 +143,11 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     // 11. SPREAD ACUMULADO (HISTÓRICO)
     // =========================================================================
     // Suma de (ganancia FCI - costo caución) para cada caución histórica
+    // Usa el capital de cada caución como proxy del capital desplegado en FCI
     const spreadAcumulado = cauciones.reduce((sum, c) => {
       const dias = c.dias || 0;
-      const gananciaFCI = saldoFCI.times(tnaFCIDec).dividedBy(365).times(dias);
+      const capitalCaucion = new Decimal(c.capital || 0);
+      const gananciaFCI = capitalCaucion.times(tnaFCIDec).dividedBy(365).times(dias);
       const costoCaucion = new Decimal(c.interes || 0);
       return sum.plus(gananciaFCI.minus(costoCaucion));
     }, new Decimal(0));
@@ -154,9 +163,6 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       const costoCaucion = new Decimal(c.interes || 0);
       return sum.plus(gananciaTeórica.minus(costoCaucion));
     }, new Decimal(0));
-
-    // Oportunidad perdida
-    const oportunidadPerdida = fullDeploymentAcumulado.minus(spreadAcumulado);
 
     // =========================================================================
     // 13. PROYECCIONES DE SPREAD
@@ -191,9 +197,27 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
     // =========================================================================
     // 14. DÍAS PROMEDIO CAUCIÓN
     // =========================================================================
-    const diasPromedio = cauciones.length > 0
-      ? cauciones.reduce((sum, c) => sum + (c.dias || 0), 0) / cauciones.length
+    const diasPromedio = caucionesVigentes.length > 0
+      ? caucionesVigentes.reduce((sum, c) => sum + (c.dias || 0), 0) / caucionesVigentes.length
       : 0;
+
+    // =========================================================================
+    // 15. METADATA DE CAUCIONES (para UX mejorada)
+    // =========================================================================
+    const ultimaCaucionFecha = cauciones.length > 0
+      ? cauciones.reduce((max, c) => {
+          const fecha = new Date(c.fecha_fin);
+          return fecha > max ? fecha : max;
+        }, new Date(0))
+      : null;
+
+    const metadata = {
+      tieneCaucionesHistoricas: cauciones.length > 0,
+      todasVencidas: cauciones.length > 0 && caucionesVigentes.length === 0,
+      ultimaCaucionFecha,
+      caucionesVencidas: cauciones.length - caucionesVigentes.length,
+      totalCaucionesHistoricas: cauciones.length,
+    };
 
     // =========================================================================
     // RETURN - Convertir todo a Number para UI
@@ -240,7 +264,6 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       gananciaProductivaDia: gananciaProductivaDia.toNumber(),
       spreadAcumulado: spreadAcumulado.toNumber(),
       fullDeploymentAcumulado: fullDeploymentAcumulado.toNumber(),
-      oportunidadPerdida: oportunidadPerdida.toNumber(),
       costoNoOptimoDia: costoNoOptimoDia.toNumber(),
       costoNoOptimoAnual: costoNoOptimoAnual.toNumber(),
 
@@ -248,6 +271,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI }) {
       diasPromedio,
       totalOperaciones: cauciones.length,
       ultimaActualizacion: new Date().toISOString(),
+      metadata,
     };
   }, [cauciones, fciEngine, tnaFCI]);
 }

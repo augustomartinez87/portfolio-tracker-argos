@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import Decimal from 'decimal.js';
 import {
   AlertTriangle,
   AlertCircle,
@@ -99,7 +100,9 @@ export function AlertsPanel({ carryMetrics, isFallback }) {
     
     // Exceso de cobertura (cobertura >= 115%)
     if (cobertura >= 115) {
-      const excesoCobertura = saldoFCI - (totalCaucion * 1.15);
+      const excesoCobertura = new Decimal(saldoFCI || 0)
+        .minus(new Decimal(totalCaucion || 0).times('1.15'))
+        .toNumber();
       const accion = `Retirar ${formatARS(excesoCobertura)} del FCI para comprar más activos`;
       alertList.push({
         id: 'excess-coverage',

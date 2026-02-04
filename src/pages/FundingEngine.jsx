@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -7,6 +7,7 @@ import {
   Database,
   LayoutDashboard,
   BarChart2,
+  AlertTriangle,
 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -59,35 +60,18 @@ export default function FundingEngine() {
     totals: fciTotals || { valuation: 0 },
   };
 
+  // Última caución por fecha_fin (para banner cuando no hay vigentes)
+  const ultimaCaucion = useMemo(() => {
+    if (!cauciones?.length) return null;
+    return [...cauciones].sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))[0];
+  }, [cauciones]);
+
   // Calcular métricas de carry con TNA dinámica
   const carryMetrics = useCarryMetrics({
     cauciones,
     fciEngine,
     tnaFCI: tnaFCIDynamic,
   });
-
-  // ===========================================================================
-  // VALIDACIÓN - Console.log para verificar cálculos (remover en producción)
-  // ===========================================================================
-  useEffect(() => {
-    if (carryMetrics) {
-      console.log('=== MÉTRICAS DE CARRY CALCULADAS ===');
-      console.log('FCI Mínimo:', carryMetrics.fciMinimo.toLocaleString('es-AR'), '(esperado: ~27M)');
-      console.log('FCI Óptimo:', carryMetrics.fciOptimo.toLocaleString('es-AR'), '(esperado: ~31M)');
-      console.log('Ratio Cobertura:', carryMetrics.ratioCobertura.toFixed(2) + '%', '(esperado: ~90%)');
-      console.log('Estado Cobertura:', carryMetrics.estadoCobertura);
-      console.log('---');
-      console.log('Spread Neto Día:', carryMetrics.spreadNetoDia.toLocaleString('es-AR'), '(esperado: ~27k)');
-      console.log('ROE Caución:', carryMetrics.roeCaucion.toFixed(2) + '%');
-      console.log('Buffer Tasa:', (carryMetrics.bufferTasa * 100).toFixed(2) + '%', '(esperado: ~6.5%)');
-      console.log('Estado Buffer:', carryMetrics.estadoBuffer);
-      console.log('---');
-      console.log('Capital Productivo:', carryMetrics.capitalProductivo.toLocaleString('es-AR'));
-      console.log('Capital Improductivo:', carryMetrics.capitalImproductivo.toLocaleString('es-AR'));
-      console.log('Carry Perdido/Día:', carryMetrics.carryPerdidoDia.toLocaleString('es-AR'));
-      console.log('===================================');
-    }
-  }, [carryMetrics]);
 
   const handleManualRefresh = async () => {
     try {
@@ -184,7 +168,7 @@ export default function FundingEngine() {
 
               {/* Contenido según tab activo */}
               {activeTab === 'dashboard' && (
-                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} />
+                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} ultimaCaucion={ultimaCaucion} />
               )}
 
               {activeTab === 'analysis' && (

@@ -78,6 +78,13 @@ export function useFciTNA(fciId, minRecords = 2) {
       // Calcular días entre el primer y último registro
       const fechaInicial = new Date(firstPrice.fecha);
       const fechaFinal = new Date(lastPrice.fecha);
+
+      // Validar que las fechas sean válidas
+      if (isNaN(fechaInicial.getTime()) || isNaN(fechaFinal.getTime())) {
+        console.warn('[useFciTNA] Fechas inválidas:', { fechaInicial, fechaFinal });
+        return TNA_FALLBACK;
+      }
+
       const dias = Math.max(1, Math.floor((fechaFinal - fechaInicial) / (1000 * 60 * 60 * 24)));
 
       // Calcular ratio de crecimiento

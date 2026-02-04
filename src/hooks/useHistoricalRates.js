@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import Decimal from 'decimal.js';
 import { fciService } from '@/features/fci/services/fciService';
 import { FinancingService } from '@/features/financing/services/financingService';
 import { startOfDay, subDays, format, isAfter, isBefore, isEqual, eachDayOfInterval } from 'date-fns';
@@ -30,15 +31,18 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
         if (caucionesResult.error) throw caucionesResult.error;
         const cauciones = caucionesResult.data;
 
-        // 2. Process FCI TNA
+        // 2. Process FCI TNA usando Decimal.js para precisión
         // tnaFCI = ((vcp_hoy / vcp_ayer) ^ 365 - 1) * 100 (anualización compuesta)
         const fciTnaMap = new Map();
         for (let i = 1; i < prices.length; i++) {
           const hoy = prices[i];
           const ayer = prices[i - 1];
-          const ratio = hoy.vcp / ayer.vcp;
-          const tna = (Math.pow(ratio, 365) - 1) * 100;
-          fciTnaMap.set(hoy.fecha, tna);
+          const vcpHoy = new Decimal(hoy.vcp || 0);
+          const vcpAyer = new Decimal(ayer.vcp || 0);
+          if (vcpAyer.isZero()) continue;
+          const ratio = vcpHoy.dividedBy(vcpAyer);
+          const tna = ratio.pow(365).minus(1).times(100);
+          fciTnaMap.set(hoy.fecha, tna.toNumber());
         }
 
         // 3. Process Cauciones daily TNA
@@ -76,9 +80,18 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
 
           let tnaCaucion = null;
           if (activeCauciones.length > 0) {
-            const totalCapital = activeCauciones.reduce((acc, c) => acc + c.capital, 0);
-            const weightedTnaSum = activeCauciones.reduce((acc, c) => acc + (c.tna_real * c.capital), 0);
-            tnaCaucion = weightedTnaSum / totalCapital;
+            // Usar Decimal.js para cálculo ponderado preciso
+            const totalCapital = activeCauciones.reduce(
+              (acc, c) => acc.plus(new Decimal(c.capital || 0)),
+              new Decimal(0)
+            );
+            const weightedTnaSum = activeCauciones.reduce(
+              (acc, c) => acc.plus(new Decimal(c.tna_real || 0).times(c.capital || 0)),
+              new Decimal(0)
+            );
+            tnaCaucion = totalCapital.gt(0)
+              ? weightedTnaSum.dividedBy(totalCapital).toNumber()
+              : null;
           } else {
             // Find most recent past caucion if none active
             const pastCauciones = cauciones
@@ -119,9 +132,8 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
           const spreadActual = combinedData[combinedData.length - 1]?.spread || 0;
           
           // Percentil actual
-          const sortedSpreads = [...validSpreads].sort((a, b) => a - b);
-          const index = sortedSpreads.indexOf(spreadActual);
-          const percentilActual = Math.round((index / sortedSpreads.length) * 100);
+          const rank = validSpreads.filter(s => s < spreadActual).length;
+          const percentilActual = Math.round((rank / validSpreads.length) * 100);
 
           setStats({
             spreadPromedio: Number(spreadPromedio.toFixed(2)),
