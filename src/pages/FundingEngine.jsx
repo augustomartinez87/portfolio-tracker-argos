@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -59,6 +59,12 @@ export default function FundingEngine() {
   const fciEngine = {
     totals: fciTotals || { valuation: 0 },
   };
+
+  // Última caución por fecha_fin (para banner cuando no hay vigentes)
+  const ultimaCaucion = useMemo(() => {
+    if (!cauciones?.length) return null;
+    return [...cauciones].sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))[0];
+  }, [cauciones]);
 
   // Calcular métricas de carry con TNA dinámica
   const carryMetrics = useCarryMetrics({
@@ -162,7 +168,7 @@ export default function FundingEngine() {
 
               {/* Contenido según tab activo */}
               {activeTab === 'dashboard' && (
-                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} />
+                <DashboardTab carryMetrics={carryMetrics} isFallback={isFallback} ultimaCaucion={ultimaCaucion} />
               )}
 
               {activeTab === 'analysis' && (

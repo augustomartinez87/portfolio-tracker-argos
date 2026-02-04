@@ -132,9 +132,8 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
           const spreadActual = combinedData[combinedData.length - 1]?.spread || 0;
           
           // Percentil actual
-          const sortedSpreads = [...validSpreads].sort((a, b) => a - b);
-          const index = sortedSpreads.indexOf(spreadActual);
-          const percentilActual = Math.round((index / sortedSpreads.length) * 100);
+          const rank = validSpreads.filter(s => s < spreadActual).length;
+          const percentilActual = Math.round((rank / validSpreads.length) * 100);
 
           setStats({
             spreadPromedio: Number(spreadPromedio.toFixed(2)),
