@@ -20,7 +20,11 @@ const COLORS = {
 
 const AnalisisRealContent = () => {
     // Estados principales
-    const [startDate, setStartDate] = useState('2025-01-01');
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        return d.toISOString().split('T')[0];
+    });
     const [endDate, setEndDate] = useState('');
     const [useTodayAsEnd, setUseTodayAsEnd] = useState(true);
     const [initialAmount, setInitialAmount] = useState(1000000);
@@ -271,6 +275,33 @@ const AnalisisRealContent = () => {
             setFciCurrencyMode('ARS');
         }
     }, [fciCurrencyMode, fciHasUsd]);
+
+    const fciRealStats = useMemo(() => {
+        if (!fciRealSeries.length) return null;
+
+        const key = fciCurrencyMode === 'USD' ? 'fci_usd' : 'fci_ars';
+        const first = fciRealSeries.find(d => d[key] !== null && d[key] !== undefined);
+        const last = [...fciRealSeries].reverse().find(d => d[key] !== null && d[key] !== undefined);
+
+        if (!first || !last) return null;
+
+        const firstValue = first[key];
+        const lastValue = last[key];
+        if (!firstValue || !lastValue) return null;
+
+        const start = new Date(first.date);
+        const end = new Date(last.date);
+        const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+
+        const accumulatedPct = lastValue - 100;
+        const tna = (Math.pow(lastValue / firstValue, 365 / days) - 1) * 100;
+
+        return {
+            accumulatedPct,
+            tna,
+            days
+        };
+    }, [fciRealSeries, fciCurrencyMode]);
 
     // Calcular valores finales para la tabla comparativa
     const comparisonData = useMemo(() => {
@@ -544,7 +575,23 @@ const AnalisisRealContent = () => {
                             Comparación del valor del fondo en pesos y en dólares MEP
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                        {fciRealStats && (
+                            <div className="flex items-center gap-2">
+                                <div className="bg-background-tertiary border border-border-secondary rounded-lg px-3 py-2">
+                                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary">TNA</p>
+                                    <p className={`text-sm font-mono font-bold ${fciRealStats.tna >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                        {formatPercent(fciRealStats.tna)}
+                                    </p>
+                                </div>
+                                <div className="bg-background-tertiary border border-border-secondary rounded-lg px-3 py-2">
+                                    <p className="text-[10px] uppercase tracking-wider text-text-tertiary">Acumulado</p>
+                                    <p className={`text-sm font-mono font-bold ${fciRealStats.accumulatedPct >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                        {formatPercent(fciRealStats.accumulatedPct)}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         <div className="inline-flex rounded-lg bg-background-tertiary p-1 border border-border-secondary">
                             <button
                                 onClick={() => setFciCurrencyMode('ARS')}
