@@ -31,17 +31,30 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
         if (caucionesResult.error) throw caucionesResult.error;
         const cauciones = caucionesResult.data;
 
-        // 2. Process FCI TNA usando Decimal.js para precisión
-        // tnaFCI = ((vcp_hoy / vcp_ayer) ^ 365 - 1) * 100 (anualización compuesta)
+        // 2. Deduplicar precios por fecha y ordenar ascendente
+        const dedupMap = new Map();
+        for (const p of prices) {
+          dedupMap.set(p.fecha, p);
+        }
+        const dedupedPrices = [...dedupMap.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+        // 3. Process FCI TNA usando Decimal.js para precisión
+        // Anualización compuesta corregida por días reales entre registros consecutivos
         const fciTnaMap = new Map();
-        for (let i = 1; i < prices.length; i++) {
-          const hoy = prices[i];
-          const ayer = prices[i - 1];
+        for (let i = 1; i < dedupedPrices.length; i++) {
+          const hoy = dedupedPrices[i];
+          const ayer = dedupedPrices[i - 1];
           const vcpHoy = new Decimal(hoy.vcp || 0);
           const vcpAyer = new Decimal(ayer.vcp || 0);
           if (vcpAyer.isZero()) continue;
+
+          const diasReales = Math.round(
+            (new Date(hoy.fecha) - new Date(ayer.fecha)) / (1000 * 60 * 60 * 24)
+          );
+          if (diasReales <= 0) continue;
+
           const ratio = vcpHoy.dividedBy(vcpAyer);
-          const tna = ratio.pow(365).minus(1).times(100);
+          const tna = ratio.pow(new Decimal(365).dividedBy(diasReales)).minus(1).times(100);
           fciTnaMap.set(hoy.fecha, tna.toNumber());
         }
 
