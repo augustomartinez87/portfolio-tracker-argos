@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -18,6 +18,7 @@ import { useCarryMetrics } from '@/hooks/useCarryMetrics';
 import { DashboardTab } from '@/components/funding/DashboardTab';
 import { AnalysisTab } from '@/components/funding/AnalysisTab';
 import { OperationsTab } from '@/components/funding/OperationsTab';
+import { fciService } from '@/features/fci/services/fciService';
 
 // ===========================================================================
 // COMPONENTE PRINCIPAL
@@ -83,15 +84,71 @@ export default function FundingEngine() {
     ? totalPnlDiario / fciValuationTotal
     : 0;
 
+  // Verificar si hay precio de hoy (para no mostrar PnL diario si no hay)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const hasTodayPrice = useMemo(() => {
+    if (!mainFciId) return false;
+    const mainPos = fciPositions.find(p => p.fciId === mainFciId);
+    if (!mainPos?.priceDate) return false;
+    return mainPos.priceDate === todayStr;
+  }, [fciPositions, mainFciId, todayStr]);
+
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
     user?.id,
     currentPortfolio?.id
   );
 
-  // VCP históricos desactivados: FCI ahora viene de fciLotEngine
-  const vcpHistoricos = [];
-  
+  // Cargar precios históricos de VCP (formato: {fciId: {fecha: vcp}})
+  const [vcpPricesMap, setVcpPricesMap] = useState({});
+
+  // Convertir vcpPricesMap al formato array para useCarryMetrics
+  // Usar el FCI principal (con mayor valuación)
+  const vcpHistoricos = useMemo(() => {
+    if (!mainFciId || !vcpPricesMap[mainFciId]) return [];
+
+    const vcpMap = vcpPricesMap[mainFciId];
+    return Object.entries(vcpMap).map(([fecha, vcp]) => ({
+      fecha,
+      vcp: Number(vcp)
+    })).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }, [mainFciId, vcpPricesMap]);
+
+  useEffect(() => {
+    const loadVcpHistory = async () => {
+      if (!fciPositions || fciPositions.length === 0 || !cauciones || cauciones.length === 0) return;
+
+      try {
+        // Encontrar fecha mínima de cauciones
+        const minDate = cauciones.reduce((min, c) => {
+          const fecha = c.fecha_inicio?.split('T')[0];
+          return fecha && (!min || fecha < min) ? fecha : min;
+        }, null);
+
+        if (!minDate) return;
+
+        // Cargar precios históricos para cada FCI desde la fecha más antigua
+        const pricesMap = {};
+        await Promise.all(fciPositions.map(async (pos) => {
+          const prices = await fciService.getPrices(pos.fciId, minDate);
+          if (prices && prices.length > 0) {
+            // Crear un mapa de fecha -> vcp para lookup rápido
+            pricesMap[pos.fciId] = prices.reduce((map, p) => {
+              map[p.fecha] = p.vcp;
+              return map;
+            }, {});
+          }
+        }));
+
+        setVcpPricesMap(pricesMap);
+      } catch (err) {
+        console.error('[FundingEngine] Error loading VCP history:', err);
+      }
+    };
+
+    loadVcpHistory();
+  }, [fciPositions, cauciones]);
+
 
   // Crear objeto fciEngine compatible con useCarryMetrics
   const fciEngine = {
@@ -242,8 +299,10 @@ export default function FundingEngine() {
                   fciLots={fciLots}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
                   fciTotalPnl={fciTotalPnl}
-                  fciDailyPnl={totalPnlDiario}
-                  fciDailyPnlPct={fciDailyPnlPct}
+                  fciDailyPnl={hasTodayPrice ? totalPnlDiario : 0}
+                  fciDailyPnlPct={hasTodayPrice ? fciDailyPnlPct : 0}
+                  hasTodayPrice={hasTodayPrice}
+                  vcpHistoricos={vcpPricesMap}
                 />
               )}
             </div>

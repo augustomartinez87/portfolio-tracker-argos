@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Receipt, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Calculator } from 'lucide-react';
+import { Receipt, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Calculator, Info } from 'lucide-react';
 import { formatARS, formatPercent } from '@/utils/formatters';
 import { Section } from '@/components/common/Section';
 import { MetricCard } from '@/components/common/MetricCard';
@@ -24,12 +24,68 @@ const buildIdentificador = (caucion) => {
 };
 
 /**
- * Pesta�a de Operaciones - Cruce real entre FCI y cauciones
+ * Helper: Busca VCP en fecha específica, o el más cercano anterior si no existe
+ */
+const findVcpAtDate = (vcpMap, targetDate) => {
+  if (!vcpMap || Object.keys(vcpMap).length === 0) return null;
+
+  // Primero buscar fecha exacta
+  if (vcpMap[targetDate]) return vcpMap[targetDate];
+
+  // Si no existe, buscar el precio más cercano anterior
+  const dates = Object.keys(vcpMap).sort();
+  let closestDate = null;
+
+  for (const date of dates) {
+    if (date <= targetDate) {
+      closestDate = date;
+    } else {
+      break;
+    }
+  }
+
+  return closestDate ? vcpMap[closestDate] : null;
+};
+
+/**
+ * Calcula PnL de lotes FCI durante un período específico
+ */
+const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin) => {
+  let totalPnl = 0;
+
+  for (const lot of fciLots) {
+    const fciId = lot.fci_id || lot.fciId;
+    const vcpMap = vcpHistoricos[fciId];
+
+    if (!vcpMap) continue;
+
+    // Si el lote empezó después del inicio del período, usar fecha_suscripcion
+    const startDate = lot.fecha_suscripcion > fechaInicio ? lot.fecha_suscripcion : fechaInicio;
+
+    // VCP al inicio del período (o vcp_entrada si es posterior)
+    const vcpInicio = lot.fecha_suscripcion > fechaInicio
+      ? lot.vcp_entrada
+      : findVcpAtDate(vcpMap, startDate);
+
+    // VCP al final del período
+    const vcpFin = findVcpAtDate(vcpMap, fechaFin);
+
+    if (vcpInicio && vcpFin && lot.cuotapartes) {
+      const pnl = lot.cuotapartes * (vcpFin - vcpInicio);
+      totalPnl += pnl;
+    }
+  }
+
+  return totalPnl;
+};
+
+/**
+ * Pestaña de Operaciones - Cruce real entre FCI y cauciones
  *
  * @param {Object} props
  * @param {Array} props.cauciones - Array de cauciones desde Supabase
  * @param {Array} props.fciLots - Array de lotes FCI activos con sus PnL
- * @param {number} props.fciValuation - Valuaci�n real del FCI (desde fciLotEngine.totals.valuation)
+ * @param {number} props.fciValuation - Valuación real del FCI (desde fciLotEngine.totals.valuation)
  * @param {number} props.fciTotalPnl - PnL acumulado total del FCI (desde fciLotEngine.totals.pnl)
  * @param {number} props.fciDailyPnl - PnL diario total del FCI (desde fciLotEngine.positions[].pnlDiario)
  * @param {number} props.fciDailyPnlPct - PnL diario % del FCI (pnlDiario / valuation)
@@ -42,13 +98,20 @@ export function OperationsTab({
   fciTotalPnl = 0,
   fciDailyPnl = 0,
   fciDailyPnlPct = 0,
+  hasTodayPrice = true,
+  vcpHistoricos = {},
   hoy = new Date()
 }) {
+  const todayStr = new Date().toISOString().split('T')[0];
   const totals = useMemo(() => {
+    const hoyISO = hoy.toISOString().split('T')[0];
+
+    // Capital financiado: SUMA de todas las cauciones activas (visión consolidada)
     const capitalFinanciado = (cauciones || []).reduce(
       (sum, c) => sum + Number(c.capital || 0),
       0
     );
+
     const interesesAcumulados = (cauciones || []).reduce(
       (sum, c) => sum + Number(c.interes || 0),
       0
@@ -69,6 +132,7 @@ export function OperationsTab({
     const spreadPct = capitalFinanciado > 0 ? spreadNeto / capitalFinanciado : 0;
 
     return {
+      todayStr,
       valuation,
       capitalFinanciado,
       interesesAcumulados,
@@ -97,21 +161,20 @@ export function OperationsTab({
       const capital = Number(caucion.capital || 0);
       const interesPagado = Number(caucion.interes || 0);
 
-      // Calcular ganancia FCI proporcional al capital financiado
-      // Usamos fciDailyPnl (PnL diario) para mostrar la ganancia del día,
-      // no fciTotalPnl (PnL acumulado desde entrada)
-      const gananciaFCIAsignada = totals.capitalFinanciado > 0
-        ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl
-        : 0;
-      const pnlDiarioAsignado = totals.capitalFinanciado > 0
-        ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl
-        : 0;
+      // Calcular ganancia FCI real durante el per?odo de la cauci?n
+      // usando precios hist?ricos de VCP
+      const fechaFinPeriodo = esVencida ? fechaFinRaw : hoyISO;
+      const gananciaFCIAsignada = calculatePnlForPeriod(
+        fciLots,
+        vcpHistoricos,
+        fechaInicioRaw,
+        fechaFinPeriodo
+      );
 
       const gananciaPct = capital > 0 ? gananciaFCIAsignada / capital : 0;
       const costoPct = capital > 0 ? interesPagado / capital : 0;
       const spreadPesos = gananciaFCIAsignada - interesPagado;
       const spreadPorcentaje = gananciaPct - costoPct;
-      const pnlDiarioPct = capital > 0 ? pnlDiarioAsignado / capital : 0;
 
       return {
         caucionId: caucion.id,
@@ -121,15 +184,13 @@ export function OperationsTab({
         capital,
         interesPagado,
         gananciaFCIAsignada,
-        pnlDiarioAsignado,
-        pnlDiarioPct,
         spreadPesos,
         spreadPorcentaje,
         estado: esVencida ? 'vencida' : 'activa',
         diasRestantes,
       };
     });
-  }, [cauciones, hoy, totals]);
+  }, [cauciones, hoy, totals, fciLots, vcpHistoricos]);
 
   if (!cauciones?.length) {
     return (
@@ -137,7 +198,7 @@ export function OperationsTab({
         <Receipt className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-text-primary mb-2">Sin operaciones</h3>
         <p className="text-text-secondary text-sm">
-          No hay cauciones cargadas. Carg� operaciones desde la secci�n de Financiaci�n.
+          No hay cauciones cargadas. Cargá operaciones desde la sección de Financiación.
         </p>
       </div>
     );
@@ -147,9 +208,9 @@ export function OperationsTab({
     return (
       <div className="bg-background-secondary rounded-xl p-8 border border-border-primary text-center">
         <AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-text-primary mb-2">Sin valuaci�n FCI</h3>
+        <h3 className="text-lg font-semibold text-text-primary mb-2">Sin valuación FCI</h3>
         <p className="text-text-secondary text-sm">
-          No hay valuaci�n FCI disponible desde el motor de lotes. Verific� el m�dulo FCI.
+          No hay valuación FCI disponible desde el motor de lotes. Verificá el módulo FCI.
         </p>
       </div>
     );
@@ -164,9 +225,16 @@ export function OperationsTab({
             <h3 className="font-semibold text-text-primary">Totales</h3>
           </div>
 
+          {!hasTodayPrice && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+              <Info className="w-4 h-4" />
+              <span>No hay VCP de hoy ({todayStr}). El PnL diario se muestra en 0.</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
-              title="Valuaci�n FCI"
+              title="Valuación FCI"
               value={formatARS(totals.valuation)}
               subtitle="Fuente: FCI Lot Engine"
               icon={TrendingUp}
@@ -175,7 +243,7 @@ export function OperationsTab({
             <MetricCard
               title="Capital financiado"
               value={formatARS(totals.capitalFinanciado)}
-              subtitle="Sumatoria de cauciones"
+              subtitle="Total cauciones activas"
               icon={Receipt}
               status="info"
             />
@@ -197,14 +265,14 @@ export function OperationsTab({
         </div>
       </div>
 
-      <Section title="Detalle por Cauci�n" icon={Receipt}>
+      <Section title="Detalle por Caución" icon={Receipt}>
         <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-background-tertiary border-b border-border-secondary">
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Cauci�n
+                    Caución
                   </th>
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Inicio
@@ -216,16 +284,10 @@ export function OperationsTab({
                     Capital
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Inter�s pagado
+                    Interés pagado
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Ganancia FCI
-                  </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    PnL diario
-                  </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    PnL diario (%)
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Spread ($)
@@ -267,16 +329,6 @@ export function OperationsTab({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`text-sm font-mono ${row.pnlDiarioAsignado >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {row.pnlDiarioAsignado >= 0 ? '+' : ''}{formatARS(row.pnlDiarioAsignado)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`text-sm font-mono ${row.pnlDiarioPct >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {formatPercent(row.pnlDiarioPct * 100)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
                       <span className={`text-sm font-mono font-semibold ${row.spreadPesos >= 0 ? 'text-success' : 'text-danger'}`}>
                         {row.spreadPesos >= 0 ? '+' : ''}{formatARS(row.spreadPesos)}
                       </span>
@@ -313,13 +365,12 @@ export function OperationsTab({
       <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">
         <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          Metodolog�a de c�lculo
+          Metodología de cálculo
         </h4>
         <ul className="text-xs text-text-tertiary space-y-1 list-disc list-inside">
-          <li><strong>Ganancia FCI:</strong> Se asigna proporcional al capital financiado</li>
-          <li><strong>PnL diario:</strong> Se distribuye proporcionalmente por capital financiado</li>
-          <li><strong>Spread ($):</strong> Ganancia FCI - Inter�s pagado</li>
-          <li><strong>Spread (%):</strong> Ganancia % - Costo % (ambos sobre capital)</li>
+          <li><strong>Ganancia FCI:</strong> PnL real del FCI durante el período específico de la caución (usando VCP históricos)</li>
+          <li><strong>Spread ($):</strong> Ganancia FCI - Interés pagado</li>
+          <li><strong>Spread (%):</strong> (Ganancia FCI / Capital) - (Interés / Capital)</li>
         </ul>
       </div>
     </div>

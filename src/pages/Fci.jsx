@@ -33,12 +33,12 @@ export default function Fci() {
     mepHistory
   } = usePortfolio();
 
-  const positions = fciLotEngine.positions;
-  const totals = fciLotEngine.totals;
-  const allLots = fciLotEngine.allLots;
-  const refresh = fciLotEngine.refresh;
-  const lugaresList = fciLotEngine.lugaresList;
-  const fciLoading = portfolioLoading || fciLotEngine.loading;
+  const positions = fciLotEngine?.positions || [];
+  const totals = fciLotEngine?.totals || { invested: 0, valuation: 0, pnl: 0, investedUSD: 0, valuationUSD: 0, pnlUSD: 0 };
+  const allLots = fciLotEngine?.allLots || [];
+  const refresh = fciLotEngine?.refresh || (() => {});
+  const lugaresList = fciLotEngine?.lugaresList || [];
+  const fciLoading = portfolioLoading || fciLotEngine?.loading || false;
 
   // useState declarations must come before useCallback that depends on them
   const [sidebarExpanded, setSidebarExpanded] = useState(false);

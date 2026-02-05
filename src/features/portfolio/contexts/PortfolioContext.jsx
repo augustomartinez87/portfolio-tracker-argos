@@ -242,7 +242,7 @@ export const PortfolioProvider = ({ children }) => {
       portfolios,
       currentPortfolio,
       setCurrentPortfolio,
-      loading: loading || fciLotEngine.loading,
+      loading: loading || fciLotEngine?.loading || false,
       error,
       createPortfolio,
       updatePortfolio,
@@ -250,15 +250,15 @@ export const PortfolioProvider = ({ children }) => {
       setDefaultPortfolio,
       refetch: async () => {
         await loadPortfolios();
-        fciLotEngine.refresh();
+        fciLotEngine?.refresh?.();
       },
       // FCI — expone posiciones/totales (backward compat) + engine completo para Fci.jsx
-      fciPositions: fciLotEngine.positions,
-      fciTotals: fciLotEngine.totals,
+      fciPositions: fciLotEngine?.positions || [],
+      fciTotals: fciLotEngine?.totals || { invested: 0, valuation: 0, pnl: 0, investedUSD: 0, valuationUSD: 0, pnlUSD: 0 },
       fciLotEngine,
       mepRate,
       mepHistory,
-      refreshFci: fciLotEngine.refresh
+      refreshFci: fciLotEngine?.refresh || (() => {})
     }}>
       {children}
     </PortfolioContext.Provider>
