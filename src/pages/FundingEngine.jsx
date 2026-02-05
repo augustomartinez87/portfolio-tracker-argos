@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   BarChart2,
   AlertTriangle,
+  Receipt,
 } from 'lucide-react';
 import MobileNav from '@/components/common/MobileNav';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -19,6 +20,7 @@ import { useFciTNA } from '@/hooks/useFciTNA';
 import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 import { DashboardTab } from '@/components/funding/DashboardTab';
 import { AnalysisTab } from '@/components/funding/AnalysisTab';
+import { OperationsTab } from '@/components/funding/OperationsTab';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 // ===========================================================================
@@ -194,6 +196,18 @@ export default function FundingEngine() {
                       Análisis
                     </span>
                   </button>
+                  <button
+                    onClick={() => setActiveTab('operations')}
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'operations'
+                        ? 'border-primary text-primary bg-primary/5'
+                        : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                      }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4" />
+                      Operaciones
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -215,6 +229,14 @@ export default function FundingEngine() {
                   fciId={mainFciId}
                   portfolioId={currentPortfolio?.id}
                   userId={user?.id}
+                />
+              )}
+
+              {activeTab === 'operations' && (
+                <OperationsTab
+                  cauciones={cauciones}
+                  vcpPrices={vcpHistoricos}
+                  tnaMA7={tnaFCIDynamic}
                 />
               )}
             </div>

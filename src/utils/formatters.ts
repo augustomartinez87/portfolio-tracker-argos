@@ -55,6 +55,25 @@ export const formatNumber = (value: number | null | undefined, decimals = 0): st
 };
 
 /**
+ * Formatea una fecha en formato argentino DD/MM/AAAA
+ * @param date - Fecha a formatear (Date, string ISO, o undefined)
+ * @returns string en formato DD/MM/AAAA
+ * @example formatDateAR('2024-01-15') => '15/01/2024'
+ */
+export const formatDateAR = (date: Date | string | null | undefined): string => {
+  if (!date) return '';
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
+
+/**
  * Formatea una fecha/hora
  * @param date - Fecha a formatear
  * @param format - 'time' para solo hora, 'full' para fecha completa
