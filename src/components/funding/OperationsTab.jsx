@@ -29,9 +29,11 @@ const buildIdentificador = (caucion) => {
  * @param {Object} props
  * @param {Array} props.cauciones - Array de cauciones desde Supabase
  * @param {number} props.fciValuation - ValuaciÛn real del FCI (desde fciLotEngine.totals.valuation)
+ * @param {number} props.fciDailyPnl - PnL diario total del FCI (desde fciLotEngine.positions[].pnlDiario)
+ * @param {number} props.fciDailyPnlPct - PnL diario % del FCI (pnlDiario / valuation)
  * @param {Date} props.hoy - Fecha de hoy (default: new Date())
  */
-export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
+export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDailyPnlPct = 0, hoy = new Date() }) {
   const totals = useMemo(() => {
     const capitalFinanciado = (cauciones || []).reduce(
       (sum, c) => sum + Number(c.capital || 0),
@@ -53,8 +55,10 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
       resultado,
       spreadNeto,
       spreadPct,
+      fciDailyPnl: Number(fciDailyPnl || 0),
+      fciDailyPnlPct: Number(fciDailyPnlPct || 0),
     };
-  }, [cauciones, fciValuation]);
+  }, [cauciones, fciValuation, fciDailyPnl, fciDailyPnlPct]);
 
   const rows = useMemo(() => {
     const hoyISO = hoy.toISOString().split('T')[0];
@@ -67,18 +71,26 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
         ? Math.max(0, Math.round((new Date(fechaFinRaw).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
+      const capital = Number(caucion.capital || 0);
+      const pnlDiarioAsignado = totals.capitalFinanciado > 0
+        ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl
+        : 0;
+      const pnlDiarioPct = capital > 0 ? pnlDiarioAsignado / capital : 0;
+
       return {
         caucionId: caucion.id,
         identificadorHumano: buildIdentificador(caucion),
         fechaInicio: formatDateAR(fechaInicioRaw),
         fechaFin: formatDateAR(fechaFinRaw),
-        capital: Number(caucion.capital || 0),
+        capital,
         interesPagado: Number(caucion.interes || 0),
+        pnlDiarioAsignado,
+        pnlDiarioPct,
         estado: esVencida ? 'vencida' : 'activa',
         diasRestantes,
       };
     });
-  }, [cauciones, hoy]);
+  }, [cauciones, hoy, totals]);
 
   if (!cauciones?.length) {
     return (
@@ -146,14 +158,14 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
         </div>
       </div>
 
-      <Section title="Detalle por Cauci√≥n" icon={Receipt}>
+      <Section title="Detalle por CauciÛn" icon={Receipt}>
         <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-background-tertiary border-b border-border-secondary">
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Cauci√≥n
+                    CauciÛn
                   </th>
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Inicio
@@ -165,7 +177,13 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
                     Capital
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Inter√©s pagado
+                    InterÈs pagado
+                  </th>
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
+                    PnL diario
+                  </th>
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
+                    PnL diario (%)
                   </th>
                   <th className="text-center text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Estado
@@ -195,6 +213,16 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm font-mono text-danger">{formatARS(row.interesPagado)}</span>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-mono ${row.pnlDiarioAsignado >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {row.pnlDiarioAsignado >= 0 ? '+' : ''}{formatARS(row.pnlDiarioAsignado)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-mono ${row.pnlDiarioPct >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatPercent(row.pnlDiarioPct * 100)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {row.estado === 'vencida' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-text-tertiary/10 text-text-tertiary">
@@ -222,11 +250,12 @@ export function OperationsTab({ cauciones, fciValuation, hoy = new Date() }) {
       <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">
         <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          Metodolog√≠a de c√°lculo
+          MetodologÌa de c·lculo
         </h4>
         <ul className="text-xs text-text-tertiary space-y-1 list-disc list-inside">
-          <li><strong>Resultado:</strong> Valuaci√≥n FCI - Capital financiado</li>
+          <li><strong>Resultado:</strong> ValuaciÛn FCI - Capital financiado</li>
           <li><strong>Costo:</strong> Intereses acumulados de cauciones</li>
+          <li><strong>PnL diario:</strong> Se distribuye proporcionalmente por capital financiado</li>
           <li><strong>Spread:</strong> Resultado - Costo</li>
         </ul>
       </div>

@@ -61,6 +61,9 @@ export default function FundingEngine() {
     const mainPos = fciPositions.find(p => p.fciId === mainFciId);
     return mainPos?.priceDate || null;
   }, [fciPositions, mainFciId]);
+  const fciDailyPnlPct = fciValuationTotal > 0
+    ? totalPnlDiario / fciValuationTotal
+    : 0;
 
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
@@ -219,6 +222,8 @@ export default function FundingEngine() {
                 <OperationsTab
                   cauciones={cauciones}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
+                  fciDailyPnl={totalPnlDiario}
+                  fciDailyPnlPct={fciDailyPnlPct}
                 />
               )}
             </div>
