@@ -10,6 +10,7 @@ import SummaryCard from '@/components/common/SummaryCard';
 import PositionsTable from '@/features/portfolio/components/PositionsTable';
 import ColumnSelector from '@/features/portfolio/components/ColumnSelector';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import DashboardSummaryCards from '@/features/portfolio/components/DashboardSummaryCards';
 import PerformanceMetricsCards from '@/features/portfolio/components/PerformanceMetricsCards';
 import { usePerformanceMetrics } from '@/features/portfolio/hooks/usePerformanceMetrics';
@@ -47,7 +48,6 @@ export default function Dashboard() {
     loading: portfolioLoading,
     error: portfolioError,
     refetch: refetchPortfolios,
-    fciPositions,
     refreshFci
   } = usePortfolio();
 
@@ -83,20 +83,18 @@ export default function Dashboard() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [showFormatHelp, setShowFormatHelp] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
-  });
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
+    return localStorage.getItem('sidebarExpanded') === 'true';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
     }
-  }, [sidebarPinned]);
+  }, [sidebarExpanded]);
+
+
 
   const [tradesLoading, setTradesLoading] = useState(false);
   const { searchTerm, setSearchTerm, clearSearch } = useSearch();
@@ -199,8 +197,7 @@ export default function Dashboard() {
     trades,
     prices,
     mepRate,
-    mepHistory,
-    fciPositions
+    mepHistory
   );
 
   // Performance Metrics (XIRR, YTD, TWR)
@@ -462,8 +459,6 @@ export default function Dashboard() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
-                  isPinned={sidebarPinned}
-                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -478,6 +473,7 @@ export default function Dashboard() {
               displayCurrency={displayCurrency}
               onCurrencyChange={setDisplayCurrency}
               onHelpClick={() => navigate('/dashboard/help')}
+              sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
             />
 
             {!currentPortfolio ? (

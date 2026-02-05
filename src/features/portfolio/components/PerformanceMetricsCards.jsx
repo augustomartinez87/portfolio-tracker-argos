@@ -7,7 +7,7 @@ import { formatPercent } from '@/utils/formatters';
  * Renders as a collapsible section below the main summary cards
  */
 export const PerformanceMetricsCards = memo(({ metrics, isLoading = false }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   // Check if we have any valid metrics to display
   const hasAnyMetric = metrics &&

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
 import {
@@ -28,20 +29,18 @@ export default function FundingEngine() {
   const { user, signOut } = useAuth();
   const { currentPortfolio, fciLotEngine } = usePortfolio();
   const { isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
-  });
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
+    return localStorage.getItem('sidebarExpanded') === 'true';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
     }
-  }, [sidebarPinned]);
+  }, [sidebarExpanded]);
+
+
 
 
   // Estado para tabs
@@ -196,13 +195,11 @@ export default function FundingEngine() {
   return (
     <div className="min-h-screen bg-background-primary flex">
       <DashboardSidebar
-        user={user}
-        signOut={signOut}
-        isExpanded={sidebarExpanded}
-        setIsExpanded={setSidebarExpanded}
-                  isPinned={sidebarPinned}
-                  setIsPinned={setSidebarPinned}
-      />
+          user={user}
+          signOut={signOut}
+          isExpanded={sidebarExpanded}
+          setIsExpanded={setSidebarExpanded}
+        />
 
       <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 min-h-screen ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
         <div className="p-4 lg:p-6 flex flex-col flex-1">
@@ -213,6 +210,7 @@ export default function FundingEngine() {
             loading={isLoading}
             onRefresh={handleManualRefresh}
             showCurrencySelector={false}
+            sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
           />
 
           {!currentPortfolio ? (

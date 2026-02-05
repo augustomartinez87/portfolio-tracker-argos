@@ -3,6 +3,7 @@ import { PieChart, Plus, Download, Loader2, RefreshCw, Upload, FileUp, CheckCirc
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
@@ -41,20 +42,18 @@ export default function Fci() {
   const fciLoading = portfolioLoading || fciLotEngine?.loading || false;
 
   // useState declarations must come before useCallback that depends on them
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
-  });
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
+    return localStorage.getItem('sidebarExpanded') === 'true';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
     }
-  }, [sidebarPinned]);
+  }, [sidebarExpanded]);
+
+
 
   const [displayCurrency, setDisplayCurrency] = useState('ARS');
   const [showHistory, setShowHistory] = useState(false);
@@ -249,8 +248,6 @@ export default function Fci() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
-                  isPinned={sidebarPinned}
-                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-20 lg:pb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -264,6 +261,7 @@ export default function Fci() {
               displayCurrency={displayCurrency}
               onCurrencyChange={setDisplayCurrency}
               onHelpClick={() => setActiveTab('resumen')}
+              sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
             />
 
             {!currentPortfolio ? (

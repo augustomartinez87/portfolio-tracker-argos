@@ -27,12 +27,14 @@ export const PageHeader = ({
     onCurrencyChange,
     showCurrencySelector = true,
     extraActions,
-    onHelpClick
+    onHelpClick,
+    sidebarToggle
 }) => {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 lg:mb-6">
+        <>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-1 lg:mb-2">
             <div className="flex items-center gap-3">
                 {Icon && (
                     <div className="p-2 bg-primary/10 rounded-lg">
@@ -50,7 +52,7 @@ export const PageHeader = ({
                         </div>
                     </div>
                     {subtitle && (
-                        <p className="text-text-tertiary text-[10px] uppercase font-bold tracking-widest mt-0.5 ml-0.5">
+                        <p className="text-text-tertiary text-[10px] uppercase font-bold tracking-widest mt-0 ml-0.5">
                             {subtitle}
                         </p>
                     )}
@@ -105,5 +107,11 @@ export const PageHeader = ({
                 </div>
             </div>
         </div>
+        {sidebarToggle && (
+            <div className="-mt-3 mb-1">
+                {sidebarToggle}
+            </div>
+        )}
+        </>
     );
 };

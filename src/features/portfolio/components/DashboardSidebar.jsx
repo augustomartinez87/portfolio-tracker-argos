@@ -1,34 +1,21 @@
 import React, { useState } from 'react';
-import { Layers, LogOut, Pin, PinOff } from 'lucide-react';
+import { Layers, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
 
-export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded, isPinned, setIsPinned }) => {
+export const DashboardSidebar = ({ user, signOut, isExpanded }) => {
   const location = useLocation();
   const { isAdmin, allowedModules, userProfile } = useAuth();
 
-  const handleMouseEnter = () => { if (!isPinned) setIsExpanded(true); };
-  const handleMouseLeave = () => { if (!isPinned) setIsExpanded(false); };
-
-  const togglePinned = () => {
-    if (isPinned) {
-      setIsPinned(false);
-      setIsExpanded(false);
-    } else {
-      setIsPinned(true);
-      setIsExpanded(true);
-    }
-  };
-
   const [hoveredItem, setHoveredItem] = useState(null);
 
-  // Filtrar items de navegación según permisos del usuario
-  // No renderizar navegación completa si el perfil aún no existe o está cargando
+  // Filtrar items de navegacion segun permisos del usuario
+  // No renderizar navegacion completa si el perfil aun no existe o esta cargando
   // Aunque ProtectedRoute maneja esto, el sidebar debe ser defensivo
   const navItems = userProfile
     ? getFilteredNavItems(isAdmin, allowedModules)
-    : getFilteredNavItems(false, ['portfolio']); // Fallback mínimo absoluto
+    : getFilteredNavItems(false, ['portfolio']); // Fallback m�nimo absoluto
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -36,29 +23,14 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded, isP
 
   return (
     <aside
-      className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex-col transition-all duration-300 ${isExpanded ? 'w-56' : 'w-16'} overflow-hidden shadow-xl shadow-black/20`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className={`hidden lg:flex bg-background-secondary border-r border-border-primary fixed h-screen left-0 top-0 z-40 flex-col transition-all duration-300 ${isExpanded ? 'w-56 overflow-hidden' : 'w-16 overflow-visible'} shadow-xl shadow-black/20`}
     >
       <div className={`h-20 flex items-center border-b border-border-primary ${isExpanded ? 'justify-between px-4' : 'justify-center'}`}>
         <Layers className={`w-5 h-5 transition-colors ${isExpanded ? 'text-primary' : 'text-text-tertiary'}`} />
-        <button
-          type="button"
-          onClick={togglePinned}
-          aria-pressed={isPinned}
-          className="ml-2 flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-background-tertiary"
-          title={isPinned ? 'Desfijar sidebar' : 'Fijar sidebar'}
-        >
-          {isPinned ? (
-            <PinOff className="w-4 h-4 text-text-tertiary" />
-          ) : (
-            <Pin className="w-4 h-4 text-text-tertiary" />
-          )}
-        </button>
       </div>
 
-      <div className="flex-1 py-4 overflow-hidden">
-        <div className="space-y-1 h-full">
+      <div className="flex-1 py-4 overflow-visible">
+        <div className="space-y-1 h-full overflow-visible">
           {navItems.map((item) => (
             <div key={item.id} className="w-full">
               <Link
@@ -80,6 +52,11 @@ export const DashboardSidebar = ({ user, signOut, isExpanded, setIsExpanded, isP
                 <span className={`whitespace-nowrap transition-opacity duration-200 flex-1 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
                   <span className="max-w-28 overflow-hidden">{item.label}</span>
                 </span>
+                {!isExpanded && hoveredItem === item.id && (
+                  <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-background-secondary border border-border-primary text-xs text-text-primary shadow-lg whitespace-nowrap z-40 pointer-events-none">
+                    {item.label}
+                  </span>
+                )}
               </Link>
 
               {/* Sub-items (visible when sidebar is expanded) */}

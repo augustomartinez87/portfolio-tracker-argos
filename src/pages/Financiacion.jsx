@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
 import FinancingDashboard from '@/features/financing/components/FinancingDashboard';
@@ -16,21 +17,18 @@ const Financiacion = () => {
   const { user, signOut } = useAuth();
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
   const queryClient = useQueryClient();
-
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
-  });
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
+    return localStorage.getItem('sidebarExpanded') === 'true';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
     }
-  }, [sidebarPinned]);
+  }, [sidebarExpanded]);
+
+
 
   const [activeTab, setActiveTab] = useState('financiacion'); // Estado para navegación del sidebar
 
@@ -119,12 +117,8 @@ const Financiacion = () => {
         <DashboardSidebar
           user={user}
           signOut={signOut}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
-                  isPinned={sidebarPinned}
-                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -135,6 +129,7 @@ const Financiacion = () => {
               icon={Coins}
               loading={loading}
               onRefresh={handleRefresh}
+              sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
               extraActions={
                 import.meta.env.DEV && (
                   <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { usePrices } from '@/features/portfolio/services/priceService';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
+import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import CarryTradeHeatmap from '@/features/portfolio/components/CarryTradeHeatmap';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -20,20 +21,18 @@ export default function CarryTrade() {
 
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
-  });
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarPinned') === 'true';
+    return localStorage.getItem('sidebarExpanded') === 'true';
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
     }
-  }, [sidebarPinned]);
+  }, [sidebarExpanded]);
+
+
 
     const [displayCurrency, setDisplayCurrency] = useState('USD');
 
@@ -59,13 +58,11 @@ export default function CarryTrade() {
         <ErrorBoundary>
             <div className="min-h-screen bg-background-primary flex">
                 <DashboardSidebar
-                    user={user}
-                    signOut={signOut}
-                    isExpanded={sidebarExpanded}
-                    setIsExpanded={setSidebarExpanded}
-                  isPinned={sidebarPinned}
-                  setIsPinned={setSidebarPinned}
-                />
+          user={user}
+          signOut={signOut}
+          isExpanded={sidebarExpanded}
+          setIsExpanded={setSidebarExpanded}
+        />
                 <main className={`flex-1 transition-all duration-300 overflow-hidden h-screen flex flex-col mt-16 lg:mt-0 mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
                     <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col h-full overflow-hidden">
                         <PageHeader
@@ -77,6 +74,7 @@ export default function CarryTrade() {
                             displayCurrency={displayCurrency}
                             onCurrencyChange={setDisplayCurrency}
                             showCurrencySelector={true}
+            sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
                         />
 
                         {!currentPortfolio ? (
