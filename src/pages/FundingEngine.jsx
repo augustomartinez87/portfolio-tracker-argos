@@ -237,6 +237,7 @@ export default function FundingEngine() {
                   cauciones={cauciones}
                   vcpPrices={vcpHistoricos}
                   tnaMA7={tnaFCIDynamic}
+                  saldoFCI={fciTotals?.valuation || 0}
                 />
               )}
             </div>

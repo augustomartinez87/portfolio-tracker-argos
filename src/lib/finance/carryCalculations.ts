@@ -194,7 +194,8 @@ export function calcularSpreadPorCaucion(
   caucion: CaucionData,
   vcpPrices: VcpPrice[],
   tnaMA7: number,
-  hoy: Date
+  hoy: Date,
+  saldoFCITotal?: number
 ): SpreadCaucionResult | null {
   if (!vcpPrices || vcpPrices.length === 0) return null;
 
@@ -202,6 +203,12 @@ export function calcularSpreadPorCaucion(
   const interes = new Decimal(caucion.interes || 0);
   
   if (capital.isZero()) return null;
+  
+  // Para calcular ganancia FCI, usamos el saldo FCI real disponible
+  // Si no hay saldo FCI o es menor que el capital, usamos el saldo FCI
+  // Si el saldo FCI es mayor o igual, usamos el capital completo
+  const saldoFCI = new Decimal(saldoFCITotal || 0);
+  const baseCalculoGanancia = Decimal.min(capital, saldoFCI);
 
   const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
@@ -232,7 +239,8 @@ export function calcularSpreadPorCaucion(
     if (!vcpFin || new Decimal(vcpFin.vcp || 0).isZero()) return null;
 
     const vcpFinDec = new Decimal(vcpFin.vcp);
-    const gananciaDolares = calcularGananciaFCIReal(capital, vcpInicioDec, vcpFinDec);
+    // Usar baseCalculoGanancia (mínimo entre capital y saldo FCI) para calcular ganancia FCI real
+    const gananciaDolares = calcularGananciaFCIReal(baseCalculoGanancia, vcpInicioDec, vcpFinDec);
     const rendimientoPct = gananciaDolares.dividedBy(capital);
     const costoPct = interes.dividedBy(capital);
 
@@ -273,8 +281,9 @@ export function calcularSpreadPorCaucion(
     // La ganancia real solo existe si el VCP disponible "hoy" es de una fecha posterior
     // a la fecha de inicio de la caución. Si es del mismo día o anterior, la ganancia es 0.
     // Ej: caución del 04→05, hoy=05. Si VCP_hoy=04 (mismo día que inicio), ganancia=0.
+    // Usar baseCalculoGanancia (mínimo entre capital y saldo FCI)
     const gananciaReal = vcpHoy.fecha > fechaInicio
-      ? calcularGananciaFCIReal(capital, vcpInicioDec, vcpHoyDec)
+      ? calcularGananciaFCIReal(baseCalculoGanancia, vcpInicioDec, vcpHoyDec)
       : new Decimal(0);
     
     console.log(`[DEBUG] Ganancia real calculada: ${gananciaReal.toNumber()}, vcpHoy.fecha=${vcpHoy.fecha} > fechaInicio=${fechaInicio} = ${vcpHoy.fecha > fechaInicio}`);
@@ -284,7 +293,8 @@ export function calcularSpreadPorCaucion(
       (new Date(fechaFin).getTime() - new Date(fechaHoy).getTime()) / (1000 * 60 * 60 * 24)
     ));
     
-    const gananciaProyectada = calcularGananciaFCIProyectada(capital, tnaMA7, diasRestantes);
+    // Usar baseCalculoGanancia para la proyección también
+    const gananciaProyectada = calcularGananciaFCIProyectada(baseCalculoGanancia, tnaMA7, diasRestantes);
 
     // c) Total
     const gananciaTotal = gananciaReal.plus(gananciaProyectada);
@@ -365,12 +375,13 @@ export function calcularSpreadsTodasCauciones(
   cauciones: CaucionData[],
   vcpPrices: VcpPrice[],
   tnaMA7: number,
-  hoy: Date
+  hoy: Date,
+  saldoFCITotal?: number
 ): SpreadCaucionResult[] {
   const resultados: SpreadCaucionResult[] = [];
   
   for (const caucion of cauciones) {
-    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy);
+    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCITotal);
     if (resultado) {
       resultados.push(resultado);
     }

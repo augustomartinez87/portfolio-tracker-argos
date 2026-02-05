@@ -18,18 +18,19 @@ import {
  * @param {number} props.tnaMA7 - TNA FCI MA-7 como decimal (ej: 0.2848)
  * @param {Date} props.hoy - Fecha de hoy (default: new Date())
  */
-export function OperationsTab({ cauciones, vcpPrices, tnaMA7, hoy = new Date() }) {
+export function OperationsTab({ cauciones, vcpPrices, tnaMA7, saldoFCI, hoy = new Date() }) {
   // Calcular spreads para todas las cauciones
   const spreadsData = useMemo(() => {
     if (!cauciones?.length || !vcpPrices?.length) {
       return { spreads: [], totales: null };
     }
     
-    const spreads = calcularSpreadsTodasCauciones(cauciones, vcpPrices, tnaMA7, hoy);
+    // Usar el saldo FCI real (no el capital de caución) para calcular ganancia FCI
+    const spreads = calcularSpreadsTodasCauciones(cauciones, vcpPrices, tnaMA7, hoy, saldoFCI);
     const totales = calcularTotalesOperaciones(spreads);
     
     return { spreads, totales };
-  }, [cauciones, vcpPrices, tnaMA7, hoy]);
+  }, [cauciones, vcpPrices, tnaMA7, hoy, saldoFCI]);
 
   const { spreads, totales } = spreadsData;
 
