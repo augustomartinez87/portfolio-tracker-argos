@@ -338,6 +338,7 @@ export default function Fci() {
                               onRedeem={handleOpenRedemption}
                               onEditLot={handleEditLot}
                               onDeleteLot={handleDeleteLot}
+                              onAddLugar={(nombre) => fciLotEngine.addLugar(user?.id, nombre)}
                               lugaresList={lugaresList}
                               currency={displayCurrency}
                               mepRate={mepRate}

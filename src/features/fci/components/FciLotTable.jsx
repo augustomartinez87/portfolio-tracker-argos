@@ -20,24 +20,67 @@ const PnlCell = ({ value, pct, currency, usdValue }) => {
 };
 
 // Inline editor para campos del lot
-const LotInlineEditor = ({ lot, lugaresList, onSave, onCancel }) => {
+const LotInlineEditor = ({ lot, lugaresList, onSave, onCancel, onAddLugar }) => {
     const [lugarId, setLugarId] = useState(lot.lugar_id || '');
     const [notes, setNotes] = useState(lot.notes || '');
+    const [creatingLugar, setCreatingLugar] = useState(false);
+    const [newLugarNombre, setNewLugarNombre] = useState('');
+    const [localLugares, setLocalLugares] = useState(lugaresList);
+
+    const handleCreateLugar = async () => {
+        if (!newLugarNombre.trim() || !onAddLugar) return;
+        try {
+            const lugar = await onAddLugar(newLugarNombre.trim());
+            setLocalLugares(prev => [...prev, lugar].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            setLugarId(lugar.id);
+            setCreatingLugar(false);
+            setNewLugarNombre('');
+        } catch (err) {
+            console.error('[LotInlineEditor] Error creating lugar:', err);
+        }
+    };
 
     return (
         <tr className="bg-primary/5 border-t border-primary/20">
             <td className="px-4 py-2" colSpan={2}>
                 <div className="flex items-center gap-2 ml-6">
-                    <select
-                        value={lugarId}
-                        onChange={(e) => setLugarId(e.target.value)}
-                        className="px-2 py-1 bg-background-tertiary border border-border-secondary rounded text-xs text-text-primary focus:outline-none focus:border-primary"
-                    >
-                        <option value="">Sin lugar</option>
-                        {lugaresList.map(l => (
-                            <option key={l.id} value={l.id}>{l.nombre}</option>
-                        ))}
-                    </select>
+                    {creatingLugar ? (
+                        <>
+                            <input
+                                type="text"
+                                autoFocus
+                                value={newLugarNombre}
+                                onChange={(e) => setNewLugarNombre(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateLugar(); } }}
+                                placeholder="Nombre del lugar..."
+                                className="px-2 py-1 bg-background-tertiary border border-border-secondary rounded text-xs text-text-primary focus:outline-none focus:border-primary w-36"
+                            />
+                            <button onClick={handleCreateLugar} className="p-1 text-profit hover:bg-profit/10 rounded transition-colors" title="Crear">
+                                <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => { setCreatingLugar(false); setNewLugarNombre(''); }} className="p-1 text-text-tertiary hover:text-loss rounded transition-colors" title="Cancelar">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <select
+                                value={lugarId}
+                                onChange={(e) => setLugarId(e.target.value)}
+                                className="px-2 py-1 bg-background-tertiary border border-border-secondary rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                            >
+                                <option value="">Sin lugar</option>
+                                {localLugares.map(l => (
+                                    <option key={l.id} value={l.id}>{l.nombre}</option>
+                                ))}
+                            </select>
+                            {onAddLugar && (
+                                <button onClick={() => setCreatingLugar(true)} className="p-1 text-text-tertiary hover:text-primary hover:bg-primary/10 rounded transition-colors" title="Crear lugar">
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </>
+                    )}
                     <input
                         type="text"
                         value={notes}
@@ -70,7 +113,7 @@ const LotInlineEditor = ({ lot, lugaresList, onSave, onCancel }) => {
     );
 };
 
-const FciLotTable = ({ positions, onSubscribe, onRedeem, onEditLot, onDeleteLot, lugaresList = [], currency = 'ARS', mepRate = 1 }) => {
+const FciLotTable = ({ positions, onSubscribe, onRedeem, onEditLot, onDeleteLot, onAddLugar, lugaresList = [], currency = 'ARS', mepRate = 1 }) => {
     const [expanded, setExpanded] = useState({});
     const [editingLotId, setEditingLotId] = useState(null);
 
@@ -245,6 +288,7 @@ const FciLotTable = ({ positions, onSubscribe, onRedeem, onEditLot, onDeleteLot,
                                                         setEditingLotId(null);
                                                     }}
                                                     onCancel={() => setEditingLotId(null)}
+                                                    onAddLugar={onAddLugar}
                                                 />
                                             )}
                                         </React.Fragment>
