@@ -6,14 +6,12 @@ import { DashboardSidebar } from '@/features/portfolio/components/DashboardSideb
 import MobileNav from '@/components/common/MobileNav';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
-// useFciEngine y usePrices eliminados por redundancia con el contexto
-// Importaciones diferidas para evitar TDZ
-const FciTable = lazy(() => import('@/features/fci/components/FciTable'));
-const FciTransactionsList = lazy(() => import('@/features/fci/components/FciTransactionsList'));
-// Importaciones diferidas para mayor resiliencia
+// Importaciones diferidas
+const FciLotTable = lazy(() => import('@/features/fci/components/FciLotTable'));
+const FciLotsList = lazy(() => import('@/features/fci/components/FciLotsList'));
+const FciLotModal = lazy(() => import('@/features/fci/components/FciLotModal'));
 const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent'));
 const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
-const FciTransactionModal = lazy(() => import('@/features/fci/components/FciTransactionModal'));
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { FciTabs } from '@/features/fci/components/FciTabs';
 import SummaryCard from '@/components/common/SummaryCard';
@@ -30,15 +28,17 @@ export default function Fci() {
   const {
     currentPortfolio,
     loading: portfolioLoading,
-    fciPositions: positions,
-    fciTotals: totals,
-    fciTransactions: transactions,
-    refreshFci: refresh,
+    fciLotEngine,
     mepRate,
     mepHistory
   } = usePortfolio();
 
-  const fciLoading = portfolioLoading; // Ahora se maneja centralizado
+  const positions = fciLotEngine.positions;
+  const totals = fciLotEngine.totals;
+  const allLots = fciLotEngine.allLots;
+  const refresh = fciLotEngine.refresh;
+  const lugaresList = fciLotEngine.lugaresList;
+  const fciLoading = portfolioLoading || fciLotEngine.loading;
 
   // useState declarations must come before useCallback that depends on them
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -58,16 +58,6 @@ export default function Fci() {
   const [vcpResult, setVcpResult] = useState(null);
   const [vcpLoadingFcis, setVcpLoadingFcis] = useState(false);
 
-  const deleteTransaction = async (id) => {
-    await fciService.deleteTransaction(id);
-    refresh();
-  };
-
-  const addTransaction = async (tx) => {
-    await fciService.createTransaction(tx);
-    refresh();
-  };
-
   const handleOpenSubscription = useCallback((fci = null) => {
     setFciModalType('SUBSCRIPTION');
     setSelectedFci(fci);
@@ -80,14 +70,34 @@ export default function Fci() {
     setFciModalOpen(true);
   }, []);
 
-  const handleSaveTransaction = async (tx) => {
+  const handleSaveLot = async (lotData) => {
     try {
-      await addTransaction({ ...tx, user_id: user.id });
+      await fciLotEngine.addLot(lotData);
       setFciModalOpen(false);
     } catch (e) {
-      console.error('Error saving FCI transaction:', e);
+      console.error('Error saving FCI lot:', e);
       throw e;
     }
+  };
+
+  const handleRedeem = async (fciId, cuotapartes) => {
+    try {
+      await fciLotEngine.redeemFIFO(fciId, cuotapartes);
+      setFciModalOpen(false);
+    } catch (e) {
+      console.error('Error applying redemption:', e);
+      throw e;
+    }
+  };
+
+  const handleDeleteLot = async (lotId) => {
+    if (window.confirm('¿Estás seguro de eliminar este lote? Esto afectará tus saldos y carry trade.')) {
+      await fciLotEngine.deleteLot(lotId);
+    }
+  };
+
+  const handleEditLot = async (lotId, updates) => {
+    await fciLotEngine.updateLot(lotId, updates);
   };
 
   // Cargar lista de FCIs para Carga VCP
@@ -313,19 +323,22 @@ export default function Fci() {
                           </div>
                         ) : showHistory ? (
                           <Suspense fallback={<LoadingFallback />}>
-                            <FciTransactionsList
-                              transactions={transactions}
-                              onDelete={deleteTransaction}
+                            <FciLotsList
+                              allLots={allLots}
+                              onDelete={handleDeleteLot}
                               currency={displayCurrency}
                               mepHistory={mepHistory}
                             />
                           </Suspense>
                         ) : (
                           <Suspense fallback={<LoadingFallback />}>
-                            <FciTable
+                            <FciLotTable
                               positions={positions}
                               onSubscribe={handleOpenSubscription}
                               onRedeem={handleOpenRedemption}
+                              onEditLot={handleEditLot}
+                              onDeleteLot={handleDeleteLot}
+                              lugaresList={lugaresList}
                               currency={displayCurrency}
                               mepRate={mepRate}
                             />
@@ -561,13 +574,16 @@ export default function Fci() {
         </main>
 
         <Suspense fallback={<LoadingFallback />}>
-          <FciTransactionModal
+          <FciLotModal
             isOpen={fciModalOpen}
             onClose={() => setFciModalOpen(false)}
-            onSave={handleSaveTransaction}
+            onSaveLot={handleSaveLot}
+            onRedeem={handleRedeem}
             portfolioId={currentPortfolio?.id}
-            initialType={fciModalType}
+            userId={user?.id}
+            lugaresList={lugaresList}
             initialFci={selectedFci}
+            initialType={fciModalType}
           />
         </Suspense>
 

@@ -168,7 +168,7 @@ export const usePortfolioEngine = (
         });
 
         // Filtrar posiciones y convertir a números finales
-        return Object.values(grouped)
+        const stockPositions = Object.values(grouped)
             .filter((pos: any) => pos.cantidadTotal.gt(0.0001))
             .map((pos: any): Position => {
                 const priceData = prices[pos.ticker];
@@ -275,11 +275,13 @@ export const usePortfolioEngine = (
             resultPct: fci.pnlPct,
             resultUSD: fci.pnlUSD,
             resultPctUSD: fci.pnlPctUSD,
+            dailyResult: fci.pnlDiario || 0,
+            dailyResultUSD: fci.pnlDiarioUSD || 0,
             assetClass: 'FCI' as AssetClass,
             isFci: true
         }));
 
-        return [...positions, ...fciNormalized].sort((a, b) => b.valuation - a.valuation);
+        return [...stockPositions, ...fciNormalized].sort((a, b) => b.valuation - a.valuation);
     }, [trades, prices, mepRate, mepMap, fciPositions]);
 
     const totals = useMemo(() => calculateTotals(positions), [positions]);

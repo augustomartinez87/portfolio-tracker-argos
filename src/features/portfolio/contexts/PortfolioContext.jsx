@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, supabaseFetch } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { fciService } from '@/features/fci/services/fciService'
-import Decimal from 'decimal.js'
+import { useFciLotEngine } from '@/features/fci/hooks/useFciLotEngine'
 import { mepService } from '../services/mepService'
 
 const PortfolioContext = createContext({})
@@ -24,14 +23,9 @@ export const PortfolioProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const lastUserIdRef = useRef(null)
-  const lastPortfolioIdRef = useRef(null)
   const loadAttemptRef = useRef(0)
   const isQueryingRef = useRef(false)
 
-  // FCI State within PortfolioContext
-  const [fciTransactions, setFciTransactions] = useState([])
-  const [fciLatestPrices, setFciLatestPrices] = useState({})
-  const [fciLoading, setFciLoading] = useState(false)
   const [mepRate, setMepRate] = useState(0)
   const [mepHistory, setMepHistory] = useState([])
 
@@ -113,27 +107,8 @@ export const PortfolioProvider = ({ children }) => {
     }
   }, [user, userProfile, authLoadingCombined])
 
-  // Lógica de carga de FCI integrada
-  const loadFciData = useCallback(async (portfolioId) => {
-    if (!portfolioId) return
-    setFciLoading(true)
-    try {
-      const txs = await fciService.getTransactions(portfolioId)
-      setFciTransactions(txs || [])
-
-      const fciIds = [...new Set(txs.map(t => t.fci_id))]
-      const pricesMap = {}
-      await Promise.all(fciIds.map(async (id) => {
-        const latest = await fciService.getLatestPrice(id)
-        if (latest) pricesMap[id] = latest
-      }))
-      setFciLatestPrices(pricesMap)
-    } catch (err) {
-      console.error('[PortfolioContext] Error loading FCI data:', err)
-    } finally {
-      setFciLoading(false)
-    }
-  }, [])
+  // useFciLotEngine se instancia después de que mepRate/mepHistory están disponibles
+  // (ver más abajo, después del useEffect de MEP)
 
   // Cargar Precios MEP y MEP History una sola vez en el contexto
   useEffect(() => {
@@ -149,99 +124,11 @@ export const PortfolioProvider = ({ children }) => {
     loadMep()
   }, [user])
 
-  // Re-cargar FCI cuando cambia el portfolio
-  useEffect(() => {
-    if (currentPortfolio?.id && currentPortfolio.id !== lastPortfolioIdRef.current) {
-      lastPortfolioIdRef.current = currentPortfolio.id
-      loadFciData(currentPortfolio.id)
-    }
-  }, [currentPortfolio, loadFciData])
+  // El engine de FCI se re-carga automáticamente cuando cambia currentPortfolio?.id
+  // porque useFciLotEngine tiene portfolioId como dependencia del useEffect interno.
 
-  // Calcular Posiciones FCI (Copia optimizada de useFciEngine)
-  const fciPositions = useMemo(() => {
-    const posMap = {}
-    const mepMap = new Map()
-    if (Array.isArray(mepHistory)) {
-      mepHistory.forEach(h => mepMap.set(h.date, h.price))
-    }
-
-    fciTransactions.forEach(tx => {
-      const { fci_id, fci_master, tipo, monto, cuotapartes } = tx
-      if (!posMap[fci_id]) {
-        posMap[fci_id] = {
-          fciId: fci_id,
-          name: fci_master?.nombre || 'Desconocido',
-          quantity: new Decimal(0),
-          invested: new Decimal(0),
-          investedUSD: new Decimal(0)
-        }
-      }
-
-      const montoDec = new Decimal(monto || 0)
-      const cuotasDec = new Decimal(cuotapartes || 0)
-
-      if (tipo === 'SUBSCRIPTION') {
-        posMap[fci_id].quantity = posMap[fci_id].quantity.plus(cuotasDec)
-        posMap[fci_id].invested = posMap[fci_id].invested.plus(montoDec)
-        const dateStr = tx.fecha
-        const historicalMep = new Decimal(mepService.findClosestRate(dateStr, mepMap) || mepRate || 1)
-        posMap[fci_id].investedUSD = posMap[fci_id].investedUSD.plus(montoDec.dividedBy(historicalMep))
-      } else if (tipo === 'REDEMPTION') {
-        const pos = posMap[fci_id]
-        const avgCostARS = pos.quantity.gt(0) ? pos.invested.dividedBy(pos.quantity) : new Decimal(0)
-        const avgCostUSD = pos.quantity.gt(0) ? pos.investedUSD.dividedBy(pos.quantity) : new Decimal(0)
-        pos.quantity = pos.quantity.minus(cuotasDec)
-        pos.invested = pos.invested.minus(cuotasDec.times(avgCostARS))
-        pos.investedUSD = pos.investedUSD.minus(cuotasDec.times(avgCostUSD))
-        if (pos.quantity.abs().lt(new Decimal(0.0001))) {
-          pos.quantity = new Decimal(0); pos.invested = new Decimal(0); pos.investedUSD = new Decimal(0)
-        }
-      }
-    })
-
-    return Object.values(posMap)
-      .filter(p => p.quantity.abs().gt(0.0001))
-      .map(p => {
-        const lastPrice = fciLatestPrices[p.fciId]
-        const vcpActual = new Decimal(lastPrice ? (lastPrice.vcp || 0) : 0)
-        const valuation = p.quantity.times(vcpActual)
-        const pnl = valuation.minus(p.invested)
-        const currentMepDec = new Decimal(mepRate || 1)
-        const valuationUSD = currentMepDec.gt(0) ? valuation.dividedBy(currentMepDec) : new Decimal(0)
-        const pnlUSD = valuationUSD.minus(p.investedUSD)
-
-        return {
-          ...p,
-          quantity: p.quantity.toNumber(),
-          invested: p.invested.toNumber(),
-          investedUSD: p.investedUSD.toNumber(),
-          lastVcp: vcpActual.toNumber(),
-          priceDate: lastPrice ? lastPrice.fecha : null,
-          valuation: valuation.toNumber(),
-          pnl: pnl.toNumber(),
-          pnlPct: p.invested.isZero() ? 0 : pnl.dividedBy(p.invested.abs()).times(100).toNumber(),
-          valuationUSD: valuationUSD.toNumber(),
-          pnlUSD: pnlUSD.toNumber(),
-          pnlPctUSD: p.investedUSD.isZero() ? 0 : pnlUSD.dividedBy(p.investedUSD.abs()).times(100).toNumber()
-        }
-      })
-  }, [fciTransactions, fciLatestPrices, mepRate, mepHistory])
-
-  const fciTotals = useMemo(() => {
-    let invested = new Decimal(0); let valuation = new Decimal(0); let investedUSD = new Decimal(0); let valuationUSD = new Decimal(0)
-    fciPositions.forEach(pos => {
-      invested = invested.plus(pos.invested); valuation = valuation.plus(pos.valuation)
-      investedUSD = investedUSD.plus(pos.investedUSD); valuationUSD = valuationUSD.plus(pos.valuationUSD)
-    })
-    return {
-      invested: invested.toNumber(),
-      valuation: valuation.toNumber(),
-      pnl: valuation.minus(invested).toNumber(),
-      investedUSD: investedUSD.toNumber(),
-      valuationUSD: valuationUSD.toNumber(),
-      pnlUSD: valuationUSD.minus(investedUSD).toNumber()
-    }
-  }, [fciPositions])
+  // Motor de FCI por lotes — reemplaza la lógica duplicada de posiciones/totales
+  const fciLotEngine = useFciLotEngine(currentPortfolio?.id, mepRate, mepHistory)
 
   useEffect(() => {
     // Esperar a que el sistema esté totalmente READY (Auth + Profile)
@@ -355,7 +242,7 @@ export const PortfolioProvider = ({ children }) => {
       portfolios,
       currentPortfolio,
       setCurrentPortfolio,
-      loading: loading || fciLoading,
+      loading: loading || fciLotEngine.loading,
       error,
       createPortfolio,
       updatePortfolio,
@@ -363,15 +250,15 @@ export const PortfolioProvider = ({ children }) => {
       setDefaultPortfolio,
       refetch: async () => {
         await loadPortfolios();
-        if (currentPortfolio?.id) await loadFciData(currentPortfolio.id);
+        fciLotEngine.refresh();
       },
-      // FCI Shared State
-      fciPositions,
-      fciTotals,
-      fciTransactions,
+      // FCI — expone posiciones/totales (backward compat) + engine completo para Fci.jsx
+      fciPositions: fciLotEngine.positions,
+      fciTotals: fciLotEngine.totals,
+      fciLotEngine,
       mepRate,
       mepHistory,
-      refreshFci: () => loadFciData(currentPortfolio?.id)
+      refreshFci: fciLotEngine.refresh
     }}>
       {children}
     </PortfolioContext.Provider>
