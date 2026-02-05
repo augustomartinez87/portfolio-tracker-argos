@@ -207,10 +207,15 @@ export function calcularSpreadPorCaucion(
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
   const fechaHoy = hoy.toISOString().split('T')[0];
 
+  // DEBUG: Log para diagnóstico
+  console.log(`[DEBUG] Caución ${caucion.id}: ${fechaInicio} -> ${fechaFin}, hoy=${fechaHoy}`);
+  console.log(`[DEBUG] Primeros 5 VCPs disponibles:`, vcpPrices.slice(0, 5).map(v => ({ fecha: v.fecha, vcp: v.vcp })));
+
   // Para VCP_inicio usamos inclusive=false porque el VCP disponible al momento de
   // abrir la caución (por la mañana) es el del día anterior (publicado la noche anterior)
   // Ej: caución del 04/02, VCP disponible = VCP(03/02)
   const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, false);
+  console.log(`[DEBUG] VCP_inicio buscado para ${fechaInicio} (inclusive=false):`, vcpInicio);
   if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
 
   const vcpInicioDec = new Decimal(vcpInicio.vcp);
@@ -256,6 +261,7 @@ export function calcularSpreadPorCaucion(
     // Para VCP "hoy" usamos inclusive=false porque el VCP disponible hoy es el del día anterior
     // (publicado anoche). Ej: hoy 04/02 a la mañana, el último VCP disponible es el del 03/02.
     const vcpHoy = buscarVcpAnteriorOIgual(vcpPrices, fechaHoy, false);
+    console.log(`[DEBUG] VCP_hoy buscado para ${fechaHoy} (inclusive=false):`, vcpHoy);
     if (!vcpHoy || new Decimal(vcpHoy.vcp || 0).isZero()) return null;
 
     const vcpHoyDec = new Decimal(vcpHoy.vcp);
@@ -265,6 +271,8 @@ export function calcularSpreadPorCaucion(
     const gananciaReal = vcpHoy.fecha > vcpInicio.fecha 
       ? calcularGananciaFCIReal(capital, vcpInicioDec, vcpHoyDec)
       : new Decimal(0);
+    
+    console.log(`[DEBUG] Ganancia real calculada: ${gananciaReal.toNumber()}, vcpHoy.fecha=${vcpHoy.fecha} > vcpInicio.fecha=${vcpInicio.fecha} = ${vcpHoy.fecha > vcpInicio.fecha}`);
 
     // b) Tramo proyectado: hoy → fecha_fin
     const diasRestantes = Math.max(0, Math.round(
