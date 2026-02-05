@@ -211,15 +211,18 @@ export function calcularSpreadPorCaucion(
   console.log(`[DEBUG] Caución ${caucion.id}: ${fechaInicio} -> ${fechaFin}, hoy=${fechaHoy}`);
   console.log(`[DEBUG] Primeros 5 VCPs disponibles:`, vcpPrices.slice(0, 5).map(v => ({ fecha: v.fecha, vcp: v.vcp })));
 
-  // Para VCP_inicio usamos inclusive=false porque el VCP disponible al momento de
-  // abrir la caución (por la mañana) es el del día anterior (publicado la noche anterior)
-  // Ej: caución del 04/02, VCP disponible = VCP(03/02)
-  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, false);
-  console.log(`[DEBUG] VCP_inicio buscado para ${fechaInicio} (inclusive=false):`, vcpInicio);
+  const esVencida = fechaFin < fechaHoy;
+  
+  // Para VCP_inicio:
+  // - Cauciones VENCIDAS: usar inclusive=true (VCP de la fecha exacta de inicio)
+  //   El VCP del día de inicio ya está publicado al cierre de esa fecha
+  // - Cauciones ACTIVAS: usar inclusive=false (VCP del día anterior)
+  //   El VCP disponible al abrir la caución por la mañana es del día anterior
+  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, esVencida ? true : false);
+  console.log(`[DEBUG] VCP_inicio buscado para ${fechaInicio} (inclusive=${esVencida ? true : false}, esVencida=${esVencida}):`, vcpInicio);
   if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
 
   const vcpInicioDec = new Decimal(vcpInicio.vcp);
-  const esVencida = fechaFin < fechaHoy;
   
   const diasTotales = calcularDiasEntre(fechaInicio, fechaFin);
 
