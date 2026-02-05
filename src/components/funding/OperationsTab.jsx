@@ -72,21 +72,88 @@ export function OperationsTab({ cauciones, vcpPrices, tnaMA7, hoy = new Date() }
 
   return (
     <div className="space-y-6">
-      {/* Header explicativo */}
-      <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Receipt className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-medium text-text-primary">Resultado real por operación</h3>
-            <p className="text-sm text-text-secondary mt-1">
-              Esta tabla muestra el resultado en pesos de cada trade de caución + FCI. 
-              Las cauciones activas muestran ganancia real hasta hoy + proyección con TNA MA-7.
-            </p>
+      {/* Card de Totales - Sticky arriba */}
+      {totales && (
+        <div className="sticky top-0 bg-background-secondary rounded-xl border border-border-primary shadow-lg z-10">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calculator className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-text-primary">Totales</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Spread Total */}
+              <div className={`p-3 rounded-lg border ${
+                totales.spreadTotal >= 0 
+                  ? 'bg-success/5 border-success/20' 
+                  : 'bg-danger/5 border-danger/20'
+              }`}>
+                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
+                  Spread Total
+                </p>
+                <p className={`text-xl font-mono font-bold ${
+                  totales.spreadTotal >= 0 ? 'text-success' : 'text-danger'
+                }`}>
+                  {totales.spreadTotal >= 0 ? '+' : ''}{formatARS(totales.spreadTotal)}
+                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  {totales.spreadTotal >= 0 ? (
+                    <TrendingUp className="w-3 h-3 text-success" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3 text-danger" />
+                  )}
+                  <span className={`text-xs ${
+                    totales.spreadTotal >= 0 ? 'text-success' : 'text-danger'
+                  }`}>
+                    {totales.spreadTotal >= 0 ? 'Ganancia' : 'Pérdida'} neta
+                  </span>
+                </div>
+              </div>
+
+              {/* Spread Promedio Ponderado */}
+              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
+                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
+                  Spread Promedio
+                </p>
+                <p className={`text-xl font-mono font-bold ${
+                  totales.spreadPromedioPonderado >= 0 ? 'text-success' : 'text-danger'
+                }`}>
+                  {formatPercent(totales.spreadPromedioPonderado * 100)}
+                </p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  Ponderado por capital
+                </p>
+              </div>
+
+              {/* Cantidad de cauciones */}
+              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
+                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
+                  Total Cauciones
+                </p>
+                <p className="text-xl font-mono font-bold text-text-primary">
+                  {totales.totalCauciones}
+                </p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  {totales.caucionesVencidas} vencidas · {totales.caucionesActivas} activas
+                </p>
+              </div>
+
+              {/* Capital Total */}
+              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
+                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
+                  Capital Total
+                </p>
+                <p className="text-xl font-mono font-bold text-text-primary">
+                  {formatARS(totales.capitalTotal)}
+                </p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  {formatARS(totales.gananciaFCITotal)} FCI · {formatARS(totales.costoCaucionTotal)} costo
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Tabla de operaciones */}
       <Section title="Detalle por Caución" icon={Receipt}>
@@ -222,88 +289,21 @@ export function OperationsTab({ cauciones, vcpPrices, tnaMA7, hoy = new Date() }
         </div>
       </Section>
 
-      {/* Card de Totales - Sticky */}
-      {totales && (
-        <div className="sticky bottom-0 bg-background-secondary rounded-xl border border-border-primary shadow-lg">
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Calculator className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-text-primary">Totales</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Spread Total */}
-              <div className={`p-3 rounded-lg border ${
-                totales.spreadTotal >= 0 
-                  ? 'bg-success/5 border-success/20' 
-                  : 'bg-danger/5 border-danger/20'
-              }`}>
-                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
-                  Spread Total
-                </p>
-                <p className={`text-xl font-mono font-bold ${
-                  totales.spreadTotal >= 0 ? 'text-success' : 'text-danger'
-                }`}>
-                  {totales.spreadTotal >= 0 ? '+' : ''}{formatARS(totales.spreadTotal)}
-                </p>
-                <div className="flex items-center gap-1 mt-1">
-                  {totales.spreadTotal >= 0 ? (
-                    <TrendingUp className="w-3 h-3 text-success" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3 text-danger" />
-                  )}
-                  <span className={`text-xs ${
-                    totales.spreadTotal >= 0 ? 'text-success' : 'text-danger'
-                  }`}>
-                    {totales.spreadTotal >= 0 ? 'Ganancia' : 'Pérdida'} neta
-                  </span>
-                </div>
-              </div>
-
-              {/* Spread Promedio Ponderado */}
-              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
-                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
-                  Spread Promedio
-                </p>
-                <p className={`text-xl font-mono font-bold ${
-                  totales.spreadPromedioPonderado >= 0 ? 'text-success' : 'text-danger'
-                }`}>
-                  {formatPercent(totales.spreadPromedioPonderado * 100)}
-                </p>
-                <p className="text-xs text-text-tertiary mt-1">
-                  Ponderado por capital
-                </p>
-              </div>
-
-              {/* Cantidad de cauciones */}
-              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
-                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
-                  Total Cauciones
-                </p>
-                <p className="text-xl font-mono font-bold text-text-primary">
-                  {totales.totalCauciones}
-                </p>
-                <p className="text-xs text-text-tertiary mt-1">
-                  {totales.caucionesVencidas} vencidas · {totales.caucionesActivas} activas
-                </p>
-              </div>
-
-              {/* Capital Total */}
-              <div className="p-3 rounded-lg border border-border-secondary bg-background-tertiary">
-                <p className="text-xs text-text-tertiary uppercase tracking-wider mb-1">
-                  Capital Total
-                </p>
-                <p className="text-xl font-mono font-bold text-text-primary">
-                  {formatARS(totales.capitalTotal)}
-                </p>
-                <p className="text-xs text-text-tertiary mt-1">
-                  {formatARS(totales.gananciaFCITotal)} FCI · {formatARS(totales.costoCaucionTotal)} costo
-                </p>
-              </div>
-            </div>
+      {/* Header explicativo - Sticky abajo */}
+      <div className="sticky bottom-0 bg-background-secondary rounded-xl p-4 border border-border-primary shadow-lg z-10">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Receipt className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-medium text-text-primary">Resultado real por operación</h3>
+            <p className="text-sm text-text-secondary mt-1">
+              Esta tabla muestra el resultado en pesos de cada trade de caución + FCI. 
+              Las cauciones activas muestran ganancia real hasta hoy + proyección con TNA MA-7.
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Nota metodológica */}
       <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">

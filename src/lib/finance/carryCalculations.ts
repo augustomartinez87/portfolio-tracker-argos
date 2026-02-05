@@ -209,6 +209,7 @@ export function calcularSpreadPorCaucion(
 
   // Para VCP_inicio usamos inclusive=false porque el VCP disponible al momento de
   // abrir la caución (por la mañana) es el del día anterior (publicado la noche anterior)
+  // Ej: caución del 04/02, VCP disponible = VCP(03/02)
   const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, false);
   if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
 
