@@ -102,19 +102,38 @@ export function generarIdentificadorCaucion(
 }
 
 /**
- * Busca el último VCP con fecha <= fechaObjetivo en un array ordenado ascendente.
- * Retorna el registro o null si no existe.
+ * Busca el último VCP en un array ordenado ascendente.
+ * 
+ * @param vcpPrices - Array de precios VCP ordenados por fecha
+ * @param fechaObjetivo - Fecha objetivo (YYYY-MM-DD)
+ * @param inclusive - Si true, busca fecha <= fechaObjetivo. Si false, busca fecha < fechaObjetivo.
+ *                    Por defecto true.
+ * 
+ * El parámetro inclusive es clave para el timing del VCP:
+ * - Para VCP_inicio: usar false (el VCP disponible al momento de abrir la caución es del día anterior)
+ * - Para VCP_fin: usar true (el VCP disponible al momento de cerrar incluye el día actual)
+ * 
+ * @returns {VcpPrice | null} El último VCP que cumple la condición, o null si no existe.
  */
 export function buscarVcpAnteriorOIgual(
   vcpPrices: VcpPrice[], 
-  fechaObjetivo: string
+  fechaObjetivo: string,
+  inclusive: boolean = true
 ): VcpPrice | null {
   let resultado: VcpPrice | null = null;
   for (const p of vcpPrices) {
-    if (p.fecha <= fechaObjetivo) {
-      resultado = p;
+    if (inclusive) {
+      if (p.fecha <= fechaObjetivo) {
+        resultado = p;
+      } else {
+        break;
+      }
     } else {
-      break;
+      if (p.fecha < fechaObjetivo) {
+        resultado = p;
+      } else {
+        break;
+      }
     }
   }
   return resultado;
@@ -184,7 +203,9 @@ export function calcularSpreadPorCaucion(
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
   const fechaHoy = hoy.toISOString().split('T')[0];
 
-  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio);
+  // Para VCP_inicio usamos inclusive=false porque el VCP disponible al momento de
+  // abrir la caución (por la mañana) es el del día anterior (publicado la noche anterior)
+  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, false);
   if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
 
   const vcpInicioDec = new Decimal(vcpInicio.vcp);
