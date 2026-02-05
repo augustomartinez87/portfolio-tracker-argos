@@ -252,13 +252,18 @@ export function calcularSpreadPorCaucion(
     };
   } else {
     // CAUCIÓN ACTIVA: tramo real + tramo proyectado
-    const vcpHoy = vcpPrices[vcpPrices.length - 1];
+    // Para VCP "hoy" usamos inclusive=false porque el VCP disponible hoy es el del día anterior
+    // (publicado anoche). Ej: hoy 04/02 a la mañana, el último VCP disponible es el del 03/02.
+    const vcpHoy = buscarVcpAnteriorOIgual(vcpPrices, fechaHoy, false);
     if (!vcpHoy || new Decimal(vcpHoy.vcp || 0).isZero()) return null;
 
     const vcpHoyDec = new Decimal(vcpHoy.vcp);
     
     // a) Tramo real: fecha_inicio → hoy
-    const gananciaReal = calcularGananciaFCIReal(capital, vcpInicioDec, vcpHoyDec);
+    // Si vcpHoy <= vcpInicio (mismo día o anterior), la ganancia real es 0
+    const gananciaReal = vcpHoy.fecha > vcpInicio.fecha 
+      ? calcularGananciaFCIReal(capital, vcpInicioDec, vcpHoyDec)
+      : new Decimal(0);
 
     // b) Tramo proyectado: hoy → fecha_fin
     const diasRestantes = Math.max(0, Math.round(
