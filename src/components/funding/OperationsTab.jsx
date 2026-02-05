@@ -29,11 +29,19 @@ const buildIdentificador = (caucion) => {
  * @param {Object} props
  * @param {Array} props.cauciones - Array de cauciones desde Supabase
  * @param {number} props.fciValuation - Valuación real del FCI (desde fciLotEngine.totals.valuation)
+ * @param {number} props.fciTotalPnl - PnL acumulado total del FCI (desde fciLotEngine.totals.pnl)
  * @param {number} props.fciDailyPnl - PnL diario total del FCI (desde fciLotEngine.positions[].pnlDiario)
  * @param {number} props.fciDailyPnlPct - PnL diario % del FCI (pnlDiario / valuation)
  * @param {Date} props.hoy - Fecha de hoy (default: new Date())
  */
-export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDailyPnlPct = 0, hoy = new Date() }) {
+export function OperationsTab({
+  cauciones,
+  fciValuation,
+  fciTotalPnl = 0,
+  fciDailyPnl = 0,
+  fciDailyPnlPct = 0,
+  hoy = new Date()
+}) {
   const totals = useMemo(() => {
     const capitalFinanciado = (cauciones || []).reduce(
       (sum, c) => sum + Number(c.capital || 0),
@@ -55,10 +63,11 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
       resultado,
       spreadNeto,
       spreadPct,
+      fciTotalPnl: Number(fciTotalPnl || 0),
       fciDailyPnl: Number(fciDailyPnl || 0),
       fciDailyPnlPct: Number(fciDailyPnlPct || 0),
     };
-  }, [cauciones, fciValuation, fciDailyPnl, fciDailyPnlPct]);
+  }, [cauciones, fciValuation, fciTotalPnl, fciDailyPnl, fciDailyPnlPct]);
 
   const rows = useMemo(() => {
     const hoyISO = hoy.toISOString().split('T')[0];
@@ -72,9 +81,19 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
         : 0;
 
       const capital = Number(caucion.capital || 0);
+      const interesPagado = Number(caucion.interes || 0);
+
+      const gananciaFCIAsignada = totals.capitalFinanciado > 0
+        ? (capital / totals.capitalFinanciado) * totals.fciTotalPnl
+        : 0;
       const pnlDiarioAsignado = totals.capitalFinanciado > 0
         ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl
         : 0;
+
+      const gananciaPct = capital > 0 ? gananciaFCIAsignada / capital : 0;
+      const costoPct = capital > 0 ? interesPagado / capital : 0;
+      const spreadPesos = gananciaFCIAsignada - interesPagado;
+      const spreadPorcentaje = gananciaPct - costoPct;
       const pnlDiarioPct = capital > 0 ? pnlDiarioAsignado / capital : 0;
 
       return {
@@ -83,9 +102,12 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
         fechaInicio: formatDateAR(fechaInicioRaw),
         fechaFin: formatDateAR(fechaFinRaw),
         capital,
-        interesPagado: Number(caucion.interes || 0),
+        interesPagado,
+        gananciaFCIAsignada,
         pnlDiarioAsignado,
         pnlDiarioPct,
+        spreadPesos,
+        spreadPorcentaje,
         estado: esVencida ? 'vencida' : 'activa',
         diasRestantes,
       };
@@ -180,10 +202,19 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
                     Interés pagado
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
+                    Ganancia FCI
+                  </th>
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     PnL diario
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     PnL diario (%)
+                  </th>
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
+                    Spread ($)
+                  </th>
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
+                    Spread (%)
                   </th>
                   <th className="text-center text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Estado
@@ -214,6 +245,11 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
                       <span className="text-sm font-mono text-danger">{formatARS(row.interesPagado)}</span>
                     </td>
                     <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-mono ${row.gananciaFCIAsignada >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {row.gananciaFCIAsignada >= 0 ? '+' : ''}{formatARS(row.gananciaFCIAsignada)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       <span className={`text-sm font-mono ${row.pnlDiarioAsignado >= 0 ? 'text-success' : 'text-danger'}`}>
                         {row.pnlDiarioAsignado >= 0 ? '+' : ''}{formatARS(row.pnlDiarioAsignado)}
                       </span>
@@ -221,6 +257,16 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
                     <td className="px-4 py-3 text-right">
                       <span className={`text-sm font-mono ${row.pnlDiarioPct >= 0 ? 'text-success' : 'text-danger'}`}>
                         {formatPercent(row.pnlDiarioPct * 100)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-mono font-semibold ${row.spreadPesos >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {row.spreadPesos >= 0 ? '+' : ''}{formatARS(row.spreadPesos)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-sm font-mono ${row.spreadPorcentaje >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatPercent(row.spreadPorcentaje * 100)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -253,10 +299,10 @@ export function OperationsTab({ cauciones, fciValuation, fciDailyPnl = 0, fciDai
           Metodología de cálculo
         </h4>
         <ul className="text-xs text-text-tertiary space-y-1 list-disc list-inside">
-          <li><strong>Resultado:</strong> Valuación FCI - Capital financiado</li>
-          <li><strong>Costo:</strong> Intereses acumulados de cauciones</li>
+          <li><strong>Ganancia FCI:</strong> Se asigna proporcional al capital financiado</li>
           <li><strong>PnL diario:</strong> Se distribuye proporcionalmente por capital financiado</li>
-          <li><strong>Spread:</strong> Resultado - Costo</li>
+          <li><strong>Spread ($):</strong> Ganancia FCI - Interés pagado</li>
+          <li><strong>Spread (%):</strong> Ganancia % - Costo % (ambos sobre capital)</li>
         </ul>
       </div>
     </div>

@@ -53,6 +53,7 @@ export default function FundingEngine() {
     fciPositions.reduce((sum, pos) => sum + (pos.pnlDiario || 0), 0)
   ), [fciPositions]);
   const fciValuationTotal = fciLotEngine?.totals?.valuation || 0;
+  const fciTotalPnl = fciLotEngine?.totals?.pnl || 0;
   const tnaFCIDynamic = fciValuationTotal > 0
     ? (totalPnlDiario / fciValuationTotal) * 365
     : 0;
@@ -222,6 +223,7 @@ export default function FundingEngine() {
                 <OperationsTab
                   cauciones={cauciones}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
+                  fciTotalPnl={fciTotalPnl}
                   fciDailyPnl={totalPnlDiario}
                   fciDailyPnlPct={fciDailyPnlPct}
                 />
