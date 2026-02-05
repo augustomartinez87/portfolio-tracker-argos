@@ -3,8 +3,6 @@ import Decimal from 'decimal.js';
 import { TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { formatARS, formatNumber, formatCompactNumber } from '@/utils/formatters';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,6 +11,12 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
+import {
+  gridProps,
+  axisProps,
+  createGradientDef,
+  ChartTooltip,
+} from '@/utils/chartTheme';
 
 /**
  * Proyección de Interés Compuesto para Carry Trade
@@ -103,21 +107,6 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
     );
   };
 
-  // Custom tooltip para el gráfico
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background-secondary border border-border-primary rounded-lg p-3 shadow-lg">
-          <p className="text-sm text-text-tertiary mb-1">Mes {label}</p>
-          <p className="text-lg font-mono font-semibold text-text-primary">
-            {formatARS(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Si no hay datos suficientes
   if (!proyecciones) {
     return (
@@ -168,25 +157,33 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={datosGrafico} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorCapital" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={areaColor} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={areaColor} stopOpacity={0}/>
-                </linearGradient>
+                {(() => {
+                  const g = createGradientDef('colorCapital', areaColor);
+                  return (
+                    <linearGradient id={g.id} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset={g.topOffset} stopColor={g.color} stopOpacity={g.topOpacity} />
+                      <stop offset={g.bottomOffset} stopColor={g.color} stopOpacity={g.bottomOpacity} />
+                    </linearGradient>
+                  );
+                })()}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-secondary)" />
+              <CartesianGrid {...gridProps} />
               <XAxis 
-                dataKey="mes" 
-                stroke="var(--text-tertiary)"
-                tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-                label={{ value: 'Meses', position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
+                {...axisProps}
+                dataKey="mes"
               />
               <YAxis 
-                stroke="var(--text-tertiary)"
-                tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
+                {...axisProps}
                 tickFormatter={(value) => formatCompactNumber(value)}
-                label={{ value: 'Capital', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)' }}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip 
+                content={
+                  <ChartTooltip 
+                    labelFormatter={(label) => `Mes ${label}`}
+                    valueFormatter={(value) => formatARS(Number(value))}
+                  />
+                } 
+              />
               <Area 
                 type="monotone" 
                 dataKey="capital" 
@@ -194,6 +191,7 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
                 fillOpacity={1} 
                 fill="url(#colorCapital)" 
                 strokeWidth={2}
+                activeDot={{ r: 5, stroke: lineColor, strokeWidth: 2, fill: 'var(--bg-primary)' }}
               />
             </AreaChart>
           </ResponsiveContainer>

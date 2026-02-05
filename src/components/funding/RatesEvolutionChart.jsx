@@ -7,6 +7,11 @@ import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Target, Zap, AlertCircle } from 'lucide-react';
+import {
+    gridProps,
+    axisProps,
+    legendProps,
+} from '@/utils/chartTheme';
 
 const PERIODS = [
     { label: '7d', value: 7 },
@@ -125,24 +130,20 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
                                     <stop offset="95%" stopColor="var(--color-info)" stopOpacity={0.05} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
+                            <CartesianGrid {...gridProps} />
                             <XAxis
+                                {...axisProps}
                                 dataKey="fecha"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
                                 tickFormatter={(str) => format(new Date(str), 'd MMM', { locale: es })}
                                 minTickGap={30}
                             />
                              <YAxis
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: 'var(--text-tertiary)', fontSize: 10 }}
+                                {...axisProps}
                                 tickFormatter={(val) => `${val}%`}
                                 domain={['dataMin - 2', 'dataMax + 2']}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="top" height={36} iconType="circle" />
+                            <Legend {...legendProps} />
 
                             <Area
                                 type="monotone"

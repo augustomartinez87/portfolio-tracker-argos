@@ -1,11 +1,20 @@
 // src/components/PositionDetailModal.jsx
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, BarChart3, AlertTriangle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area } from 'recharts';
 import { data912 } from '@/utils/data912';
 import { isBonoPesos } from '@/features/portfolio/hooks/useBondPrices';
 import { API_ENDPOINTS } from '@/utils/constants';
 import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
+import {
+  gridProps,
+  axisProps,
+  getLineProps,
+  getAreaGradientProps,
+  createGradientDef,
+  ChartTooltip,
+  CHART_COLORS
+} from '@/utils/chartTheme';
 
 const formatDateSafe = (dateStr) => {
   if (!dateStr) return '-';
@@ -541,19 +550,23 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={chartData}>
                     <defs>
-                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
-                      </linearGradient>
+                      {(() => {
+                        const g = createGradientDef('areaGradient', CHART_COLORS.success);
+                        return (
+                          <linearGradient id={g.id} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset={g.topOffset} stopColor={g.color} stopOpacity={g.topOpacity} />
+                            <stop offset={g.bottomOffset} stopColor={g.color} stopOpacity={g.bottomOpacity} />
+                          </linearGradient>
+                        );
+                      })()}
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
+                    <CartesianGrid {...gridProps} vertical={true} />
                     <XAxis
+                      {...axisProps}
                       dataKey="date"
-                      tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }}
-                      stroke="var(--border-secondary)"
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }}
+                      {...axisProps}
                       tickFormatter={(value) => {
                         try {
                           const isARS = currency === 'ARS';
@@ -563,48 +576,31 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                           return '$0';
                         }
                       }}
-                      stroke="var(--border-secondary)"
                     />
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-primary)',
-                        borderRadius: '8px',
-                        color: 'var(--text-primary)'
-                      }}
-                      formatter={(value) => {
-                        try {
-                          const isARS = currency === 'ARS';
-                          const displayVal = isARS ? value : (value / mepRate);
-                          return [formatGenericCurrency(Number(displayVal), currency), 'Precio'];
-                        } catch {
-                          return ['Error', 'Precio'];
-                        }
-                      }}
-                      labelFormatter={(label, payload) => {
-                        try {
-                          if (payload && payload[0] && payload[0].payload) {
-                            return payload[0].payload.fullDate || label;
-                          }
-                          return label;
-                        } catch {
-                          return label;
-                        }
-                      }}
+                      content={
+                        <ChartTooltip
+                          labelFormatter={(label) => label}
+                          valueFormatter={(value) => {
+                            try {
+                              const isARS = currency === 'ARS';
+                              const displayVal = isARS ? value : (value / mepRate);
+                              return formatGenericCurrency(Number(displayVal), currency);
+                            } catch {
+                              return 'Error';
+                            }
+                          }}
+                        />
+                      }
                     />
                     <Area
-                      type="monotone"
                       dataKey="price"
-                      fill="url(#areaGradient)"
-                      stroke="transparent"
+                      {...getAreaGradientProps('areaGradient')}
                     />
                     <Line
-                      type="monotone"
                       dataKey="price"
-                      stroke="var(--color-success)"
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 6, fill: 'var(--color-success)' }}
+                      stroke={CHART_COLORS.success}
+                      {...getLineProps(CHART_COLORS.success)}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

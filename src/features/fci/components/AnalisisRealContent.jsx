@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+    ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
     TrendingUp, Calendar, BarChart3, RefreshCw, Wallet, Briefcase, AlertCircle
@@ -9,14 +9,16 @@ import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 import { mepService } from '@/features/portfolio/services/mepService';
 import { fciService } from '@/features/fci/services/fciService';
 import { data912 } from '@/utils/data912';
-
-const COLORS = {
-    fci: '#3b82f6',    // Blue
-    mep: '#ef4444',    // Red
-    spy: '#10b981',    // Green
-    fciArs: '#10b981', // Green
-    fciUsd: '#6366f1', // Indigo
-};
+import {
+    gridProps,
+    axisProps,
+    getLineProps,
+    getAreaGradientProps,
+    createGradientDef,
+    ChartTooltip,
+    legendProps,
+    CHART_COLORS
+} from '@/utils/chartTheme';
 
 const AnalisisRealContent = () => {
     // Estados principales
@@ -316,7 +318,7 @@ const AnalisisRealContent = () => {
             const return_pct = latest.fci - 100;
             data.push({
                 name: selectedFci ? selectedFci.nombre : 'FCI',
-                color: COLORS.fci,
+                color: CHART_COLORS.info,
                 finalValue,
                 return_pct,
                 isWinner: false
@@ -329,7 +331,7 @@ const AnalisisRealContent = () => {
             const return_pct = latest.mep - 100;
             data.push({
                 name: 'Dólar MEP',
-                color: COLORS.mep,
+                color: CHART_COLORS.danger,
                 finalValue,
                 return_pct,
                 isWinner: false
@@ -342,7 +344,7 @@ const AnalisisRealContent = () => {
             const return_pct = latest.spy - 100;
             data.push({
                 name: 'SPY (CEDEAR)',
-                color: COLORS.spy,
+                color: CHART_COLORS.success,
                 finalValue,
                 return_pct,
                 isWinner: false
@@ -509,56 +511,78 @@ const AnalisisRealContent = () => {
 
                 <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={processedData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
+                        <ComposedChart data={processedData}>
+                            <defs>
+                                {(() => {
+                                    const gf = createGradientDef('grad-fci', CHART_COLORS.info);
+                                    const gm = createGradientDef('grad-mep', CHART_COLORS.danger);
+                                    const gs = createGradientDef('grad-spy', CHART_COLORS.success);
+                                    return (
+                                        <>
+                                            <linearGradient id={gf.id} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset={gf.topOffset} stopColor={gf.color} stopOpacity={gf.topOpacity} />
+                                                <stop offset={gf.bottomOffset} stopColor={gf.color} stopOpacity={gf.bottomOpacity} />
+                                            </linearGradient>
+                                            <linearGradient id={gm.id} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset={gm.topOffset} stopColor={gm.color} stopOpacity={gm.topOpacity} />
+                                                <stop offset={gm.bottomOffset} stopColor={gm.color} stopOpacity={gm.bottomOpacity} />
+                                            </linearGradient>
+                                            <linearGradient id={gs.id} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset={gs.topOffset} stopColor={gs.color} stopOpacity={gs.topOpacity} />
+                                                <stop offset={gs.bottomOffset} stopColor={gs.color} stopOpacity={gs.bottomOpacity} />
+                                            </linearGradient>
+                                        </>
+                                    );
+                                })()}
+                            </defs>
+                            <CartesianGrid {...gridProps} />
                             <XAxis
+                                {...axisProps}
                                 dataKey="date"
-                                stroke="var(--text-tertiary)"
-                                fontSize={10}
                                 tickFormatter={(str) => {
                                     const d = new Date(str);
                                     return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
                                 }}
                             />
                             <YAxis
-                                stroke="var(--text-tertiary)"
-                                fontSize={10}
+                                {...axisProps}
                                 domain={['auto', 'auto']}
                                 tickFormatter={(val) => `${val.toFixed(0)}`}
                             />
                             <Tooltip
-                                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}
-                                labelStyle={{ color: 'var(--text-tertiary)', marginBottom: '4px', fontSize: '11px' }}
-                                itemStyle={{ fontSize: '12px' }}
-                                formatter={(value) => [`${value?.toFixed(2)}`, '']}
+                                content={
+                                    <ChartTooltip
+                                        labelFormatter={(label) => {
+                                            const d = new Date(label);
+                                            return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                        }}
+                                        valueFormatter={(value, name) => `${Number(value).toFixed(2)}%`}
+                                    />
+                                }
                             />
-                            <Legend verticalAlign="top" height={36} />
+                            <Legend {...legendProps} />
+                            <Area dataKey="fci" {...getAreaGradientProps('grad-fci')} />
+                            <Area dataKey="mep" {...getAreaGradientProps('grad-mep')} />
+                            <Area dataKey="spy" {...getAreaGradientProps('grad-spy')} />
                             <Line 
-                                type="monotone" 
                                 dataKey="fci" 
                                 name={selectedFci ? selectedFci.nombre : 'FCI'} 
-                                stroke={COLORS.fci} 
-                                strokeWidth={3} 
-                                dot={false} 
-                                activeDot={{ r: 6 }} 
+                                stroke={CHART_COLORS.info} 
+                                {...getLineProps(CHART_COLORS.info)}
                             />
                             <Line 
-                                type="monotone" 
                                 dataKey="mep" 
                                 name="Dólar MEP" 
-                                stroke={COLORS.mep} 
-                                strokeWidth={2} 
-                                dot={false} 
+                                stroke={CHART_COLORS.danger} 
+                                {...getLineProps(CHART_COLORS.danger)}
                             />
                             <Line 
-                                type="monotone" 
                                 dataKey="spy" 
                                 name="SPY (CEDEAR)" 
-                                stroke={COLORS.spy} 
-                                strokeWidth={2} 
-                                dot={false} 
+                                stroke={CHART_COLORS.success} 
+                                {...getLineProps(CHART_COLORS.success)}
                             />
-                        </LineChart>
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
             </div>
@@ -630,52 +654,65 @@ const AnalisisRealContent = () => {
 
                 <div className="h-[320px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={fciRealSeries}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
+                        <ComposedChart data={fciRealSeries}>
+                            <defs>
+                                {(() => {
+                                    const activeColor = fciCurrencyMode === 'USD' ? CHART_COLORS.accent : CHART_COLORS.success;
+                                    const g = createGradientDef('grad-fci-real', activeColor);
+                                    return (
+                                        <linearGradient id={g.id} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset={g.topOffset} stopColor={g.color} stopOpacity={g.topOpacity} />
+                                            <stop offset={g.bottomOffset} stopColor={g.color} stopOpacity={g.bottomOpacity} />
+                                        </linearGradient>
+                                    );
+                                })()}
+                            </defs>
+                            <CartesianGrid {...gridProps} />
                             <XAxis
+                                {...axisProps}
                                 dataKey="date"
-                                stroke="var(--text-tertiary)"
-                                fontSize={10}
                                 tickFormatter={(str) => {
                                     const d = new Date(str);
                                     return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
                                 }}
                             />
                             <YAxis
-                                stroke="var(--text-tertiary)"
-                                fontSize={10}
+                                {...axisProps}
                                 domain={['auto', 'auto']}
                                 tickFormatter={(val) => `${val.toFixed(0)}`}
                             />
                             <Tooltip
-                                contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}
-                                labelStyle={{ color: 'var(--text-tertiary)', marginBottom: '4px', fontSize: '11px' }}
-                                itemStyle={{ fontSize: '12px' }}
-                                formatter={(value) => [`${value?.toFixed(2)}`, '']}
+                                content={
+                                    <ChartTooltip
+                                        labelFormatter={(label) => {
+                                            const d = new Date(label);
+                                            return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                        }}
+                                        valueFormatter={(value, name) => `${Number(value).toFixed(2)}%`}
+                                    />
+                                }
                             />
-                            <Legend verticalAlign="top" height={36} />
-                            {fciCurrencyMode === 'ARS' ? (
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="fci_ars" 
-                                    name={selectedFci ? `${selectedFci.nombre} (ARS)` : 'FCI (ARS)'} 
-                                    stroke={COLORS.fciArs} 
-                                    strokeWidth={3} 
-                                    dot={false} 
-                                    activeDot={{ r: 6 }} 
-                                />
-                            ) : (
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="fci_usd" 
-                                    name={selectedFci ? `${selectedFci.nombre} (USD MEP)` : 'FCI (USD MEP)'} 
-                                    stroke={COLORS.fciUsd} 
-                                    strokeWidth={3} 
-                                    dot={false} 
-                                    activeDot={{ r: 6 }} 
-                                />
-                            )}
-                        </LineChart>
+                            <Legend {...legendProps} />
+                            {(() => {
+                                const isUsd = fciCurrencyMode === 'USD';
+                                const activeKey = isUsd ? 'fci_usd' : 'fci_ars';
+                                const activeName = selectedFci 
+                                    ? `${selectedFci.nombre} (${isUsd ? 'USD MEP' : 'ARS'})` 
+                                    : `FCI (${isUsd ? 'USD MEP' : 'ARS'})`;
+                                const activeColor = isUsd ? CHART_COLORS.accent : CHART_COLORS.success;
+                                return (
+                                    <>
+                                        <Area dataKey={activeKey} {...getAreaGradientProps('grad-fci-real')} />
+                                        <Line 
+                                            dataKey={activeKey} 
+                                            name={activeName} 
+                                            stroke={activeColor} 
+                                            {...getLineProps(activeColor)}
+                                        />
+                                    </>
+                                );
+                            })()}
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
             </div>

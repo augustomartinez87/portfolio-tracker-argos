@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
 import { BarChart3, TrendingUp, Clock, DollarSign } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  gridProps,
+  axisProps,
+  getLineProps,
+  getAreaGradientProps,
+  createGradientDef,
+  ChartTooltip,
+  CHART_COLORS
+} from '@/utils/chartTheme';
 
 const FinancingCharts = ({ operations, csvData, loading }) => {
   // Procesamiento de datos para visualizaciones
@@ -220,39 +229,47 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData.tnaEvolution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
+            <ComposedChart data={chartData.tnaEvolution}>
+              <defs>
+                {(() => {
+                  const g = createGradientDef('grad-tna', CHART_COLORS.success);
+                  return (
+                    <linearGradient id={g.id} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset={g.topOffset} stopColor={g.color} stopOpacity={g.topOpacity} />
+                      <stop offset={g.bottomOffset} stopColor={g.color} stopOpacity={g.bottomOpacity} />
+                    </linearGradient>
+                  );
+                })()}
+              </defs>
+              <CartesianGrid {...gridProps} />
               <XAxis
+                {...axisProps}
                 dataKey="dateStr"
-                stroke="var(--text-tertiary)"
-                fontSize={12}
-                tickMargin={10}
                 tickFormatter={(value) => {
                   const d = new Date(value);
                   return `${d.getDate()}/${d.getMonth() + 1}`;
                 }}
               />
               <YAxis
-                stroke="var(--text-tertiary)"
-                fontSize={12}
+                {...axisProps}
                 width={40}
                 tickFormatter={(val) => `${val}%`}
               />
               <Tooltip
-                contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-                itemStyle={{ color: 'var(--text-primary)' }}
-                formatter={(value) => [`${value.toFixed(2)}%`, 'TNA Real']}
-                labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
+                content={
+                  <ChartTooltip
+                    labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
+                    valueFormatter={(value) => `${Number(value).toFixed(2)}%`}
+                  />
+                }
               />
+              <Area dataKey="tna" {...getAreaGradientProps('grad-tna')} />
               <Line
-                type="monotone"
                 dataKey="tna"
-                stroke="var(--color-success)"
-                strokeWidth={2}
-                dot={{ r: 3, fill: 'var(--color-success)' }}
-                activeDot={{ r: 5 }}
+                stroke={CHART_COLORS.success}
+                {...getLineProps(CHART_COLORS.success)}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

@@ -31,6 +31,8 @@
   /* amber-600 */
   --color-info: #3b82f6;
   /* blue-500 */
+  --color-accent: #6366f1;
+  /* indigo-500 */
 
   --color-success-muted: rgba(5, 150, 105, 0.1);
   --color-danger-muted: rgba(220, 38, 38, 0.1);
@@ -55,6 +57,7 @@
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
   --color-info: #60a5fa;
+  --color-accent: #818cf8;
 
   --color-success-muted: rgba(16, 185, 129, 0.1);
   --color-danger-muted: rgba(239, 68, 68, 0.1);
