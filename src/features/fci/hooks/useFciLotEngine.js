@@ -63,20 +63,17 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
                 const latest = latestMap[id];
                 if (!latest) return;
 
-                // Pedir desde 3 días antes del último precio para cubrir gaps de finde
-                const latestDate = new Date(latest.fecha + 'T00:00:00');
-                const fromDate = new Date(latestDate);
-                fromDate.setDate(fromDate.getDate() - 3);
-                const from = fromDate.toISOString().split('T')[0];
-
-                const recentPrices = await fciService.getPrices(id, from);
-                if (!recentPrices || recentPrices.length < 2) return;
+                // Buscar TODOS los precios históricos (sin filtro de fecha)
+                // Esto permite calcular pnlDiario aunque el precio anterior sea antiguo
+                // y hace el código más robusto ante gaps de data (fines de semana largos, feriados)
+                const allPrices = await fciService.getPrices(id);
+                if (!allPrices || allPrices.length < 2) return;
 
                 // Encontrar el precio inmediatamente anterior al último
-                // recentPrices viene ordenado ASC por fecha
-                const lastIdx = recentPrices.findIndex(p => p.fecha === latest.fecha);
+                // allPrices viene ordenado ASC por fecha
+                const lastIdx = allPrices.findIndex(p => p.fecha === latest.fecha);
                 if (lastIdx > 0) {
-                    yesterdayMap[id] = recentPrices[lastIdx - 1];
+                    yesterdayMap[id] = allPrices[lastIdx - 1];
                 }
             }));
             setYesterdayPrices(yesterdayMap);
