@@ -98,9 +98,10 @@ export function OperationsTab({
       const interesPagado = Number(caucion.interes || 0);
 
       // Calcular ganancia FCI proporcional al capital financiado
-      // usando el PnL total de los lotes (que ya está calculado correctamente por ALyC)
+      // Usamos fciDailyPnl (PnL diario) para mostrar la ganancia del día,
+      // no fciTotalPnl (PnL acumulado desde entrada)
       const gananciaFCIAsignada = totals.capitalFinanciado > 0
-        ? (capital / totals.capitalFinanciado) * totals.fciTotalPnl
+        ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl
         : 0;
       const pnlDiarioAsignado = totals.capitalFinanciado > 0
         ? (capital / totals.capitalFinanciado) * totals.fciDailyPnl

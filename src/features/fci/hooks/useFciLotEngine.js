@@ -119,6 +119,9 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
     // COMPUTED: lotDetails — cada lot activo con sus campos calculados
     // =========================================================================
     const lotDetails = useMemo(() => {
+        // Calcular fecha de hoy una sola vez
+        const hoy = new Date().toISOString().split('T')[0];
+
         return activeLots.map(lot => {
             const latest = latestPrices[lot.fci_id];
             const yesterday = yesterdayPrices[lot.fci_id];
@@ -130,8 +133,14 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
 
             const valuation = cp.times(vcpT);
             const pnlAcumulado = valuation.minus(capitalInvertido);
-            // PnL diario solo si tenemos precio anterior
-            const pnlDiario = vcpT1.gt(0) ? cp.times(vcpT.minus(vcpT1)) : new Decimal(0);
+
+            // PnL diario solo si:
+            // 1. Tenemos precio anterior (vcpT1 > 0)
+            // 2. El último precio es de hoy (latest.fecha === hoy)
+            // Si el VCP de hoy no existe aún, pnlDiario = 0
+            const pnlDiario = (latest?.fecha === hoy && vcpT1.gt(0))
+                ? cp.times(vcpT.minus(vcpT1))
+                : new Decimal(0);
 
             return {
                 // Campos originales del lot
