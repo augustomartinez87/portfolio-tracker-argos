@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
-import { fciService } from '@/features/fci/services/fciService';
 import {
   Database,
   LayoutDashboard,
@@ -16,12 +15,9 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 import { useCauciones } from '@/features/financing/hooks/useCauciones';
 import { useCarryMetrics } from '@/hooks/useCarryMetrics';
-import { useFciTNA } from '@/hooks/useFciTNA';
-import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 import { DashboardTab } from '@/components/funding/DashboardTab';
 import { AnalysisTab } from '@/components/funding/AnalysisTab';
 import { OperationsTab } from '@/components/funding/OperationsTab';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 // ===========================================================================
 // COMPONENTE PRINCIPAL
@@ -29,8 +25,8 @@ import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 export default function FundingEngine() {
   const { user, signOut } = useAuth();
-  const { currentPortfolio, fciTotals, fciPositions } = usePortfolio();
-  const { lastUpdate: priceLastUpdate, isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
+  const { currentPortfolio, fciLotEngine } = usePortfolio();
+  const { isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   // Estado para tabs
@@ -38,6 +34,7 @@ export default function FundingEngine() {
   const [caucionCutoffMode, setCaucionCutoffMode] = useState('auto');
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
+  const fciPositions = fciLotEngine?.positions || [];
   const mainFciId = useMemo(() => {
     if (!fciPositions || fciPositions.length === 0) return null;
 
@@ -51,8 +48,19 @@ export default function FundingEngine() {
     return mainFci.fciId;
   }, [fciPositions]);
 
-  // Calcular TNA dinámica del FCI principal
-  const { tnaFCI: tnaFCIDynamic, loading: tnaLoading, error: tnaError, isFallback, ultimaPreciofecha, vcpPrices: vcpRecientes } = useFciTNA(mainFciId);
+  // TNA FCI derivada de datos del motor por lotes (sin usar precios directos)
+  const totalPnlDiario = useMemo(() => (
+    fciPositions.reduce((sum, pos) => sum + (pos.pnlDiario || 0), 0)
+  ), [fciPositions]);
+  const fciValuationTotal = fciLotEngine?.totals?.valuation || 0;
+  const tnaFCIDynamic = fciValuationTotal > 0
+    ? (totalPnlDiario / fciValuationTotal) * 365
+    : 0;
+  const isFallback = fciValuationTotal <= 0;
+  const ultimaPreciofecha = useMemo(() => {
+    const mainPos = fciPositions.find(p => p.fciId === mainFciId);
+    return mainPos?.priceDate || null;
+  }, [fciPositions, mainFciId]);
 
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
@@ -60,33 +68,13 @@ export default function FundingEngine() {
     currentPortfolio?.id
   );
 
-  // Fetch de VCP históricos para cubrir todas las fechas de las cauciones
-  const [vcpHistoricos, setVcpHistoricos] = useState([]);
-  useEffect(() => {
-    if (!mainFciId || !cauciones || cauciones.length === 0) {
-      setVcpHistoricos([]);
-      return;
-    }
-
-    // Encontrar la fecha más antigua entre todas las cauciones
-    const fechaMasAntigua = cauciones.reduce((min, c) => {
-      const fecha = String(c.fecha_inicio).split('T')[0];
-      return !min || fecha < min ? fecha : min;
-    }, null);
-
-    if (!fechaMasAntigua) {
-      setVcpHistoricos([]);
-      return;
-    }
-
-    fciService.getPrices(mainFciId, fechaMasAntigua)
-      .then(data => setVcpHistoricos(data || []))
-      .catch(err => console.error('[FundingEngine] Error fetching historical VCP:', err));
-  }, [mainFciId, cauciones]);
+  // VCP históricos desactivados: FCI ahora viene de fciLotEngine
+  const vcpHistoricos = [];
+  
 
   // Crear objeto fciEngine compatible con useCarryMetrics
   const fciEngine = {
-    totals: fciTotals || { valuation: 0 },
+    totals: fciLotEngine?.totals || { valuation: 0 },
   };
 
   // Calcular métricas de carry con TNA dinámica
@@ -99,12 +87,7 @@ export default function FundingEngine() {
   });
 
   // Cargar datos históricos para benchmark (30 días)
-  const { stats: historicalStats } = useHistoricalRates(
-    mainFciId,
-    currentPortfolio?.id,
-    user?.id,
-    30
-  );
+  const historicalStats = null;
 
   const handleManualRefresh = async () => {
     try {
@@ -235,9 +218,7 @@ export default function FundingEngine() {
               {activeTab === 'operations' && (
                 <OperationsTab
                   cauciones={cauciones}
-                  vcpPrices={vcpHistoricos}
-                  tnaMA7={tnaFCIDynamic}
-                  saldoFCI={fciTotals?.valuation || 0}
+                  fciValuation={fciLotEngine?.totals?.valuation || 0}
                 />
               )}
             </div>
@@ -249,3 +230,5 @@ export default function FundingEngine() {
     </div>
   );
 }
+
+
