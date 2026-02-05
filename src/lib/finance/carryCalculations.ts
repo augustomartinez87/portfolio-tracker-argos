@@ -267,12 +267,14 @@ export function calcularSpreadPorCaucion(
     const vcpHoyDec = new Decimal(vcpHoy.vcp);
     
     // a) Tramo real: fecha_inicio → hoy
-    // Si vcpHoy <= vcpInicio (mismo día o anterior), la ganancia real es 0
-    const gananciaReal = vcpHoy.fecha > vcpInicio.fecha 
+    // La ganancia real solo existe si el VCP disponible "hoy" es de una fecha posterior
+    // a la fecha de inicio de la caución. Si es del mismo día o anterior, la ganancia es 0.
+    // Ej: caución del 04→05, hoy=05. Si VCP_hoy=04 (mismo día que inicio), ganancia=0.
+    const gananciaReal = vcpHoy.fecha > fechaInicio
       ? calcularGananciaFCIReal(capital, vcpInicioDec, vcpHoyDec)
       : new Decimal(0);
     
-    console.log(`[DEBUG] Ganancia real calculada: ${gananciaReal.toNumber()}, vcpHoy.fecha=${vcpHoy.fecha} > vcpInicio.fecha=${vcpInicio.fecha} = ${vcpHoy.fecha > vcpInicio.fecha}`);
+    console.log(`[DEBUG] Ganancia real calculada: ${gananciaReal.toNumber()}, vcpHoy.fecha=${vcpHoy.fecha} > fechaInicio=${fechaInicio} = ${vcpHoy.fecha > fechaInicio}`);
 
     // b) Tramo proyectado: hoy → fecha_fin
     const diasRestantes = Math.max(0, Math.round(
