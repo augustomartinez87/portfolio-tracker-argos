@@ -105,6 +105,7 @@ export function DashboardTab({
   caucionCutoffMode,
   onCaucionCutoffModeChange,
   historicalStats,
+  ultimaPreciofecha,
 }) {
   // Funciones de estado para semáforos
   const getCoverageStatus = (ratio) => {
@@ -586,6 +587,9 @@ export function DashboardTab({
             <div className="text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">TNA FCI</p>
               <p className="font-mono font-bold text-xl text-success">{formatPercent(carryMetrics.tnaFCI * 100)}</p>
+              {ultimaPreciofecha && (
+                <p className="text-[10px] text-text-tertiary mt-1">Dato del {ultimaPreciofecha}</p>
+              )}
             </div>
             <div className="text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">TNA Caución Pond.</p>

@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
+import { fciService } from '@/features/fci/services/fciService';
 import {
   Database,
   LayoutDashboard,
@@ -49,13 +50,37 @@ export default function FundingEngine() {
   }, [fciPositions]);
 
   // Calcular TNA dinámica del FCI principal
-  const { tnaFCI: tnaFCIDynamic, loading: tnaLoading, error: tnaError, isFallback } = useFciTNA(mainFciId);
+  const { tnaFCI: tnaFCIDynamic, loading: tnaLoading, error: tnaError, isFallback, ultimaPreciofecha, vcpPrices: vcpRecientes } = useFciTNA(mainFciId);
 
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
     user?.id,
     currentPortfolio?.id
   );
+
+  // Fetch de VCP históricos para cubrir todas las fechas de las cauciones
+  const [vcpHistoricos, setVcpHistoricos] = useState([]);
+  useEffect(() => {
+    if (!mainFciId || !cauciones || cauciones.length === 0) {
+      setVcpHistoricos([]);
+      return;
+    }
+
+    // Encontrar la fecha más antigua entre todas las cauciones
+    const fechaMasAntigua = cauciones.reduce((min, c) => {
+      const fecha = String(c.fecha_inicio).split('T')[0];
+      return !min || fecha < min ? fecha : min;
+    }, null);
+
+    if (!fechaMasAntigua) {
+      setVcpHistoricos([]);
+      return;
+    }
+
+    fciService.getPrices(mainFciId, fechaMasAntigua)
+      .then(data => setVcpHistoricos(data || []))
+      .catch(err => console.error('[FundingEngine] Error fetching historical VCP:', err));
+  }, [mainFciId, cauciones]);
 
   // Crear objeto fciEngine compatible con useCarryMetrics
   const fciEngine = {
@@ -68,6 +93,7 @@ export default function FundingEngine() {
     fciEngine,
     tnaFCI: tnaFCIDynamic,
     caucionCutoffMode,
+    vcpPrices: vcpHistoricos,
   });
 
   // Cargar datos históricos para benchmark (30 días)
@@ -179,6 +205,7 @@ export default function FundingEngine() {
                   caucionCutoffMode={caucionCutoffMode}
                   onCaucionCutoffModeChange={setCaucionCutoffMode}
                   historicalStats={historicalStats}
+                  ultimaPreciofecha={ultimaPreciofecha}
                 />
               )}
 

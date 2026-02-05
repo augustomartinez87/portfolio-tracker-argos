@@ -10,7 +10,98 @@ import Decimal from 'decimal.js';
  * @param {number} params.tnaFCI - TNA del FCI como decimal (ej: 0.284849 para 28.48%)
  * @returns {Object|null} Métricas de carry trade o null si no hay datos suficientes
  */
-export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto' }) {
+/**
+ * Busca el último VCP con fecha <= fechaObjetivo en un array ordenado ascendente.
+ * Retorna el registro o null si no existe.
+ */
+function buscarVcpAnteriorOIgual(vcpPrices, fechaObjetivo) {
+  let resultado = null;
+  for (const p of vcpPrices) {
+    if (p.fecha <= fechaObjetivo) {
+      resultado = p;
+    } else {
+      break; // array ordenado ascendente, ya no hay más <= fechaObjetivo
+    }
+  }
+  return resultado;
+}
+
+/**
+ * Calcula el spread de una caución individual contra el rendimiento real del FCI.
+ *
+ * - Cauciones vencidas: usa VCP real en fecha_inicio y fecha_fin.
+ * - Cauciones activas: tramo real (inicio→hoy) + tramo proyectado (hoy→fin) con tnaMA7.
+ *
+ * @returns {{ spread_$: number, spread_%: number, ganancia_fci_$: number }} | null si no hay datos suficientes
+ */
+function calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy) {
+  if (!vcpPrices || vcpPrices.length === 0) return null;
+
+  const capital = new Decimal(caucion.capital || 0);
+  const interes = new Decimal(caucion.interes || 0);
+  if (capital.isZero()) return null;
+
+  const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
+  const fechaFin = String(caucion.fecha_fin).split('T')[0];
+  const fechaHoy = hoy.toISOString().split('T')[0];
+
+  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio);
+  if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
+
+  const vcpInicioDec = new Decimal(vcpInicio.vcp);
+  const esVencida = fechaFin < fechaHoy;
+
+  if (esVencida) {
+    // Caución vencida: solo datos reales
+    const vcpFin = buscarVcpAnteriorOIgual(vcpPrices, fechaFin);
+    if (!vcpFin || new Decimal(vcpFin.vcp || 0).isZero()) return null;
+
+    const vcpFinDec = new Decimal(vcpFin.vcp);
+    const ratioFci = vcpFinDec.dividedBy(vcpInicioDec);
+    const gananciaDolares = capital.times(ratioFci.minus(1));
+    const rendimientoPct = ratioFci.minus(1);
+    const costoPct = interes.dividedBy(capital);
+
+    return {
+      'spread_$': gananciaDolares.minus(interes).toNumber(),
+      'spread_%': rendimientoPct.minus(costoPct).toNumber(),
+      'ganancia_fci_$': gananciaDolares.toNumber(),
+    };
+  } else {
+    // Caución activa: tramo real + tramo proyectado
+    // a) Tramo real: fecha_inicio → hoy
+    const vcpHoy = vcpPrices[vcpPrices.length - 1]; // último precio disponible
+    if (!vcpHoy || new Decimal(vcpHoy.vcp || 0).isZero()) return null;
+
+    const vcpHoyDec = new Decimal(vcpHoy.vcp);
+    const ratioReal = vcpHoyDec.dividedBy(vcpInicioDec);
+    const gananciaDolaresReal = capital.times(ratioReal.minus(1));
+
+    // b) Tramo proyectado: hoy → fecha_fin
+    const diasRestantes = Math.round(
+      (new Date(fechaFin) - new Date(fechaHoy)) / (1000 * 60 * 60 * 24)
+    );
+    let gananciaDolaresProy = new Decimal(0);
+    if (diasRestantes > 0 && tnaMA7 > 0) {
+      const tasaDiaria = new Decimal(1 + tnaMA7).pow(new Decimal(1).dividedBy(365)).minus(1);
+      const ratioProy = new Decimal(1).plus(tasaDiaria).pow(diasRestantes);
+      gananciaDolaresProy = capital.times(ratioProy.minus(1));
+    }
+
+    // c) Total
+    const gananciaDolaresTotal = gananciaDolaresReal.plus(gananciaDolaresProy);
+    const rendimientoPct = gananciaDolaresTotal.dividedBy(capital);
+    const costoPct = interes.dividedBy(capital);
+
+    return {
+      'spread_$': gananciaDolaresTotal.minus(interes).toNumber(),
+      'spread_%': rendimientoPct.minus(costoPct).toNumber(),
+      'ganancia_fci_$': gananciaDolaresTotal.toNumber(),
+    };
+  }
+}
+
+export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [] }) {
   return useMemo(() => {
     if (!cauciones?.length || !fciEngine?.totals) {
       return null;
@@ -180,29 +271,32 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       : new Decimal(0);
 
     // =========================================================================
-    // 11. SPREAD ACUMULADO (HISTÓRICO)
+    // 11. SPREAD ACUMULADO (HISTÓRICO) — por caución individual con VCP real
     // =========================================================================
-    // Suma de (ganancia FCI - costo caución) para cada caución histórica
-    // Usa el capital de cada caución como proxy del capital desplegado en FCI
-    const spreadAcumulado = cauciones.reduce((sum, c) => {
-      const dias = c.dias || 0;
-      const capitalCaucion = new Decimal(c.capital || 0);
-      const gananciaFCI = capitalCaucion.times(tnaFCIDec).dividedBy(365).times(dias);
-      const costoCaucion = new Decimal(c.interes || 0);
-      return sum.plus(gananciaFCI.minus(costoCaucion));
+    // Cada caución se evalúa contra el rendimiento real del FCI en su rango de fechas.
+    // Cauciones vencidas: VCP real inicio→fin.
+    // Cauciones activas: tramo real (inicio→hoy) + proyección con TNA MA-7d (hoy→fin).
+    const spreadsPorCaucion = cauciones.map(c => calcularSpreadPorCaucion(c, vcpPrices, tnaFCIDec.toNumber(), hoy));
+
+    const spreadAcumulado = spreadsPorCaucion.reduce((sum, s) => {
+      if (s === null) return sum;
+      return sum.plus(new Decimal(s['spread_$']));
     }, new Decimal(0));
 
-    // =========================================================================
-    // 12. FULL DEPLOYMENT TEÓRICO
-    // =========================================================================
-    // Si todo el capital de caución estuviera desplegado en FCI
-    const fullDeploymentAcumulado = cauciones.reduce((sum, c) => {
-      const dias = c.dias || 0;
-      const capitalCaucion = new Decimal(c.capital || 0);
-      const gananciaTeórica = capitalCaucion.times(tnaFCIDec).dividedBy(365).times(dias);
-      const costoCaucion = new Decimal(c.interes || 0);
-      return sum.plus(gananciaTeórica.minus(costoCaucion));
-    }, new Decimal(0));
+    // Spread promedio ponderado por capital
+    const { capitalConDatos, spreadPonderadoSum } = cauciones.reduce((acc, c, idx) => {
+      const s = spreadsPorCaucion[idx];
+      if (s === null) return acc;
+      const cap = new Decimal(c.capital || 0);
+      return {
+        capitalConDatos: acc.capitalConDatos.plus(cap),
+        spreadPonderadoSum: acc.spreadPonderadoSum.plus(cap.times(s['spread_%'])),
+      };
+    }, { capitalConDatos: new Decimal(0), spreadPonderadoSum: new Decimal(0) });
+
+    const spreadPromedioPorc = capitalConDatos.gt(0)
+      ? spreadPonderadoSum.dividedBy(capitalConDatos)
+      : new Decimal(0);
 
     // =========================================================================
     // 13. PROYECCIONES DE SPREAD
@@ -298,7 +392,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       carryPerdidoAnual: carryPerdidoAnual.toNumber(),
       gananciaProductivaDia: gananciaProductivaDia.toNumber(),
       spreadAcumulado: spreadAcumulado.toNumber(),
-      fullDeploymentAcumulado: fullDeploymentAcumulado.toNumber(),
+      spreadPromedioPorc: spreadPromedioPorc.toNumber(),
       costoNoOptimoDia: costoNoOptimoDia.toNumber(),
       costoNoOptimoAnual: costoNoOptimoAnual.toNumber(),
 
@@ -308,7 +402,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       ultimaActualizacion: new Date().toISOString(),
       metadata,
     };
-  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode]);
+  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices]);
 }
 
 export default useCarryMetrics;
