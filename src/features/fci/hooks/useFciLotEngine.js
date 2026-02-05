@@ -146,7 +146,7 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
                 notes: lot.notes,
                 // Joins
                 nombreFondo: lot.fci_master?.nombre || 'Desconocido',
-                nombreLugar: lot.lugares?.lugar_nombre || null,
+                nombreLugar: lot.lugares?.nombre || null,
                 // Computados
                 valuation: valuation.toNumber(),
                 pnlAcumulado: pnlAcumulado.toNumber(),

@@ -161,7 +161,7 @@ export const fciService = {
                     currency
                 ),
                 lugares (
-                    nombre as lugar_nombre
+                    nombre
                 )
             `)
             .eq('portfolio_id', portfolioId)
@@ -185,7 +185,7 @@ export const fciService = {
                     currency
                 ),
                 lugares (
-                    nombre as lugar_nombre
+                    nombre
                 )
             `)
             .eq('portfolio_id', portfolioId)
