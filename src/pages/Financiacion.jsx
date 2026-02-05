@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { TrendingUp, RefreshCw, Upload, Filter, Trash2, Coins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -17,7 +17,21 @@ const Financiacion = () => {
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
   const queryClient = useQueryClient();
 
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+    }
+  }, [sidebarPinned]);
+
   const [activeTab, setActiveTab] = useState('financiacion'); // Estado para navegación del sidebar
 
   // React Query para obtener operaciones (persistencia real)
@@ -109,6 +123,8 @@ const Financiacion = () => {
           setActiveTab={setActiveTab}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+                  isPinned={sidebarPinned}
+                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>

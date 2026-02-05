@@ -28,7 +28,21 @@ export default function FundingEngine() {
   const { user, signOut } = useAuth();
   const { currentPortfolio, fciLotEngine } = usePortfolio();
   const { isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+    }
+  }, [sidebarPinned]);
+
 
   // Estado para tabs
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -186,6 +200,8 @@ export default function FundingEngine() {
         signOut={signOut}
         isExpanded={sidebarExpanded}
         setIsExpanded={setSidebarExpanded}
+                  isPinned={sidebarPinned}
+                  setIsPinned={setSidebarPinned}
       />
 
       <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 min-h-screen ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>

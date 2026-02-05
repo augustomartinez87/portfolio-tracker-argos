@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -20,7 +20,21 @@ export default function CarryTrade() {
 
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
-    const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+    }
+  }, [sidebarPinned]);
+
     const [displayCurrency, setDisplayCurrency] = useState('USD');
 
     const {
@@ -49,6 +63,8 @@ export default function CarryTrade() {
                     signOut={signOut}
                     isExpanded={sidebarExpanded}
                     setIsExpanded={setSidebarExpanded}
+                  isPinned={sidebarPinned}
+                  setIsPinned={setSidebarPinned}
                 />
                 <main className={`flex-1 transition-all duration-300 overflow-hidden h-screen flex flex-col mt-16 lg:mt-0 mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
                     <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col h-full overflow-hidden">

@@ -8,7 +8,21 @@ import { userService } from '@/features/auth/services/userService';
 
 export default function Admin() {
   const { user, signOut } = useAuth();
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+    }
+  }, [sidebarPinned]);
+
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [activity, setActivity] = useState([]);
@@ -125,6 +139,8 @@ export default function Admin() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+                  isPinned={sidebarPinned}
+                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-20 lg:pb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'

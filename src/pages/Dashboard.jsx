@@ -83,7 +83,21 @@ export default function Dashboard() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [showFormatHelp, setShowFormatHelp] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebarPinned') === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarPinned', sidebarPinned ? 'true' : 'false');
+    }
+  }, [sidebarPinned]);
+
   const [tradesLoading, setTradesLoading] = useState(false);
   const { searchTerm, setSearchTerm, clearSearch } = useSearch();
   // Filtros de transacciones
@@ -448,6 +462,8 @@ export default function Dashboard() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+                  isPinned={sidebarPinned}
+                  setIsPinned={setSidebarPinned}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
