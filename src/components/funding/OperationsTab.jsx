@@ -24,11 +24,12 @@ const buildIdentificador = (caucion) => {
 };
 
 /**
- * Pestaña de Operaciones - Cruce real entre FCI y cauciones
+ * Pestaï¿½a de Operaciones - Cruce real entre FCI y cauciones
  *
  * @param {Object} props
  * @param {Array} props.cauciones - Array de cauciones desde Supabase
- * @param {number} props.fciValuation - Valuación real del FCI (desde fciLotEngine.totals.valuation)
+ * @param {Array} props.fciLots - Array de lotes FCI activos con sus PnL
+ * @param {number} props.fciValuation - Valuaciï¿½n real del FCI (desde fciLotEngine.totals.valuation)
  * @param {number} props.fciTotalPnl - PnL acumulado total del FCI (desde fciLotEngine.totals.pnl)
  * @param {number} props.fciDailyPnl - PnL diario total del FCI (desde fciLotEngine.positions[].pnlDiario)
  * @param {number} props.fciDailyPnlPct - PnL diario % del FCI (pnlDiario / valuation)
@@ -36,6 +37,7 @@ const buildIdentificador = (caucion) => {
  */
 export function OperationsTab({
   cauciones,
+  fciLots = [],
   fciValuation,
   fciTotalPnl = 0,
   fciDailyPnl = 0,
@@ -49,6 +51,16 @@ export function OperationsTab({
     );
     const interesesAcumulados = (cauciones || []).reduce(
       (sum, c) => sum + Number(c.interes || 0),
+      0
+    );
+    // Calcular valuaciÃ³n total de lotes como referencia
+    const lotesValuation = (fciLots || []).reduce(
+      (sum, lot) => sum + Number(lot.valuation || 0),
+      0
+    );
+    // Calcular PnL total de lotes (debe coincidir con fciTotalPnl)
+    const lotesTotalPnl = (fciLots || []).reduce(
+      (sum, lot) => sum + Number(lot.pnlAcumulado || 0),
       0
     );
     const valuation = Number(fciValuation || 0);
@@ -66,8 +78,10 @@ export function OperationsTab({
       fciTotalPnl: Number(fciTotalPnl || 0),
       fciDailyPnl: Number(fciDailyPnl || 0),
       fciDailyPnlPct: Number(fciDailyPnlPct || 0),
+      lotesValuation,
+      lotesTotalPnl,
     };
-  }, [cauciones, fciValuation, fciTotalPnl, fciDailyPnl, fciDailyPnlPct]);
+  }, [cauciones, fciValuation, fciTotalPnl, fciDailyPnl, fciDailyPnlPct, fciLots]);
 
   const rows = useMemo(() => {
     const hoyISO = hoy.toISOString().split('T')[0];
@@ -83,6 +97,8 @@ export function OperationsTab({
       const capital = Number(caucion.capital || 0);
       const interesPagado = Number(caucion.interes || 0);
 
+      // Calcular ganancia FCI proporcional al capital financiado
+      // usando el PnL total de los lotes (que ya estÃ¡ calculado correctamente por ALyC)
       const gananciaFCIAsignada = totals.capitalFinanciado > 0
         ? (capital / totals.capitalFinanciado) * totals.fciTotalPnl
         : 0;
@@ -120,7 +136,7 @@ export function OperationsTab({
         <Receipt className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-text-primary mb-2">Sin operaciones</h3>
         <p className="text-text-secondary text-sm">
-          No hay cauciones cargadas. Cargá operaciones desde la sección de Financiación.
+          No hay cauciones cargadas. Cargï¿½ operaciones desde la secciï¿½n de Financiaciï¿½n.
         </p>
       </div>
     );
@@ -130,9 +146,9 @@ export function OperationsTab({
     return (
       <div className="bg-background-secondary rounded-xl p-8 border border-border-primary text-center">
         <AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-text-primary mb-2">Sin valuación FCI</h3>
+        <h3 className="text-lg font-semibold text-text-primary mb-2">Sin valuaciï¿½n FCI</h3>
         <p className="text-text-secondary text-sm">
-          No hay valuación FCI disponible desde el motor de lotes. Verificá el módulo FCI.
+          No hay valuaciï¿½n FCI disponible desde el motor de lotes. Verificï¿½ el mï¿½dulo FCI.
         </p>
       </div>
     );
@@ -149,7 +165,7 @@ export function OperationsTab({
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
-              title="Valuación FCI"
+              title="Valuaciï¿½n FCI"
               value={formatARS(totals.valuation)}
               subtitle="Fuente: FCI Lot Engine"
               icon={TrendingUp}
@@ -180,14 +196,14 @@ export function OperationsTab({
         </div>
       </div>
 
-      <Section title="Detalle por Caución" icon={Receipt}>
+      <Section title="Detalle por Cauciï¿½n" icon={Receipt}>
         <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-background-tertiary border-b border-border-secondary">
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Caución
+                    Cauciï¿½n
                   </th>
                   <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Inicio
@@ -199,7 +215,7 @@ export function OperationsTab({
                     Capital
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Interés pagado
+                    Interï¿½s pagado
                   </th>
                   <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
                     Ganancia FCI
@@ -296,12 +312,12 @@ export function OperationsTab({
       <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">
         <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          Metodología de cálculo
+          Metodologï¿½a de cï¿½lculo
         </h4>
         <ul className="text-xs text-text-tertiary space-y-1 list-disc list-inside">
           <li><strong>Ganancia FCI:</strong> Se asigna proporcional al capital financiado</li>
           <li><strong>PnL diario:</strong> Se distribuye proporcionalmente por capital financiado</li>
-          <li><strong>Spread ($):</strong> Ganancia FCI - Interés pagado</li>
+          <li><strong>Spread ($):</strong> Ganancia FCI - Interï¿½s pagado</li>
           <li><strong>Spread (%):</strong> Ganancia % - Costo % (ambos sobre capital)</li>
         </ul>
       </div>

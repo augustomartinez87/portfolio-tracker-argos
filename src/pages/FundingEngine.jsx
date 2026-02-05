@@ -35,6 +35,23 @@ export default function FundingEngine() {
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const fciPositions = fciLotEngine?.positions || [];
+  const fciLots = useMemo(() => {
+    // Obtener todos los lotes activos de todas las posiciones
+    const allLots = [];
+    fciPositions.forEach(pos => {
+      if (pos.lots && Array.isArray(pos.lots)) {
+        pos.lots.forEach(lot => {
+          allLots.push({
+            ...lot,
+            fciId: pos.fciId,
+            fciName: pos.name,
+          });
+        });
+      }
+    });
+    return allLots;
+  }, [fciPositions]);
+  
   const mainFciId = useMemo(() => {
     if (!fciPositions || fciPositions.length === 0) return null;
 
@@ -222,6 +239,7 @@ export default function FundingEngine() {
               {activeTab === 'operations' && (
                 <OperationsTab
                   cauciones={cauciones}
+                  fciLots={fciLots}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
                   fciTotalPnl={fciTotalPnl}
                   fciDailyPnl={totalPnlDiario}
