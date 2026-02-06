@@ -8,14 +8,13 @@ import {
   gridProps,
   axisProps,
   legendProps,
-  createGradientDef,
   ChartTooltip,
   CHART_COLORS,
 } from '@/utils/chartTheme';
 
-const formatDateAR = (fechaISO) => {
+const formatDateShort = (fechaISO) => {
   if (!fechaISO) return '';
-  const [year, month, day] = String(fechaISO).split('T')[0].split('-');
+  const [, month, day] = String(fechaISO).split('T')[0].split('-');
   return `${day}/${month}`;
 };
 
@@ -64,7 +63,7 @@ export function ReinvestmentTracker({ cauciones = [], dataStartDate }) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([semana, data]) => ({
         semana,
-        semanaLabel: formatDateAR(semana),
+        semanaLabel: formatDateShort(semana),
         capital: Math.round(data.capital),
         operaciones: data.count,
         tnaPromedio: data.count > 0 ? data.tnaSum / data.count : 0,

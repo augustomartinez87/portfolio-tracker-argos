@@ -27,6 +27,8 @@ export const CONSTANTS = {
 
   /** Ventana de rate limit (1 minuto) */
   API_RATE_WINDOW: 60 * 1000,
+  /** Fecha mínima de datos confiables para carry trade */
+  DATA_START_DATE: '2026-01-16',
 } as const;
 
 /**

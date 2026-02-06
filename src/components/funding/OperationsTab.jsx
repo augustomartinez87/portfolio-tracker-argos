@@ -1,18 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Receipt, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Calculator, Info, Target, BarChart2, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { Receipt, Clock, CheckCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
+import { formatARS, formatPercent, formatDateAR } from '@/utils/formatters';
+import { calculatePnlForPeriod } from '@/utils/vcpHelpers';
+import { CONSTANTS } from '@/utils/constants';
 import { Section } from '@/components/common/Section';
-import { MetricCard } from '@/components/common/MetricCard';
-import SummaryCard from '@/components/common/SummaryCard';
-
-const DATA_START_DATE = '2026-01-16';
-
-const formatDateAR = (fechaISO) => {
-  if (!fechaISO) return '';
-  const [year, month, day] = String(fechaISO).split('T')[0].split('-');
-  if (!year || !month || !day) return '';
-  return `${day}/${month}/${year}`;
-};
+import { OperationsPositionCards } from './OperationsPositionCards';
+import { OperationsPerformance } from './OperationsPerformance';
 
 const buildIdentificador = (caucion) => {
   const fecha = String(caucion.fecha_inicio || '').split('T')[0];
@@ -27,57 +20,6 @@ const buildIdentificador = (caucion) => {
 };
 
 /**
- * Helper: Busca VCP en fecha específica, o el más cercano anterior si no existe
- */
-const findVcpAtDate = (vcpMap, targetDate) => {
-  if (!vcpMap || Object.keys(vcpMap).length === 0) return null;
-
-  if (vcpMap[targetDate]) return vcpMap[targetDate];
-
-  const dates = Object.keys(vcpMap).sort();
-  let closestDate = null;
-
-  for (const date of dates) {
-    if (date <= targetDate) {
-      closestDate = date;
-    } else {
-      break;
-    }
-  }
-
-  return closestDate ? vcpMap[closestDate] : null;
-};
-
-/**
- * Calcula PnL de lotes FCI durante un período específico
- */
-const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin) => {
-  let totalPnl = 0;
-
-  for (const lot of fciLots) {
-    const fciId = lot.fci_id || lot.fciId;
-    const vcpMap = vcpHistoricos[fciId];
-
-    if (!vcpMap) continue;
-
-    const startDate = lot.fecha_suscripcion > fechaInicio ? lot.fecha_suscripcion : fechaInicio;
-
-    const vcpInicio = lot.fecha_suscripcion > fechaInicio
-      ? lot.vcp_entrada
-      : findVcpAtDate(vcpMap, startDate);
-
-    const vcpFin = findVcpAtDate(vcpMap, fechaFin);
-
-    if (vcpInicio && vcpFin && lot.cuotapartes) {
-      const pnl = lot.cuotapartes * (vcpFin - vcpInicio);
-      totalPnl += pnl;
-    }
-  }
-
-  return totalPnl;
-};
-
-/**
  * Pestaña de Operaciones - Cruce real entre FCI y cauciones
  */
 export function OperationsTab({
@@ -89,7 +31,7 @@ export function OperationsTab({
   fciDailyPnlPct = 0,
   hasTodayPrice = true,
   vcpHistoricos = {},
-  dataStartDate = DATA_START_DATE,
+  dataStartDate = CONSTANTS.DATA_START_DATE,
   hoy = new Date()
 }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -270,118 +212,11 @@ export function OperationsTab({
     <div className="space-y-6">
       {/* Posición Actual - Solo cauciones vigentes */}
       <div className="bg-background-secondary rounded-xl border border-border-primary shadow-lg">
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Calculator className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-text-primary">Posición Actual</h3>
-            <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">
-              {totals.cantVigentes} vigente{totals.cantVigentes !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          {!hasTodayPrice && (
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
-              <Info className="w-4 h-4" />
-              <span>No hay VCP de hoy ({todayStr}). El PnL diario se muestra en 0.</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard
-              title="Valuación FCI"
-              value={formatARS(totals.valuation)}
-              subtitle="Saldo actual"
-              icon={TrendingUp}
-              status="info"
-            />
-            <MetricCard
-              title="Capital financiado"
-              value={formatARS(totals.capitalVigente)}
-              subtitle={`${totals.cantVigentes} caución${totals.cantVigentes !== 1 ? 'es' : ''} vigente${totals.cantVigentes !== 1 ? 's' : ''}`}
-              icon={Receipt}
-              status="info"
-            />
-            <MetricCard
-              title="Intereses vigentes"
-              value={formatARS(totals.interesesVigentes)}
-              subtitle="Costo cauciones activas"
-              icon={TrendingDown}
-              status="warning"
-            />
-            <MetricCard
-              title="Cobertura"
-              value={formatARS(totals.cobertura)}
-              subtitle={totals.capitalVigente > 0 ? `Ratio: ${formatNumber(totals.coberturaRatio, 1)}%` : 'Sin caución activa'}
-              icon={Target}
-              status={totals.cobertura >= 0 ? 'success' : 'danger'}
-            />
-          </div>
-        </div>
+        <OperationsPositionCards totals={totals} hasTodayPrice={hasTodayPrice} todayStr={todayStr} />
       </div>
 
-      {/* Panel de P&L Real - Mejora 2 */}
-      {pnlMetrics && (
-        <Section title="Performance Real" icon={BarChart2}>
-          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary space-y-4">
-            <p className="text-xs text-text-tertiary">
-              Solo operaciones vencidas con datos reales (post {formatDateAR(dataStartDate)}) — {pnlMetrics.totalOps} operaciones
-            </p>
-
-            {/* KPIs principales */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <SummaryCard
-                title="P&L Total"
-                value={formatARS(pnlMetrics.pnlTotal)}
-                trend={pnlMetrics.pnlTotal}
-              />
-              <SummaryCard
-                title="P&L Mes Actual"
-                value={formatARS(pnlMetrics.pnlMesActual)}
-                trend={pnlMetrics.pnlMesActual}
-              />
-              <SummaryCard
-                title="P&L Mes Anterior"
-                value={formatARS(pnlMetrics.pnlMesAnterior)}
-                trend={pnlMetrics.pnlMesAnterior}
-              />
-            </div>
-
-            {/* Métricas secundarias */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="text-center p-3 bg-background-tertiary rounded-lg">
-                <p className="text-text-tertiary text-xs uppercase tracking-wider">Win Rate</p>
-                <p className={`font-mono font-bold text-xl ${pnlMetrics.winRate >= 50 ? 'text-success' : 'text-danger'}`}>
-                  {formatNumber(pnlMetrics.winRate, 1)}%
-                </p>
-                <p className="text-[10px] text-text-tertiary mt-1">
-                  {Math.round(pnlMetrics.totalOps * pnlMetrics.winRate / 100)}/{pnlMetrics.totalOps} ganadoras
-                </p>
-              </div>
-              <div className="text-center p-3 bg-background-tertiary rounded-lg">
-                <p className="text-text-tertiary text-xs uppercase tracking-wider">Spread Promedio</p>
-                <p className={`font-mono font-bold text-xl ${pnlMetrics.spreadPromedio >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {formatARS(pnlMetrics.spreadPromedio)}
-                </p>
-                <p className="text-[10px] text-text-tertiary mt-1">por operación</p>
-              </div>
-              <div className="text-center p-3 bg-background-tertiary rounded-lg">
-                <p className="text-text-tertiary text-xs uppercase tracking-wider">Mejor Op.</p>
-                <p className="font-mono font-bold text-xl text-success">
-                  {formatARS(pnlMetrics.mejor.spread)}
-                </p>
-                <p className="text-[10px] text-text-tertiary mt-1">{pnlMetrics.mejor.fecha}</p>
-              </div>
-              <div className="text-center p-3 bg-background-tertiary rounded-lg">
-                <p className="text-text-tertiary text-xs uppercase tracking-wider">Peor Op.</p>
-                <p className="font-mono font-bold text-xl text-danger">
-                  {formatARS(pnlMetrics.peor.spread)}
-                </p>
-                <p className="text-[10px] text-text-tertiary mt-1">{pnlMetrics.peor.fecha}</p>
-              </div>
-            </div>
-          </div>
-        </Section>
-      )}
+      {/* Panel de P&L Real */}
+      <OperationsPerformance pnlMetrics={pnlMetrics} dataStartDate={dataStartDate} />
 
       {/* Tabla de detalle */}
       <Section title="Detalle por Caución" icon={Receipt}>

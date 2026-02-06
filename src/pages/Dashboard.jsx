@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Edit2, Download, RefreshCw, X, ChevronDown, ChevronUp, Loader2, PieChart, Search, Info, LayoutDashboard } from 'lucide-react';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
-import { isBonoPesos, isBonoHardDollar, getAssetClass } from '@/features/portfolio/hooks/useBondPrices';
-import { usePrices, invokeFetchPrices } from '@/features/portfolio/services/priceService';
+import { Plus, Search, LayoutDashboard } from 'lucide-react';
+import { usePrices } from '@/features/portfolio/services/priceService';
 import { downloadTemplate, parseAndImportTrades } from '@/features/portfolio/services/importExportService';
-import DistributionChart from '@/features/portfolio/components/DistributionChart';
-import SummaryCard from '@/components/common/SummaryCard';
 import PositionsTable from '@/features/portfolio/components/PositionsTable';
 import ColumnSelector from '@/features/portfolio/components/ColumnSelector';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
@@ -14,29 +10,25 @@ import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import DashboardSummaryCards from '@/features/portfolio/components/DashboardSummaryCards';
 import PerformanceMetricsCards from '@/features/portfolio/components/PerformanceMetricsCards';
 import { usePerformanceMetrics } from '@/features/portfolio/hooks/usePerformanceMetrics';
-import TotalCard from '@/features/portfolio/components/TotalCard';
 import { PortfolioTabs } from '@/features/portfolio/components/PortfolioTabs';
 import { PortfolioCharts } from '@/features/portfolio/components/PortfolioCharts';
+import { TradesTabContent } from '@/features/portfolio/components/TradesTabContent';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import MobileNav from '@/components/common/MobileNav';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
-// Consolidated LayoutDashboard above
 import { tradeService } from '@/features/portfolio/services/tradeService';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
-import TickerAutocomplete from '@/components/common/TickerAutocomplete';
 import logo from '@/assets/logo.png';
 
 const PositionDetailModal = lazy(() => import('@/features/portfolio/components/PositionDetailModal'));
 const TradeModal = lazy(() => import('@/features/portfolio/components/TradeModal'));
 const DeleteModal = lazy(() => import('@/features/portfolio/components/DeleteModal'));
 import { usePortfolioEngine } from '@/features/portfolio/hooks/usePortfolioEngine';
-import { DateRangeSelector, getDateRange } from '@/components/common/DateRangeSelector.jsx';
 import { useSearch } from '@/features/portfolio/hooks/useSearch';
-import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { mepService } from '@/features/portfolio/services/mepService';
 import { TRANSACTION_TYPES } from '@/constants';
 
@@ -78,11 +70,9 @@ export default function Dashboard() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTrade, setDeletingTrade] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [positionsSort, setPositionsSort] = useState({ key: 'valuation', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [showFormatHelp, setShowFormatHelp] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('sidebarExpanded') === 'true';
@@ -98,11 +88,6 @@ export default function Dashboard() {
 
   const [tradesLoading, setTradesLoading] = useState(false);
   const { searchTerm, setSearchTerm, clearSearch } = useSearch();
-  // Filtros de transacciones
-  const [dateRangeValue, setDateRangeValue] = useState('all');
-  const [tradesSearchTerm, setTradesSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [tickerFilter, setTickerFilter] = useState('all');
   const [columnSettings, setColumnSettings] = useState({
     showPPC: true,
     showInvertido: true,
@@ -182,16 +167,6 @@ export default function Dashboard() {
     }
   }, [currentPortfolio, user, loadTrades]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showFormatHelp && !event.target.closest('.format-help-tooltip')) {
-        setShowFormatHelp(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showFormatHelp]);
-
   // Portfolio Engine - handles calculations with historical precision
   const { positions, totals: allTotals, calculateTotals, isPricesReady } = usePortfolioEngine(
     trades,
@@ -220,93 +195,6 @@ export default function Dashboard() {
   const filteredTotals = useMemo(() => {
     return calculateTotals(filteredPositions, mepRate);
   }, [filteredPositions, mepRate, calculateTotals]);
-
-  // Lista de tickers únicos para el filtro
-  const uniqueTickers = useMemo(() => {
-    if (!Array.isArray(trades) || trades.length === 0) return [];
-    const tickers = [...new Set(trades.map(t => t.ticker))].sort();
-    return tickers;
-  }, [trades]);
-
-  // Función para formatear fecha a dd/mm/yyyy
-  const formatDateDMY = (dateStr) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const sortedTrades = useMemo(() => {
-    if (!Array.isArray(trades) || trades.length === 0) return [];
-
-    const mappedTrades = trades.map(trade => ({
-      ...trade,
-      date: trade.trade_date,
-      dateFormatted: formatDateDMY(trade.trade_date),
-      quantity: trade.quantity,
-      price: trade.price,
-      type: trade.trade_type === 'buy' ? 'compra' : 'venta'
-    }));
-
-    // Aplicar filtros
-    let filtered = mappedTrades;
-
-    // Filtro de búsqueda
-    if (tradesSearchTerm.trim()) {
-      const term = tradesSearchTerm.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.ticker.toLowerCase().includes(term) ||
-        t.dateFormatted.includes(term)
-      );
-    }
-
-    // Filtro de tipo
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(t => t.type === typeFilter);
-    }
-
-    // Filtro de ticker/activo
-    if (tickerFilter !== 'all') {
-      filtered = filtered.filter(t => t.ticker === tickerFilter);
-    }
-
-    // Filtro de período (Updated to use DateRangeSelector logic)
-    if (dateRangeValue !== 'all') {
-      const { startDate } = getDateRange(dateRangeValue);
-      if (startDate) {
-        filtered = filtered.filter(t => {
-          const tradeDate = new Date(t.date);
-          return tradeDate >= startDate;
-        });
-      }
-    }
-
-    // Ordenar
-    const sorted = [...filtered].sort((a, b) => {
-      let aVal = a[sortConfig.key];
-      let bVal = b[sortConfig.key];
-
-      if (sortConfig.key === 'date') {
-        aVal = aVal ? new Date(aVal) : new Date();
-        bVal = bVal ? new Date(bVal) : new Date();
-      }
-
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }, [trades, sortConfig, tradesSearchTerm, typeFilter, tickerFilter, dateRangeValue]);
-
-  const handleSort = useCallback((key) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  }, []);
 
   const handleSaveTrade = useCallback(async (trade) => {
     if (!currentPortfolio || !user) return;
@@ -382,13 +270,12 @@ export default function Dashboard() {
   }, []);
 
   const handleTradeClickFromDetail = useCallback((trade) => {
-    const t = sortedTrades.find(st => st.id === trade.id);
-    if (t) {
-      setEditingTrade(t);
+    if (trade) {
+      setEditingTrade(trade);
       setDetailModalOpen(false);
       setModalOpen(true);
     }
-  }, [sortedTrades]);
+  }, []);
 
   if (portfolioLoading) {
     return (
@@ -519,200 +406,16 @@ export default function Dashboard() {
                   )}
 
                   {activeTab === 'trades' && (
-                    <div className="flex-1 flex flex-col min-h-0 space-y-4 lg:space-y-6 overflow-y-auto pr-1">
-                      {/* Sección de Filtros */}
-                      <div className="bg-background-secondary border border-border-primary rounded-xl p-3 sm:p-4 lg:p-5">
-                        {/* Buscador - fila completa en móvil */}
-                        <div className="mb-3 lg:mb-0 lg:hidden">
-                          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Buscar</label>
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                            <input
-                              type="text"
-                              placeholder="Buscar por ticker, fecha..."
-                              value={tradesSearchTerm}
-                              onChange={(e) => setTradesSearchTerm(e.target.value)}
-                              className="w-full pl-10 pr-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-colors"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Grid de filtros */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-row gap-3 lg:gap-4">
-                          {/* Buscador - visible solo en desktop */}
-                          <div className="hidden lg:block lg:flex-[2]">
-                            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Buscar</label>
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                              <input
-                                type="text"
-                                placeholder="Buscar por ticker, fecha..."
-                                value={tradesSearchTerm}
-                                onChange={(e) => setTradesSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary transition-colors"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Filtro Período (Replaced with DateRangeSelector) */}
-                          <div className="lg:flex-[1.5]">
-                            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Período</label>
-                            <DateRangeSelector
-                              selectedRange={dateRangeValue}
-                              onChange={setDateRangeValue}
-                              className="w-full justify-between"
-                            />
-                          </div>
-
-                          {/* Filtro Tipo */}
-                          <div className="lg:flex-1">
-                            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Tipo</label>
-                            <select
-                              value={typeFilter}
-                              onChange={(e) => setTypeFilter(e.target.value)}
-                              className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
-                            >
-                              <option value="all">Todos</option>
-                              <option value="compra">Compra</option>
-                              <option value="venta">Venta</option>
-                            </select>
-                          </div>
-
-                          {/* Filtro Activo */}
-                          <div className="col-span-2 sm:col-span-1 lg:flex-1">
-                            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Activo</label>
-                            <select
-                              value={tickerFilter}
-                              onChange={(e) => setTickerFilter(e.target.value)}
-                              className="w-full px-3 lg:px-4 py-2.5 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors cursor-pointer"
-                            >
-                              <option value="all">Todos</option>
-                              {uniqueTickers.map(ticker => (
-                                <option key={ticker} value={ticker}>{ticker}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tabla de Transacciones */}
-                      <div className="bg-background-secondary border border-border-primary rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
-                        <div className="p-3 sm:p-4 border-b border-border-primary flex flex-wrap gap-2 items-center justify-between">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <h2 className="text-base sm:text-lg font-semibold text-text-primary">Transacciones</h2>
-                            <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">
-                              {sortedTrades.length}{sortedTrades.length !== trades.length && `/${trades.length}`}
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5 sm:gap-2">
-                            <div className="relative">
-                              <button
-                                onClick={() => setShowFormatHelp(!showFormatHelp)}
-                                className={`flex items-center justify-center h-8 w-8 rounded-lg transition-colors text-xs font-medium border ${showFormatHelp ? 'bg-primary/20 text-primary border-primary/30' : 'bg-background-tertiary text-text-secondary border-border-primary hover:text-text-primary hover:bg-border-primary'}`}
-                                title="Formato de archivo"
-                              >
-                                <Info className="w-3.5 h-3.5" />
-                              </button>
-                              {showFormatHelp && (
-                                <div className="format-help-tooltip absolute right-0 top-full mt-2 w-72 sm:w-80 bg-background-secondary border border-border-primary rounded-lg shadow-xl z-50 p-4">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <h4 className="font-semibold text-text-primary text-sm">Formato del CSV</h4>
-                                    <button onClick={() => setShowFormatHelp(false)} className="text-text-tertiary hover:text-text-primary">
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                  <div className="space-y-2 text-xs text-text-secondary">
-                                    <p className="font-medium text-text-primary">Columnas requeridas:</p>
-                                    <ul className="list-disc list-inside space-y-1 ml-1">
-                                      <li><span className="text-primary font-mono">Fecha</span> - Formato DD/MM/AAAA</li>
-                                      <li><span className="text-primary font-mono">Ticker</span> - Ej: MELI, GGAL, AL30</li>
-                                      <li><span className="text-primary font-mono">Cantidad</span> - Positivo=compra, Negativo=venta</li>
-                                      <li><span className="text-primary font-mono">Precio</span> - Precio por unidad en ARS</li>
-                                    </ul>
-                                    <div className="mt-3 p-2 bg-background-tertiary rounded text-[10px] font-mono">
-                                      <p className="text-text-tertiary mb-1">Ejemplo:</p>
-                                      <p>Fecha,Ticker,Cantidad,Precio</p>
-                                      <p>23/12/2024,MELI,10,17220</p>
-                                      <p>15/01/2025,GGAL,-5,4500</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <button onClick={handleDownloadTemplate} className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary" title="Descargar plantilla">
-                              <Download className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="hidden sm:inline">Plantilla</span>
-                            </button>
-                            <label className="flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 h-8 w-8 sm:w-auto bg-background-tertiary text-text-secondary rounded-lg hover:text-text-primary hover:bg-border-primary transition-colors text-xs font-medium border border-border-primary cursor-pointer" title="Importar CSV">
-                              <Download className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="hidden sm:inline">Importar</span>
-                              <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" disabled={isLoading} />
-                            </label>
-                            <button onClick={() => { setEditingTrade(null); setModalOpen(true); }} className="flex items-center justify-center gap-1.5 px-4 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20" title="Nueva transacción">
-                              <Plus className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="hidden sm:inline">Nuevo</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {importStatus && (
-                          <div className={`px-4 py-2 text-sm border-b ${importStatus.includes('Error') || importStatus.includes('error') ? 'bg-danger/10 text-danger border-danger/30' : importStatus.includes('importadas') ? 'bg-success/10 text-success border-success/30' : 'bg-background-tertiary text-text-secondary'}`}>
-                            {importStatus}
-                          </div>
-                        )}
-
-                        <div className="overflow-auto flex-1 min-h-0">
-                          <table className="w-full min-w-[700px]">
-                            <thead className="sticky top-0 z-10">
-                              <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
-                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('date')}>
-                                  <div className="flex items-center gap-1">Fecha {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                                </th>
-                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('ticker')}>
-                                  <div className="flex items-center gap-1">Ticker {sortConfig.key === 'ticker' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                                </th>
-                                <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('type')}>
-                                  <div className="flex items-center gap-1">Tipo {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
-                                </th>
-                                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Cant.</th>
-                                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Precio</th>
-                                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Total</th>
-                                <th className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border-primary">
-                              {sortedTrades.length === 0 ? (
-                                <tr><td colSpan="7" className="px-4 py-8 text-center text-text-tertiary text-sm">
-                                  {trades.length === 0 ? 'No hay transacciones registradas' : 'No hay transacciones que coincidan con los filtros'}
-                                </td></tr>
-                              ) : sortedTrades.map((trade, idx) => (
-                                <tr key={trade.id || idx} className="hover:bg-background-tertiary transition-all duration-200">
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-text-primary whitespace-nowrap">{trade.dateFormatted}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm font-bold text-text-primary whitespace-nowrap">{trade.ticker}</td>
-                                  <td className="px-3 sm:px-4 py-3">
-                                      <span className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs font-semibold border ${trade.type === 'compra'
-                                        ? 'bg-success/10 text-success border-success/30'
-                                        : 'bg-danger/10 text-danger border-danger/30'
-                                        }`}>
-                                      {trade.type === 'compra' ? 'Compra' : 'Venta'}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.quantity), 2)}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.price)}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(Math.abs(trade.quantity) * trade.price)}</td>
-                                  <td className="px-3 sm:px-4 py-3 text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                      <button onClick={() => { setEditingTrade(trade); setModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-background-tertiary rounded transition-colors" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
-                                      <button onClick={() => { setDeletingTrade(trade); setDeleteModalOpen(true); }} className="p-1.5 text-text-tertiary hover:text-danger hover:bg-background-tertiary rounded transition-colors" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
+                    <TradesTabContent
+                      trades={trades}
+                      onEditTrade={(trade) => { setEditingTrade(trade); setModalOpen(true); }}
+                      onDeleteTrade={(trade) => { setDeletingTrade(trade); setDeleteModalOpen(true); }}
+                      onNewTrade={() => { setEditingTrade(null); setModalOpen(true); }}
+                      onDownloadTemplate={handleDownloadTemplate}
+                      onImportCSV={importFromCSV}
+                      isLoading={isLoading}
+                      importStatus={importStatus}
+                    />
                   )}
 
                   {activeTab === 'resumen' && (

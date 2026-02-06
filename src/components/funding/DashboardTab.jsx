@@ -10,18 +10,8 @@ import { AlertsPanel } from './AlertsPanel';
 import { RatesEvolutionChart } from './RatesEvolutionChart';
 import SummaryCard from '@/components/common/SummaryCard';
 import { Section } from '@/components/common/Section';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatPercent, formatNumber, formatDateAR } from '@/utils/formatters';
 import { useHistoricalRates } from '@/hooks/useHistoricalRates';
-
-// Helper para formatear fecha
-const formatDate = (date) => {
-  if (!date) return '';
-  return new Date(date).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
 
 /**
  * Barra de progreso con marcadores (para cobertura de capital)
@@ -125,7 +115,7 @@ export function DashboardTab({
           <Clock className="w-5 h-5 text-warning flex-shrink-0" />
           <p className="text-sm text-warning">
             <span className="font-medium">Sin cauciones vigentes.</span>
-            {' '}Última caución venció el {formatDate(carryMetrics.metadata.ultimaCaucionFecha)}.
+            {' '}Última caución venció el {formatDateAR(carryMetrics.metadata.ultimaCaucionFecha)}.
             {' '}
             <Link to="/financiacion" className="underline hover:text-warning/80">
               Cargar nuevas cauciones
@@ -156,7 +146,7 @@ export function DashboardTab({
           value={formatARS(carryMetrics.totalCaucion)}
           subValue={
             carryMetrics.metadata?.todasVencidas
-              ? `Última: ${formatDate(carryMetrics.metadata.ultimaCaucionFecha)}`
+              ? `Última: ${formatDateAR(carryMetrics.metadata.ultimaCaucionFecha)}`
               : `${carryMetrics.caucionesVigentes} vigentes`
           }
         />

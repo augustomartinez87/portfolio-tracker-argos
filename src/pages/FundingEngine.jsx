@@ -20,6 +20,7 @@ import { DashboardTab } from '@/components/funding/DashboardTab';
 import { AnalysisTab } from '@/components/funding/AnalysisTab';
 import { OperationsTab } from '@/components/funding/OperationsTab';
 import { fciService } from '@/features/fci/services/fciService';
+import { CONSTANTS } from '@/utils/constants';
 
 // ===========================================================================
 // COMPONENTE PRINCIPAL
@@ -44,8 +45,7 @@ export default function FundingEngine() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [caucionCutoffMode, setCaucionCutoffMode] = useState('auto');
 
-  // Fecha mínima de datos confiables (filtra datos históricos anteriores)
-  const dataStartDate = '2026-01-16';
+  const dataStartDate = CONSTANTS.DATA_START_DATE;
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const fciPositions = fciLotEngine?.positions || [];

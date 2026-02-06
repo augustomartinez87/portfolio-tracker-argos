@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 import { formatARS, formatCompactNumber } from '@/utils/formatters';
+import { findVcp, dateRange } from '@/utils/vcpHelpers';
 import {
   gridProps,
   axisProps,
@@ -12,35 +13,6 @@ import {
 } from '@/utils/chartTheme';
 
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-
-/**
- * Encuentra VCP en una fecha, o el más cercano anterior
- */
-const findVcp = (vcpMap, date) => {
-  if (!vcpMap) return null;
-  if (vcpMap[date]) return Number(vcpMap[date]);
-  const dates = Object.keys(vcpMap).sort();
-  let closest = null;
-  for (const d of dates) {
-    if (d <= date) closest = d;
-    else break;
-  }
-  return closest ? Number(vcpMap[closest]) : null;
-};
-
-/**
- * Genera array de fechas YYYY-MM-DD entre start y end (inclusive)
- */
-const dateRange = (startStr, endStr) => {
-  const dates = [];
-  const current = new Date(startStr + 'T12:00:00');
-  const end = new Date(endStr + 'T12:00:00');
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-  }
-  return dates;
-};
 
 /**
  * Equity Curve del Carry Trade
