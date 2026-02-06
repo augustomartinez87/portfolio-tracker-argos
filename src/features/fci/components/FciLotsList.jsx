@@ -5,13 +5,7 @@ import { mepService } from '../../portfolio/services/mepService';
 import { useMemo } from 'react';
 
 const FciLotsList = ({ allLots, onDelete, currency = 'ARS', mepHistory = [] }) => {
-    const mepMap = useMemo(() => {
-        const map = new Map();
-        if (Array.isArray(mepHistory)) {
-            mepHistory.forEach(h => map.set(h.date, h.price));
-        }
-        return map;
-    }, [mepHistory]);
+    const mepMap = useMemo(() => mepService.buildMepMap(mepHistory), [mepHistory]);
 
     if (!allLots || allLots.length === 0) {
         return (

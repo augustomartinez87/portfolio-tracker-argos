@@ -5,7 +5,7 @@ import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Compos
 import { data912 } from '@/utils/data912';
 import { isBonoPesos } from '@/features/portfolio/hooks/useBondPrices';
 import { API_ENDPOINTS } from '@/utils/constants';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber, toDateString } from '@/utils/formatters';
 import {
   gridProps,
   axisProps,
@@ -131,7 +131,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
           } else {
             fromDate.setFullYear(fromDate.getFullYear() - 2);
           }
-          const dateStr = fromDate.toISOString().split('T')[0];
+          const dateStr = toDateString(fromDate);
 
           const endpoint = data912.getHistoricalEndpoint(position.ticker, position.panel);
           const url = `${API_ENDPOINTS.BASE}${endpoint}?from=${dateStr}`;

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import Decimal from 'decimal.js';
+import { toDateString } from '@/utils/formatters';
 import {
   calcularSpreadPorCaucion as calcularSpreadLib,
   calcularTotalesOperaciones,
@@ -79,7 +80,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     const tieneVCPCompleto = (caucion) => {
       const fechaInicio = String(caucion.fecha_inicio || '').split('T')[0];
       const fechaFin = String(caucion.fecha_fin || '').split('T')[0];
-      const hoyISO = hoy.toISOString().split('T')[0];
+      const hoyISO = toDateString(hoy);
 
       // Solo cauciones vencidas (fecha_fin < hoy)
       if (fechaFin >= hoyISO) return false;

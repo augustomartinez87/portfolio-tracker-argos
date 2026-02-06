@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { fciService } from '../services/fciService';
-import { formatNumber } from '@/utils/formatters';
+import { formatNumber, toDateString } from '@/utils/formatters';
 
 const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId, lugaresList = [], initialFci = null, initialType = 'SUBSCRIPTION' }) => {
     const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
     const [selectedFciId, setSelectedFciId] = useState(initialFci?.fciId || '');
 
     // Suscripción
-    const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha] = useState(toDateString());
     const [lugarId, setLugarId] = useState('');
     const [monto, setMonto] = useState('');
     const [cuotapartes, setCuotapartes] = useState('');

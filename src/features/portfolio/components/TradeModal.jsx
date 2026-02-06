@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { isBonoPesos, isBonoHardDollar } from '@/features/portfolio/hooks/useBondPrices';
 import { TickerAutocomplete } from '@/components/common/TickerAutocomplete';
 import { TRANSACTION_TYPES } from '@/constants';
+import { toDateString } from '@/utils/formatters';
 
 export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
     } else {
       setFormData({
         type: TRANSACTION_TYPES.BUY,
-        date: new Date().toISOString().split('T')[0],
+        date: toDateString(),
         ticker: '',
         quantity: '',
         price: ''

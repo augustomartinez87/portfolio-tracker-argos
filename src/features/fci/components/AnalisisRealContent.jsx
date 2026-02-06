@@ -5,7 +5,7 @@ import {
 import {
     TrendingUp, Calendar, BarChart3, RefreshCw, Wallet, Briefcase, AlertCircle
 } from 'lucide-react';
-import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatPercent, formatNumber, toDateString } from '@/utils/formatters';
 import { mepService } from '@/features/portfolio/services/mepService';
 import { fciService } from '@/features/fci/services/fciService';
 import { data912 } from '@/utils/data912';
@@ -25,7 +25,7 @@ const AnalisisRealContent = () => {
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
         d.setFullYear(d.getFullYear() - 1);
-        return d.toISOString().split('T')[0];
+        return toDateString(d);
     });
     const [endDate, setEndDate] = useState('');
     const [useTodayAsEnd, setUseTodayAsEnd] = useState(true);
@@ -49,7 +49,7 @@ const AnalisisRealContent = () => {
         const dateObj = new Date(targetDate);
         for (let i = 1; i <= 10; i++) {
             dateObj.setDate(dateObj.getDate() - 1);
-            const prevDate = dateObj.toISOString().split('T')[0];
+            const prevDate = toDateString(dateObj);
             if (priceMap.has(prevDate)) {
                 return priceMap.get(prevDate);
             }
@@ -60,7 +60,7 @@ const AnalisisRealContent = () => {
 
     // Cargar fecha de hoy por defecto
     useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = toDateString();
         if (useTodayAsEnd) {
             setEndDate(today);
         }
@@ -173,7 +173,7 @@ const AnalisisRealContent = () => {
         if (!vcpHistory.length || !mepHistory.length || !spyHistory.length) return [];
 
         const effectiveEndDate = useTodayAsEnd 
-            ? new Date().toISOString().split('T')[0] 
+            ? toDateString() 
             : endDate;
 
         // Encontrar valores iniciales
@@ -189,7 +189,7 @@ const AnalisisRealContent = () => {
         }
 
         // Crear mapa de fechas para lookups
-        const mepMap = new Map(mepHistory.map(h => [h.date, h.price]));
+        const mepMap = mepService.buildMepMap(mepHistory);
         const spyMap = new Map(spyHistory.map(h => [h.date, h.price]));
 
         // Procesar solo datos desde fecha inicio hasta fecha fin
@@ -224,7 +224,7 @@ const AnalisisRealContent = () => {
         if (!vcpHistory.length) return { data: [], hasUsd: false };
 
         const effectiveEndDate = useTodayAsEnd 
-            ? new Date().toISOString().split('T')[0] 
+            ? toDateString() 
             : endDate;
 
         const vcpRange = vcpHistory.filter(h => h.date >= startDate && h.date <= effectiveEndDate);

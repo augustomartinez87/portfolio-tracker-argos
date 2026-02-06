@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import { TrendingUp, Coins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -17,16 +18,7 @@ const Financiacion = () => {
   const { user, signOut } = useAuth();
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
   const queryClient = useQueryClient();
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
 
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -21,16 +22,7 @@ export default function CarryTrade() {
 
     const { user, signOut } = useAuth();
     const { currentPortfolio } = usePortfolio();
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
 
 

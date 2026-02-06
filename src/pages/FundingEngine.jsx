@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
+import { toDateString } from '@/utils/formatters';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
@@ -30,16 +32,7 @@ export default function FundingEngine() {
   const { user, signOut } = useAuth();
   const { currentPortfolio, fciLotEngine } = usePortfolio();
   const { isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
   // Estado para tabs
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -95,7 +88,7 @@ export default function FundingEngine() {
     : 0;
 
   // Verificar si hay precio de hoy (para no mostrar PnL diario si no hay)
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toDateString();
   const hasTodayPrice = useMemo(() => {
     if (!mainFciId) return false;
     const mainPos = fciPositions.find(p => p.fciId === mainFciId);

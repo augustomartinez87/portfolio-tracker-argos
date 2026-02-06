@@ -57,11 +57,7 @@ export function useFciEngine(portfolioId, mepRate, mepHistory = []) {
     const positions = useMemo(() => {
         const posMap = {};
 
-        // Crear un Map para lookups O(1) si mepHistory es un array
-        const mepMap = new Map();
-        if (Array.isArray(mepHistory)) {
-            mepHistory.forEach(h => mepMap.set(h.date, h.price));
-        }
+        const mepMap = mepService.buildMepMap(mepHistory);
 
         transactions.forEach(tx => {
             const { fci_id, fci_master, tipo, monto, cuotapartes } = tx;

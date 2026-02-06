@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts';
-import { formatARS, formatCompactNumber } from '@/utils/formatters';
+import { formatARS, formatCompactNumber, toDateString } from '@/utils/formatters';
 import { findVcp, dateRange } from '@/utils/vcpHelpers';
 import {
   gridProps,
@@ -48,7 +48,7 @@ export function EquityCurve({ fciLots = [], cauciones = [], vcpHistoricos = {}, 
   const allChartData = useMemo(() => {
     if (!fciLots.length || !cauciones.length || !Object.keys(vcpHistoricos).length) return [];
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toDateString();
     const startDate = dataStartDate || '2026-01-16';
     const allDates = dateRange(startDate, todayStr);
 

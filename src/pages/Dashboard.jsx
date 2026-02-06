@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Search, LayoutDashboard } from 'lucide-react';
 import { usePrices } from '@/features/portfolio/services/priceService';
@@ -73,16 +74,7 @@ export default function Dashboard() {
   const [positionsSort, setPositionsSort] = useState({ key: 'valuation', direction: 'desc' });
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
 
 

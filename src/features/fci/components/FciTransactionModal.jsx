@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, RefreshCw, Loader2 } from 'lucide-react';
 import { fciService } from '../services/fciService';
-import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber, toDateString } from '@/utils/formatters';
 
 const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType = 'SUBSCRIPTION', initialFci = null }) => {
     // ALL hooks must be called before any conditional returns
@@ -12,7 +12,7 @@ const FciTransactionModal = ({ isOpen, onClose, onSave, portfolioId, initialType
     const [fciList, setFciList] = useState([]);
     const [selectedFciId, setSelectedFciId] = useState(initialFci?.fciId || '');
     const [tipo, setTipo] = useState(initialType);
-    const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha] = useState(toDateString());
     const [monto, setMonto] = useState('');
     const [cuotapartes, setCuotapartes] = useState('');
 

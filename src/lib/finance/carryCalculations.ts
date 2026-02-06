@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { toDateString } from '@/utils/formatters';
 
 /**
  * Tipo para precios VCP
@@ -212,7 +213,7 @@ export function calcularSpreadPorCaucion(
 
   const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
-  const fechaHoy = hoy.toISOString().split('T')[0];
+  const fechaHoy = toDateString(hoy);
 
   const esVencida = fechaFin < fechaHoy;
 

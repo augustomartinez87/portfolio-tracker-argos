@@ -31,6 +31,33 @@ export const fciService = {
         return data;
     },
 
+    // 2b. Obtener precios en batch para múltiples FCIs
+    // Retorna { [fciId]: [{ fecha, vcp, ... }] } ordenados ASC por fecha
+    async getPricesBatch(fciIds, fromDate = null) {
+        if (!fciIds || fciIds.length === 0) return {};
+
+        let query = supabase
+            .from('fci_prices')
+            .select('*')
+            .in('fci_id', fciIds)
+            .order('fecha', { ascending: true });
+
+        if (fromDate) {
+            query = query.gte('fecha', fromDate);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Agrupar por fci_id
+        const grouped = {};
+        for (const row of (data || [])) {
+            if (!grouped[row.fci_id]) grouped[row.fci_id] = [];
+            grouped[row.fci_id].push(row);
+        }
+        return grouped;
+    },
+
     // 3. Obtener el último precio conocido (para valuación actual rápida)
     async getLatestPrice(fciId) {
         const { data, error } = await supabase

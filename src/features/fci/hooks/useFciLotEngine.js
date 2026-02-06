@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Decimal from 'decimal.js';
 import { fciService } from '@/features/fci/services/fciService';
 import { mepService } from '../../portfolio/services/mepService';
+import { toDateString } from '@/utils/formatters';
 
 /**
  * Motor de cálculo FCI por lotes.
@@ -104,13 +105,7 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
     // =========================================================================
     // MEP MAP para lookups O(1)
     // =========================================================================
-    const mepMap = useMemo(() => {
-        const map = new Map();
-        if (Array.isArray(mepHistory)) {
-            mepHistory.forEach(h => map.set(h.date, h.price));
-        }
-        return map;
-    }, [mepHistory]);
+    const mepMap = useMemo(() => mepService.buildMepMap(mepHistory), [mepHistory]);
 
     // =========================================================================
     // COMPUTED: lotDetails — cada lot activo con sus campos calculados
@@ -118,7 +113,7 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
     const lotDetails = useMemo(() => {
         // Usar UTC consistente para evitar problemas de timezone
         // La BD almacena fechas en UTC, así que debemos comparar en UTC
-        const hoy = new Date().toISOString().split('T')[0];
+        const hoy = toDateString();
 
         return activeLots.map(lot => {
             const latest = latestPrices[lot.fci_id];

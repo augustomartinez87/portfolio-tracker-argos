@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { toDateString } from '@/utils/formatters';
 import mepHistoryData from '@/data/mepHistory.json';
 
 export interface MepHistoryItem {
@@ -96,7 +97,7 @@ export const mepService = {
     async recordDailyMep(price: number): Promise<void> {
         if (!price || price <= 0) return;
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = toDateString();
 
         try {
             const { error } = await supabase
@@ -110,6 +111,18 @@ export const mepService = {
         } catch (e) {
             // Silently ignore MEP recording errors
         }
+    },
+
+    /**
+     * Construye un Map<date, price> desde un array de MepHistoryItem
+     * Usar en useMemo para evitar recrear el map en cada render
+     */
+    buildMepMap(history: MepHistoryItem[]): Map<string, number> {
+        const map = new Map<string, number>();
+        if (Array.isArray(history)) {
+            history.forEach(h => map.set(h.date, h.price));
+        }
+        return map;
     },
 
     /**
@@ -131,7 +144,7 @@ export const mepService = {
             const dateObj = new Date(targetDate);
             for (let i = 1; i <= 10; i++) {
                 dateObj.setDate(dateObj.getDate() - 1);
-                const prevDate = dateObj.toISOString().split('T')[0];
+                const prevDate = toDateString(dateObj);
                 if (map.has(prevDate)) {
                     return map.get(prevDate)!;
                 }

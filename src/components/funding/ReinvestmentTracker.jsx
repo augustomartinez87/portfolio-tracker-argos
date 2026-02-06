@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, Bar, BarChart, Cell,
 } from 'recharts';
-import { formatARS, formatCompactNumber, formatNumber } from '@/utils/formatters';
+import { formatARS, formatCompactNumber, formatNumber, toDateString } from '@/utils/formatters';
 import {
   gridProps,
   axisProps,
@@ -26,7 +26,7 @@ export function ReinvestmentTracker({ cauciones = [], dataStartDate }) {
   const analysis = useMemo(() => {
     if (!cauciones.length) return null;
 
-    const hoyISO = new Date().toISOString().split('T')[0];
+    const hoyISO = toDateString();
 
     // Filtrar solo cauciones reales
     const reales = cauciones
@@ -51,7 +51,7 @@ export function ReinvestmentTracker({ cauciones = [], dataStartDate }) {
       const date = new Date(c.inicio + 'T12:00:00');
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay()); // Lunes de la semana
-      const weekKey = weekStart.toISOString().split('T')[0];
+      const weekKey = toDateString(weekStart);
       if (!porSemana[weekKey]) porSemana[weekKey] = { capital: 0, count: 0, tnaSum: 0 };
       porSemana[weekKey].capital += c.capital;
       porSemana[weekKey].count += 1;

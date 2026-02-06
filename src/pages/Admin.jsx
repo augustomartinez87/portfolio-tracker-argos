@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import { Settings, Users, Activity, Shield, Check, X, Loader2, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
@@ -8,16 +9,7 @@ import { userService } from '@/features/auth/services/userService';
 
 export default function Admin() {
   const { user, signOut } = useAuth();
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
 
 

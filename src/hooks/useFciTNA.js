@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Decimal from 'decimal.js';
 import { fciService } from '@/features/fci/services/fciService';
+import { toDateString } from '@/utils/formatters';
 
 const TNA_FALLBACK = 0.32;
 const MA_WINDOW = 7;
@@ -83,7 +84,7 @@ export function useFciTNA(fciId) {
         // Pedir 21 días de historial: suficiente para MA-7d con margen de gaps
         const fromDate = new Date();
         fromDate.setDate(fromDate.getDate() - 21);
-        const from = fromDate.toISOString().split('T')[0];
+        const from = toDateString(fromDate);
 
         const data = await fciService.getPrices(fciId, from);
 

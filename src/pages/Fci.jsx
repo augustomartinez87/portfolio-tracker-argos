@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useSidebarState } from '@/hooks/useSidebarState';
 import { PieChart, Plus, Download, Loader2, Upload, FileUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -41,17 +42,7 @@ export default function Fci() {
   const lugaresList = fciLotEngine?.lugaresList || [];
   const fciLoading = portfolioLoading || fciLotEngine?.loading || false;
 
-  // useState declarations must come before useCallback that depends on them
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebarExpanded') === 'true';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebarExpanded', sidebarExpanded ? 'true' : 'false');
-    }
-  }, [sidebarExpanded]);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
 
 

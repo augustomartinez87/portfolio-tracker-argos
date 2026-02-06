@@ -3,6 +3,7 @@ import { getAssetClass, isBonoPesos, isBonoHardDollar, isON, calculateONValueInA
 import { mepService, MepHistoryItem } from '../services/mepService';
 import type { AssetClass, Position, PortfolioTotals, TradeInput } from '@/types';
 import Decimal from 'decimal.js';
+import { toDateString } from '@/utils/formatters';
 
 // Re-export types for backward compatibility with existing imports
 export type { Position, PortfolioTotals };
@@ -79,13 +80,7 @@ export const usePortfolioEngine = (
 ) => {
     // 1. Prepare MEP Map for O(1) lookups
     const mepMap = useMemo(() => {
-        // If external history is passed, prioritize it, otherwise let service handle it
-        if (mepHistory.length > 0) {
-            const map = new Map<string, number>();
-            mepHistory.forEach(h => map.set(h.date, h.price));
-            return map;
-        }
-        return mepService.getMepMap();
+        return mepHistory.length > 0 ? mepService.buildMepMap(mepHistory) : mepService.getMepMap();
     }, [mepHistory]);
 
     const positions = useMemo<Position[]>(() => {
@@ -153,7 +148,7 @@ export const usePortfolioEngine = (
                 // Cálculo USD con precisión histórica
                 const dateStr = trade.trade_date;
                 const formattedDate = dateStr instanceof Date
-                    ? dateStr.toISOString().split('T')[0]
+                    ? toDateString(dateStr)
                     : String(dateStr).split('T')[0];
 
                 // Optimizado: O(1) lookup

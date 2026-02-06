@@ -1,3 +1,5 @@
+import { toDateString } from '@/utils/formatters';
+
 /**
  * Helpers para operaciones con VCP (Valor Cuota Parte) de FCIs
  */
@@ -32,7 +34,7 @@ export const dateRange = (startStr, endStr) => {
   const current = new Date(startStr + 'T12:00:00');
   const end = new Date(endStr + 'T12:00:00');
   while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
+    dates.push(toDateString(current));
     current.setDate(current.getDate() + 1);
   }
   return dates;

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Receipt, Clock, CheckCircle, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
-import { formatARS, formatPercent, formatDateAR } from '@/utils/formatters';
+import { formatARS, formatPercent, formatDateAR, toDateString } from '@/utils/formatters';
 import { calculatePnlForPeriod } from '@/utils/vcpHelpers';
 import { CONSTANTS } from '@/utils/constants';
 import { Section } from '@/components/common/Section';
@@ -34,14 +34,14 @@ export function OperationsTab({
   dataStartDate = CONSTANTS.DATA_START_DATE,
   hoy = new Date()
 }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toDateString();
   const [showSyntheticData, setShowSyntheticData] = useState(false);
   const [estadoFilter, setEstadoFilter] = useState('todas'); // 'todas' | 'activa' | 'vencida'
   const [sortConfig, setSortConfig] = useState({ key: 'fechaInicioRaw', dir: 'desc' });
 
   // Calcular rows con spread por operación
   const rows = useMemo(() => {
-    const hoyISO = hoy.toISOString().split('T')[0];
+    const hoyISO = toDateString(hoy);
 
     return (cauciones || []).map((caucion) => {
       const fechaInicioRaw = String(caucion.fecha_inicio || '').split('T')[0];

@@ -102,6 +102,17 @@ export const formatDateTime = (date: Date | string | null | undefined, format: '
 };
 
 /**
+ * Convierte una fecha a string ISO (YYYY-MM-DD)
+ * Reemplaza el patrón .toISOString().split('T')[0]
+ * @param date - Fecha a convertir (por defecto hoy)
+ * @returns string en formato YYYY-MM-DD
+ * @example toDateString(new Date('2024-01-15')) => '2024-01-15'
+ */
+export const toDateString = (date: Date = new Date()): string => {
+  return date.toISOString().split('T')[0];
+};
+
+/**
  * Formatea un precio de bono (4 decimales)
  * @example formatBondPrice(1.0325) => "$1.0325"
  */

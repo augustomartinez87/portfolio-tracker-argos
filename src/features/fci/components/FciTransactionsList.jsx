@@ -5,13 +5,7 @@ import { mepService } from '../../portfolio/services/mepService';
 
 const FciTransactionsList = ({ transactions, onDelete, currency = 'ARS', mepHistory = [] }) => {
     // Cache para el Map de MEP para evitar recrearlo en cada fila
-    const mepMap = useMemo(() => {
-        const map = new Map();
-        if (Array.isArray(mepHistory)) {
-            mepHistory.forEach(h => map.set(h.date, h.price));
-        }
-        return map;
-    }, [mepHistory]);
+    const mepMap = useMemo(() => mepService.buildMepMap(mepHistory), [mepHistory]);
 
     if (!transactions || transactions.length === 0) {
         return (
