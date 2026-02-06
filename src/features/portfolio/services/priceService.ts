@@ -49,7 +49,7 @@ function saveToLocalStorage(data: PriceServiceResult) {
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
   } catch (e) {
-    console.warn('Error saving prices to cache:', e);
+    // Silently ignore cache save errors
   }
 }
 
@@ -63,7 +63,6 @@ function loadFromLocalStorage(): PriceServiceResult | null {
     // Validar antigüedad del cache (max 2 horas)
     const cacheAge = Date.now() - new Date(cache.lastUpdate).getTime();
     if (cacheAge > 1000 * 60 * 60 * 2) {
-      console.log('Cache de precios expirado, ignorando...');
       return null;
     }
 
@@ -78,7 +77,6 @@ function loadFromLocalStorage(): PriceServiceResult | null {
       lastUpdate: new Date(cache.lastUpdate)
     };
   } catch (e) {
-    console.warn('Error loading prices from cache:', e);
     return null;
   }
 }

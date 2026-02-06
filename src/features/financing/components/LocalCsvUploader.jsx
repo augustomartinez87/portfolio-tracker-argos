@@ -24,12 +24,10 @@ const LocalCsvUploader = ({ onFilesParsed }) => {
     }, 100);
 
     try {
-      console.log('Procesando CSV... Text length:', text.length);
       const res = await processCsvClient(text);
       clearInterval(progressInterval);
       setProgress(100);
-      
-      console.log('Resultado del procesamiento:', res);
+
       setResult(res);
       
       if (onFilesParsed) {

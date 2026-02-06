@@ -131,7 +131,6 @@ export function useFciTNA(fciId) {
       const ultimaTna = maSmoothed[maSmoothed.length - 1].tna;
 
       if (ultimaTna < -0.5 || ultimaTna > 2.0) {
-        console.warn('[useFciTNA] TNA MA-7d fuera de rango:', ultimaTna);
         return { tnaFCI: TNA_FALLBACK, isFallback: true };
       }
 

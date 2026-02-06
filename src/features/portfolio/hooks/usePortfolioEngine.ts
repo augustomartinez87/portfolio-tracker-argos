@@ -190,7 +190,6 @@ export const usePortfolioEngine = (
                         valuation = onValue.value;
                         usesONConversion = onValue.usesConversion;
                     } catch (error) {
-                        console.warn('Error en conversión ON:', error instanceof Error ? error.message : 'Unknown error');
                         usesONConversion = false;
                     }
                 }

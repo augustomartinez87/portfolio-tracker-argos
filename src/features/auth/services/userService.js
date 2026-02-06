@@ -13,7 +13,6 @@ export const userService = {
     if (!userId) return null;
 
     try {
-      console.log(`[UserService] Creating profile for user ${userId}`);
       const { data, error } = await supabase
         .from('user_profiles')
         .insert({
@@ -28,17 +27,13 @@ export const userService = {
       if (error) {
         // Si ya existe (violación de unique constraint), intentar obtenerlo
         if (error.code === '23505') {
-          console.log(`[UserService] Profile already exists for user ${userId}`);
           return this.getProfile(userId);
         }
-        console.error('[UserService] Error creating profile:', error);
         return null;
       }
 
-      console.log(`[UserService] Profile created successfully for user ${userId}`);
       return data;
     } catch (err) {
-      console.error('[UserService] Error in createProfileIfNotExists:', err);
       return null;
     }
   },
@@ -51,8 +46,6 @@ export const userService = {
     if (!userId) return null;
 
     try {
-      console.log(`[UserService] Fetching profile for user ${userId} (using direct fetch)`);
-
       // Usar fetch directo para evitar el bloqueo del cliente de Supabase
       const { data, error } = await supabaseFetch('user_profiles', {
         select: '*',
@@ -62,22 +55,17 @@ export const userService = {
 
       if (error) {
         if (error.code === '406' || error.code === 'PGRST116') {
-          console.log(`[UserService] No profile found for user ${userId}, creating one...`);
           return this.createProfileIfNotExists(userId);
         }
-        console.error('[UserService] Error fetching profile:', error);
         throw error;
       }
 
-      console.log(`[UserService] Profile loaded successfully for user ${userId}`);
       return data;
     } catch (err) {
       // Si es un 406 (no encontrado con single), crear perfil
       if (err.code === '406') {
-        console.log(`[UserService] No profile found for user ${userId}, creating one...`);
         return this.createProfileIfNotExists(userId);
       }
-      console.error('[UserService] Profile fetch failed:', err);
       throw err;
     }
   },
@@ -98,13 +86,11 @@ export const userService = {
         lastError = err;
         if (attempt < retries - 1) {
           const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-          console.log(`[UserService] Retry attempt ${attempt + 1} for user ${userId} in ${delay}ms`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
 
-    console.error(`[UserService] All retries failed for user ${userId}:`, lastError);
     throw lastError;
   },
 
@@ -148,7 +134,7 @@ export const userService = {
         details
       });
     } catch (err) {
-      console.error('Error logging activity:', err);
+      // Silently ignore activity logging errors
     }
   },
 
@@ -169,7 +155,6 @@ export const userService = {
       });
 
       if (error) {
-        console.error('Error fetching users:', error);
         throw error;
       }
 
@@ -186,7 +171,6 @@ export const userService = {
         user_created_at: profile.registered_at || profile.created_at
       }));
     } catch (err) {
-      console.error('Error in getAllUsers:', err);
       return [];
     }
   },
@@ -208,7 +192,6 @@ export const userService = {
       .single();
 
     if (error) {
-      console.error('Error updating role:', error);
       throw error;
     }
 
@@ -230,7 +213,6 @@ export const userService = {
       .single();
 
     if (error) {
-      console.error('Error toggling user status:', error);
       throw error;
     }
 
@@ -251,7 +233,6 @@ export const userService = {
       .single();
 
     if (error) {
-      console.error('Error updating modules:', error);
       throw error;
     }
 
@@ -272,7 +253,6 @@ export const userService = {
       });
 
       if (error) {
-        console.error('Error fetching activity:', error);
         throw error;
       }
 
@@ -303,7 +283,6 @@ export const userService = {
         display_name: activity.display_name || 'Usuario'
       }));
     } catch (err) {
-      console.error('Error in getSystemActivity:', err);
       return [];
     }
   },
@@ -333,7 +312,6 @@ export const userService = {
         activityLast7Days: recentActivity.length
       };
     } catch (err) {
-      console.error('Error in getSystemStats:', err);
       return {
         totalUsers: 0,
         activeUsers: 0,

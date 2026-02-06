@@ -35,7 +35,6 @@ export const AuthProvider = ({ children }) => {
     // Safety timeout para la carga del perfil (10s)
     const profileTimeout = setTimeout(() => {
       if (profileLoading) {
-        console.warn('[Auth] Profile loading timed out (10s), proceeding with minimal profile');
         // Perfil mínimo para permitir funcionamiento básico
         setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
         setProfileLoading(false);
@@ -43,7 +42,6 @@ export const AuthProvider = ({ children }) => {
     }, 10000);
 
     try {
-      console.log('[Auth] Fetching profile for user:', userId);
       setProfileLoading(true)
 
       // Implementar retry con backoff exponencial
@@ -58,7 +56,6 @@ export const AuthProvider = ({ children }) => {
           lastError = err;
           if (attempt < 2) {
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-            console.log(`[Auth] Profile retry attempt ${attempt + 1}`);
           }
         }
       }
@@ -66,10 +63,8 @@ export const AuthProvider = ({ children }) => {
       setUserProfile(profile)
 
       if (profile) {
-        console.log('[Auth] Profile loaded successfully');
         userService.logActivity('login', null, { method: 'session' })
       } else {
-        console.warn('[Auth] No profile found after retries for user:', userId, lastError);
         // Perfil mínimo como fallback
         setUserProfile({ role: 'user', is_active: true, modules: ['portfolio'] });
       }
@@ -97,7 +92,6 @@ export const AuthProvider = ({ children }) => {
     // Timeout de seguridad para auth
     const authTimeout = setTimeout(() => {
       if (isMounted && authLoading) {
-        console.warn('[Auth] Auth initialization taking too long (15s)');
         setAuthLoading(false);
       }
     }, 15000);
@@ -105,24 +99,16 @@ export const AuthProvider = ({ children }) => {
     // Inicializar sesión una sola vez
     const initSession = async () => {
       try {
-        console.log('[Auth] Initializing session...');
-        const initStartTime = Date.now();
-
         const { data: { session } } = await supabase.auth.getSession();
-
-        const sessionTime = Date.now() - initStartTime;
-        console.log(`[Auth] getSession took ${sessionTime}ms`);
 
         if (!isMounted) return;
 
         const currentUser = session?.user ?? null;
-        console.log('[Auth] Initial session:', currentUser ? 'User found' : 'No user');
 
         currentUserIdRef.current = currentUser?.id ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          console.log('[Auth] Loading profile after session init...');
           await loadUserProfile(currentUser.id);
         } else {
           setProfileLoading(false);
@@ -131,8 +117,6 @@ export const AuthProvider = ({ children }) => {
 
         // El sistema de auth base ya terminó su intento inicial
         setAuthLoading(false);
-
-        console.log(`[Auth] Total init time: ${Date.now() - initStartTime}ms`);
       } catch (err) {
         console.error('[Auth] Error initializing session:', err);
         if (isMounted) {
@@ -147,11 +131,8 @@ export const AuthProvider = ({ children }) => {
     // Listener para cambios de auth (login/logout desde otras pestañas, etc)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
-      console.log(`[Auth] Auth state changed: ${event}`);
-
       // Ignorar INITIAL_SESSION - ya lo manejamos en initSession()
       if (event === 'INITIAL_SESSION') {
-        console.log('[Auth] Ignoring INITIAL_SESSION (handled by initSession)');
         return;
       }
 
@@ -162,12 +143,10 @@ export const AuthProvider = ({ children }) => {
       // Solo procesar si el usuario realmente cambió
       if (newUserId === currentUserIdRef.current) {
         // Ignorar eventos redundantes pero asegurar que no bloqueamos el estado loading
-        console.log('[Auth] Ignoring redundant event (same user)');
         setAuthLoading(false);
         return;
       }
 
-      console.log(`[Auth] User switching: ${currentUserIdRef.current} -> ${newUserId}`);
       currentUserIdRef.current = newUserId;
       setUser(session?.user ?? null);
 
@@ -193,7 +172,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key?.includes('supabase.auth.token') || e.key?.includes('sb-')) {
-        console.log('[Auth] Storage changed in another tab, reloading page...');
         // Recargar la página es más seguro que intentar sincronizar estado
         window.location.reload();
       }
@@ -231,9 +209,7 @@ export const AuthProvider = ({ children }) => {
       currentUserIdRef.current = data.user.id
       setUser(data.user)
       // Cargar perfil en background sin bloquear
-      loadUserProfile(data.user.id).catch(err => {
-        console.error('[Auth] Error loading profile after login:', err)
-      })
+      loadUserProfile(data.user.id).catch(() => {})
     }
 
     return data

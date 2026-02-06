@@ -56,16 +56,11 @@ export class FinancingService {
         .insert([auditRecord]);
 
       if (error) {
-        // If table doesn't exist, log to console as fallback
-        // The audit still happens, just to console instead of DB
-        console.warn('📋 AUDIT LOG (fallback to console - table may not exist):', JSON.stringify(auditRecord, null, 2));
-      } else {
-        console.log('📋 AUDIT LOG recorded:', entry.action, 'deleted:', entry.details.deleted_count);
+        // If table doesn't exist, silently continue
+        // The audit still happens via the DB when the table exists
       }
     } catch (err) {
       // Never fail the main operation due to audit logging errors
-      console.error('⚠️ Audit logging failed (non-blocking):', err);
-      console.warn('📋 AUDIT LOG (fallback):', JSON.stringify(entry, null, 2));
     }
   }
 
@@ -90,11 +85,8 @@ export class FinancingService {
         };
       }
 
-      console.log('🔄 Parseando CSV para user:', userId, 'portfolio:', portfolioId);
-
       // Parse CSV using existing TypeScript logic
       const parsed = await ingestFromCsv(csvText);
-      console.log('✅ CSV parseado - registros:', parsed.records.length);
 
       if (parsed.records.length === 0) {
         return {
@@ -119,8 +111,6 @@ export class FinancingService {
         operation_key: r.operation_key
       }));
 
-      console.log('📝 Upserting', dbRecords.length, 'registros en Supabase (Idempotency Active)...');
-
       // Use UPSERT instead of INSERT to handle duplicates effectively
       // On conflict (user_id, portfolio_id, operation_key), update the fields to keep them fresh
       const { data, error } = await supabase
@@ -131,14 +121,11 @@ export class FinancingService {
         .select();
 
       if (error) {
-        console.error('❌ Error upserting records:', error);
         return {
           success: false,
           error: new Error(`Error guardando en base de datos: ${error.message}`)
         };
       }
-
-      console.log('✅', data?.length || 0, 'registros procesados (insertados/actualizados)');
 
       // Convert CSV records to typed Caucion for return
       const typedRecords: Caucion[] = parsed.records.map((record, i) => ({
@@ -165,7 +152,7 @@ export class FinancingService {
       };
 
     } catch (error) {
-      console.error('❌ Error en ingestFromCsv:', error);
+      console.error('[FinancingService] Error en ingestFromCsv:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -184,8 +171,6 @@ export class FinancingService {
     portfolioId: string
   ): Promise<Result<Caucion[]>> {
     try {
-      console.log('📋 Obteniendo operaciones para user:', userId, 'portfolio:', portfolioId);
-
       const { data, error } = await supabase
         .from('cauciones')
         .select('*')
@@ -194,8 +179,6 @@ export class FinancingService {
         .order('fecha_inicio', { ascending: false });
 
       if (error) throw error;
-
-      console.log('✅', data?.length || 0, 'operaciones obtenidas');
 
       if (!data || data.length === 0) {
         return { success: true, data: [] };
@@ -218,7 +201,7 @@ export class FinancingService {
       return { success: true, data: typedRecords };
 
     } catch (error) {
-      console.error('❌ Error obteniendo operaciones:', error);
+      console.error('[FinancingService] Error obteniendo operaciones:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -285,7 +268,7 @@ export class FinancingService {
 
       return { success: true, data: processed };
     } catch (error) {
-      console.error('❌ Error obteniendo cauciones (getCauciones):', error);
+      console.error('[FinancingService] Error obteniendo cauciones:', error);
       return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
     }
   }
@@ -359,7 +342,7 @@ export class FinancingService {
         ultimaOperacion
       };
     } catch (error) {
-      console.error('❌ Error calculando resumen (getResumen):', error);
+      console.error('[FinancingService] Error calculando resumen:', error);
       return { error: error instanceof Error ? error : new Error(String(error)) };
     }
   }
@@ -384,8 +367,6 @@ export class FinancingService {
     portfolioId: string
   ): Promise<Result<FinancingMetrics>> {
     try {
-      console.log('📊 Calculando métricas para user:', userId, 'portfolio:', portfolioId);
-
       const { data, error } = await supabase
         .from('cauciones')
         .select('capital, monto_devolver, interes, dias, tna_real, fecha_inicio, fecha_fin')
@@ -395,8 +376,6 @@ export class FinancingService {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        console.log('📭 No hay operaciones, retornando métricas vacías');
-
         const emptyMetrics: FinancingMetrics = {
           capitalTotal: new Decimal(0),
           interesTotal: new Decimal(0),
@@ -410,8 +389,6 @@ export class FinancingService {
 
         return { success: true, data: emptyMetrics };
       }
-
-      console.log('📈 Calculando métricas sobre', data.length, 'operaciones');
 
       // Convert database rows to typed cauciones
       const typedRecords: Caucion[] = data.map((row: any) => ({
@@ -470,17 +447,10 @@ export class FinancingService {
         ultimaOperacion
       };
 
-      console.log('✅ Métricas calculadas:', {
-        capitalTotal: metrics.capitalTotal.toString(),
-        tnaPromedioPonderada: metrics.tnaPromedioPonderada.toString(),
-        diasPromedio: metrics.diasPromedio,
-        totalOperaciones: metrics.totalOperaciones
-      });
-
       return { success: true, data: metrics };
 
     } catch (error) {
-      console.error('❌ Error calculando métricas:', error);
+      console.error('[FinancingService] Error calculando métricas:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -515,11 +485,10 @@ export class FinancingService {
 
       if (error) throw error;
 
-      console.log('✅ Operación eliminada:', operationId);
       return { success: true, data: { success: true } };
 
     } catch (error) {
-      console.error('❌ Error eliminando operación:', error);
+      console.error('[FinancingService] Error eliminando operación:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -542,8 +511,6 @@ export class FinancingService {
         };
       }
 
-      console.log('🗑️  LIMPIEZA TOTAL - Eliminando TODAS las cauciones para usuario:', userId);
-
       const { error, count } = await supabase
         .from('cauciones')
         .delete({ count: 'exact' })
@@ -563,14 +530,13 @@ export class FinancingService {
         },
       });
 
-      console.log('✅ LIMPIEZA TOTAL - Todas las cauciones eliminadas:', deletedCount);
       return {
         success: true,
         data: { deletedCount }
       };
 
     } catch (error) {
-      console.error('❌ Error en limpieza total:', error);
+      console.error('[FinancingService] Error en limpieza total:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -587,8 +553,6 @@ export class FinancingService {
    */
   async emergencyDeleteAllCauciones(adminUserId?: string): Promise<Result<{ deletedCount: number }>> {
     try {
-      console.log('🚨 EMERGENCY DELETE - Eliminando TODAS las cauciones de la base de datos');
-
       const { error, count } = await supabase
         .from('cauciones')
         .delete({ count: 'exact' })
@@ -597,7 +561,6 @@ export class FinancingService {
       let deletedCount = 0;
 
       if (error) {
-        console.error('❌ Error en emergencia:', error);
         // Try alternative method
         const { error: altError, count: altCount } = await supabase
           .rpc('clear_all_cauciones'); // If RPC function exists
@@ -607,10 +570,8 @@ export class FinancingService {
         }
 
         deletedCount = altCount || 0;
-        console.log('✅ LIMPIEZA EMERGENCIA por RPC:', deletedCount);
       } else {
         deletedCount = count || 0;
-        console.log('✅ LIMPIEZA EMERGENCIA exitosa:', deletedCount);
       }
 
       // CRITICAL: Audit logging for emergency admin operation
@@ -629,7 +590,7 @@ export class FinancingService {
       };
 
     } catch (error) {
-      console.error('❌ Error en limpieza emergencia:', error);
+      console.error('[FinancingService] Error en limpieza emergencia:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -656,8 +617,6 @@ export class FinancingService {
         };
       }
 
-      console.log('🗑️  Eliminando todas las cauciones para usuario:', userId, 'portfolio:', portfolioId);
-
       const { error, count } = await supabase
         .from('cauciones')
         .delete({ count: 'exact' })
@@ -679,14 +638,13 @@ export class FinancingService {
         },
       });
 
-      console.log('✅ Todas las cauciones eliminadas:', deletedCount);
       return {
         success: true,
         data: { deletedCount }
       };
 
     } catch (error) {
-      console.error('❌ Error eliminando todas las cauciones:', error);
+      console.error('[FinancingService] Error eliminando todas las cauciones:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -744,11 +702,6 @@ export class FinancingService {
         }
       });
 
-      console.log('🔍 Análisis de duplicados:', {
-        totalRecords: csvRecords.length,
-        duplicatesFound: duplicates.length
-      });
-
       return {
         success: true,
         data: {
@@ -758,7 +711,7 @@ export class FinancingService {
       };
 
     } catch (error) {
-      console.error('❌ Error verificando duplicados:', error);
+      console.error('[FinancingService] Error verificando duplicados:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))
@@ -802,7 +755,6 @@ export class FinancingService {
       }
 
       // Fetch raw data
-      console.log('🔍 Querying cauciones for userId:', userId, 'portfolioId:', portfolioId);
       const { data, error } = await supabase
         .from('cauciones')
         .select('*')
@@ -811,11 +763,8 @@ export class FinancingService {
         .order('fecha_fin', { ascending: false });
 
       if (error) {
-        console.error('❌ Supabase error:', error);
         throw error;
       }
-
-      console.log('📊 Raw cauciones data:', data.length, 'records');
 
       if (!data || data.length === 0) {
         return { success: true, data: [] };
@@ -842,7 +791,7 @@ export class FinancingService {
       return { success: true, data: processedData };
 
     } catch (error) {
-      console.error('❌ Error obteniendo cauciones con cálculos:', error);
+      console.error('[FinancingService] Error obteniendo cauciones con cálculos:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error))

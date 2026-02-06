@@ -13,8 +13,6 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
     mutationFn: ({ csvText }) =>
       financingService.ingestFromCsv(userId, csvText, portfolioId),
     onSuccess: (data) => {
-      console.log('✅ CSV persistido exitosamente:', data);
-
       // Invalidar queries para refrescar datos automáticamente
       queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
       queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
@@ -36,7 +34,6 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
       }
     },
     onError: (error) => {
-      console.error('❌ Error persistiendo CSV:', error);
       const errorEntry = {
         id: Date.now(),
         timestamp: new Date(),
@@ -48,12 +45,9 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
   });
 
   const handleFilesProcessed = useCallback(async (result) => {
-    console.log('🔄 CSVUploadView - procesando archivo para persistencia...');
-
     if (result.csvText) {
       uploadCsvMutation.mutate({ csvText: result.csvText });
     } else {
-      console.error('❌ No se encontró csvText en el resultado');
       uploadCsvMutation.mutate({ csvText: result.rawCsv || '' });
     }
   }, [uploadCsvMutation]);

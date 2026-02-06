@@ -185,11 +185,6 @@ const AnalisisRealContent = () => {
 
         // Validar que los precios iniciales no sean 0 (evitar división por cero)
         if (!startVCP.vcp || !startMEP.price || !startSPY.price) {
-            console.warn('[AnalisisReal] Precios iniciales inválidos:', {
-                vcp: startVCP.vcp,
-                mep: startMEP.price,
-                spy: startSPY.price
-            });
             return [];
         }
 

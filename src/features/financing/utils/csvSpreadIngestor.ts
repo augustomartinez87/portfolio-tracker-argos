@@ -57,8 +57,6 @@ function parseCsv(text: string): string[][] {
   const semiCount = (firstLine.match(/;/g) || []).length;
   const delimiter = semiCount > commaCount ? ';' : ',';
 
-  console.log('📊 CSV Parser detected delimiter:', delimiter === ';' ? 'Semicolon (;)' : 'Comma (,)');
-
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -122,8 +120,6 @@ function parseDateSafe(dateStr: string): Date | null {
 
 /** Validate that required headers exist in the first row - STRICT MODE */
 function validateHeaders(headers: string[]): void {
-  console.log('Headers encontrados:', headers);
-
   const required = [
     'fecha_apertura', 'fecha_cierre', 'capital', 'monto_devolver', 'interes', 'dias', 'tna_real', 'archivo', 'operation_key'
   ];

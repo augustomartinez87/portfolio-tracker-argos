@@ -73,7 +73,6 @@ export const useBondPrices = (): UseBondPricesReturn => {
         localStorage.setItem(`price_${ticker}`, JSON.stringify(entry));
       } catch (e) {
         if ((e as Error).name === 'QuotaExceededError') {
-          console.warn('[useBondPrices] LocalStorage full, clearing old prices...');
           // Limpiar precios viejos
           Object.keys(localStorage)
             .filter(key => key.startsWith('price_'))

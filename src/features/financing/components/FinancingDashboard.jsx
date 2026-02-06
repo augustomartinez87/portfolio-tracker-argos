@@ -15,30 +15,16 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
   const [caucionesLoading, setCaucionesLoading] = useState(false);
 
   const handleCSVProcessed = useCallback((processedData) => {
-    console.log('✅ CSV procesado - registros:', processedData?.records?.length);
-    console.log('✅ CSV procesado - summary:', processedData?.summary);
-
     // Guardar en ref persistente Y en estado
     if (processedData && processedData.summary) {
       csvDataRef.current = processedData;
       setKpisData(processedData);
-      console.log('✅ kpisData actualizado con datos del CSV');
-      console.log('✅ csvDataRef.current guardado:', csvDataRef.current?.records?.length);
-    } else {
-      console.error('❌ Estructura de datos inválida:', processedData);
     }
   }, []); // Sin dependencias para evitar re-creaciones
-
-  // useEffect simple para monitorear cambios
-  useEffect(() => {
-    console.log('🔄 kpisData changed:', kpisData ? 'CON DATOS' : 'NULL');
-    console.log('🔄 csvDataRef.current:', csvDataRef.current?.records?.length || 'NULL');
-  }, [kpisData]);
 
   // useEffect para restaurar datos desde ref si kpisData se pierde
   useEffect(() => {
     if (!kpisData && csvDataRef.current && csvDataRef.current.summary) {
-      console.log('🔧 Restaurando kpisData desde ref persistente');
       setKpisData(csvDataRef.current);
     }
   }, [kpisData]);
@@ -52,9 +38,7 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
       const result = await financingService.getCauciones(userId, portfolioId);
       if (result.success) {
         setCauciones(result.data || []);
-        console.log('✅ Cargadas cauciones:', result.data?.length);
       } else {
-        console.error('Error cargando cauciones:', result.error);
         setCauciones([]);
       }
     } catch (error) {
@@ -86,9 +70,7 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
           queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
           queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
         }
-        console.log('✅ Caución eliminada:', caucionId);
       } else {
-        console.error('Error eliminando caución:', result.error);
         alert('Error al eliminar caución. Por favor intenta nuevamente.');
       }
     } catch (error) {
@@ -111,9 +93,7 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
           queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
           queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
         }
-        console.log('✅ Todas las cauciones eliminadas:', result.data?.deletedCount);
       } else {
-        console.error('Error eliminando todas las cauciones:', result.error);
         alert('Error al eliminar todas las cauciones. Por favor intenta nuevamente.');
       }
     } catch (error) {

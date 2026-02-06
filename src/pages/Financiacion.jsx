@@ -62,12 +62,10 @@ const Financiacion = () => {
 
   // Función para refrescar ambas queries
   const handleRefresh = useCallback(async () => {
-    console.log('🔄 Refrescando datos de financiación...');
     try {
       await Promise.all([refetchOps(), refetchMetrics()]);
-      console.log('✅ Datos refrescados exitosamente');
     } catch (error) {
-      console.error('❌ Error refrescando datos:', error);
+      console.error('Error refrescando datos:', error);
     }
   }, [refetchOps, refetchMetrics]);
 

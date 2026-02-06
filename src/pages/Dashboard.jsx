@@ -313,14 +313,6 @@ export default function Dashboard() {
 
     const userId = currentPortfolio.user_id || user.id;
 
-    console.log('DEBUG handleSaveTrade - PRE-SAVE:', {
-      'auth_user_id': user.id,
-      'portfolio_owner_id': currentPortfolio.user_id,
-      'using_user_id': userId,
-      'portfolio_id': currentPortfolio.id,
-      'editingTrade': editingTrade
-    });
-
     try {
       if (editingTrade) {
         await tradeService.updateTrade(trade.id, {

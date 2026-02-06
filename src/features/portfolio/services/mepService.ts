@@ -39,7 +39,7 @@ export const mepService = {
                 .order('date', { ascending: false });
 
             if (error) {
-                console.warn('Error fetching MEP history from DB, using local data only:', error.message);
+                // Error fetching MEP history from DB, using local data only
                 cachedHistory = localHistory;
                 this._refreshCache(cachedHistory);
                 return cachedHistory;
@@ -103,14 +103,12 @@ export const mepService = {
                 .from('mep_history')
                 .upsert({ date: today, price }, { onConflict: 'date' });
 
-            if (error) {
-                console.error('Error recording daily MEP:', error);
-            } else {
+            if (!error) {
                 // Invalidate cache to force refresh on next read
                 cachedHistory = null;
             }
         } catch (e) {
-            console.error('Exception recording daily MEP:', e);
+            // Silently ignore MEP recording errors
         }
     },
 

@@ -13,7 +13,6 @@ export const tradeService = {
   },
 
   async createTrade(portfolioId, userId, trade) {
-    console.log('Creating trade:', { portfolioId, userId, trade });
     const { data, error } = await supabase
       .from('trades')
       .insert([{
@@ -32,24 +31,6 @@ export const tradeService = {
       .select()
 
     if (error) {
-      console.error('Supabase insert error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        table: 'trades',
-        payload: {
-          portfolio_id: portfolioId,
-          user_id: userId,
-          ticker: trade.ticker,
-          trade_type: trade.trade_type,
-          quantity: trade.quantity,
-          price: trade.price,
-          total_amount: trade.total_amount,
-          currency: trade.currency,
-          trade_date: trade.trade_date
-        }
-      });
       throw new Error(`Supabase error: ${error.message} (code: ${error.code})`);
     }
     return data;

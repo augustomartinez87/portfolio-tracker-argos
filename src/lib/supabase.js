@@ -54,8 +54,6 @@ localStorage.setItem = function (key, value) {
     originalSetItem(key, value)
   } catch (e) {
     if (e.name === 'QuotaExceededError') {
-      console.warn('[LocalStorage] Quota exceeded, clearing non-essential caches...')
-
       // Priorizar: NO eliminar claves de autenticación
       const keysToRemove = Object.keys(localStorage).filter(k =>
         !k.includes('supabase') &&
@@ -64,14 +62,12 @@ localStorage.setItem = function (key, value) {
         (k.includes('data912') || k.includes('price_') || k.includes('hist_') || k.includes('portfolio-'))
       )
 
-      console.log(`[LocalStorage] Removing ${keysToRemove.length} non-essential keys`)
       keysToRemove.forEach(k => localStorage.removeItem(k))
 
       try {
         originalSetItem(key, value)
-        console.log('[LocalStorage] Successfully saved after cleanup')
       } catch (e2) {
-        console.warn('[LocalStorage] Still full after cleanup, critical data may be lost')
+        // Storage still full after cleanup
       }
     }
   }
@@ -114,10 +110,6 @@ function getSupabaseClient() {
       }
     }
   })
-
-  if (typeof window !== 'undefined') {
-    console.log('[Supabase] Cliente inicializado (singleton).')
-  }
 
   return supabaseInstance
 }

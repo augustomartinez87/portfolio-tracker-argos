@@ -102,7 +102,6 @@ class Data912Helper {
     );
 
     if (this.rateLimiter.requests.length >= API_RATE_LIMIT) {
-      console.warn('[data912] Rate limit alcanzado. Esperando...');
       return false;
     }
 
@@ -155,7 +154,6 @@ class Data912Helper {
    * Limpia cache cuando se excede la quota de localStorage
    */
   private handleQuotaExceeded(): void {
-    console.warn('[data912] localStorage quota exceeded, clearing cached prices...');
     Object.keys(localStorage)
       .filter(key => key.startsWith(CACHE_PREFIX) || key.startsWith(STORAGE_KEYS.PRICE_PREFIX))
       .forEach(key => localStorage.removeItem(key));
@@ -317,7 +315,6 @@ class Data912Helper {
     // Por ahora retorna objeto vacío
     // Silence unused parameter in some builds
     void tickers;
-    console.warn('[data912] getBatchPrices not fully implemented');
     return {};
   }
 
@@ -329,7 +326,6 @@ class Data912Helper {
     void tickers;
     // TODO: Implementar fetching de retornos diarios
     // Por ahora retorna objeto vacío
-    console.warn('[data912] getBatchDailyReturns not fully implemented');
     return {};
   }
 }

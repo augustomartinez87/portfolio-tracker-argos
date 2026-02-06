@@ -33,7 +33,7 @@ const loadColumnSettings = () => {
       return { ...COLUMN_DEFAULTS, ...JSON.parse(saved) };
     }
   } catch (e) {
-    console.warn('Error loading column settings:', e);
+    // Ignore localStorage errors
   }
   return COLUMN_DEFAULTS;
 };
@@ -42,7 +42,7 @@ const saveColumnSettings = (settings) => {
   try {
     localStorage.setItem('positionsTableSettings', JSON.stringify(settings));
   } catch (e) {
-    console.warn('Error saving column settings:', e);
+    // Ignore localStorage errors
   }
 };
 

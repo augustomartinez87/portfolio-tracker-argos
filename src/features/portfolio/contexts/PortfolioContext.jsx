@@ -32,12 +32,10 @@ export const PortfolioProvider = ({ children }) => {
   const loadPortfolios = useCallback(async (forceReload = false) => {
     // No cargar si el sistema de auth/profile sigue cargando
     if (authLoadingCombined) {
-      console.log('[PortfolioContext] Auth/Profile still loading, waiting...');
       return;
     }
 
     if (!user) {
-      console.log('[PortfolioContext] No user, clearing portfolios');
       setPortfolios([])
       setCurrentPortfolio(null)
       setLoading(false)
@@ -47,28 +45,22 @@ export const PortfolioProvider = ({ children }) => {
 
     // Bloqueo crítico: Si hay usuario pero no hay perfil, el sistema no está "READY"
     if (!userProfile) {
-      console.log('[PortfolioContext] User profile not ready yet, skipping load');
       setLoading(false);
       return;
     }
 
     // Prevent concurrent loads
     if (isQueryingRef.current) {
-      console.log('[PortfolioContext] Query already in progress, skipping...');
       return;
     }
 
-    // Track load attempt for debugging
-    const attemptId = ++loadAttemptRef.current;
-    console.log(`[PortfolioContext] Loading portfolios (attempt ${attemptId}) for user:`, user.id);
+    ++loadAttemptRef.current;
 
     setLoading(true)
     setError(null)
     isQueryingRef.current = true;
 
     try {
-      console.log(`[PortfolioContext] Starting query (using direct fetch)...`);
-
       // Usar fetch directo para evitar el bloqueo del cliente de Supabase
       const { data, error: queryError } = await supabaseFetch('portfolios', {
         select: '*',
@@ -76,7 +68,6 @@ export const PortfolioProvider = ({ children }) => {
       });
 
       if (queryError) {
-        console.error('[PortfolioContext] Query error:', queryError);
         throw queryError;
       }
 
@@ -85,19 +76,13 @@ export const PortfolioProvider = ({ children }) => {
         new Date(a.created_at) - new Date(b.created_at)
       );
 
-      console.log(`[PortfolioContext] Query returned ${sortedData.length} portfolios`);
-
       setPortfolios(sortedData)
 
       const defaultPortfolio = sortedData.find(p => p.is_default) || sortedData[0] || null
       setCurrentPortfolio(defaultPortfolio)
 
-      if (!defaultPortfolio && sortedData.length === 0) {
-        console.log('[PortfolioContext] No portfolios found for user');
-      }
       setError(null)
     } catch (err) {
-      console.error('[PortfolioContext] Error loading portfolios:', err)
       setError(err.message || 'Error desconocido al cargar portfolios')
       setPortfolios([])
       setCurrentPortfolio(null)
@@ -133,13 +118,11 @@ export const PortfolioProvider = ({ children }) => {
   useEffect(() => {
     // Esperar a que el sistema esté totalmente READY (Auth + Profile)
     if (authLoadingCombined) {
-      console.log('[PortfolioContext] Waiting for complete readiness...');
       return;
     }
 
     // Si hay usuario pero no hay perfil, aún no es seguro operar
     if (user && !userProfile) {
-      console.log('[PortfolioContext] Auth ready but profile missing, waiting for sync...');
       return;
     }
 
@@ -148,7 +131,6 @@ export const PortfolioProvider = ({ children }) => {
     const hasUserChanged = currentUserId !== lastUserIdRef.current;
 
     if (hasUserChanged) {
-      console.log(`[PortfolioContext] User changed: ${lastUserIdRef.current} -> ${currentUserId}`);
       lastUserIdRef.current = currentUserId;
       loadPortfolios();
       return;
@@ -156,7 +138,6 @@ export const PortfolioProvider = ({ children }) => {
 
     // Only force load if we have a user and we are stuck in initial loading state
     if (loading && currentUserId !== null && !isQueryingRef.current) {
-      console.log('[PortfolioContext] Initial load needed for user');
       loadPortfolios();
     }
   }, [user, userProfile, authLoadingCombined, loadPortfolios])

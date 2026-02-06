@@ -49,7 +49,6 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
   const previousFocusRef = useRef(null);
 
   if (componentError) {
-    console.error('PositionDetailModal error:', componentError);
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-background-secondary rounded-lg p-6 text-center max-w-md border border-border-primary">
@@ -204,7 +203,6 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
         }
       }
 
-      console.error('Error fetching historical data after retries:', lastError);
       setError(lastError instanceof Error ? lastError.message : 'Error cargando históricos después de múltiples intentos');
       setHistorical([]);
       setLoading(false);
@@ -304,12 +302,10 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
   if (!open) return null;
 
   if (!position || !displayValues) {
-    console.error('Position is null or undefined');
     return null;
   }
 
   if (!position.ticker) {
-    console.error('Invalid position data:', position);
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-background-secondary rounded-lg p-6 text-center border border-border-primary">
