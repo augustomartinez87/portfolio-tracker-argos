@@ -11,7 +11,6 @@ import { ResetPassword } from './features/auth/components/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
-import CarryTrade from './pages/CarryTrade'
 const Fci = lazy(() => import('./pages/Fci'));
 import Admin from './pages/Admin'
 
@@ -94,24 +93,6 @@ function App() {
                   </PortfolioProvider>
                 </ProtectedRoute>
               }
-            />
-
-            {/* Carry Trade - Acceso para todos */}
-            <Route
-              path="/carry-trade/:tab?"
-              element={
-                <ProtectedRoute requiredModule="carryTrade">
-                  <PortfolioProvider>
-                    <CarryTrade />
-                  </PortfolioProvider>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Redirigir la base de carry trade a analisis */}
-            <Route
-              path="/carry-trade"
-              element={<Navigate to="/carry-trade/analisis" replace />}
             />
 
             {/* Análisis Real - Redirigir a FCI (ahora es una tab) */}

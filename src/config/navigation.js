@@ -1,4 +1,4 @@
-import { Briefcase, TrendingUp, Coins, Activity, PieChart, BarChart2, Settings } from 'lucide-react';
+import { Briefcase, TrendingUp, Coins, PieChart, BarChart2, Settings } from 'lucide-react';
 
 /**
  * Configuración centralizada de navegación
@@ -20,14 +20,6 @@ export const NAV_ITEMS = [
     icon: PieChart,
     path: '/fci',
     adminOnly: true
-  },
-  {
-    id: 'carry',
-    moduleId: 'carryTrade',
-    label: 'Carry Trade',
-    icon: Activity,
-    path: '/carry-trade/analisis',
-    adminOnly: false
   },
   {
     id: 'financiacion',
@@ -102,6 +94,6 @@ export const getNavItemByModule = (moduleId) => {
  * Módulos por defecto según el rol
  */
 export const DEFAULT_MODULES = {
-  user: ['portfolio', 'carryTrade'],
-  admin: ['portfolio', 'fci', 'carryTrade', 'financiacion', 'funding', 'analisis', 'admin']
+  user: ['portfolio'],
+  admin: ['portfolio', 'fci', 'financiacion', 'funding', 'analisis', 'admin']
 };

@@ -18,7 +18,7 @@ export const userService = {
         .insert({
           user_id: userId,
           role: 'user',
-          modules: ['portfolio', 'carryTrade'],
+          modules: ['portfolio'],
           is_active: true
         })
         .select()
@@ -116,7 +116,7 @@ export const userService = {
    */
   async getAllowedModules() {
     const profile = await this.getCurrentProfile();
-    return profile?.modules || ['portfolio', 'carryTrade'];
+    return profile?.modules || ['portfolio'];
   },
 
   /**
@@ -181,8 +181,8 @@ export const userService = {
   async updateUserRole(userId, role) {
     // Actualizar módulos según el rol
     const modules = role === 'admin'
-      ? ['portfolio', 'fci', 'carryTrade', 'financiacion', 'funding', 'analisis', 'admin']
-      : ['portfolio', 'carryTrade'];
+      ? ['portfolio', 'fci', 'financiacion', 'funding', 'analisis', 'admin']
+      : ['portfolio'];
 
     const { data, error } = await supabase
       .from('user_profiles')

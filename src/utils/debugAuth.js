@@ -123,7 +123,7 @@ export async function debugCreateProfile() {
       user_id: user.id,
       role: 'user',
       display_name: user.email.split('@')[0],
-      modules: ['portfolio', 'carryTrade'],
+      modules: ['portfolio'],
       is_active: true
     })
     .select()
