@@ -194,11 +194,6 @@ export function AlertsPanel({ carryMetrics, isFallback }) {
 
   return (
     <div className="bg-background-secondary rounded-xl border border-border-primary p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <AlertTriangle className="w-5 h-5 text-warning" />
-        <h2 className="text-lg font-semibold text-text-primary">Alertas y Acciones</h2>
-      </div>
-
       <div className="space-y-3">
         {alerts.map((alert) => {
           const Icon = alert.icon;

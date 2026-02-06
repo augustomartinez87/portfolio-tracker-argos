@@ -214,20 +214,15 @@ export function calcularSpreadPorCaucion(
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
   const fechaHoy = hoy.toISOString().split('T')[0];
 
-  // DEBUG: Log para diagnóstico
-  console.log(`[DEBUG] Caución ${caucion.id}: ${fechaInicio} -> ${fechaFin}, hoy=${fechaHoy}`);
-  console.log(`[DEBUG] Primeros 5 VCPs disponibles:`, vcpPrices.slice(0, 5).map(v => ({ fecha: v.fecha, vcp: v.vcp })));
-
   const esVencida = fechaFin < fechaHoy;
-  
+
   // Para VCP_inicio:
   // - Cauciones VENCIDAS: usar inclusive=true (VCP de la fecha exacta de inicio)
   //   El VCP del día de inicio ya está publicado al cierre de esa fecha
   // - Cauciones ACTIVAS: usar inclusive=false (VCP del día anterior)
   //   El VCP disponible al abrir la caución por la mañana es del día anterior
-  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, esVencida ? true : false);
-  console.log(`[DEBUG] VCP_inicio buscado para ${fechaInicio} (inclusive=${esVencida ? true : false}, esVencida=${esVencida}):`, vcpInicio);
-  if (!vcpInicio || new Decimal(vcpInicio.vcp || 0).isZero()) return null;
+  const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, esVencida);
+  if (!vcpInicio || !vcpInicio.vcp || new Decimal(vcpInicio.vcp).isZero()) return null;
 
   const vcpInicioDec = new Decimal(vcpInicio.vcp);
   
@@ -272,8 +267,7 @@ export function calcularSpreadPorCaucion(
     // Para VCP "hoy" usamos inclusive=false porque el VCP disponible hoy es el del día anterior
     // (publicado anoche). Ej: hoy 04/02 a la mañana, el último VCP disponible es el del 03/02.
     const vcpHoy = buscarVcpAnteriorOIgual(vcpPrices, fechaHoy, false);
-    console.log(`[DEBUG] VCP_hoy buscado para ${fechaHoy} (inclusive=false):`, vcpHoy);
-    if (!vcpHoy || new Decimal(vcpHoy.vcp || 0).isZero()) return null;
+    if (!vcpHoy || !vcpHoy.vcp || new Decimal(vcpHoy.vcp).isZero()) return null;
 
     const vcpHoyDec = new Decimal(vcpHoy.vcp);
     
@@ -285,8 +279,6 @@ export function calcularSpreadPorCaucion(
     const gananciaReal = vcpHoy.fecha > fechaInicio
       ? calcularGananciaFCIReal(baseCalculoGanancia, vcpInicioDec, vcpHoyDec)
       : new Decimal(0);
-    
-    console.log(`[DEBUG] Ganancia real calculada: ${gananciaReal.toNumber()}, vcpHoy.fecha=${vcpHoy.fecha} > fechaInicio=${fechaInicio} = ${vcpHoy.fecha > fechaInicio}`);
 
     // b) Tramo proyectado: hoy → fecha_fin
     const diasRestantes = Math.max(0, Math.round(

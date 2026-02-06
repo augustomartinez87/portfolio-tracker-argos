@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, Upload, Filter, Trash2, BarChart3 } from 'lucide-react';
+import { TrendingUp, Upload, BarChart3 } from 'lucide-react';
 import FinancingKPIs from '@/features/financing/components/FinancingKPIs';
 import CSVUploadView from '@/features/financing/components/CSVUploadView';
 import FinancingCharts from '@/features/financing/components/FinancingCharts';
@@ -83,8 +83,8 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
         await loadCauciones();
         // Invalidar queries para actualizar otros componentes
         if (queryClient) {
-          queryClient.invalidateQueries(['financing-operations']);
-          queryClient.invalidateQueries(['financing-metrics']);
+          queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
+          queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
         }
         console.log('✅ Caución eliminada:', caucionId);
       } else {
@@ -108,8 +108,8 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
         await loadCauciones();
         // Invalidar queries para actualizar otros componentes
         if (queryClient) {
-          queryClient.invalidateQueries(['financing-operations']);
-          queryClient.invalidateQueries(['financing-metrics']);
+          queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
+          queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
         }
         console.log('✅ Todas las cauciones eliminadas:', result.data?.deletedCount);
       } else {
@@ -122,34 +122,6 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
     }
   }, [userId, portfolioId, loadCauciones, queryClient]);
 
-  // Función para LIMPIAR TODOS los datos del usuario (solo desarrollo)
-  const handleClearAllData = useCallback(async () => {
-    if (!userId) return;
-
-    if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro que deseas eliminar TODAS las cauciones de TODOS tus portfolios?\n\nEsta acción es irreversible y limpiará todos tus datos para empezar desde 0.')) {
-      try {
-        const result = await financingService.clearAllUserCauciones(userId);
-        if (result.success) {
-          // Recargar cauciones
-          await loadCauciones();
-          // Invalidar todo
-          if (queryClient) {
-            queryClient.invalidateQueries(['financing-operations']);
-            queryClient.invalidateQueries(['financing-metrics']);
-          }
-          alert(`✅ Limpieza completa: ${result.data?.deletedCount} cauciones eliminadas.Puedes empezar desde 0.`);
-          console.log('✅ LIMPIEZA TOTAL - Eliminadas:', result.data?.deletedCount);
-        } else {
-          console.error('Error en limpieza total:', result.error);
-          alert('Error en limpieza total. Por favor intenta nuevamente.');
-        }
-      } catch (error) {
-        console.error('Error en limpieza total:', error);
-        alert('Error en limpieza total. Por favor intenta nuevamente.');
-      }
-    }
-  }, [userId, loadCauciones, queryClient]);
-
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'charts', label: 'Análisis', icon: TrendingUp },
@@ -160,19 +132,21 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
   return (
     <div className="space-y-6">
       {/* Sub-navigation */}
-      <div className="bg-background-secondary border border-border-primary rounded-xl p-2">
-        <div className="flex flex-wrap gap-2">
+      <div className="border-b border-border-secondary">
+        <div className="flex gap-1">
           {viewOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setActiveView(option.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeView === option.id
-                ? 'bg-primary text-white'
-                : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
-                }`}
+              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeView === option.id
+                ? 'border-primary text-primary bg-primary/5'
+                : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+              }`}
             >
-              <option.icon className="w-4 h-4" />
-              {option.label}
+              <span className="flex items-center gap-2">
+                <option.icon className="w-4 h-4" />
+                {option.label}
+              </span>
             </button>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
-import { PieChart, Plus, Download, Loader2, RefreshCw, Upload, FileUp, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PieChart, Plus, Download, Loader2, Upload, FileUp, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
@@ -251,7 +251,7 @@ export default function Fci() {
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-20 lg:pb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 max-w-7xl mx-auto flex flex-col h-full overflow-hidden">
+          <div className="p-3 lg:p-4 space-y-3 flex flex-col h-full overflow-hidden">
             <PageHeader
               title="Fondos"
               subtitle="Operaciones e Historial"
@@ -268,10 +268,8 @@ export default function Fci() {
               <PortfolioEmptyState title="Sin Portfolio" message="Crea un portfolio para empezar a operar con Fondos Comunes de Inversión." />
             ) : (
               <>
-                {/* Sub-navigation (Tabs) like Dashboard */}
-                <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
-                  <FciTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                </div>
+                {/* Sub-navigation (Tabs) */}
+                <FciTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
 
                 <div className="flex-1 overflow-auto min-h-0 pr-1">

@@ -116,10 +116,9 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
     // COMPUTED: lotDetails — cada lot activo con sus campos calculados
     // =========================================================================
     const lotDetails = useMemo(() => {
-        // Calcular fecha de hoy en timezone local del usuario (no UTC)
-        // Esto asegura que coincida con cómo se almacenan las fechas en BD
-        const hoyLocal = new Date();
-        const hoy = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, '0')}-${String(hoyLocal.getDate()).padStart(2, '0')}`;
+        // Usar UTC consistente para evitar problemas de timezone
+        // La BD almacena fechas en UTC, así que debemos comparar en UTC
+        const hoy = new Date().toISOString().split('T')[0];
 
         return activeLots.map(lot => {
             const latest = latestPrices[lot.fci_id];

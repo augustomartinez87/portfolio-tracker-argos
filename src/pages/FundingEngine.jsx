@@ -40,12 +40,12 @@ export default function FundingEngine() {
     }
   }, [sidebarExpanded]);
 
-
-
-
   // Estado para tabs
   const [activeTab, setActiveTab] = useState('dashboard');
   const [caucionCutoffMode, setCaucionCutoffMode] = useState('auto');
+
+  // Fecha mínima de datos confiables (filtra datos históricos anteriores)
+  const dataStartDate = '2026-01-16';
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const fciPositions = fciLotEngine?.positions || [];
@@ -85,9 +85,6 @@ export default function FundingEngine() {
   ), [fciPositions]);
   const fciValuationTotal = fciLotEngine?.totals?.valuation || 0;
   const fciTotalPnl = fciLotEngine?.totals?.pnl || 0;
-  const tnaFCIDynamic = fciValuationTotal > 0
-    ? (totalPnlDiario / fciValuationTotal) * 365
-    : 0;
   const isFallback = fciValuationTotal <= 0;
   const ultimaPreciofecha = useMemo(() => {
     const mainPos = fciPositions.find(p => p.fciId === mainFciId);
@@ -163,22 +160,34 @@ export default function FundingEngine() {
   }, [fciPositions, cauciones]);
 
 
+  // TNA FCI calculada desde últimos VCPs disponibles (no depende del precio de hoy)
+  const tnaFCIFromVCP = useMemo(() => {
+    if (vcpHistoricos.length < 2) return 0;
+    const ultimo = vcpHistoricos[vcpHistoricos.length - 1];
+    const penultimo = vcpHistoricos[vcpHistoricos.length - 2];
+    if (!ultimo.vcp || !penultimo.vcp || penultimo.vcp === 0) return 0;
+    const diasReales = Math.round(
+      (new Date(ultimo.fecha) - new Date(penultimo.fecha)) / (1000 * 60 * 60 * 24)
+    );
+    if (diasReales <= 0) return 0;
+    const ratio = ultimo.vcp / penultimo.vcp;
+    return Math.pow(ratio, 365 / diasReales) - 1;
+  }, [vcpHistoricos]);
+
   // Crear objeto fciEngine compatible con useCarryMetrics
   const fciEngine = {
     totals: fciLotEngine?.totals || { valuation: 0 },
   };
 
-  // Calcular métricas de carry con TNA dinámica
+  // Calcular métricas de carry con TNA desde VCP
   const carryMetrics = useCarryMetrics({
     cauciones,
     fciEngine,
-    tnaFCI: tnaFCIDynamic,
+    tnaFCI: tnaFCIFromVCP,
     caucionCutoffMode,
     vcpPrices: vcpHistoricos,
+    dataStartDate,
   });
-
-  // Cargar datos históricos para benchmark (30 días)
-  const historicalStats = null;
 
   const handleManualRefresh = async () => {
     try {
@@ -202,7 +211,7 @@ export default function FundingEngine() {
         />
 
       <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 min-h-screen ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-        <div className="p-4 lg:p-6 flex flex-col flex-1">
+        <div className="p-3 lg:p-4 space-y-3 flex flex-col flex-1">
           <PageHeader
             title="Funding Engine"
             subtitle="Carry Trade & Liquidez"
@@ -291,19 +300,18 @@ export default function FundingEngine() {
                 <DashboardTab
                   carryMetrics={carryMetrics}
                   isFallback={isFallback}
-                  caucionCutoffMode={caucionCutoffMode}
-                  onCaucionCutoffModeChange={setCaucionCutoffMode}
-                  historicalStats={historicalStats}
                   ultimaPreciofecha={ultimaPreciofecha}
+                  dataStartDate={dataStartDate}
+                  fciId={mainFciId}
+                  portfolioId={currentPortfolio?.id}
+                  userId={user?.id}
                 />
               )}
 
               {activeTab === 'analysis' && (
                 <AnalysisTab
                   carryMetrics={carryMetrics}
-                  fciId={mainFciId}
-                  portfolioId={currentPortfolio?.id}
-                  userId={user?.id}
+                  ultimaPreciofecha={ultimaPreciofecha}
                 />
               )}
 

@@ -21,9 +21,9 @@ const PERIODS = [
     { label: 'Todo', value: 1000 },
 ];
 
-export function RatesEvolutionChart({ fciId, portfolioId, userId }) {
+export function RatesEvolutionChart({ fciId, portfolioId, userId, dataStartDate }) {
     const [period, setPeriod] = useState(30);
-    const { data, loading, error, stats } = useHistoricalRates(fciId, portfolioId, userId, period);
+    const { data, loading, error, stats } = useHistoricalRates(fciId, portfolioId, userId, period, dataStartDate);
 
     if (loading) {
         return (

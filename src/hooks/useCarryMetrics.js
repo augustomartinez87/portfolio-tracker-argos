@@ -20,7 +20,7 @@ import {
 export { calcularSpreadPorCaucion } from '@/lib/finance/carryCalculations';
 export { calcularTotalesOperaciones, calcularSpreadsTodasCauciones };
 
-export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [] }) {
+export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [], dataStartDate = '' }) {
   return useMemo(() => {
     if (!cauciones?.length || !fciEngine?.totals) {
       return null;
@@ -28,6 +28,19 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
 
     const hoy = new Date();
     const hoyDate = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+    // Filtrar cauciones por fecha mínima de datos confiables
+    const caucionesFiltered = dataStartDate
+      ? cauciones.filter(c => {
+          const fechaInicio = String(c.fecha_inicio || '').split('T')[0];
+          return fechaInicio >= dataStartDate;
+        })
+      : cauciones;
+
+    // Si después del filtro no quedan cauciones, retornar null
+    if (caucionesFiltered.length === 0) {
+      return null;
+    }
 
     const parseDate = (value) => {
       if (!value) return null;
@@ -40,41 +53,90 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       return Number.isNaN(fallback.getTime()) ? null : fallback;
     };
 
+    // Calcular TNA FCI al principio (necesario para tieneVCPCompleto)
+    const tnaFCIDec = new Decimal(tnaFCI || 0);
+
     // =========================================================================
     // 1. TOTAL CAUCIÓN ACTIVA (solo cauciones vigentes)
     // =========================================================================
-    const caucionesActivasHoy = cauciones.filter(c => {
+    const caucionesActivasHoy = caucionesFiltered.filter(c => {
       const fechaInicio = parseDate(c.fecha_inicio);
       const fechaFin = parseDate(c.fecha_fin);
       if (!fechaInicio || !fechaFin) return false;
       return fechaInicio <= hoyDate && fechaFin >= hoyDate;
     });
 
-    const ultimaCaucionFecha = cauciones.length > 0
-      ? cauciones.reduce((max, c) => {
+    const ultimaCaucionFecha = caucionesFiltered.length > 0
+      ? caucionesFiltered.reduce((max, c) => {
           const fecha = parseDate(c.fecha_fin);
           if (!fecha) return max;
           return !max || fecha > max ? fecha : max;
         }, null)
       : null;
 
+    // Encontrar última caución con VCP completo (ambos datos disponibles)
+    // Solo considerar cauciones VENCIDAS con VCP real (sin proyección)
+    const tieneVCPCompleto = (caucion) => {
+      const fechaInicio = String(caucion.fecha_inicio || '').split('T')[0];
+      const fechaFin = String(caucion.fecha_fin || '').split('T')[0];
+      const hoyISO = hoy.toISOString().split('T')[0];
+
+      // Solo cauciones vencidas (fecha_fin < hoy)
+      if (fechaFin >= hoyISO) return false;
+
+      // Verificar directamente si existen los VCP para inicio y fin
+      const vcpInicio = vcpPrices.find(p => p.fecha?.split('T')[0] === fechaInicio);
+      const vcpFin = vcpPrices.find(p => p.fecha?.split('T')[0] === fechaFin);
+
+      // Solo considerar completa si tiene AMBOS precios VCP (sin proyección)
+      return vcpInicio && vcpFin;
+    };
+
+    const ultimaCaucionConVCP = caucionesFiltered.reduce((max, c) => {
+      const fechaFin = parseDate(c.fecha_fin);
+      if (!fechaFin) return max;
+
+      // Verificar si esta caución tiene VCP completo
+      if (tieneVCPCompleto(c) && (!max || fechaFin > max)) {
+        return fechaFin;
+      }
+      return max;
+    }, null);
+
     let cutoffFecha = null;
     if (caucionCutoffMode === 'today') {
       cutoffFecha = hoyDate;
-    } else if (caucionCutoffMode === 'last') {
-      cutoffFecha = ultimaCaucionFecha;
+    } else if (caucionCutoffMode === 'last-complete') {
+      // Última caución con VCP completo (ambos datos)
+      cutoffFecha = ultimaCaucionConVCP;
     } else if (caucionCutoffMode === 'auto') {
       cutoffFecha = caucionesActivasHoy.length > 0 ? hoyDate : ultimaCaucionFecha;
+    } else if (caucionCutoffMode === 'all') {
+      cutoffFecha = null; // Usar todas las cauciones históricas
     }
 
-    const caucionesVigentes = cutoffFecha
-      ? cauciones.filter(c => {
-          const fechaInicio = parseDate(c.fecha_inicio);
-          const fechaFin = parseDate(c.fecha_fin);
-          if (!fechaInicio || !fechaFin) return false;
-          return fechaInicio <= cutoffFecha && fechaFin >= cutoffFecha;
-        })
-      : cauciones;
+    // Para 'last-complete': seleccionar directamente la última caución con VCP completo
+    // sin filtrar por fecha (evita duplicación cuando se rollea deuda en fechas contiguas)
+    let caucionesVigentes;
+    if (caucionCutoffMode === 'last-complete') {
+      const completeCauciones = caucionesFiltered
+        .filter(c => tieneVCPCompleto(c))
+        .sort((a, b) => {
+          const fa = parseDate(a.fecha_fin);
+          const fb = parseDate(b.fecha_fin);
+          return (fb?.getTime() || 0) - (fa?.getTime() || 0); // DESC por fecha_fin
+        });
+      caucionesVigentes = completeCauciones.length > 0 ? [completeCauciones[0]] : [];
+    } else if (cutoffFecha) {
+      caucionesVigentes = caucionesFiltered.filter(c => {
+        const fechaInicio = parseDate(c.fecha_inicio);
+        const fechaFin = parseDate(c.fecha_fin);
+        if (!fechaInicio || !fechaFin) return false;
+        return fechaInicio <= cutoffFecha && fechaFin >= cutoffFecha;
+      });
+    } else {
+      caucionesVigentes = caucionesFiltered;
+    }
 
     const totalCaucion = caucionesVigentes.reduce((sum, c) => {
       return sum.plus(new Decimal(c.capital || 0));
@@ -152,8 +214,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // =========================================================================
     // 8. BUFFER DE TASA
     // =========================================================================
-    // Buffer = TNA FCI - TNA Caución Promedio
-    const tnaFCIDec = new Decimal(tnaFCI || 0);
+    // Buffer = TNA FCI - TNA Caución Promedio (tnaFCIDec ya calculado al principio)
     const bufferTasa = tnaFCIDec.minus(tnaCaucionPonderada);
 
     // =========================================================================
@@ -195,7 +256,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // Cada caución se evalúa contra el rendimiento real del FCI en su rango de fechas.
     // Cauciones vencidas: VCP real inicio→fin.
     // Cauciones activas: tramo real (inicio→hoy) + proyección con TNA MA-7d (hoy→fin).
-    const spreadsPorCaucion = cauciones.map(c => {
+    const spreadsPorCaucion = caucionesFiltered.map(c => {
       const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy);
       // Convertir del formato nuevo al formato legacy esperado por el resto del hook
       return resultado ? {
@@ -205,13 +266,17 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       } : null;
     });
 
+    // Detectar cauciones sin VCP completo (spread = null)
+    const caucionesSinVCP = spreadsPorCaucion.filter(s => s === null).length;
+    const caucionesConVCP = spreadsPorCaucion.filter(s => s !== null).length;
+
     const spreadAcumulado = spreadsPorCaucion.reduce((sum, s) => {
       if (s === null) return sum;
       return sum.plus(new Decimal(s['spread_$']));
     }, new Decimal(0));
 
     // Spread promedio ponderado por capital
-    const { capitalConDatos, spreadPonderadoSum } = cauciones.reduce((acc, c, idx) => {
+    const { capitalConDatos, spreadPonderadoSum } = caucionesFiltered.reduce((acc, c, idx) => {
       const s = spreadsPorCaucion[idx];
       if (s === null) return acc;
       const cap = new Decimal(c.capital || 0);
@@ -266,13 +331,20 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // 15. METADATA DE CAUCIONES (para UX mejorada)
     // =========================================================================
     const metadata = {
-      tieneCaucionesHistoricas: cauciones.length > 0,
-      todasVencidas: cauciones.length > 0 && caucionesActivasHoy.length === 0,
+      tieneCaucionesHistoricas: caucionesFiltered.length > 0,
+      todasVencidas: caucionesFiltered.length > 0 && caucionesActivasHoy.length === 0,
       ultimaCaucionFecha,
+      ultimaCaucionConVCP,
       cutoffFecha,
       cutoffMode: caucionCutoffMode,
-      caucionesVencidas: cauciones.length - caucionesVigentes.length,
-      totalCaucionesHistoricas: cauciones.length,
+      caucionesVencidas: caucionesFiltered.length - caucionesVigentes.length,
+      totalCaucionesHistoricas: caucionesFiltered.length,
+      totalCaucionesOriginal: cauciones.length,
+      dataStartDate: dataStartDate || null,
+      // Información de VCP incompleto
+      spreadIncompleto: caucionesSinVCP > 0,
+      caucionesSinVCP,
+      caucionesConVCP,
     };
 
     // =========================================================================
@@ -325,11 +397,11 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
 
       // Metadata
       diasPromedio,
-      totalOperaciones: cauciones.length,
+      totalOperaciones: caucionesFiltered.length,
       ultimaActualizacion: new Date().toISOString(),
       metadata,
     };
-  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices]);
+  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices, dataStartDate]);
 }
 
 export default useCarryMetrics;

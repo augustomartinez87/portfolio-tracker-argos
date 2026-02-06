@@ -64,7 +64,7 @@ export default function CarryTrade() {
           setIsExpanded={setSidebarExpanded}
         />
                 <main className={`flex-1 transition-all duration-300 overflow-hidden h-screen flex flex-col mt-16 lg:mt-0 mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-                    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 flex flex-col h-full overflow-hidden">
+                    <div className="p-3 lg:p-4 space-y-3 flex flex-col h-full overflow-hidden">
                         <PageHeader
                             title="Carry Trade"
                             subtitle="Estrategia y Riesgo"
@@ -82,9 +82,7 @@ export default function CarryTrade() {
                         ) : (
                             <>
                                 {/* Sub-navigation (Tabs) */}
-                                <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
-                                    <CarryTradeTabs activeTab={activeTab} />
-                                </div>
+                                <CarryTradeTabs activeTab={activeTab} />
 
                                 {activeTab === 'analisis' ? (
                                     <>

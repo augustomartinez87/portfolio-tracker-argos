@@ -6,7 +6,7 @@ import { startOfDay, subDays, format, isAfter, isBefore, isEqual, eachDayOfInter
 
 const financingService = new FinancingService();
 
-export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
+export function useHistoricalRates(fciId, portfolioId, userId, days = 30, dataStartDate = '') {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +29,13 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
         ]);
 
         if (caucionesResult.error) throw caucionesResult.error;
-        const cauciones = caucionesResult.data;
+        // Filtrar cauciones por fecha mínima de datos confiables
+        const cauciones = dataStartDate
+          ? (caucionesResult.data || []).filter(c => {
+              const fechaInicio = String(c.fecha_inicio || '').split('T')[0];
+              return fechaInicio >= dataStartDate;
+            })
+          : (caucionesResult.data || []);
 
         // 2. Deduplicar precios por fecha y ordenar ascendente
         const dedupMap = new Map();
@@ -59,8 +65,14 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
         }
 
         // 3. Process Cauciones daily TNA
+        // Si hay dataStartDate, no retroceder más allá de esa fecha
+        let rangeStart = subDays(new Date(), days);
+        if (dataStartDate) {
+          const minDate = startOfDay(new Date(dataStartDate + 'T00:00:00'));
+          if (minDate > rangeStart) rangeStart = minDate;
+        }
         const dateRange = eachDayOfInterval({
-          start: subDays(new Date(), days),
+          start: rangeStart,
           end: new Date()
         });
 
@@ -111,18 +123,20 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
               .filter(c => isAfter(startOfDay(date), startOfDay(new Date(c.fecha_fin))))
               .sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin));
             
-            if (pastCauciones.length > 0) {
+            if (pastCauciones.length > 0 && pastCauciones[0].tna_real != null) {
               tnaCaucion = pastCauciones[0].tna_real;
             }
           }
 
-          const spread = (tnaFCI !== null && tnaCaucion !== null) ? (tnaFCI - tnaCaucion) : null;
+          const spread = (tnaFCI != null && tnaCaucion != null && isFinite(tnaFCI) && isFinite(tnaCaucion))
+            ? (tnaFCI - tnaCaucion)
+            : null;
 
           return {
             fecha: dateStr,
-            tnaFCI: tnaFCI !== null ? Number(tnaFCI.toFixed(2)) : null,
-            tnaCaucion: tnaCaucion !== null ? Number(tnaCaucion.toFixed(2)) : null,
-            spread: spread !== null ? Number(spread.toFixed(2)) : null
+            tnaFCI: tnaFCI != null && isFinite(tnaFCI) ? Number(tnaFCI.toFixed(2)) : null,
+            tnaCaucion: tnaCaucion != null && isFinite(tnaCaucion) ? Number(tnaCaucion.toFixed(2)) : null,
+            spread: spread != null && isFinite(spread) ? Number(spread.toFixed(2)) : null
           };
         }).filter(d => d.tnaFCI !== null || d.tnaCaucion !== null);
 
@@ -167,7 +181,7 @@ export function useHistoricalRates(fciId, portfolioId, userId, days = 30) {
     }
 
     fetchData();
-  }, [fciId, portfolioId, userId, days]);
+  }, [fciId, portfolioId, userId, days, dataStartDate]);
 
   return { data, loading, error, stats };
 }

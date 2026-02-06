@@ -481,13 +481,10 @@ export default function Dashboard() {
             ) : (
               <>
                 {/* Sub-navigation (Tabs) */}
-                <div className="bg-background-secondary/50 border border-border-primary rounded-lg p-1">
-                  <PortfolioTabs
-                    activeTab={activeTab}
-                    currentPortfolio={currentPortfolio}
-                    variant="pills"
-                  />
-                </div>
+                <PortfolioTabs
+                  activeTab={activeTab}
+                  currentPortfolio={currentPortfolio}
+                />
 
 
                 {/* Dynamic Content */}

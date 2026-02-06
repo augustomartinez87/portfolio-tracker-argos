@@ -6,19 +6,12 @@ export const PortfolioTabs = ({ activeTab, currentPortfolio }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
-  // Evitar problemas de hidratación
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // ELIMINADO: La persistencia ahora la maneja el sidebar redirigiendo a /resumen
-  // o el usuario guardando el link directo si lo desea.
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    return <div className="h-12 bg-background-secondary border-b border-border-primary" />;
+    return <div className="h-10 border-b border-border-secondary" />;
   }
 
   const tabs = [
@@ -29,20 +22,24 @@ export const PortfolioTabs = ({ activeTab, currentPortfolio }) => {
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => navigate(`/dashboard/${tab.id}`)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium text-sm ${activeTab === tab.id
-            ? 'bg-text-primary text-background-primary'
-            : 'text-text-tertiary hover:text-text-primary hover:bg-background-tertiary'
+    <div className="border-b border-border-secondary">
+      <div className="flex gap-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => navigate(`/dashboard/${tab.id}`)}
+            className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
+              ? 'border-primary text-primary bg-primary/5'
+              : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
             }`}
-        >
-          <tab.icon className="w-4 h-4" />
-          <span>{tab.label}</span>
-        </button>
-      ))}
+          >
+            <span className="flex items-center gap-2">
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

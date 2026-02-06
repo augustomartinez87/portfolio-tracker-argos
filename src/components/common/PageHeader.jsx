@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, HelpCircle, Shield, Sun, Moon } from 'lucide-react';
+import { RefreshCw, HelpCircle, Sun, Moon } from 'lucide-react';
 import { PortfolioSelector } from '@/features/portfolio/components/PortfolioSelector';
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -75,6 +75,13 @@ export const PageHeader = ({
                 {extraActions}
 
                 <div className="flex items-center bg-background-secondary border border-border-primary rounded-lg p-1 shadow-sm">
+                    {sidebarToggle && (
+                        <div className="hidden lg:flex items-center">
+                            {sidebarToggle}
+                            <div className="border-l border-border-primary h-4 ml-1"></div>
+                        </div>
+                    )}
+
                     {onRefresh && (
                         <button
                             onClick={onRefresh}
@@ -107,11 +114,6 @@ export const PageHeader = ({
                 </div>
             </div>
         </div>
-        {sidebarToggle && (
-            <div className="-mt-3 mb-1">
-                {sidebarToggle}
-            </div>
-        )}
         </>
     );
 };

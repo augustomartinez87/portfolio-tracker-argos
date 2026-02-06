@@ -16,8 +16,8 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
       console.log('✅ CSV persistido exitosamente:', data);
 
       // Invalidar queries para refrescar datos automáticamente
-      queryClient.invalidateQueries(['financing-operations']);
-      queryClient.invalidateQueries(['financing-metrics']);
+      queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
+      queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
 
       // Agregar al historial local para feedback visual
       const resultData = data.data || {};

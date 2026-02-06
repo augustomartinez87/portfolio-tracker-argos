@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { TrendingUp, RefreshCw, Upload, Filter, Trash2, Coins } from 'lucide-react';
+import { TrendingUp, Coins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -122,7 +122,7 @@ const Financiacion = () => {
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
-          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+          <div className="p-3 lg:p-4 space-y-3">
             <PageHeader
               title="Financiación"
               subtitle="Cauciones y Tasas"
@@ -130,30 +130,6 @@ const Financiacion = () => {
               loading={loading}
               onRefresh={handleRefresh}
               sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
-              extraActions={
-                import.meta.env.DEV && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        if (window.confirm('⚠️ LIMPIEZA TOTAL\n\n¿Estás seguro?')) {
-                          financingService.clearAllUserCauciones(user.id).then(result => {
-                            if (result.success) {
-                              queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
-                              queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
-                              alert('✅ Limpieza completa.');
-                            }
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition-colors border border-danger/30 text-xs font-medium"
-                      title="Limpiar todos los datos (solo desarrollo)"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Limpiar
-                    </button>
-                  </div>
-                )
-              }
             />
 
             {!currentPortfolio ? (
