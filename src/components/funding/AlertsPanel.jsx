@@ -12,12 +12,13 @@ import { formatARS, formatNumber } from '@/utils/formatters';
 /**
  * Panel de Alertas y Acciones para el Funding Engine
  * Muestra alertas contextuales y acciones sugeridas basadas en las métricas de carry trade
- * 
+ *
  * @param {Object} props
  * @param {Object} props.carryMetrics - Métricas de carry trade
  * @param {boolean} props.isFallback - Si la TNA es estimada (fallback)
+ * @param {Object} [props.spreadStats] - Stats históricas de spread (de useHistoricalRates)
  */
-export function AlertsPanel({ carryMetrics, isFallback }) {
+export function AlertsPanel({ carryMetrics, isFallback, spreadStats }) {
   const alerts = useMemo(() => {
     if (!carryMetrics) return [];
 
@@ -76,6 +77,46 @@ export function AlertsPanel({ carryMetrics, isFallback }) {
         title: `Spread ajustado (${formatNumber(spread, 2)}%)`,
         message: 'Poco margen de seguridad.',
       });
+    }
+
+    // =========================================================================
+    // ALERTAS DE SPREAD HISTÓRICO (prioridad media-alta)
+    // =========================================================================
+
+    if (spreadStats && spread > 0) {
+      const { percentilActual, spreadPromedio, spreadMin } = spreadStats;
+
+      // Spread en percentil bajo (< 20%) respecto al histórico 30d
+      if (percentilActual !== undefined && percentilActual <= 20) {
+        alertList.push({
+          id: 'spread-low-percentile',
+          priority: 3.5,
+          icon: AlertTriangle,
+          iconColor: 'text-orange-500',
+          bgColor: 'bg-orange-500/5',
+          borderColor: 'border-orange-500/30',
+          title: `Spread en percentil ${percentilActual} (últimos 30d)`,
+          message: `Spread actual por debajo del ${100 - percentilActual}% de los últimos 30 días. Promedio: ${formatNumber(spreadPromedio, 2)}%.`,
+        });
+      }
+
+      // Spread acercándose al mínimo histórico (dentro del 20% del rango)
+      if (spreadMin && spread > 0 && spreadPromedio > 0) {
+        const distanciaAlMin = spread - spreadMin.valor;
+        const rangoTotal = spreadPromedio - spreadMin.valor;
+        if (rangoTotal > 0 && distanciaAlMin / rangoTotal < 0.2) {
+          alertList.push({
+            id: 'spread-near-min',
+            priority: 3.7,
+            icon: Info,
+            iconColor: 'text-orange-400',
+            bgColor: 'bg-orange-400/5',
+            borderColor: 'border-orange-400/20',
+            title: `Spread cerca del mínimo histórico (${formatNumber(spreadMin.valor, 2)}%)`,
+            message: `Registrado el ${spreadMin.fecha}. Monitorear para evitar pérdidas.`,
+          });
+        }
+      }
     }
 
     // =========================================================================
@@ -171,7 +212,7 @@ export function AlertsPanel({ carryMetrics, isFallback }) {
 
     // Ordenar por prioridad
     return alertList.sort((a, b) => a.priority - b.priority);
-  }, [carryMetrics, isFallback]);
+  }, [carryMetrics, isFallback, spreadStats]);
 
   // Si no hay alertas, mostrar estado positivo
   if (alerts.length === 0) {

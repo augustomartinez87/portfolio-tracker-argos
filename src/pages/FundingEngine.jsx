@@ -312,6 +312,10 @@ export default function FundingEngine() {
                 <AnalysisTab
                   carryMetrics={carryMetrics}
                   ultimaPreciofecha={ultimaPreciofecha}
+                  fciLots={fciLots}
+                  cauciones={cauciones}
+                  vcpHistoricos={vcpPricesMap}
+                  dataStartDate={dataStartDate}
                 />
               )}
 
@@ -325,6 +329,7 @@ export default function FundingEngine() {
                   fciDailyPnlPct={hasTodayPrice ? fciDailyPnlPct : 0}
                   hasTodayPrice={hasTodayPrice}
                   vcpHistoricos={vcpPricesMap}
+                  dataStartDate={dataStartDate}
                 />
               )}
             </div>

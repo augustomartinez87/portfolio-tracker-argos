@@ -11,6 +11,7 @@ import { RatesEvolutionChart } from './RatesEvolutionChart';
 import SummaryCard from '@/components/common/SummaryCard';
 import { Section } from '@/components/common/Section';
 import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
+import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 
 // Helper para formatear fecha
 const formatDate = (date) => {
@@ -97,6 +98,9 @@ export function DashboardTab({
   portfolioId,
   userId,
 }) {
+  // Hook para obtener stats históricas de spread (30d) para alertas
+  const { stats: spreadStats } = useHistoricalRates(fciId, portfolioId, userId, 30, dataStartDate);
+
   const getCoverageLabel = (ratio) => {
     if (ratio >= 100) return 'Óptimo';
     if (ratio >= 90) return 'Casi cubierto';
@@ -304,7 +308,7 @@ export function DashboardTab({
 
       {/* Alertas y Acciones */}
       <Section title="Alertas y Acciones" icon={AlertTriangle}>
-        <AlertsPanel carryMetrics={carryMetrics} isFallback={isFallback} />
+        <AlertsPanel carryMetrics={carryMetrics} isFallback={isFallback} spreadStats={spreadStats} />
       </Section>
 
       </div>

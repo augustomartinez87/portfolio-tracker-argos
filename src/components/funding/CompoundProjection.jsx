@@ -20,7 +20,7 @@ import {
 
 /**
  * Proyección de Interés Compuesto para Carry Trade
- * Muestra cómo crecería el capital con reinversión mensual de ganancias
+ * Muestra cómo crecería el capital con capitalización diaria
  * 
  * @param {Object} props
  * @param {number} props.capitalProductivo - Capital inicial para proyección
@@ -28,26 +28,25 @@ import {
  */
 export function CompoundProjection({ capitalProductivo, bufferTasa }) {
   // Cálculos de proyección usando Decimal.js para precisión
+  // Capitalización diaria: tasaDiaria = (1 + TNA)^(1/365) - 1
   const proyecciones = useMemo(() => {
     const capitalInicial = new Decimal(capitalProductivo || 0);
     const spreadDecimal = new Decimal(bufferTasa || 0);
-    
+
     if (capitalInicial.isZero() || spreadDecimal.isZero()) {
       return null;
     }
 
-    // Tasa mensual = spread anual / 12
-    const tasaMensual = spreadDecimal.dividedBy(12);
-    
-    // Función para calcular proyección a N meses: C * (1 + r)^n
-    const calcularProyeccion = (meses) => {
-      const mesesDec = new Decimal(meses);
-      // (1 + tasaMensual) ^ meses
-      const factor = new Decimal(1).plus(tasaMensual).pow(mesesDec.toNumber());
+    // Tasa diaria = (1 + spread)^(1/365) - 1
+    const tasaDiaria = new Decimal(1).plus(spreadDecimal).pow(new Decimal(1).dividedBy(365)).minus(1);
+
+    // Función para calcular proyección a N días: C * (1 + r_diaria)^dias
+    const calcularProyeccion = (dias) => {
+      const factor = new Decimal(1).plus(tasaDiaria).pow(dias);
       const capitalFinal = capitalInicial.times(factor);
       const ganancia = capitalFinal.minus(capitalInicial);
       const porcentajeGanancia = ganancia.dividedBy(capitalInicial).times(100);
-      
+
       return {
         capitalFinal: capitalFinal.toNumber(),
         ganancia: ganancia.toNumber(),
@@ -55,15 +54,16 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
       };
     };
 
-    // Calcular proyecciones para 3, 6 y 12 meses
-    const proyeccion3m = calcularProyeccion(3);
-    const proyeccion6m = calcularProyeccion(6);
-    const proyeccion12m = calcularProyeccion(12);
+    // Calcular proyecciones para 3, 6 y 12 meses (usando días reales)
+    const proyeccion3m = calcularProyeccion(91);   // ~3 meses
+    const proyeccion6m = calcularProyeccion(182);  // ~6 meses
+    const proyeccion12m = calcularProyeccion(365); // 12 meses
 
-    // Generar datos para el gráfico (meses 0-12)
+    // Generar datos para el gráfico (meses 0-12, usando días)
     const datosGrafico = [];
     for (let mes = 0; mes <= 12; mes++) {
-      const factor = new Decimal(1).plus(tasaMensual).pow(mes);
+      const dias = Math.round(mes * 365 / 12);
+      const factor = new Decimal(1).plus(tasaDiaria).pow(dias);
       const capital = capitalInicial.times(factor);
       datosGrafico.push({
         mes,
@@ -128,7 +128,7 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
     <div className="space-y-6">
       {/* Subtítulo */}
       <p className="text-sm text-text-secondary">
-        Asumiendo reinversión mensual de ganancias al spread actual ({formatNumber(bufferTasa * 100, 2)}%)
+        Capitalización diaria al spread actual ({formatNumber(bufferTasa * 100, 2)}% TNA)
       </p>
 
       {/* Cards de proyección */}
@@ -202,7 +202,7 @@ export function CompoundProjection({ capitalProductivo, bufferTasa }) {
       <div className="flex items-start gap-2 p-3 bg-background-tertiary border border-border-secondary rounded-lg">
         <Info className="w-4 h-4 text-text-tertiary flex-shrink-0 mt-0.5" />
         <p className="text-xs text-text-tertiary">
-          Esta proyección asume que el spread se mantiene constante, las ganancias se reinvierten mensualmente, y no considera inflación.
+          Esta proyección asume que el spread se mantiene constante con capitalización diaria, y no considera inflación ni comisiones.
         </p>
       </div>
     </div>

@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
-import { Receipt, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Calculator, Info } from 'lucide-react';
-import { formatARS, formatPercent } from '@/utils/formatters';
+import React, { useMemo, useState } from 'react';
+import { Receipt, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Calculator, Info, Target, BarChart2, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
+import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 import { Section } from '@/components/common/Section';
 import { MetricCard } from '@/components/common/MetricCard';
+import SummaryCard from '@/components/common/SummaryCard';
+
+const DATA_START_DATE = '2026-01-16';
 
 const formatDateAR = (fechaISO) => {
   if (!fechaISO) return '';
@@ -29,10 +32,8 @@ const buildIdentificador = (caucion) => {
 const findVcpAtDate = (vcpMap, targetDate) => {
   if (!vcpMap || Object.keys(vcpMap).length === 0) return null;
 
-  // Primero buscar fecha exacta
   if (vcpMap[targetDate]) return vcpMap[targetDate];
 
-  // Si no existe, buscar el precio más cercano anterior
   const dates = Object.keys(vcpMap).sort();
   let closestDate = null;
 
@@ -59,15 +60,12 @@ const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin) =>
 
     if (!vcpMap) continue;
 
-    // Si el lote empezó después del inicio del período, usar fecha_suscripcion
     const startDate = lot.fecha_suscripcion > fechaInicio ? lot.fecha_suscripcion : fechaInicio;
 
-    // VCP al inicio del período (o vcp_entrada si es posterior)
     const vcpInicio = lot.fecha_suscripcion > fechaInicio
       ? lot.vcp_entrada
       : findVcpAtDate(vcpMap, startDate);
 
-    // VCP al final del período
     const vcpFin = findVcpAtDate(vcpMap, fechaFin);
 
     if (vcpInicio && vcpFin && lot.cuotapartes) {
@@ -81,15 +79,6 @@ const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin) =>
 
 /**
  * Pestaña de Operaciones - Cruce real entre FCI y cauciones
- *
- * @param {Object} props
- * @param {Array} props.cauciones - Array de cauciones desde Supabase
- * @param {Array} props.fciLots - Array de lotes FCI activos con sus PnL
- * @param {number} props.fciValuation - Valuación real del FCI (desde fciLotEngine.totals.valuation)
- * @param {number} props.fciTotalPnl - PnL acumulado total del FCI (desde fciLotEngine.totals.pnl)
- * @param {number} props.fciDailyPnl - PnL diario total del FCI (desde fciLotEngine.positions[].pnlDiario)
- * @param {number} props.fciDailyPnlPct - PnL diario % del FCI (pnlDiario / valuation)
- * @param {Date} props.hoy - Fecha de hoy (default: new Date())
  */
 export function OperationsTab({
   cauciones,
@@ -100,53 +89,15 @@ export function OperationsTab({
   fciDailyPnlPct = 0,
   hasTodayPrice = true,
   vcpHistoricos = {},
+  dataStartDate = DATA_START_DATE,
   hoy = new Date()
 }) {
   const todayStr = new Date().toISOString().split('T')[0];
-  const totals = useMemo(() => {
-    const hoyISO = hoy.toISOString().split('T')[0];
+  const [showSyntheticData, setShowSyntheticData] = useState(false);
+  const [estadoFilter, setEstadoFilter] = useState('todas'); // 'todas' | 'activa' | 'vencida'
+  const [sortConfig, setSortConfig] = useState({ key: 'fechaInicioRaw', dir: 'desc' });
 
-    // Capital financiado: SUMA de todas las cauciones activas (visión consolidada)
-    const capitalFinanciado = (cauciones || []).reduce(
-      (sum, c) => sum + Number(c.capital || 0),
-      0
-    );
-
-    const interesesAcumulados = (cauciones || []).reduce(
-      (sum, c) => sum + Number(c.interes || 0),
-      0
-    );
-    // Calcular valuación total de lotes como referencia
-    const lotesValuation = (fciLots || []).reduce(
-      (sum, lot) => sum + Number(lot.valuation || 0),
-      0
-    );
-    // Calcular PnL total de lotes (debe coincidir con fciTotalPnl)
-    const lotesTotalPnl = (fciLots || []).reduce(
-      (sum, lot) => sum + Number(lot.pnlAcumulado || 0),
-      0
-    );
-    const valuation = Number(fciValuation || 0);
-    const resultado = valuation - capitalFinanciado;
-    const spreadNeto = resultado - interesesAcumulados;
-    const spreadPct = capitalFinanciado > 0 ? spreadNeto / capitalFinanciado : 0;
-
-    return {
-      todayStr,
-      valuation,
-      capitalFinanciado,
-      interesesAcumulados,
-      resultado,
-      spreadNeto,
-      spreadPct,
-      fciTotalPnl: Number(fciTotalPnl || 0),
-      fciDailyPnl: Number(fciDailyPnl || 0),
-      fciDailyPnlPct: Number(fciDailyPnlPct || 0),
-      lotesValuation,
-      lotesTotalPnl,
-    };
-  }, [cauciones, fciValuation, fciTotalPnl, fciDailyPnl, fciDailyPnlPct, fciLots]);
-
+  // Calcular rows con spread por operación
   const rows = useMemo(() => {
     const hoyISO = hoy.toISOString().split('T')[0];
 
@@ -154,6 +105,7 @@ export function OperationsTab({
       const fechaInicioRaw = String(caucion.fecha_inicio || '').split('T')[0];
       const fechaFinRaw = String(caucion.fecha_fin || '').split('T')[0];
       const esVencida = fechaFinRaw && fechaFinRaw < hoyISO;
+      const esDatoReal = fechaInicioRaw > dataStartDate;
       const diasRestantes = fechaFinRaw
         ? Math.max(0, Math.round((new Date(fechaFinRaw).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
@@ -161,8 +113,6 @@ export function OperationsTab({
       const capital = Number(caucion.capital || 0);
       const interesPagado = Number(caucion.interes || 0);
 
-      // Calcular ganancia FCI real durante el per?odo de la cauci?n
-      // usando precios hist?ricos de VCP
       const fechaFinPeriodo = esVencida ? fechaFinRaw : hoyISO;
       const gananciaFCIAsignada = calculatePnlForPeriod(
         fciLots,
@@ -179,6 +129,8 @@ export function OperationsTab({
       return {
         caucionId: caucion.id,
         identificadorHumano: buildIdentificador(caucion),
+        fechaInicioRaw,
+        fechaFinRaw,
         fechaInicio: formatDateAR(fechaInicioRaw),
         fechaFin: formatDateAR(fechaFinRaw),
         capital,
@@ -187,10 +139,108 @@ export function OperationsTab({
         spreadPesos,
         spreadPorcentaje,
         estado: esVencida ? 'vencida' : 'activa',
+        esDatoReal,
         diasRestantes,
       };
     });
-  }, [cauciones, hoy, totals, fciLots, vcpHistoricos]);
+  }, [cauciones, hoy, fciLots, vcpHistoricos, dataStartDate]);
+
+  // Bug 1 Fix: Totales solo de cauciones VIGENTES
+  const totals = useMemo(() => {
+    const vigentes = rows.filter(r => r.estado === 'activa');
+    const capitalVigente = vigentes.reduce((sum, r) => sum + r.capital, 0);
+    const interesesVigentes = vigentes.reduce((sum, r) => sum + r.interesPagado, 0);
+    const valuation = Number(fciValuation || 0);
+    const cobertura = capitalVigente > 0 ? valuation - capitalVigente : valuation;
+    const coberturaRatio = capitalVigente > 0 ? (valuation / capitalVigente) * 100 : 0;
+
+    return {
+      valuation,
+      capitalVigente,
+      interesesVigentes,
+      cobertura,
+      coberturaRatio,
+      cantVigentes: vigentes.length,
+    };
+  }, [rows, fciValuation]);
+
+  // Mejora 2: Métricas de P&L agregadas (solo datos reales post-16/01)
+  const pnlMetrics = useMemo(() => {
+    const vencidasReales = rows.filter(r => r.estado === 'vencida' && r.esDatoReal);
+
+    if (vencidasReales.length === 0) return null;
+
+    const pnlTotal = vencidasReales.reduce((sum, r) => sum + r.spreadPesos, 0);
+    const ganadoras = vencidasReales.filter(r => r.spreadPesos > 0);
+    const winRate = (ganadoras.length / vencidasReales.length) * 100;
+    const spreadPromedio = pnlTotal / vencidasReales.length;
+
+    // Mejor y peor operación
+    let mejor = vencidasReales[0];
+    let peor = vencidasReales[0];
+    for (const r of vencidasReales) {
+      if (r.spreadPesos > mejor.spreadPesos) mejor = r;
+      if (r.spreadPesos < peor.spreadPesos) peor = r;
+    }
+
+    // P&L mes actual y mes anterior
+    const now = new Date();
+    const mesActualStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const mesAnteriorDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const mesAnteriorStr = `${mesAnteriorDate.getFullYear()}-${String(mesAnteriorDate.getMonth() + 1).padStart(2, '0')}`;
+
+    const pnlMesActual = vencidasReales
+      .filter(r => r.fechaFinRaw?.startsWith(mesActualStr))
+      .reduce((sum, r) => sum + r.spreadPesos, 0);
+
+    const pnlMesAnterior = vencidasReales
+      .filter(r => r.fechaFinRaw?.startsWith(mesAnteriorStr))
+      .reduce((sum, r) => sum + r.spreadPesos, 0);
+
+    return {
+      pnlTotal,
+      pnlMesActual,
+      pnlMesAnterior,
+      winRate,
+      spreadPromedio,
+      totalOps: vencidasReales.length,
+      mejor: { spread: mejor.spreadPesos, fecha: mejor.fechaInicio },
+      peor: { spread: peor.spreadPesos, fecha: peor.fechaInicio },
+    };
+  }, [rows]);
+
+  // Filas filtradas y ordenadas para la tabla
+  const displayRows = useMemo(() => {
+    let filtered = showSyntheticData ? rows : rows.filter(r => r.esDatoReal);
+    if (estadoFilter !== 'todas') {
+      filtered = filtered.filter(r => r.estado === estadoFilter);
+    }
+
+    // Ordenar
+    const { key, dir } = sortConfig;
+    const sorted = [...filtered].sort((a, b) => {
+      const va = a[key] ?? 0;
+      const vb = b[key] ?? 0;
+      if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      return dir === 'asc' ? va - vb : vb - va;
+    });
+    return sorted;
+  }, [rows, showSyntheticData, estadoFilter, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: 'desc' }
+    );
+  };
+
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
+    return sortConfig.dir === 'asc'
+      ? <ArrowUp className="w-3 h-3 text-primary" />
+      : <ArrowDown className="w-3 h-3 text-primary" />;
+  };
 
   if (!cauciones?.length) {
     return (
@@ -218,11 +268,15 @@ export function OperationsTab({
 
   return (
     <div className="space-y-6">
+      {/* Posición Actual - Solo cauciones vigentes */}
       <div className="bg-background-secondary rounded-xl border border-border-primary shadow-lg">
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-text-primary">Totales</h3>
+            <h3 className="font-semibold text-text-primary">Posición Actual</h3>
+            <span className="text-xs text-text-tertiary bg-background-tertiary px-2 py-0.5 rounded-full">
+              {totals.cantVigentes} vigente{totals.cantVigentes !== 1 ? 's' : ''}
+            </span>
           </div>
 
           {!hasTodayPrice && (
@@ -236,80 +290,177 @@ export function OperationsTab({
             <MetricCard
               title="Valuación FCI"
               value={formatARS(totals.valuation)}
-              subtitle="Fuente: FCI Lot Engine"
+              subtitle="Saldo actual"
               icon={TrendingUp}
               status="info"
             />
             <MetricCard
               title="Capital financiado"
-              value={formatARS(totals.capitalFinanciado)}
-              subtitle="Total cauciones activas"
+              value={formatARS(totals.capitalVigente)}
+              subtitle={`${totals.cantVigentes} caución${totals.cantVigentes !== 1 ? 'es' : ''} vigente${totals.cantVigentes !== 1 ? 's' : ''}`}
               icon={Receipt}
               status="info"
             />
             <MetricCard
-              title="Intereses acumulados"
-              value={formatARS(totals.interesesAcumulados)}
-              subtitle="Costo total cauciones"
+              title="Intereses vigentes"
+              value={formatARS(totals.interesesVigentes)}
+              subtitle="Costo cauciones activas"
               icon={TrendingDown}
               status="warning"
             />
             <MetricCard
-              title="Spread neto"
-              value={formatARS(totals.spreadNeto)}
-              subtitle={`Resultado: ${formatARS(totals.resultado)} | ${formatPercent(totals.spreadPct * 100)}`}
-              icon={Calculator}
-              status={totals.spreadNeto >= 0 ? 'success' : 'danger'}
+              title="Cobertura"
+              value={formatARS(totals.cobertura)}
+              subtitle={totals.capitalVigente > 0 ? `Ratio: ${formatNumber(totals.coberturaRatio, 1)}%` : 'Sin caución activa'}
+              icon={Target}
+              status={totals.cobertura >= 0 ? 'success' : 'danger'}
             />
           </div>
         </div>
       </div>
 
+      {/* Panel de P&L Real - Mejora 2 */}
+      {pnlMetrics && (
+        <Section title="Performance Real" icon={BarChart2}>
+          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary space-y-4">
+            <p className="text-xs text-text-tertiary">
+              Solo operaciones vencidas con datos reales (post {formatDateAR(dataStartDate)}) — {pnlMetrics.totalOps} operaciones
+            </p>
+
+            {/* KPIs principales */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <SummaryCard
+                title="P&L Total"
+                value={formatARS(pnlMetrics.pnlTotal)}
+                trend={pnlMetrics.pnlTotal}
+              />
+              <SummaryCard
+                title="P&L Mes Actual"
+                value={formatARS(pnlMetrics.pnlMesActual)}
+                trend={pnlMetrics.pnlMesActual}
+              />
+              <SummaryCard
+                title="P&L Mes Anterior"
+                value={formatARS(pnlMetrics.pnlMesAnterior)}
+                trend={pnlMetrics.pnlMesAnterior}
+              />
+            </div>
+
+            {/* Métricas secundarias */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="text-center p-3 bg-background-tertiary rounded-lg">
+                <p className="text-text-tertiary text-xs uppercase tracking-wider">Win Rate</p>
+                <p className={`font-mono font-bold text-xl ${pnlMetrics.winRate >= 50 ? 'text-success' : 'text-danger'}`}>
+                  {formatNumber(pnlMetrics.winRate, 1)}%
+                </p>
+                <p className="text-[10px] text-text-tertiary mt-1">
+                  {Math.round(pnlMetrics.totalOps * pnlMetrics.winRate / 100)}/{pnlMetrics.totalOps} ganadoras
+                </p>
+              </div>
+              <div className="text-center p-3 bg-background-tertiary rounded-lg">
+                <p className="text-text-tertiary text-xs uppercase tracking-wider">Spread Promedio</p>
+                <p className={`font-mono font-bold text-xl ${pnlMetrics.spreadPromedio >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {formatARS(pnlMetrics.spreadPromedio)}
+                </p>
+                <p className="text-[10px] text-text-tertiary mt-1">por operación</p>
+              </div>
+              <div className="text-center p-3 bg-background-tertiary rounded-lg">
+                <p className="text-text-tertiary text-xs uppercase tracking-wider">Mejor Op.</p>
+                <p className="font-mono font-bold text-xl text-success">
+                  {formatARS(pnlMetrics.mejor.spread)}
+                </p>
+                <p className="text-[10px] text-text-tertiary mt-1">{pnlMetrics.mejor.fecha}</p>
+              </div>
+              <div className="text-center p-3 bg-background-tertiary rounded-lg">
+                <p className="text-text-tertiary text-xs uppercase tracking-wider">Peor Op.</p>
+                <p className="font-mono font-bold text-xl text-danger">
+                  {formatARS(pnlMetrics.peor.spread)}
+                </p>
+                <p className="text-[10px] text-text-tertiary mt-1">{pnlMetrics.peor.fecha}</p>
+              </div>
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {/* Tabla de detalle */}
       <Section title="Detalle por Caución" icon={Receipt}>
         <div className="bg-background-secondary rounded-xl border border-border-primary overflow-hidden">
+          {/* Filtros y controles */}
+          <div className="px-4 py-3 border-b border-border-secondary flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Filter className="w-3.5 h-3.5 text-text-tertiary" />
+              <div className="flex rounded-lg border border-border-secondary overflow-hidden">
+                {[
+                  { id: 'todas', label: 'Todas' },
+                  { id: 'activa', label: 'Activas' },
+                  { id: 'vencida', label: 'Vencidas' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setEstadoFilter(opt.id)}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      estadoFilter === opt.id
+                        ? 'bg-primary text-white'
+                        : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-text-tertiary">
+                {displayRows.length} resultado{displayRows.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs text-text-tertiary">Pre-{formatDateAR(dataStartDate)}</span>
+              <button
+                onClick={() => setShowSyntheticData(!showSyntheticData)}
+                className={`relative w-9 h-5 rounded-full transition-colors ${showSyntheticData ? 'bg-primary' : 'bg-background-tertiary border border-border-secondary'}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform ${showSyntheticData ? 'translate-x-4 bg-white' : 'translate-x-0.5 bg-text-tertiary'}`} />
+              </button>
+            </label>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-background-tertiary border-b border-border-secondary">
-                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Caución
+                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">Caución</th>
+                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('fechaInicioRaw')}>
+                    <span className="inline-flex items-center gap-1">Inicio <SortIcon columnKey="fechaInicioRaw" /></span>
                   </th>
-                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Inicio
+                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('fechaFinRaw')}>
+                    <span className="inline-flex items-center gap-1">Fin <SortIcon columnKey="fechaFinRaw" /></span>
                   </th>
-                  <th className="text-left text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Fin
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('capital')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Capital <SortIcon columnKey="capital" /></span>
                   </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Capital
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('interesPagado')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Interés <SortIcon columnKey="interesPagado" /></span>
                   </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Interés pagado
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('gananciaFCIAsignada')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Ganancia FCI <SortIcon columnKey="gananciaFCIAsignada" /></span>
                   </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Ganancia FCI
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('spreadPesos')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Spread ($) <SortIcon columnKey="spreadPesos" /></span>
                   </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Spread ($)
+                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-text-primary select-none" onClick={() => handleSort('spreadPorcentaje')}>
+                    <span className="inline-flex items-center gap-1 justify-end">Spread (%) <SortIcon columnKey="spreadPorcentaje" /></span>
                   </th>
-                  <th className="text-right text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Spread (%)
-                  </th>
-                  <th className="text-center text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">
-                    Estado
-                  </th>
+                  <th className="text-center text-xs font-medium text-text-tertiary uppercase tracking-wider px-4 py-3">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-secondary">
-                {rows.map((row, index) => (
+                {displayRows.map((row, index) => (
                   <tr
                     key={row.caucionId}
-                    className={index % 2 === 0 ? 'bg-background-secondary' : 'bg-background-primary'}
+                    className={`${index % 2 === 0 ? 'bg-background-secondary' : 'bg-background-primary'} ${!row.esDatoReal ? 'opacity-50' : ''}`}
                   >
                     <td className="px-4 py-3">
-                      <div className="text-sm font-mono text-text-primary">
-                        {row.identificadorHumano}
-                      </div>
+                      <div className="text-sm font-mono text-text-primary">{row.identificadorHumano}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm text-text-secondary">{row.fechaInicio}</span>
@@ -362,6 +513,7 @@ export function OperationsTab({
         </div>
       </Section>
 
+      {/* Metodología */}
       <div className="bg-background-tertiary rounded-xl p-4 border border-border-secondary">
         <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
@@ -371,6 +523,7 @@ export function OperationsTab({
           <li><strong>Ganancia FCI:</strong> PnL real del FCI durante el período específico de la caución (usando VCP históricos)</li>
           <li><strong>Spread ($):</strong> Ganancia FCI - Interés pagado</li>
           <li><strong>Spread (%):</strong> (Ganancia FCI / Capital) - (Interés / Capital)</li>
+          <li><strong>Datos reales:</strong> Solo operaciones posteriores al {formatDateAR(dataStartDate)} tienen suscripciones FCI reales</li>
         </ul>
       </div>
     </div>

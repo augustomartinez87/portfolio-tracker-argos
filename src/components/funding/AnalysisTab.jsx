@@ -1,39 +1,63 @@
 import React from 'react';
-import { Sliders, Sparkles, Percent } from 'lucide-react';
+import { Sliders, Sparkles, Percent, LineChart, RefreshCcw } from 'lucide-react';
 import { ScenarioSimulator } from './ScenarioSimulator';
 import { CompoundProjection } from './CompoundProjection';
+import { EquityCurve } from './EquityCurve';
+import { ReinvestmentTracker } from './ReinvestmentTracker';
 import { Section } from '@/components/common/Section';
 import { formatPercent, formatNumber } from '@/utils/formatters';
 
-export function AnalysisTab({ carryMetrics, ultimaPreciofecha }) {
+export function AnalysisTab({ carryMetrics, ultimaPreciofecha, fciLots, cauciones, vcpHistoricos, dataStartDate }) {
   return (
     <div className="space-y-6">
       {/* Análisis de Tasas */}
       <Section title="Análisis de Tasas" icon={Percent}>
         <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">TNA FCI</p>
               <p className="font-mono font-bold text-xl text-success">{formatPercent(carryMetrics.tnaFCI * 100)}</p>
               {ultimaPreciofecha && (
                 <p className="text-[10px] text-text-tertiary mt-1">Dato del {ultimaPreciofecha}</p>
               )}
             </div>
-            <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">TNA Caución Pond.</p>
               <p className="font-mono font-bold text-xl text-danger">{formatPercent(carryMetrics.tnaCaucionPonderada * 100)}</p>
             </div>
-            <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">Buffer</p>
               <p className={`font-mono font-bold text-xl ${carryMetrics.bufferTasa > 0 ? 'text-success' : 'text-danger'}`}>
                 {formatPercent(carryMetrics.bufferTasaPct)}
               </p>
             </div>
-            <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center p-3 bg-background-tertiary rounded-lg">
               <p className="text-text-tertiary text-xs uppercase tracking-wider">Días Promedio</p>
               <p className="font-mono font-bold text-xl text-primary">{formatNumber(carryMetrics.diasPromedio, 0)}</p>
             </div>
           </div>
+        </div>
+      </Section>
+
+      {/* Equity Curve */}
+      <Section title="Equity Curve" icon={LineChart}>
+        <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
+          <EquityCurve
+            fciLots={fciLots}
+            cauciones={cauciones}
+            vcpHistoricos={vcpHistoricos}
+            dataStartDate={dataStartDate}
+          />
+        </div>
+      </Section>
+
+      {/* Reinvestment Tracker */}
+      <Section title="Reinversión de Capital" icon={RefreshCcw}>
+        <div className="bg-background-secondary rounded-xl p-4 border border-border-primary">
+          <ReinvestmentTracker
+            cauciones={cauciones}
+            dataStartDate={dataStartDate}
+          />
         </div>
       </Section>
 
