@@ -31,6 +31,13 @@ export const CURRENCIES = {
 
 export type Currency = typeof CURRENCIES[keyof typeof CURRENCIES];
 
+export const PORTFOLIO_TYPES = {
+  BURSATIL: 'borsatil',
+  CRIPTO: 'cripto',
+} as const;
+
+export type PortfolioType = typeof PORTFOLIO_TYPES[keyof typeof PORTFOLIO_TYPES];
+
 // ============================================
 // ENTIDADES DE BASE DE DATOS (Supabase)
 // ============================================
@@ -44,6 +51,7 @@ export interface Portfolio {
   name: string;
   description: string | null;
   currency: Currency;
+  portfolio_type?: PortfolioType;
   is_default: boolean;
   created_at: string;
   updated_at?: string;
@@ -263,7 +271,7 @@ export interface PortfolioContextValue {
   setCurrentPortfolio: (portfolio: Portfolio | null) => void;
   loading: boolean;
   error: string | null;
-  createPortfolio: (name: string, description?: string, currency?: Currency) => Promise<Portfolio>;
+  createPortfolio: (name: string, description?: string, currency?: Currency, portfolioType?: PortfolioType) => Promise<Portfolio>;
   updatePortfolio: (portfolioId: string, updates: Partial<Portfolio>) => Promise<Portfolio>;
   deletePortfolio: (portfolioId: string) => Promise<void>;
   setDefaultPortfolio: (portfolioId: string) => Promise<Portfolio>;

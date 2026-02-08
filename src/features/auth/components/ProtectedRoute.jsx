@@ -62,12 +62,12 @@ export const ProtectedRoute = ({ children, requiredModule = null, adminOnly = fa
 
   // Verificar permisos de administrador
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/portfolio/dashboard" replace />
   }
 
   // Verificar acceso al módulo
   if (requiredModule && !hasModuleAccess(requiredModule)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/portfolio/dashboard" replace />
   }
 
   return children

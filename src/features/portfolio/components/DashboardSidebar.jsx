@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
 
-export const DashboardSidebar = ({ user, signOut, isExpanded }) => {
+export const DashboardSidebar = ({ user, signOut, isExpanded, portfolioType = 'borsatil' }) => {
   const location = useLocation();
   const { isAdmin, allowedModules, userProfile } = useAuth();
 
@@ -14,8 +14,8 @@ export const DashboardSidebar = ({ user, signOut, isExpanded }) => {
   // No renderizar navegacion completa si el perfil aun no existe o esta cargando
   // Aunque ProtectedRoute maneja esto, el sidebar debe ser defensivo
   const navItems = userProfile
-    ? getFilteredNavItems(isAdmin, allowedModules)
-    : getFilteredNavItems(false, ['portfolio']); // Fallback m�nimo absoluto
+    ? getFilteredNavItems(isAdmin, allowedModules, portfolioType)
+    : getFilteredNavItems(false, ['portfolio']); // Fallback mínimo absoluto
 
   const isActive = (path) => {
     return location.pathname === path;

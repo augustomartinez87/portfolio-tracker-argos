@@ -41,7 +41,7 @@ export const ResetPassword = () => {
       await updatePassword(password)
       setSuccess(true)
       setTimeout(() => {
-        navigate('/dashboard')
+        navigate('/portfolio/dashboard')
       }, 2000)
     } catch (err) {
       setError(err.message || 'Error al actualizar contraseña')

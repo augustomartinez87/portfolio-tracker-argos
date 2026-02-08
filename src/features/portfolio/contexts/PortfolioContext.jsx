@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, supabaseFetch } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useFciLotEngine } from '@/features/fci/hooks/useFciLotEngine'
@@ -18,6 +19,7 @@ export const PortfolioProvider = ({ children }) => {
   // Solo esperamos authLoading, no profileLoading - los portfolios se pueden cargar en paralelo
   // Consumimos el estado completo de auth para asegurar sincronización
   const { user, userProfile, loading: authLoadingCombined } = useAuth()
+  const navigate = useNavigate()
   const [portfolios, setPortfolios] = useState([])
   const [currentPortfolio, setCurrentPortfolio] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -40,6 +42,9 @@ export const PortfolioProvider = ({ children }) => {
       setCurrentPortfolio(null)
       setLoading(false)
       setError(null)
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('argos_current_portfolio_id')
+      }
       return
     }
 
@@ -78,8 +83,12 @@ export const PortfolioProvider = ({ children }) => {
 
       setPortfolios(sortedData)
 
+      const storedId = typeof window !== 'undefined'
+        ? window.localStorage.getItem('argos_current_portfolio_id')
+        : null
+      const storedPortfolio = storedId ? sortedData.find(p => p.id === storedId) : null
       const defaultPortfolio = sortedData.find(p => p.is_default) || sortedData[0] || null
-      setCurrentPortfolio(defaultPortfolio)
+      setCurrentPortfolio(storedPortfolio || defaultPortfolio)
 
       setError(null)
     } catch (err) {
@@ -91,6 +100,30 @@ export const PortfolioProvider = ({ children }) => {
       setLoading(false)
     }
   }, [user, userProfile, authLoadingCombined])
+
+  const selectPortfolio = (portfolio) => {
+    const prevId = currentPortfolio?.id;
+    const newType = portfolio?.portfolio_type;
+
+    setCurrentPortfolio(portfolio)
+    if (typeof window !== 'undefined') {
+      if (portfolio?.id) {
+        window.localStorage.setItem('argos_current_portfolio_id', portfolio.id)
+
+        // Always navigate to home when switching portfolios
+        if (portfolio.id !== prevId) {
+          if (newType === 'cripto') {
+            navigate('/crypto/portfolio');
+          } else {
+            navigate('/portfolio/dashboard');
+          }
+        }
+
+      } else {
+        window.localStorage.removeItem('argos_current_portfolio_id')
+      }
+    }
+  }
 
   // useFciLotEngine se instancia después de que mepRate/mepHistory están disponibles
   // (ver más abajo, después del useEffect de MEP)
@@ -142,7 +175,7 @@ export const PortfolioProvider = ({ children }) => {
     }
   }, [user, userProfile, authLoadingCombined, loadPortfolios])
 
-  const createPortfolio = async (name, description = '', currency = 'ARS') => {
+  const createPortfolio = async (name, description = '', currency = 'ARS', portfolioType = 'bursatil') => {
     if (!user || !userProfile) throw new Error('Usuario no autenticado o perfil no listo')
 
     const { data, error } = await supabase
@@ -152,6 +185,7 @@ export const PortfolioProvider = ({ children }) => {
         name,
         description,
         currency,
+        portfolio_type: portfolioType,
         is_default: portfolios.length === 0
       }])
       .select()
@@ -160,6 +194,7 @@ export const PortfolioProvider = ({ children }) => {
     if (error) throw error
 
     await loadPortfolios()
+    selectPortfolio(data)
     return data
   }
 
@@ -191,7 +226,7 @@ export const PortfolioProvider = ({ children }) => {
 
     if (currentPortfolio?.id === portfolioId) {
       const newCurrent = portfolios.find(p => p.id !== portfolioId)
-      setCurrentPortfolio(newCurrent)
+      selectPortfolio(newCurrent || null)
     }
 
     await loadPortfolios()
@@ -222,7 +257,7 @@ export const PortfolioProvider = ({ children }) => {
     <PortfolioContext.Provider value={{
       portfolios,
       currentPortfolio,
-      setCurrentPortfolio,
+      setCurrentPortfolio: selectPortfolio,
       loading: loading || fciLotEngine?.loading || false,
       error,
       createPortfolio,
@@ -239,7 +274,7 @@ export const PortfolioProvider = ({ children }) => {
       fciLotEngine,
       mepRate,
       mepHistory,
-      refreshFci: fciLotEngine?.refresh || (() => {})
+      refreshFci: fciLotEngine?.refresh || (() => { })
     }}>
       {children}
     </PortfolioContext.Provider>

@@ -9,6 +9,7 @@ export const PortfolioSelector = () => {
   const [showMenu, setShowMenu] = useState(false) // Changed from null to boolean for simplicity
   const [newPortfolioName, setNewPortfolioName] = useState('')
   const [newPortfolioDescription, setNewPortfolioDescription] = useState('')
+  const [newPortfolioType, setNewPortfolioType] = useState('bursatil')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editingPortfolio, setEditingPortfolio] = useState(null)
@@ -45,9 +46,10 @@ export const PortfolioSelector = () => {
     setError('')
 
     try {
-      await createPortfolio(newPortfolioName.trim(), newPortfolioDescription.trim())
+      await createPortfolio(newPortfolioName.trim(), newPortfolioDescription.trim(), 'ARS', newPortfolioType)
       setNewPortfolioName('')
       setNewPortfolioDescription('')
+      setNewPortfolioType('bursatil')
       setShowModal(false)
     } catch (err) {
       setError(err.message || 'Error al crear portfolio')
@@ -207,6 +209,7 @@ export const PortfolioSelector = () => {
                   setShowModal(false)
                   setNewPortfolioName('')
                   setNewPortfolioDescription('')
+                  setNewPortfolioType('bursatil')
                   setError('')
                 }}
                 className="text-text-tertiary hover:text-text-primary transition-colors"
@@ -249,6 +252,20 @@ export const PortfolioSelector = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Tipo de Portfolio
+                </label>
+                <select
+                  value={newPortfolioType}
+                  onChange={(e) => setNewPortfolioType(e.target.value)}
+                  className="w-full px-4 py-3 bg-background-tertiary border border-border-primary rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-success focus:border-transparent"
+                >
+                  <option value="bursatil">Bursatil</option>
+                  <option value="cripto">Cripto</option>
+                </select>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -256,6 +273,7 @@ export const PortfolioSelector = () => {
                     setShowModal(false)
                     setNewPortfolioName('')
                     setNewPortfolioDescription('')
+                    setNewPortfolioType('bursatil')
                     setError('')
                   }}
                   className="flex-1 px-4 py-3 bg-background-tertiary text-text-primary rounded-lg hover:bg-border-primary transition-colors font-medium"

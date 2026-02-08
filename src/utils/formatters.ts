@@ -27,6 +27,19 @@ export const formatUSD = (value: number | null | undefined): string => {
 };
 
 /**
+ * Formatea un numero como moneda USDT
+ * @example formatUSDT(1234.56) => "USDT 1,234.56"
+ */
+export const formatUSDT = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+  return `USDT ${formatted}`;
+};
+
+/**
  * Formatea un número como porcentaje con signo
  * @example formatPercent(5.25) => "+5.25%"
  * @example formatPercent(-3.14) => "-3.14%"

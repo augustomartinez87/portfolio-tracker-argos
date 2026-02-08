@@ -1,4 +1,4 @@
-import { Briefcase, TrendingUp, Coins, PieChart, BarChart2, Settings } from 'lucide-react';
+import { Briefcase, TrendingUp, Coins, PieChart, Settings, Wallet, Landmark, Bitcoin } from 'lucide-react';
 
 /**
  * Configuración centralizada de navegación
@@ -10,15 +10,39 @@ export const NAV_ITEMS = [
     moduleId: 'portfolio',
     label: 'Portfolio',
     icon: Briefcase,
-    path: '/dashboard/resumen',
+    path: '/portfolio/dashboard',
     adminOnly: false
+  },
+  {
+    id: 'portfolio-crypto',
+    moduleId: 'portfolio_cripto',
+    label: 'Portfolio Cripto',
+    icon: Wallet,
+    path: '/crypto/portfolio',
+    adminOnly: true
+  },
+  {
+    id: 'nexo-loans',
+    moduleId: 'nexo_loans',
+    label: 'Préstamos Nexo',
+    icon: Landmark,
+    path: '/crypto/nexo-loans',
+    adminOnly: true
+  },
+  {
+    id: 'funding-crypto',
+    moduleId: 'funding_crypto',
+    label: 'Funding Crypto',
+    icon: Bitcoin,
+    path: '/crypto/funding',
+    adminOnly: true
   },
   {
     id: 'fci',
     moduleId: 'fci',
     label: 'Fondos (FCI)',
     icon: PieChart,
-    path: '/fci',
+    path: '/portfolio/fci',
     adminOnly: true
   },
   {
@@ -26,7 +50,7 @@ export const NAV_ITEMS = [
     moduleId: 'financiacion',
     label: 'Financiación',
     icon: TrendingUp,
-    path: '/financiacion',
+    path: '/portfolio/financing',
     adminOnly: true
   },
   {
@@ -34,7 +58,7 @@ export const NAV_ITEMS = [
     moduleId: 'funding',
     label: 'Funding & Carry',
     icon: Coins,
-    path: '/funding-engine',
+    path: '/portfolio/funding',
     adminOnly: true
   },
   {
@@ -47,32 +71,45 @@ export const NAV_ITEMS = [
   }
 ];
 
+export const MODULES_BY_PORTFOLIO_TYPE = {
+  borsatil: ['portfolio', 'fci', 'financiacion', 'funding', 'admin'],
+  cripto: ['portfolio_cripto', 'nexo_loans', 'fci', 'funding_crypto', 'admin']
+};
+
+export const getModulesByPortfolioType = (portfolioType) => {
+  if (!portfolioType) return MODULES_BY_PORTFOLIO_TYPE.borsatil;
+  return MODULES_BY_PORTFOLIO_TYPE[portfolioType] || MODULES_BY_PORTFOLIO_TYPE.borsatil;
+};
+
 /**
  * Filtra los items de navegación según el rol y módulos del usuario
  * @param {boolean} isAdmin - Si el usuario es administrador
  * @param {string[]} allowedModules - Array de módulos permitidos para el usuario
+ * @param {string} portfolioType - Tipo de portfolio activo
  * @returns {Array} Items de navegación filtrados
  */
-export const getFilteredNavItems = (isAdmin, allowedModules = []) => {
+export const getFilteredNavItems = (isAdmin, allowedModules = [], portfolioType = 'borsatil') => {
+  const modulesByType = getModulesByPortfolioType(portfolioType);
+  const effectiveModules = isAdmin
+    ? modulesByType
+    : (allowedModules || []).filter(m => modulesByType.includes(m));
+
   return NAV_ITEMS.map(item => {
     // Si el item tiene subItems, filtrarlos primero
     const filteredSubItems = item.subItems
-      ? item.subItems.filter(sub => isAdmin || (!sub.adminOnly && allowedModules.includes(sub.moduleId)))
+      ? item.subItems.filter(sub => {
+        if (sub.adminOnly && !isAdmin) return false;
+        return effectiveModules.includes(sub.moduleId);
+      })
       : null;
 
     return { ...item, subItems: filteredSubItems };
   }).filter(item => {
-    // Si es admin, tiene acceso a la estructura base
-    if (isAdmin) return true;
-
-    // Si el item principal es adminOnly, solo mostrar si tiene sub-items permitidos (un poco contradictorio, mejor seguir el adminOnly del padre)
-    // En este caso, si el padre es adminOnly, el usuario no entra.
-    // SI queremos que el usuario vea el padre para llegar al hijo, el padre NO debe ser adminOnly.
     // Si el item principal es adminOnly, el usuario no-admin no entra.
     if (!isAdmin && item.adminOnly) return false;
 
     // Verificar si el usuario tiene acceso al módulo principal de forma explícita
-    return allowedModules && allowedModules.includes(item.moduleId);
+    return effectiveModules.includes(item.moduleId);
   });
 };
 
@@ -95,5 +132,5 @@ export const getNavItemByModule = (moduleId) => {
  */
 export const DEFAULT_MODULES = {
   user: ['portfolio'],
-  admin: ['portfolio', 'fci', 'financiacion', 'funding', 'analisis', 'admin']
+  admin: ['portfolio', 'fci', 'financiacion', 'funding', 'admin']
 };

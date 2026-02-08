@@ -11,6 +11,9 @@ import { ResetPassword } from './features/auth/components/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Financiacion from './pages/Financiacion'
 import FundingEngine from './pages/FundingEngine'
+import CryptoPortfolio from './pages/CryptoPortfolio'
+import NexoLoans from './pages/NexoLoans'
+import FundingCrypto from './pages/FundingCrypto'
 const Fci = lazy(() => import('./pages/Fci'));
 import Admin from './pages/Admin'
 
@@ -39,27 +42,9 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Dashboard - Acceso para todos los usuarios autenticados */}
+            {/* FCI - MUST be before /portfolio/:tab to avoid conflict */}
             <Route
-              path="/dashboard/:tab?"
-              element={
-                <ProtectedRoute requiredModule="portfolio">
-                  <PortfolioProvider>
-                    <Dashboard />
-                  </PortfolioProvider>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Redirigir la base de dashboard a resumen */}
-            <Route
-              path="/dashboard"
-              element={<Navigate to="/dashboard/resumen" replace />}
-            />
-
-            {/* FCI - Solo admin */}
-            <Route
-              path="/fci"
+              path="/portfolio/fci"
               element={
                 <ProtectedRoute adminOnly>
                   <PortfolioProvider>
@@ -71,9 +56,9 @@ function App() {
               }
             />
 
-            {/* Financiación - Solo admin */}
+            {/* Financing - MUST be before /portfolio/:tab to avoid conflict */}
             <Route
-              path="/financiacion"
+              path="/portfolio/financing"
               element={
                 <ProtectedRoute adminOnly>
                   <PortfolioProvider>
@@ -83,9 +68,9 @@ function App() {
               }
             />
 
-            {/* Funding Engine - Solo admin */}
+            {/* Funding Engine - MUST be before /portfolio/:tab to avoid conflict */}
             <Route
-              path="/funding-engine"
+              path="/portfolio/funding"
               element={
                 <ProtectedRoute adminOnly>
                   <PortfolioProvider>
@@ -95,13 +80,55 @@ function App() {
               }
             />
 
-            {/* Análisis Real - Redirigir a FCI (ahora es una tab) */}
+            {/* Portfolio Bursatil - Dashboard (catch-all for /portfolio/:tab) */}
             <Route
-              path="/analisis-real"
-              element={<Navigate to="/fci" replace />}
+              path="/portfolio/:tab?"
+              element={
+                <ProtectedRoute requiredModule="portfolio">
+                  <PortfolioProvider>
+                    <Dashboard />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
             />
 
-            {/* Panel de Administración - Solo admin */}
+            {/* Crypto Portfolio */}
+            <Route
+              path="/crypto/portfolio"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PortfolioProvider>
+                    <CryptoPortfolio />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Nexo Loans - Crypto only */}
+            <Route
+              path="/crypto/nexo-loans"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PortfolioProvider>
+                    <NexoLoans />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Funding Crypto - Crypto only */}
+            <Route
+              path="/crypto/funding"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PortfolioProvider>
+                    <FundingCrypto />
+                  </PortfolioProvider>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Panel de Administración - Shared */}
             <Route
               path="/admin"
               element={
@@ -111,13 +138,18 @@ function App() {
               }
             />
 
-            {/* Redirect old spread route to new financing route */}
-            <Route
-              path="/spread"
-              element={<Navigate to="/financiacion" replace />}
-            />
+            {/* Legacy redirects for backwards compatibility */}
+            <Route path="/dashboard/:tab?" element={<Navigate to="/portfolio/dashboard" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/portfolio/dashboard" replace />} />
+            <Route path="/fci" element={<Navigate to="/portfolio/fci" replace />} />
+            <Route path="/financiacion" element={<Navigate to="/portfolio/financing" replace />} />
+            <Route path="/funding-engine" element={<Navigate to="/portfolio/funding" replace />} />
+            <Route path="/crypto-portfolio" element={<Navigate to="/crypto/portfolio" replace />} />
+            <Route path="/nexo-loans" element={<Navigate to="/crypto/nexo-loans" replace />} />
+            <Route path="/funding-crypto" element={<Navigate to="/crypto/funding" replace />} />
+            <Route path="/spread" element={<Navigate to="/portfolio/financing" replace />} />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/portfolio/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

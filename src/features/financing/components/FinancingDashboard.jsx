@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { TrendingUp, Upload, BarChart3 } from 'lucide-react';
+import { TrendingUp, Upload, BarChart3, Plus } from 'lucide-react';
 import FinancingKPIs from '@/features/financing/components/FinancingKPIs';
 import CSVUploadView from '@/features/financing/components/CSVUploadView';
 import FinancingCharts from '@/features/financing/components/FinancingCharts';
 import CaucionesTable from '@/features/financing/components/cauciones/CaucionesTable';
+import CaucionModal from '@/features/financing/components/cauciones/CaucionModal';
 import SummaryCard from '@/components/common/SummaryCard';
 import { financingService } from '@/features/financing/services/financingService';
 
@@ -13,6 +14,8 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
   const csvDataRef = useRef(null); // Ref persistente para datos CSV
   const [cauciones, setCauciones] = useState([]);
   const [caucionesLoading, setCaucionesLoading] = useState(false);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [addingManual, setAddingManual] = useState(false);
 
   const handleCSVProcessed = useCallback((processedData) => {
     // Guardar en ref persistente Y en estado
@@ -102,6 +105,33 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
     }
   }, [userId, portfolioId, loadCauciones, queryClient]);
 
+  // Handler for adding manual caucion
+  const handleAddManualCaucion = useCallback(async (data) => {
+    if (!userId || !portfolioId) return;
+
+    setAddingManual(true);
+    try {
+      const result = await financingService.addManualCaucion(userId, portfolioId, data);
+      if (result.success) {
+        // Reload cauciones list
+        await loadCauciones();
+        // Invalidate queries to update other components
+        if (queryClient) {
+          queryClient.invalidateQueries({ queryKey: ['financing-operations'] });
+          queryClient.invalidateQueries({ queryKey: ['financing-metrics'] });
+        }
+        setManualModalOpen(false);
+      } else {
+        throw new Error(result.error?.message || 'Error al agregar caución');
+      }
+    } catch (error) {
+      console.error('Error agregando caución manual:', error);
+      throw error; // Re-throw to let modal handle the error
+    } finally {
+      setAddingManual(false);
+    }
+  }, [userId, portfolioId, loadCauciones, queryClient]);
+
   const viewOptions = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'charts', label: 'Análisis', icon: TrendingUp },
@@ -121,7 +151,7 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
               className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeView === option.id
                 ? 'border-primary text-primary bg-primary/5'
                 : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
-              }`}
+                }`}
             >
               <span className="flex items-center gap-2">
                 <option.icon className="w-4 h-4" />
@@ -192,12 +222,24 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
         )}
 
         {activeView === 'cauciones' && (
-          <CaucionesTable
-            cauciones={cauciones}
-            onDelete={handleDeleteCaucion}
-            onDeleteAll={handleDeleteAllCauciones}
-            loading={caucionesLoading || loading}
-          />
+          <div className="space-y-4">
+            {/* Header with Add Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setManualModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Cargar Manual
+              </button>
+            </div>
+            <CaucionesTable
+              cauciones={cauciones}
+              onDelete={handleDeleteCaucion}
+              onDeleteAll={handleDeleteAllCauciones}
+              loading={caucionesLoading || loading}
+            />
+          </div>
         )}
 
         {activeView === 'charts' && (
@@ -208,6 +250,14 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
           />
         )}
       </div>
+
+      {/* Manual Entry Modal */}
+      <CaucionModal
+        isOpen={manualModalOpen}
+        onClose={() => setManualModalOpen(false)}
+        onSubmit={handleAddManualCaucion}
+        loading={addingManual}
+      />
     </div>
   );
 };

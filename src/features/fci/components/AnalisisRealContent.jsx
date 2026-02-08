@@ -156,7 +156,7 @@ const AnalisisRealContent = () => {
     const fetchSpyHistory = async () => {
         try {
             const data = await data912.getHistorical('SPY', startDate);
-            
+
             // Transformar datos de data912 al formato esperado (date + c=close)
             return data.map(item => ({
                 date: item.date,
@@ -172,8 +172,8 @@ const AnalisisRealContent = () => {
     const processedData = useMemo(() => {
         if (!vcpHistory.length || !mepHistory.length || !spyHistory.length) return [];
 
-        const effectiveEndDate = useTodayAsEnd 
-            ? toDateString() 
+        const effectiveEndDate = useTodayAsEnd
+            ? toDateString()
             : endDate;
 
         // Encontrar valores iniciales
@@ -197,10 +197,10 @@ const AnalisisRealContent = () => {
             .filter(h => h.date >= startDate && h.date <= effectiveEndDate)
             .map(h => {
                 const date = h.date;
-                
+
                 // Normalizar a base 100
                 const fciIndex = (h.vcp / startVCP.vcp) * 100;
-                
+
                 // Buscar MEP más cercano (O(1) o O(k) con k <= 10)
                 const mepPrice = findClosestPrice(date, mepMap);
                 const mepIndex = mepPrice ? (mepPrice / startMEP.price) * 100 : null;
@@ -223,8 +223,8 @@ const AnalisisRealContent = () => {
     const { data: fciRealSeries, hasUsd: fciHasUsd } = useMemo(() => {
         if (!vcpHistory.length) return { data: [], hasUsd: false };
 
-        const effectiveEndDate = useTodayAsEnd 
-            ? toDateString() 
+        const effectiveEndDate = useTodayAsEnd
+            ? toDateString()
             : endDate;
 
         const vcpRange = vcpHistory.filter(h => h.date >= startDate && h.date <= effectiveEndDate);
@@ -348,7 +348,7 @@ const AnalisisRealContent = () => {
 
         // Ordenar de mejor a peor rendimiento
         const sorted = data.sort((a, b) => b.return_pct - a.return_pct);
-        
+
         // Marcar ganador
         if (sorted.length > 0) {
             sorted[0].isWinner = true;
@@ -556,26 +556,29 @@ const AnalisisRealContent = () => {
                                 }
                             />
                             <Legend {...legendProps} />
-                            <Area dataKey="fci" {...getAreaGradientProps('grad-fci')} />
-                            <Area dataKey="mep" {...getAreaGradientProps('grad-mep')} />
-                            <Area dataKey="spy" {...getAreaGradientProps('grad-spy')} />
-                            <Line 
-                                dataKey="fci" 
-                                name={selectedFci ? selectedFci.nombre : 'FCI'} 
-                                stroke={CHART_COLORS.info} 
+                            <Area dataKey="fci" {...getAreaGradientProps('grad-fci')} isAnimationActive={false} />
+                            <Area dataKey="mep" {...getAreaGradientProps('grad-mep')} isAnimationActive={false} />
+                            <Area dataKey="spy" {...getAreaGradientProps('grad-spy')} isAnimationActive={false} />
+                            <Line
+                                dataKey="fci"
+                                name={selectedFci ? selectedFci.nombre : 'FCI'}
+                                stroke={CHART_COLORS.info}
                                 {...getLineProps(CHART_COLORS.info)}
+                                isAnimationActive={false}
                             />
-                            <Line 
-                                dataKey="mep" 
-                                name="Dólar MEP" 
-                                stroke={CHART_COLORS.danger} 
+                            <Line
+                                dataKey="mep"
+                                name="Dólar MEP"
+                                stroke={CHART_COLORS.danger}
                                 {...getLineProps(CHART_COLORS.danger)}
+                                isAnimationActive={false}
                             />
-                            <Line 
-                                dataKey="spy" 
-                                name="SPY (CEDEAR)" 
-                                stroke={CHART_COLORS.success} 
+                            <Line
+                                dataKey="spy"
+                                name="SPY (CEDEAR)"
+                                stroke={CHART_COLORS.success}
                                 {...getLineProps(CHART_COLORS.success)}
+                                isAnimationActive={false}
                             />
                         </ComposedChart>
                     </ResponsiveContainer>
@@ -614,11 +617,10 @@ const AnalisisRealContent = () => {
                         <div className="inline-flex rounded-lg bg-background-tertiary p-1 border border-border-secondary">
                             <button
                                 onClick={() => setFciCurrencyMode('ARS')}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                    fciCurrencyMode === 'ARS'
-                                        ? 'bg-text-primary text-background-primary'
-                                        : 'text-text-tertiary hover:text-text-primary'
-                                }`}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${fciCurrencyMode === 'ARS'
+                                    ? 'bg-text-primary text-background-primary'
+                                    : 'text-text-tertiary hover:text-text-primary'
+                                    }`}
                             >
                                 ARS
                             </button>
@@ -630,11 +632,10 @@ const AnalisisRealContent = () => {
                                         ? 'USD = valor del FCI dividido por el dólar MEP del mismo día'
                                         : 'USD = valor del FCI dividido por el dólar MEP del mismo día. No hay datos de MEP disponibles.'
                                 }
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                    fciCurrencyMode === 'USD'
-                                        ? 'bg-text-primary text-background-primary'
-                                        : 'text-text-tertiary hover:text-text-primary'
-                                } ${!fciHasUsd ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${fciCurrencyMode === 'USD'
+                                    ? 'bg-text-primary text-background-primary'
+                                    : 'text-text-tertiary hover:text-text-primary'
+                                    } ${!fciHasUsd ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 USD
                             </button>
@@ -691,18 +692,19 @@ const AnalisisRealContent = () => {
                             {(() => {
                                 const isUsd = fciCurrencyMode === 'USD';
                                 const activeKey = isUsd ? 'fci_usd' : 'fci_ars';
-                                const activeName = selectedFci 
-                                    ? `${selectedFci.nombre} (${isUsd ? 'USD MEP' : 'ARS'})` 
+                                const activeName = selectedFci
+                                    ? `${selectedFci.nombre} (${isUsd ? 'USD MEP' : 'ARS'})`
                                     : `FCI (${isUsd ? 'USD MEP' : 'ARS'})`;
                                 const activeColor = isUsd ? CHART_COLORS.accent : CHART_COLORS.success;
                                 return (
                                     <>
-                                        <Area dataKey={activeKey} {...getAreaGradientProps('grad-fci-real')} />
-                                        <Line 
-                                            dataKey={activeKey} 
-                                            name={activeName} 
-                                            stroke={activeColor} 
+                                        <Area dataKey={activeKey} {...getAreaGradientProps('grad-fci-real')} isAnimationActive={false} />
+                                        <Line
+                                            dataKey={activeKey}
+                                            name={activeName}
+                                            stroke={activeColor}
                                             {...getLineProps(activeColor)}
+                                            isAnimationActive={false}
                                         />
                                     </>
                                 );
@@ -734,8 +736,8 @@ const AnalisisRealContent = () => {
                     </thead>
                     <tbody className="divide-y divide-border-primary">
                         {comparisonData.map((item, index) => (
-                            <tr 
-                                key={item.name} 
+                            <tr
+                                key={item.name}
                                 className={item.isWinner ? 'bg-profit/10' : ''}
                             >
                                 <td className="px-4 py-3 font-semibold flex items-center gap-2">

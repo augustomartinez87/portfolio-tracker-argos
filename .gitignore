@@ -3,6 +3,7 @@ dist
 .env
 .env.local
 .env.*.local
+
 # System files
 nul
 .DS_Store
@@ -10,3 +11,19 @@ nul
 __pycache__/
 *.py[cod]
 *$py.class
+
+# AI assistant config (local only)
+.agent/
+.agents/
+.claude/
+.cursor/
+.gemini/
+
+# Editor config
+.vscode/
+
+# Temp files
+*.session.sql
+supabase/.temp/
+UsersAugustoDownloadsportfolio-tracker/
+RFC-*.md

@@ -653,6 +653,104 @@ export class FinancingService {
   }
 
   /**
+   * Add a single caucion manually (user-entered data)
+   * Calculates dias, interes, and tna_real from the provided data
+   * @param userId - User ID for scoping
+   * @param portfolioId - Portfolio ID for data isolation
+   * @param data - Manual entry data with fechaInicio, fechaFin, capital, montoDevolver
+   * @returns Result with the created caucion
+   */
+  async addManualCaucion(
+    userId: string,
+    portfolioId: string,
+    data: {
+      fechaInicio: string;  // YYYY-MM-DD
+      fechaFin: string;     // YYYY-MM-DD
+      capital: number;
+      montoDevolver: number;
+    }
+  ): Promise<Result<{ id: string; success: true }>> {
+    try {
+      // Input validation
+      if (!userId || !portfolioId) {
+        return {
+          success: false,
+          error: new Error('Se requieren userId y portfolioId')
+        };
+      }
+
+      if (!data.fechaInicio || !data.fechaFin || !data.capital || !data.montoDevolver) {
+        return {
+          success: false,
+          error: new Error('Faltan campos requeridos: fechaInicio, fechaFin, capital, montoDevolver')
+        };
+      }
+
+      // Calculate derived fields
+      const dias = this._calculateDaysForRecord(data.fechaInicio, data.fechaFin);
+
+      if (dias <= 0) {
+        return {
+          success: false,
+          error: new Error('La fecha de fin debe ser posterior a la fecha de inicio')
+        };
+      }
+
+      const capitalDecimal = new Decimal(data.capital);
+      const montoDevolverDecimal = new Decimal(data.montoDevolver);
+      const interes = montoDevolverDecimal.minus(capitalDecimal);
+
+      // TNA = (interes / capital) * (365 / dias) * 100 (as percentage to match CSV format)
+      const tnaReal = interes.div(capitalDecimal).times(365).div(dias).times(100);
+
+      // Generate unique operation key for manual entries
+      const operationKey = `MANUAL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Prepare database record
+      const dbRecord = {
+        user_id: userId,
+        portfolio_id: portfolioId,
+        fecha_inicio: data.fechaInicio,
+        fecha_fin: data.fechaFin,
+        capital: capitalDecimal.toNumber(),
+        monto_devolver: montoDevolverDecimal.toNumber(),
+        interes: interes.toNumber(),
+        dias: dias,
+        tna_real: tnaReal.toNumber(),
+        archivo: 'Entrada manual',
+        operation_key: operationKey
+      };
+
+      // Insert into database
+      const { data: insertedData, error } = await supabase
+        .from('cauciones')
+        .insert(dbRecord)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('[FinancingService] Error insertando caución manual:', error);
+        return {
+          success: false,
+          error: new Error(`Error guardando caución: ${error.message}`)
+        };
+      }
+
+      return {
+        success: true,
+        data: { id: insertedData.id, success: true }
+      };
+
+    } catch (error) {
+      console.error('[FinancingService] Error en addManualCaucion:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error))
+      };
+    }
+  }
+
+  /**
    * Check for duplicate operations with improved logic
    * @param userId - User ID for scoping
    * @param portfolioId - Portfolio ID for data isolation

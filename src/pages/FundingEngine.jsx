@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import { toDateString } from '@/utils/formatters';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
@@ -29,10 +30,18 @@ import { CONSTANTS } from '@/utils/constants';
 // ===========================================================================
 
 export default function FundingEngine() {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { currentPortfolio, fciLotEngine } = usePortfolio();
   const { isLoading: isPricesLoading, isFetching: isPricesFetching, refetch: refetchPrices } = usePrices();
   const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
+
+  // Auto-redirect if portfolio type doesn't match this page (bursatil only)
+  useEffect(() => {
+    if (currentPortfolio && currentPortfolio.portfolio_type === 'cripto') {
+      navigate('/crypto/portfolio');
+    }
+  }, [currentPortfolio, navigate]);
 
   // Estado para tabs
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -58,7 +67,7 @@ export default function FundingEngine() {
     });
     return allLots;
   }, [fciPositions]);
-  
+
   const mainFciId = useMemo(() => {
     if (!fciPositions || fciPositions.length === 0) return null;
 
@@ -197,11 +206,12 @@ export default function FundingEngine() {
   return (
     <div className="min-h-screen bg-background-primary flex">
       <DashboardSidebar
-          user={user}
-          signOut={signOut}
-          isExpanded={sidebarExpanded}
-          setIsExpanded={setSidebarExpanded}
-        />
+        user={user}
+        signOut={signOut}
+        isExpanded={sidebarExpanded}
+        setIsExpanded={setSidebarExpanded}
+        portfolioType={currentPortfolio?.portfolio_type}
+      />
 
       <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 flex flex-col mb-16 lg:mb-0 min-h-screen ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
         <div className="p-3 lg:p-4 space-y-3 flex flex-col flex-1">
@@ -252,8 +262,8 @@ export default function FundingEngine() {
                   <button
                     onClick={() => setActiveTab('dashboard')}
                     className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'dashboard'
-                        ? 'border-primary text-primary bg-primary/5'
-                        : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                      ? 'border-primary text-primary bg-primary/5'
+                      : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
                       }`}
                   >
                     <span className="flex items-center gap-2">
@@ -264,8 +274,8 @@ export default function FundingEngine() {
                   <button
                     onClick={() => setActiveTab('analysis')}
                     className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'analysis'
-                        ? 'border-primary text-primary bg-primary/5'
-                        : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                      ? 'border-primary text-primary bg-primary/5'
+                      : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
                       }`}
                   >
                     <span className="flex items-center gap-2">
@@ -276,8 +286,8 @@ export default function FundingEngine() {
                   <button
                     onClick={() => setActiveTab('operations')}
                     className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'operations'
-                        ? 'border-primary text-primary bg-primary/5'
-                        : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
+                      ? 'border-primary text-primary bg-primary/5'
+                      : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
                       }`}
                   >
                     <span className="flex items-center gap-2">
@@ -330,7 +340,7 @@ export default function FundingEngine() {
         </div>
       </main>
 
-      <MobileNav />
+      <MobileNav portfolioType={currentPortfolio?.portfolio_type} />
     </div>
   );
 }

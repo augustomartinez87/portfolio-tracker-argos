@@ -36,7 +36,7 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
           {formatNumber(coverageRatio, 1)}%
         </span>
       </div>
-      
+
       {/* Barra de progreso con marcadores */}
       <div className="relative">
         {/* Barra base */}
@@ -46,9 +46,9 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
             className={`h-full ${colors[color]} rounded-full transition-all duration-500`}
             style={{ width: `${Math.min(percentage, 100)}%` }}
           />
-          
+
           {/* Marcador 100% (Meta 1:1) */}
-          <div 
+          <div
             className="absolute top-0 bottom-0 w-0.5 bg-text-primary"
             style={{ left: '100%' }}
           >
@@ -56,9 +56,9 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
               100%
             </div>
           </div>
-          
+
           {/* Marcador 115% (Meta Óptima) */}
-          <div 
+          <div
             className="absolute top-0 bottom-0 w-0.5 bg-success"
             style={{ left: '115%' }}
           >
@@ -67,7 +67,7 @@ const ProgressBarWithMarkers = ({ current, target100, target115, color = 'primar
             </div>
           </div>
         </div>
-        
+
         {/* Leyenda debajo de la barra - responsive */}
         <div className="flex flex-wrap justify-between text-[10px] text-text-tertiary mt-4 gap-x-4 gap-y-1">
           <span>0%</span>
@@ -117,7 +117,7 @@ export function DashboardTab({
             <span className="font-medium">Sin cauciones vigentes.</span>
             {' '}Última caución venció el {formatDateAR(carryMetrics.metadata.ultimaCaucionFecha)}.
             {' '}
-            <Link to="/financiacion" className="underline hover:text-warning/80">
+            <Link to="/portfolio/financing" className="underline hover:text-warning/80">
               Cargar nuevas cauciones
             </Link>
           </p>
@@ -132,7 +132,7 @@ export function DashboardTab({
             <span className="font-medium">Datos incompletos:</span>
             {' '}{carryMetrics.metadata.caucionesSinVCP} de {carryMetrics.metadata.totalCaucionesHistoricas} cauciones sin precios VCP históricos.
             {' '}El spread acumulado puede estar subestimado.
-            <Link to="/fci" className="underline hover:text-warning/80 ml-1">
+            <Link to="/portfolio/fci" className="underline hover:text-warning/80 ml-1">
               Cargar precios históricos
             </Link>
           </p>
@@ -174,132 +174,126 @@ export function DashboardTab({
       {/* Cobertura de Capital + Alertas lado a lado */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-      {/* Cobertura de Capital */}
-      <Section title="Cobertura de Capital" icon={Target}>
-        <div className="bg-background-secondary rounded-xl p-4 border border-border-primary space-y-6">
-          {/* Barra de progreso con marcadores */}
-          <div className="space-y-4">
-            <ProgressBarWithMarkers
-              current={carryMetrics.saldoFCI}
-              target100={carryMetrics.fciMinimo}
-              target115={carryMetrics.fciOptimo}
-              color={carryMetrics.ratioCobertura >= 100 ? 'success' : carryMetrics.ratioCobertura >= 90 ? 'warning' : 'danger'}
-            />
-          </div>
-
-          {/* Cards de Metas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Meta 1:1 */}
-            <div className={`p-4 rounded-lg border text-center ${
-              carryMetrics.ratioCobertura >= 100
-                ? 'bg-success/5 border-success/30'
-                : 'bg-background-tertiary border-border-secondary'
-            }`}>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                {carryMetrics.ratioCobertura >= 100 && <CheckCircle className="w-4 h-4 text-success" />}
-                <p className={`text-xs uppercase tracking-wider ${
-                  carryMetrics.ratioCobertura >= 100 ? 'text-success' : 'text-text-tertiary'
-                }`}>
-                  Meta 1:1
-                </p>
-              </div>
-              <p className="font-mono font-bold text-lg text-text-primary">{formatARS(carryMetrics.fciMinimo)}</p>
-              <p className={`text-sm mt-1 ${
-                carryMetrics.ratioCobertura >= 100 ? 'text-success' : 'text-warning'
-              }`}>
-                {carryMetrics.ratioCobertura >= 100
-                  ? '✅ Meta alcanzada'
-                  : `Faltan: ${formatARS(carryMetrics.deficitMinimo)}`
-                }
-              </p>
+        {/* Cobertura de Capital */}
+        <Section title="Cobertura de Capital" icon={Target}>
+          <div className="bg-background-secondary rounded-xl p-4 border border-border-primary space-y-6">
+            {/* Barra de progreso con marcadores */}
+            <div className="space-y-4">
+              <ProgressBarWithMarkers
+                current={carryMetrics.saldoFCI}
+                target100={carryMetrics.fciMinimo}
+                target115={carryMetrics.fciOptimo}
+                color={carryMetrics.ratioCobertura >= 100 ? 'success' : carryMetrics.ratioCobertura >= 90 ? 'warning' : 'danger'}
+              />
             </div>
 
-            {/* Meta Óptima (+15%) */}
-            <div className={`p-4 rounded-lg border text-center ${
-              carryMetrics.ratioCobertura >= 115
-                ? 'bg-success/5 border-success/30'
-                : 'bg-background-tertiary border-border-secondary'
-            }`}>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                {carryMetrics.ratioCobertura >= 115 && <CheckCircle className="w-4 h-4 text-success" />}
-                <p className={`text-xs uppercase tracking-wider ${
-                  carryMetrics.ratioCobertura >= 115 ? 'text-success' : 'text-text-tertiary'
-                }`}>
-                  Meta Óptima (+15%)
-                </p>
-              </div>
-              <p className="font-mono font-bold text-lg text-text-primary">{formatARS(carryMetrics.fciOptimo)}</p>
-              <p className={`text-sm mt-1 ${
-                carryMetrics.ratioCobertura >= 115 ? 'text-success' : 'text-primary'
-              }`}>
-                {carryMetrics.ratioCobertura >= 115
-                  ? '🎯 Meta óptima alcanzada'
-                  : `Faltan: ${formatARS(carryMetrics.deficitOptimo)}`
-                }
-              </p>
-            </div>
-          </div>
-
-          {/* Mensaje de estado según cobertura */}
-          {carryMetrics.ratioCobertura >= 115 && (
-            <div className="p-3 bg-success/10 border border-success/30 rounded-lg">
-              <p className="text-success text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Cobertura óptima alcanzada. Podés retirar {formatARS(carryMetrics.saldoFCI - carryMetrics.fciOptimo)} para comprar más activos.
-              </p>
-            </div>
-          )}
-          {carryMetrics.ratioCobertura >= 100 && carryMetrics.ratioCobertura < 115 && (
-            <div className="p-3 bg-success/5 border border-success/30 rounded-lg">
-              <p className="text-success text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Meta 1:1 alcanzada. Faltan {formatARS(carryMetrics.deficitOptimo)} para cobertura óptima.
-              </p>
-            </div>
-          )}
-
-          {/* Cards de Productivo e Improductivo con datos diarios */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-text-secondary">Utilización de Capital</h4>
+            {/* Cards de Metas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Card Productivo */}
-              <div className="p-4 bg-success/5 border border-success/20 rounded-lg text-center">
-                <p className="text-success text-xs uppercase tracking-wider mb-2">Productivo</p>
-                <p className="font-mono font-bold text-xl text-success">{formatARS(carryMetrics.capitalProductivo)}</p>
-                <p className="text-success text-xs font-medium mt-1">{formatNumber(carryMetrics.pctProductivo, 1)}%</p>
-                <div className="mt-3 pt-3 border-t border-success/20">
-                  <p className="text-xs text-text-secondary">
-                    Generando:
-                    <span className="font-mono font-semibold text-success ml-1">
-                      {formatARS(carryMetrics.gananciaProductivaDia)}/día
-                    </span>
+              {/* Meta 1:1 */}
+              <div className={`p-4 rounded-lg border text-center ${carryMetrics.ratioCobertura >= 100
+                  ? 'bg-success/5 border-success/30'
+                  : 'bg-background-tertiary border-border-secondary'
+                }`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {carryMetrics.ratioCobertura >= 100 && <CheckCircle className="w-4 h-4 text-success" />}
+                  <p className={`text-xs uppercase tracking-wider ${carryMetrics.ratioCobertura >= 100 ? 'text-success' : 'text-text-tertiary'
+                    }`}>
+                    Meta 1:1
                   </p>
                 </div>
+                <p className="font-mono font-bold text-lg text-text-primary">{formatARS(carryMetrics.fciMinimo)}</p>
+                <p className={`text-sm mt-1 ${carryMetrics.ratioCobertura >= 100 ? 'text-success' : 'text-warning'
+                  }`}>
+                  {carryMetrics.ratioCobertura >= 100
+                    ? '✅ Meta alcanzada'
+                    : `Faltan: ${formatARS(carryMetrics.deficitMinimo)}`
+                  }
+                </p>
               </div>
 
-              {/* Card Improductivo */}
-              <div className="p-4 bg-danger/5 border border-danger/20 rounded-lg text-center">
-                <p className="text-danger text-xs uppercase tracking-wider mb-2">Improductivo</p>
-                <p className="font-mono font-bold text-xl text-danger">{formatARS(carryMetrics.capitalImproductivo)}</p>
-                <p className="text-danger text-xs font-medium mt-1">{formatNumber(carryMetrics.pctImproductivo, 1)}%</p>
-                <div className="mt-3 pt-3 border-t border-danger/20">
-                  <p className="text-xs text-text-secondary">
-                    Perdiendo:
-                    <span className="font-mono font-semibold text-danger ml-1">
-                      {formatARS(carryMetrics.carryPerdidoDia)}/día
-                    </span>
+              {/* Meta Óptima (+15%) */}
+              <div className={`p-4 rounded-lg border text-center ${carryMetrics.ratioCobertura >= 115
+                  ? 'bg-success/5 border-success/30'
+                  : 'bg-background-tertiary border-border-secondary'
+                }`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {carryMetrics.ratioCobertura >= 115 && <CheckCircle className="w-4 h-4 text-success" />}
+                  <p className={`text-xs uppercase tracking-wider ${carryMetrics.ratioCobertura >= 115 ? 'text-success' : 'text-text-tertiary'
+                    }`}>
+                    Meta Óptima (+15%)
                   </p>
+                </div>
+                <p className="font-mono font-bold text-lg text-text-primary">{formatARS(carryMetrics.fciOptimo)}</p>
+                <p className={`text-sm mt-1 ${carryMetrics.ratioCobertura >= 115 ? 'text-success' : 'text-primary'
+                  }`}>
+                  {carryMetrics.ratioCobertura >= 115
+                    ? '🎯 Meta óptima alcanzada'
+                    : `Faltan: ${formatARS(carryMetrics.deficitOptimo)}`
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Mensaje de estado según cobertura */}
+            {carryMetrics.ratioCobertura >= 115 && (
+              <div className="p-3 bg-success/10 border border-success/30 rounded-lg">
+                <p className="text-success text-sm font-medium flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Cobertura óptima alcanzada. Podés retirar {formatARS(carryMetrics.saldoFCI - carryMetrics.fciOptimo)} para comprar más activos.
+                </p>
+              </div>
+            )}
+            {carryMetrics.ratioCobertura >= 100 && carryMetrics.ratioCobertura < 115 && (
+              <div className="p-3 bg-success/5 border border-success/30 rounded-lg">
+                <p className="text-success text-sm font-medium flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Meta 1:1 alcanzada. Faltan {formatARS(carryMetrics.deficitOptimo)} para cobertura óptima.
+                </p>
+              </div>
+            )}
+
+            {/* Cards de Productivo e Improductivo con datos diarios */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-text-secondary">Utilización de Capital</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card Productivo */}
+                <div className="p-4 bg-success/5 border border-success/20 rounded-lg text-center">
+                  <p className="text-success text-xs uppercase tracking-wider mb-2">Productivo</p>
+                  <p className="font-mono font-bold text-xl text-success">{formatARS(carryMetrics.capitalProductivo)}</p>
+                  <p className="text-success text-xs font-medium mt-1">{formatNumber(carryMetrics.pctProductivo, 1)}%</p>
+                  <div className="mt-3 pt-3 border-t border-success/20">
+                    <p className="text-xs text-text-secondary">
+                      Generando:
+                      <span className="font-mono font-semibold text-success ml-1">
+                        {formatARS(carryMetrics.gananciaProductivaDia)}/día
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Card Improductivo */}
+                <div className="p-4 bg-danger/5 border border-danger/20 rounded-lg text-center">
+                  <p className="text-danger text-xs uppercase tracking-wider mb-2">Improductivo</p>
+                  <p className="font-mono font-bold text-xl text-danger">{formatARS(carryMetrics.capitalImproductivo)}</p>
+                  <p className="text-danger text-xs font-medium mt-1">{formatNumber(carryMetrics.pctImproductivo, 1)}%</p>
+                  <div className="mt-3 pt-3 border-t border-danger/20">
+                    <p className="text-xs text-text-secondary">
+                      Perdiendo:
+                      <span className="font-mono font-semibold text-danger ml-1">
+                        {formatARS(carryMetrics.carryPerdidoDia)}/día
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </Section>
+        </Section>
 
-      {/* Alertas y Acciones */}
-      <Section title="Alertas y Acciones" icon={AlertTriangle}>
-        <AlertsPanel carryMetrics={carryMetrics} isFallback={isFallback} spreadStats={spreadStats} />
-      </Section>
+        {/* Alertas y Acciones */}
+        <Section title="Alertas y Acciones" icon={AlertTriangle}>
+          <AlertsPanel carryMetrics={carryMetrics} isFallback={isFallback} spreadStats={spreadStats} />
+        </Section>
 
       </div>
 

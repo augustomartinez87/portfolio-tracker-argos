@@ -20,6 +20,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.0",
+    "supabase": "^2.75.5",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

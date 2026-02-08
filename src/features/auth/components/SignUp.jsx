@@ -37,7 +37,7 @@ export const SignUp = () => {
       await signUp(email, password, { full_name: fullName })
       setSuccess(true)
       setTimeout(() => {
-        navigate('/dashboard')
+        navigate('/portfolio/dashboard')
       }, 2000)
     } catch (err) {
       setError(err.message || 'Error al crear cuenta')

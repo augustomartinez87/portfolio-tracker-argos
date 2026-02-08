@@ -12,8 +12,8 @@ import { LoadingFallback } from '@/components/common/LoadingSpinner';
 const FciLotTable = lazy(() => import('@/features/fci/components/FciLotTable'));
 const FciLotsList = lazy(() => import('@/features/fci/components/FciLotsList'));
 const FciLotModal = lazy(() => import('@/features/fci/components/FciLotModal'));
-const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent'));
 const FciPriceUploadModal = lazy(() => import('@/features/fci/components/FciPriceUploadModal'));
+const AnalisisRealContent = lazy(() => import('@/features/fci/components/AnalisisRealContent'));
 import { CurrencySelector } from '@/features/portfolio/components/CurrencySelector';
 import { FciTabs } from '@/features/fci/components/FciTabs';
 import SummaryCard from '@/components/common/SummaryCard';
@@ -38,7 +38,7 @@ export default function Fci() {
   const positions = fciLotEngine?.positions || [];
   const totals = fciLotEngine?.totals || { invested: 0, valuation: 0, pnl: 0, investedUSD: 0, valuationUSD: 0, pnlUSD: 0 };
   const allLots = fciLotEngine?.allLots || [];
-  const refresh = fciLotEngine?.refresh || (() => {});
+  const refresh = fciLotEngine?.refresh || (() => { });
   const lugaresList = fciLotEngine?.lugaresList || [];
   const fciLoading = portfolioLoading || fciLotEngine?.loading || false;
 
@@ -239,6 +239,7 @@ export default function Fci() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+          portfolioType={currentPortfolio?.portfolio_type}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-20 lg:pb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -370,6 +371,10 @@ export default function Fci() {
                         </div>
                       )}
                     </div>
+                  ) : activeTab === 'analisis-real' ? (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AnalisisRealContent />
+                    </Suspense>
                   ) : activeTab === 'carga-vcp' ? (
                     <div className="space-y-6">
                       {/* Sección de Carga VCP - Funcional */}
@@ -381,7 +386,7 @@ export default function Fci() {
                         <p className="text-sm text-text-tertiary mb-6">
                           Sube el historial de Valor Cuotaparte (VCP) para calcular la TNA real del FCI.
                         </p>
-                        
+
                         {/* Selector de FCI */}
                         <div className="mb-6">
                           <label className="block text-xs font-semibold text-text-tertiary uppercase mb-2">
@@ -404,7 +409,7 @@ export default function Fci() {
                             )}
                           </select>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           {/* Upload Area - Funcional */}
                           <div className="bg-background-tertiary rounded-xl border border-border-primary p-6">
@@ -434,15 +439,15 @@ export default function Fci() {
                                   </div>
                                 </>
                               )}
-                              <input 
-                                type="file" 
-                                accept=".csv,.xlsx" 
-                                className="hidden" 
+                              <input
+                                type="file"
+                                accept=".csv,.xlsx"
+                                className="hidden"
                                 onChange={handleVcpFileChange}
                                 disabled={vcpUploading}
                               />
                             </label>
-                            
+
                             {/* Botón de Carga */}
                             <button
                               onClick={handleVcpUpload}
@@ -461,7 +466,7 @@ export default function Fci() {
                                 </>
                               )}
                             </button>
-                            
+
                             {/* Feedback */}
                             {vcpResult && (
                               <div className={`mt-4 p-3 rounded-lg flex items-start gap-3 text-sm ${vcpResult.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
@@ -473,7 +478,7 @@ export default function Fci() {
                                 <p>{vcpResult.message}</p>
                               </div>
                             )}
-                            
+
                             {/* Botón alternativo: Abrir Modal */}
                             <div className="mt-4 pt-4 border-t border-border-primary">
                               <button
@@ -485,14 +490,14 @@ export default function Fci() {
                               </button>
                             </div>
                           </div>
-                          
+
                           {/* Template Info */}
                           <div className="bg-background-tertiary rounded-xl border border-border-primary p-6">
                             <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
                               <PieChart className="w-4 h-4 text-warning" />
                               Formato del CSV
                             </h4>
-                            
+
                             <div className="space-y-4">
                               <div>
                                 <p className="text-xs text-text-tertiary mb-2">Columnas requeridas:</p>
@@ -507,7 +512,7 @@ export default function Fci() {
                                   </div>
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <p className="text-xs text-text-tertiary mb-2">Ejemplo:</p>
                                 <div className="bg-background-secondary rounded-lg p-3 font-mono text-[10px] text-text-secondary">
@@ -521,7 +526,7 @@ export default function Fci() {
                                   <div className="text-text-tertiary mt-2">...</div>
                                 </div>
                               </div>
-                              
+
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => {
@@ -543,7 +548,7 @@ export default function Fci() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Info Cards */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-background-secondary rounded-xl border border-border-primary p-4">
@@ -566,11 +571,7 @@ export default function Fci() {
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <Suspense fallback={<LoadingFallback />}>
-                      <AnalisisRealContent />
-                    </Suspense>
-                  )}
+                  ) : null}
                 </div>
               </>
             )}
@@ -599,7 +600,7 @@ export default function Fci() {
           />
         </Suspense>
 
-        <MobileNav />
+        <MobileNav portfolioType={currentPortfolio?.portfolio_type} />
       </div>
     </ErrorBoundary>
   );

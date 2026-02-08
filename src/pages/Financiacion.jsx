@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import { TrendingUp, Coins } from 'lucide-react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -15,12 +16,18 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
 const Financiacion = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio();
   const queryClient = useQueryClient();
   const [sidebarExpanded, setSidebarExpanded] = useSidebarState();
 
-
+  // Auto-redirect if portfolio type doesn't match this page (bursatil only)
+  useEffect(() => {
+    if (currentPortfolio && currentPortfolio.portfolio_type === 'cripto') {
+      navigate('/crypto/portfolio');
+    }
+  }, [currentPortfolio, navigate]);
 
   const [activeTab, setActiveTab] = useState('financiacion'); // Estado para navegación del sidebar
 
@@ -109,6 +116,7 @@ const Financiacion = () => {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+          portfolioType={currentPortfolio?.portfolio_type}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -137,7 +145,7 @@ const Financiacion = () => {
             )}
           </div>
         </main>
-        <MobileNav />
+        <MobileNav portfolioType={currentPortfolio?.portfolio_type} />
       </div>
     </ErrorBoundary>
   );

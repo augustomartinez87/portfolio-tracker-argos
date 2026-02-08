@@ -50,7 +50,8 @@ export default function Dashboard() {
 
   const { tab } = useParams();
   const navigate = useNavigate();
-  const activeTab = tab || 'resumen';
+  // 'dashboard' is the default route, treat it as 'resumen'
+  const activeTab = (!tab || tab === 'dashboard') ? 'resumen' : tab;
 
   const [trades, setTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +59,13 @@ export default function Dashboard() {
   const [mepHistory, setMepHistory] = useState([]);
 
   // Cargar historial de MEP para cálculos exactos
+  // Auto-redirect if portfolio type doesn't match this page (bursatil only)
+  useEffect(() => {
+    if (currentPortfolio && currentPortfolio.portfolio_type === 'cripto') {
+      navigate('/crypto/portfolio');
+    }
+  }, [currentPortfolio, navigate]);
+
   useEffect(() => {
     const loadMepHistory = async () => {
       const history = await mepService.getHistory();
@@ -330,6 +338,7 @@ export default function Dashboard() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
+          portfolioType={currentPortfolio?.portfolio_type}
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-hidden h-screen flex flex-col mb-16 lg:mb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
@@ -343,7 +352,7 @@ export default function Dashboard() {
               onRefresh={handleManualRefresh}
               displayCurrency={displayCurrency}
               onCurrencyChange={setDisplayCurrency}
-              onHelpClick={() => navigate('/dashboard/help')}
+              onHelpClick={() => navigate('/portfolio/help')}
               sidebarToggle={<SidebarToggleButton isExpanded={sidebarExpanded} setIsExpanded={setSidebarExpanded} />}
             />
 
@@ -485,7 +494,7 @@ export default function Dashboard() {
           <PositionDetailModal open={detailModalOpen} onClose={handleClosePositionDetail} position={selectedPosition} prices={prices} mepRate={mepRate} trades={trades} onTradeClick={handleTradeClickFromDetail} currency={displayCurrency} />
         </Suspense>
       </div>
-      <MobileNav />
+      <MobileNav portfolioType={currentPortfolio?.portfolio_type} />
     </ErrorBoundary>
   );
 }

@@ -181,7 +181,7 @@ export const userService = {
   async updateUserRole(userId, role) {
     // Actualizar módulos según el rol
     const modules = role === 'admin'
-      ? ['portfolio', 'fci', 'financiacion', 'funding', 'analisis', 'admin']
+      ? ['portfolio', 'fci', 'financiacion', 'funding', 'admin']
       : ['portfolio'];
 
     const { data, error } = await supabase

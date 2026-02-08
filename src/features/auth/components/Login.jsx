@@ -22,7 +22,7 @@ export const Login = () => {
 
     try {
       await signIn(email, password)
-      navigate('/dashboard')
+      navigate('/portfolio/dashboard')
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión')
     } finally {

@@ -3,13 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
 
-export const MobileNav = () => {
+export const MobileNav = ({ portfolioType = 'borsatil' }) => {
     const location = useLocation();
     const { isAdmin, allowedModules } = useAuth();
 
     // Filtrar items de navegación según permisos del usuario
     // Limitar a los primeros 5 items para móvil
-    const navItems = getFilteredNavItems(isAdmin, allowedModules).slice(0, 5);
+    const navItems = getFilteredNavItems(isAdmin, allowedModules, portfolioType).slice(0, 5);
 
     const isActive = (path) => location.pathname === path;
 
