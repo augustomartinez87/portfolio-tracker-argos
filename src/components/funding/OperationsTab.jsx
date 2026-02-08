@@ -212,7 +212,13 @@ export function OperationsTab({
     <div className="space-y-6">
       {/* Posición Actual - Solo cauciones vigentes */}
       <div className="bg-background-secondary rounded-xl border border-border-primary shadow-lg">
-        <OperationsPositionCards totals={totals} hasTodayPrice={hasTodayPrice} todayStr={todayStr} />
+        <OperationsPositionCards 
+          totals={totals} 
+          hasTodayPrice={hasTodayPrice} 
+          todayStr={todayStr}
+          fciDailyPnl={fciDailyPnl}
+          fciDailyPnlPct={fciDailyPnlPct}
+        />
       </div>
 
       {/* Panel de P&L Real */}

@@ -3,7 +3,20 @@ import { TrendingUp, TrendingDown, Receipt, Info, Target } from 'lucide-react';
 import { formatARS, formatNumber } from '@/utils/formatters';
 import { MetricCard } from '@/components/common/MetricCard';
 
-export function OperationsPositionCards({ totals, hasTodayPrice, todayStr }) {
+import { formatPercent } from '@/utils/formatters';
+
+export function OperationsPositionCards({ totals, hasTodayPrice, todayStr, fciDailyPnl = 0, fciDailyPnlPct = 0 }) {
+  // Configurar subtítulo de PNL
+  const pnlColor = fciDailyPnl >= 0 ? 'text-success' : 'text-danger';
+  const sign = fciDailyPnl > 0 ? '+' : '';
+  const pnlSubtitle = hasTodayPrice
+    ? (
+      <span className={pnlColor}>
+        {sign}{formatARS(fciDailyPnl)} ({sign}{formatPercent(fciDailyPnlPct * 100)})
+      </span>
+    )
+    : "Saldo actual";
+
   return (
     <div className="p-4">
       <div className="flex items-center gap-2 mb-4">
@@ -25,7 +38,7 @@ export function OperationsPositionCards({ totals, hasTodayPrice, todayStr }) {
         <MetricCard
           title="Valuación FCI"
           value={formatARS(totals.valuation)}
-          subtitle="Saldo actual"
+          subtitle={pnlSubtitle}
           icon={TrendingUp}
           status="info"
         />
