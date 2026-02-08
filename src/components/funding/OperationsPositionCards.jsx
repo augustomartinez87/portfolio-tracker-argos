@@ -1,21 +1,19 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Receipt, Info, Target } from 'lucide-react';
-import { formatARS, formatNumber } from '@/utils/formatters';
+import { formatARS, formatNumber, formatDateAR } from '@/utils/formatters';
 import { MetricCard } from '@/components/common/MetricCard';
 
 import { formatPercent } from '@/utils/formatters';
 
-export function OperationsPositionCards({ totals, hasTodayPrice, todayStr, fciDailyPnl = 0, fciDailyPnlPct = 0 }) {
-  // Configurar subtítulo de PNL
+export function OperationsPositionCards({ totals, lastPriceDate, fciDailyPnl = 0, fciDailyPnlPct = 0 }) {
+  // Configurar subtítulo de PNL - siempre mostrar el valor real
   const pnlColor = fciDailyPnl >= 0 ? 'text-success' : 'text-danger';
   const sign = fciDailyPnl > 0 ? '+' : '';
-  const pnlSubtitle = hasTodayPrice
-    ? (
-      <span className={pnlColor}>
-        {sign}{formatARS(fciDailyPnl)} ({sign}{formatPercent(fciDailyPnlPct * 100)})
-      </span>
-    )
-    : "Saldo actual";
+  const pnlSubtitle = (
+    <span className={pnlColor}>
+      {sign}{formatARS(fciDailyPnl)} ({sign}{formatPercent(fciDailyPnlPct * 100)})
+    </span>
+  );
 
   return (
     <div className="p-4">
@@ -27,10 +25,10 @@ export function OperationsPositionCards({ totals, hasTodayPrice, todayStr, fciDa
         </span>
       </div>
 
-      {!hasTodayPrice && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+      {lastPriceDate && (
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg text-primary text-sm">
           <Info className="w-4 h-4" />
-          <span>No hay VCP de hoy ({todayStr}). El PnL diario se muestra en 0.</span>
+          <span>Datos al {formatDateAR(lastPriceDate)} (último día hábil con VCP)</span>
         </div>
       )}
 

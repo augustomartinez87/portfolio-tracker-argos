@@ -33,9 +33,9 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // Filtrar cauciones por fecha mínima de datos confiables
     const caucionesFiltered = dataStartDate
       ? cauciones.filter(c => {
-          const fechaInicio = String(c.fecha_inicio || '').split('T')[0];
-          return fechaInicio >= dataStartDate;
-        })
+        const fechaInicio = String(c.fecha_inicio || '').split('T')[0];
+        return fechaInicio >= dataStartDate;
+      })
       : cauciones;
 
     // Si después del filtro no quedan cauciones, retornar null
@@ -69,10 +69,10 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
 
     const ultimaCaucionFecha = caucionesFiltered.length > 0
       ? caucionesFiltered.reduce((max, c) => {
-          const fecha = parseDate(c.fecha_fin);
-          if (!fecha) return max;
-          return !max || fecha > max ? fecha : max;
-        }, null)
+        const fecha = parseDate(c.fecha_fin);
+        if (!fecha) return max;
+        return !max || fecha > max ? fecha : max;
+      }, null)
       : null;
 
     // Encontrar última caución con VCP completo (ambos datos disponibles)
@@ -192,24 +192,24 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // Ponderado por capital×días - SOLO cauciones vigentes
     const tnaCaucionPonderada = totalCaucion.gt(0)
       ? (() => {
-          const { numerator, denominator } = caucionesVigentes.reduce((acc, c) => {
-            const capital = new Decimal(c.capital || 0);
-            const tna = new Decimal(c.tna_real || 0).dividedBy(100); // Convertir de % a decimal
-            const dias = new Decimal(c.dias || 1);
-            return {
-              numerator: acc.numerator.plus(capital.times(tna).times(dias)),
-              denominator: acc.denominator.plus(capital.times(dias)),
-            };
-          }, { numerator: new Decimal(0), denominator: new Decimal(0) });
-          return denominator.gt(0) ? numerator.dividedBy(denominator) : new Decimal(0);
-        })()
+        const { numerator, denominator } = caucionesVigentes.reduce((acc, c) => {
+          const capital = new Decimal(c.capital || 0);
+          const tna = new Decimal(c.tna_real || 0).dividedBy(100); // Convertir de % a decimal
+          const dias = new Decimal(c.dias || 1);
+          return {
+            numerator: acc.numerator.plus(capital.times(tna).times(dias)),
+            denominator: acc.denominator.plus(capital.times(dias)),
+          };
+        }, { numerator: new Decimal(0), denominator: new Decimal(0) });
+        return denominator.gt(0) ? numerator.dividedBy(denominator) : new Decimal(0);
+      })()
       : new Decimal(0);
 
     // TNA promedio simple (para referencia) - SOLO cauciones vigentes
     const tnaCaucionPromedio = caucionesVigentes.length > 0
       ? caucionesVigentes.reduce((sum, c) => sum.plus(new Decimal(c.tna_real || 0)), new Decimal(0))
-          .dividedBy(caucionesVigentes.length)
-          .dividedBy(100) // Convertir de % a decimal
+        .dividedBy(caucionesVigentes.length)
+        .dividedBy(100) // Convertir de % a decimal
       : new Decimal(0);
 
     // =========================================================================
@@ -258,7 +258,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // Cauciones vencidas: VCP real inicio→fin.
     // Cauciones activas: tramo real (inicio→hoy) + proyección con TNA MA-7d (hoy→fin).
     const spreadsPorCaucion = caucionesFiltered.map(c => {
-      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy);
+      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy, saldoFCI.toNumber());
       // Convertir del formato nuevo al formato legacy esperado por el resto del hook
       return resultado ? {
         'spread_$': resultado.spreadPesos,
@@ -312,14 +312,14 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // =========================================================================
     const estadoCobertura =
       ratioCobertura.gte(115) ? 'sobrecapitalizado' :
-      ratioCobertura.gte(100) ? 'optimo' :
-      ratioCobertura.gte(90) ? 'ajustado' : 'deficit';
+        ratioCobertura.gte(100) ? 'optimo' :
+          ratioCobertura.gte(90) ? 'ajustado' : 'deficit';
 
     const bufferPct = bufferTasa.times(100).toNumber();
     const estadoBuffer =
       bufferPct > 8 ? 'amplio' :
-      bufferPct > 4 ? 'medio' :
-      bufferPct > 2 ? 'estrecho' : 'critico';
+        bufferPct > 4 ? 'medio' :
+          bufferPct > 2 ? 'estrecho' : 'critico';
 
     // =========================================================================
     // 14. DÍAS PROMEDIO CAUCIÓN

@@ -29,32 +29,32 @@ export interface SpreadCaucionResult {
   // Identificación
   caucionId: string;
   identificadorHumano: string;
-  
+
   // Fechas
   fechaInicio: string;        // DD/MM/AAAA
   fechaFin: string;           // DD/MM/AAAA
   fechaInicioRaw: string;     // YYYY-MM-DD
   fechaFinRaw: string;        // YYYY-MM-DD
-  
+
   // Montos
   capital: number;
   interesPagado: number;
-  
+
   // VCPs
   vcpInicio: number;
   vcpFin: number | null;
   vcpHoy: number | null;
-  
+
   // Ganancias FCI
   gananciaFCITotal: number;   // Real + proyectado (si aplica)
   gananciaFCIReal: number;    // Solo tramo real
   gananciaFCIProyectada: number; // Solo proyección (si aplica)
-  
+
   // Costos y spreads
   costoCaucion: number;
   spreadPesos: number;
   spreadPorcentaje: number;
-  
+
   // Metadata
   estado: 'vencida' | 'activa';
   esProyectado: boolean;
@@ -89,8 +89,8 @@ export function formatDateAR(fechaISO: string): string {
  * Formato: YYYY-MM-DD | $CAPITAL | TNA%
  */
 export function generarIdentificadorCaucion(
-  fechaInicio: string, 
-  capital: number, 
+  fechaInicio: string,
+  capital: number,
   tna: number | undefined
 ): string {
   const fecha = fechaInicio.split('T')[0];
@@ -100,8 +100,8 @@ export function generarIdentificadorCaucion(
   }).format(capital);
   // tna viene como porcentaje (ej: 28.74) o decimal (ej: 0.2874)
   // Si es > 1, ya es porcentaje. Si es < 1, es decimal y hay que convertir
-  const tnaFormateado = tna 
-    ? (tna > 1 ? tna.toFixed(2) : (tna * 100).toFixed(2)) 
+  const tnaFormateado = tna
+    ? (tna > 1 ? tna.toFixed(2) : (tna * 100).toFixed(2))
     : '0.00';
   return `${fecha} | $${capitalFormateado} | ${tnaFormateado}%`;
 }
@@ -121,7 +121,7 @@ export function generarIdentificadorCaucion(
  * @returns {VcpPrice | null} El último VCP que cumple la condición, o null si no existe.
  */
 export function buscarVcpAnteriorOIgual(
-  vcpPrices: VcpPrice[], 
+  vcpPrices: VcpPrice[],
   fechaObjetivo: string,
   inclusive: boolean = true
 ): VcpPrice | null {
@@ -196,19 +196,21 @@ export function calcularSpreadPorCaucion(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCITotal?: number
+  saldoFCITotal: number
 ): SpreadCaucionResult | null {
   if (!vcpPrices || vcpPrices.length === 0) return null;
 
   const capital = new Decimal(caucion.capital || 0);
   const interes = new Decimal(caucion.interes || 0);
-  
+
   if (capital.isZero()) return null;
-  
-  // Para calcular ganancia FCI, usamos el saldo FCI real disponible
-  // Si no hay saldo FCI o es menor que el capital, usamos el saldo FCI
-  // Si el saldo FCI es mayor o igual, usamos el capital completo
-  const saldoFCI = new Decimal(saldoFCITotal || 0);
+
+  // Para calcular ganancia FCI, usamos el saldo FCI real disponible.
+  // Usamos min(capital, saldoFCI) porque el FCI actúa como fondeador de la caución:
+  // solo se calcula la rentabilidad sobre el capital efectivamente afectado a la operación.
+  // Esto evita sobreestimar ganancias atribuyendo rentabilidad sobre patrimonio del FCI
+  // que no participa de la caución.
+  const saldoFCI = new Decimal(saldoFCITotal);
   const baseCalculoGanancia = Decimal.min(capital, saldoFCI);
 
   const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
@@ -217,16 +219,23 @@ export function calcularSpreadPorCaucion(
 
   const esVencida = fechaFin < fechaHoy;
 
-  // Para VCP_inicio:
-  // - Cauciones VENCIDAS: usar inclusive=true (VCP de la fecha exacta de inicio)
-  //   El VCP del día de inicio ya está publicado al cierre de esa fecha
-  // - Cauciones ACTIVAS: usar inclusive=false (VCP del día anterior)
-  //   El VCP disponible al abrir la caución por la mañana es del día anterior
+  // TIMING DE VCP - Decisión de diseño documentada:
+  // 
+  // Para VCP_inicio usamos timing diferente según el estado de la caución:
+  // - Cauciones VENCIDAS (inclusive=true): se usa el VCP de la fecha exacta de inicio,
+  //   ya que con posterioridad sabemos que ese precio estaba disponible al cierre del día.
+  // - Cauciones ACTIVAS (inclusive=false): se usa el VCP del día anterior, porque el VCP
+  //   del día todavía no está disponible al momento de abrir la caución por la mañana.
+  //
+  // Esto puede generar pequeñas discrepancias entre los cálculos cuando una caución está
+  // activa vs cuando ya venció, pero refleja correctamente la información disponible en
+  // cada momento. Para cauciones vencidas usamos datos completos; para activas evitamos
+  // introducir "look-ahead bias" (usar información que no estaba disponible en tiempo real).
   const vcpInicio = buscarVcpAnteriorOIgual(vcpPrices, fechaInicio, esVencida);
   if (!vcpInicio || !vcpInicio.vcp || new Decimal(vcpInicio.vcp).isZero()) return null;
 
   const vcpInicioDec = new Decimal(vcpInicio.vcp);
-  
+
   const diasTotales = calcularDiasEntre(fechaInicio, fechaFin);
 
   if (esVencida) {
@@ -271,7 +280,7 @@ export function calcularSpreadPorCaucion(
     if (!vcpHoy || !vcpHoy.vcp || new Decimal(vcpHoy.vcp).isZero()) return null;
 
     const vcpHoyDec = new Decimal(vcpHoy.vcp);
-    
+
     // a) Tramo real: fecha_inicio → hoy
     // La ganancia real solo existe si el VCP disponible "hoy" es de una fecha posterior
     // a la fecha de inicio de la caución. Si es del mismo día o anterior, la ganancia es 0.
@@ -285,7 +294,7 @@ export function calcularSpreadPorCaucion(
     const diasRestantes = Math.max(0, Math.round(
       (new Date(fechaFin).getTime() - new Date(fechaHoy).getTime()) / (1000 * 60 * 60 * 24)
     ));
-    
+
     // Usar baseCalculoGanancia para la proyección también
     const gananciaProyectada = calcularGananciaFCIProyectada(baseCalculoGanancia, tnaMA7, diasRestantes);
 
@@ -329,7 +338,7 @@ export function calcularTotalesOperaciones(
   const totalCauciones = spreads.length;
   const caucionesVencidas = spreads.filter(s => s.estado === 'vencida').length;
   const caucionesActivas = spreads.filter(s => s.estado === 'activa').length;
-  
+
   let spreadTotal = new Decimal(0);
   let spreadPonderadoSum = new Decimal(0);
   let capitalTotal = new Decimal(0);
@@ -345,7 +354,7 @@ export function calcularTotalesOperaciones(
     costoCaucionTotal = costoCaucionTotal.plus(s.costoCaucion);
   }
 
-  const spreadPromedioPonderado = capitalTotal.gt(0) 
+  const spreadPromedioPonderado = capitalTotal.gt(0)
     ? spreadPonderadoSum.dividedBy(capitalTotal).toNumber()
     : 0;
 
@@ -369,19 +378,19 @@ export function calcularSpreadsTodasCauciones(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCITotal?: number
+  saldoFCITotal: number
 ): SpreadCaucionResult[] {
   const resultados: SpreadCaucionResult[] = [];
-  
+
   for (const caucion of cauciones) {
     const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCITotal);
     if (resultado) {
       resultados.push(resultado);
     }
   }
-  
+
   // Ordenar por fecha de inicio descendente (más reciente primero)
-  return resultados.sort((a, b) => 
+  return resultados.sort((a, b) =>
     new Date(b.fechaInicioRaw).getTime() - new Date(a.fechaInicioRaw).getTime()
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Decimal from 'decimal.js';
 import { fciService } from '@/features/fci/services/fciService';
 import { mepService } from '../../portfolio/services/mepService';
-import { toDateString } from '@/utils/formatters';
+
 
 /**
  * Motor de cálculo FCI por lotes.
@@ -111,10 +111,6 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
     // COMPUTED: lotDetails — cada lot activo con sus campos calculados
     // =========================================================================
     const lotDetails = useMemo(() => {
-        // Usar UTC consistente para evitar problemas de timezone
-        // La BD almacena fechas en UTC, así que debemos comparar en UTC
-        const hoy = toDateString();
-
         return activeLots.map(lot => {
             const latest = latestPrices[lot.fci_id];
             const yesterday = yesterdayPrices[lot.fci_id];
@@ -127,11 +123,10 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
             const valuation = cp.times(vcpT);
             const pnlAcumulado = valuation.minus(capitalInvertido);
 
-            // PnL diario solo si:
-            // 1. Tenemos precio anterior (vcpT1 > 0)
-            // 2. El último precio es de hoy (latest.fecha === hoy)
-            // Si el VCP de hoy no existe aún, pnlDiario = 0
-            const pnlDiario = (latest?.fecha === hoy && vcpT1.gt(0))
+            // PnL diario: variación entre el último precio y el anterior
+            // Se calcula siempre que existan ambos precios (vcpT > 0 y vcpT1 > 0)
+            // Esto permite mostrar el PnL del último día hábil en fines de semana/feriados
+            const pnlDiario = (vcpT.gt(0) && vcpT1.gt(0))
                 ? cp.times(vcpT.minus(vcpT1))
                 : new Decimal(0);
 

@@ -231,6 +231,12 @@ export default function Fci() {
     return totalPnlDiario / valuation;
   }, [totalPnlDiario, totals]);
 
+  const pnlPercent = useMemo(() => {
+    const invested = totals?.invested || 0;
+    if (invested === 0) return 0;
+    return ((totals?.pnl || 0) / invested) * 100;
+  }, [totals]);
+
   // Verificar si hay precio de hoy para mostrar el PnL
   const hasTodayPrice = useMemo(() => {
     if (!positions.length) return false;

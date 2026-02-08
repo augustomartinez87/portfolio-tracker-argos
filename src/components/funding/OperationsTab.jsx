@@ -29,7 +29,7 @@ export function OperationsTab({
   fciTotalPnl = 0,
   fciDailyPnl = 0,
   fciDailyPnlPct = 0,
-  hasTodayPrice = true,
+  lastPriceDate = null,
   vcpHistoricos = {},
   dataStartDate = CONSTANTS.DATA_START_DATE,
   hoy = new Date()
@@ -212,10 +212,9 @@ export function OperationsTab({
     <div className="space-y-6">
       {/* Posición Actual - Solo cauciones vigentes */}
       <div className="bg-background-secondary rounded-xl border border-border-primary shadow-lg">
-        <OperationsPositionCards 
-          totals={totals} 
-          hasTodayPrice={hasTodayPrice} 
-          todayStr={todayStr}
+        <OperationsPositionCards
+          totals={totals}
+          lastPriceDate={lastPriceDate}
           fciDailyPnl={fciDailyPnl}
           fciDailyPnlPct={fciDailyPnlPct}
         />
@@ -240,11 +239,10 @@ export function OperationsTab({
                   <button
                     key={opt.id}
                     onClick={() => setEstadoFilter(opt.id)}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                      estadoFilter === opt.id
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${estadoFilter === opt.id
                         ? 'bg-primary text-white'
                         : 'bg-background-tertiary text-text-secondary hover:text-text-primary'
-                    }`}
+                      }`}
                   >
                     {opt.label}
                   </button>

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarState } from '@/hooks/useSidebarState';
-import { toDateString } from '@/utils/formatters';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
@@ -96,14 +95,11 @@ export default function FundingEngine() {
     ? totalPnlDiario / fciValuationTotal
     : 0;
 
-  // Verificar si hay precio de hoy (para no mostrar PnL diario si no hay)
-  const todayStr = toDateString();
-  const hasTodayPrice = useMemo(() => {
-    if (!mainFciId) return false;
+  // La fecha del último precio disponible (puede ser del último día hábil)
+  const lastPriceDate = useMemo(() => {
     const mainPos = fciPositions.find(p => p.fciId === mainFciId);
-    if (!mainPos?.priceDate) return false;
-    return mainPos.priceDate === todayStr;
-  }, [fciPositions, mainFciId, todayStr]);
+    return mainPos?.priceDate || null;
+  }, [fciPositions, mainFciId]);
 
   // Cargar cauciones
   const { cauciones, loading: caucionesLoading, error: caucionesError, refresh: refreshCauciones } = useCauciones(
@@ -328,9 +324,9 @@ export default function FundingEngine() {
                   fciLots={fciLots}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
                   fciTotalPnl={fciTotalPnl}
-                  fciDailyPnl={hasTodayPrice ? totalPnlDiario : 0}
-                  fciDailyPnlPct={hasTodayPrice ? fciDailyPnlPct : 0}
-                  hasTodayPrice={hasTodayPrice}
+                  fciDailyPnl={totalPnlDiario}
+                  fciDailyPnlPct={fciDailyPnlPct}
+                  lastPriceDate={lastPriceDate}
                   vcpHistoricos={vcpPricesMap}
                   dataStartDate={dataStartDate}
                 />
