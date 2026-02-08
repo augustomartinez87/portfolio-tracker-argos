@@ -45,7 +45,7 @@ export const PerformanceMetricsCards = memo(({ metrics, isLoading = false }) => 
       {/* Collapsible content */}
       {expanded && (
         <div className="px-3 pb-3 pt-1">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {/* XIRR Card */}
             <MetricCard
               icon={TrendingUp}

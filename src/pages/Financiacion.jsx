@@ -12,6 +12,7 @@ import { LoadingFallback } from '@/components/common/LoadingSpinner';
 import FinancingDashboard from '@/features/financing/components/FinancingDashboard';
 import { financingService } from '@/features/financing/services/financingService';
 import MobileNav from '@/components/common/MobileNav';
+import MobileHeader from '@/components/common/MobileHeader';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PortfolioEmptyState } from '@/components/common/PortfolioEmptyState';
 
@@ -111,6 +112,7 @@ const Financiacion = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
+        <MobileHeader />
         <DashboardSidebar
           user={user}
           signOut={signOut}
@@ -119,7 +121,7 @@ const Financiacion = () => {
           portfolioType={currentPortfolio?.portfolio_type}
         />
 
-        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
+        <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-24 lg:pb-0 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'}`}>
           <div className="p-3 lg:p-4 space-y-3">
             <PageHeader
               title="Financiación"

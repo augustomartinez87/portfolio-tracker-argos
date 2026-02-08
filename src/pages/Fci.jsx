@@ -6,6 +6,7 @@ import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import { DashboardSidebar } from '@/features/portfolio/components/DashboardSidebar';
 import { SidebarToggleButton } from '@/components/common/SidebarToggleButton';
 import MobileNav from '@/components/common/MobileNav';
+import MobileHeader from '@/components/common/MobileHeader';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingFallback } from '@/components/common/LoadingSpinner';
 // Importaciones diferidas
@@ -234,6 +235,7 @@ export default function Fci() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background-primary flex">
+        <MobileHeader />
         <DashboardSidebar
           user={user}
           signOut={signOut}
