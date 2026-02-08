@@ -184,18 +184,7 @@ export default function CryptoPortfolio() {
             <PortfolioEmptyState title="Portfolio no cripto" message="Selecciona un portfolio de tipo cripto para usar este modulo." />
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <SummaryCard title="Invertido" value={formatUSDT(totals.invested)} />
-                <SummaryCard title="Valuacion" value={formatUSDT(totals.valuation)} />
-                <SummaryCard
-                  title="P&L"
-                  value={formatUSDT(totals.pnl)}
-                  trend={totals.pnl}
-                  showBadge
-                  badgeValue={formatPercent(totals.pnlPct)}
-                />
-              </div>
-
+              {/* Tabs primero - igual que Dashboard bursátil */}
               <div className="border-b border-border-secondary">
                 <div className="flex gap-1">
                   <button
@@ -225,14 +214,28 @@ export default function CryptoPortfolio() {
                 </div>
               </div>
 
+              {/* Contenido de cada tab */}
               {activeTab === 'resumen' ? (
                 <div className="space-y-3">
+                  {/* Summary Cards dentro del tab resumen - igual que Dashboard */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <SummaryCard title="Invertido" value={formatUSDT(totals.invested)} />
+                    <SummaryCard title="Valuacion" value={formatUSDT(totals.valuation)} />
+                    <SummaryCard
+                      title="P&L"
+                      value={formatUSDT(totals.pnl)}
+                      trend={totals.pnl}
+                      showBadge
+                      badgeValue={formatPercent(totals.pnlPct)}
+                    />
+                  </div>
+
                   <div className="flex justify-end">
                     <button
                       onClick={() => { setEditingTrade(null); setTradeModalOpen(true); }}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                      className="flex items-center gap-2 px-4 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                       Nueva Transaccion
                     </button>
                   </div>
@@ -243,9 +246,9 @@ export default function CryptoPortfolio() {
                   <div className="flex justify-end">
                     <button
                       onClick={() => { setEditingTrade(null); setTradeModalOpen(true); }}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                      className="flex items-center gap-2 px-4 py-1.5 h-8 bg-profit text-white rounded-lg hover:bg-profit/90 transition-all text-xs font-medium shadow-lg shadow-profit/20"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                       Nueva Transaccion
                     </button>
                   </div>

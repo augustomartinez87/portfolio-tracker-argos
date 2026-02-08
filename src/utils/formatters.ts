@@ -27,12 +27,12 @@ export const formatUSD = (value: number | null | undefined): string => {
 };
 
 /**
- * Formatea un numero como moneda USDT
- * @example formatUSDT(1234.56) => "USDT 1,234.56"
+ * Formatea un numero como moneda USDT (formato argentino)
+ * @example formatUSDT(1234.56) => "USDT 1.234,56"
  */
 export const formatUSDT = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  const formatted = new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
