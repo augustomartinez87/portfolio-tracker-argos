@@ -127,7 +127,7 @@ export const cryptoPriceService = {
 
       return coinsList;
     } catch (err) {
-      console.error('Error fetching coins list:', err);
+      // Error fetching coins list - using cache fallback
       // Fallback a cache antiguo si existe
       if (cached) return cached.data;
       return [];
@@ -223,11 +223,11 @@ export const cryptoPriceService = {
 
       return data;
     } catch (err) {
-      console.error('Error fetching crypto prices:', err);
+      // Error fetching crypto prices - using cache fallback
 
       // Fallback a cache si existe
       if (cachedPricesData) {
-        console.log('Using cached prices (fallback)');
+
         if (isUSDT) {
           const mapped: Record<string, any> = {};
           // Best effort mapping from cache
@@ -263,7 +263,7 @@ export const cryptoPriceService = {
         return list.slice(0, perPage);
       }
     } catch (e) {
-      console.warn('Full list fetch failed, falling back to top markets', e);
+      // Full list fetch failed, falling back to top markets
     }
 
     // Fallback robusto: pedir markets (top 100) directamente
@@ -281,7 +281,7 @@ export const cryptoPriceService = {
         return data.data;
       }
     } catch (err) {
-      console.error('Error fetching top markets:', err);
+      // Error fetching top markets - using fallback
     }
 
     return FALLBACK_TOP_COINS.slice(0, perPage);
