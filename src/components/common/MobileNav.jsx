@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
 
-export const MobileNav = ({ portfolioType = 'borsatil' }) => {
+export const MobileNav = ({ portfolioType = 'bursatil' }) => {
     const location = useLocation();
     const { isAdmin, allowedModules } = useAuth();
 

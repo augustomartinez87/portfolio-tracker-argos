@@ -32,7 +32,7 @@ export const CURRENCIES = {
 export type Currency = typeof CURRENCIES[keyof typeof CURRENCIES];
 
 export const PORTFOLIO_TYPES = {
-  BURSATIL: 'borsatil',
+  BURSATIL: 'bursatil',
   CRIPTO: 'cripto',
 } as const;
 

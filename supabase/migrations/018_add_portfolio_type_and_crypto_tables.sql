@@ -3,7 +3,7 @@
 
 -- 1) Add portfolio_type to portfolios
 ALTER TABLE public.portfolios
-ADD COLUMN IF NOT EXISTS portfolio_type TEXT NOT NULL DEFAULT 'borsatil';
+ADD COLUMN IF NOT EXISTS portfolio_type TEXT NOT NULL DEFAULT 'bursatil';
 
 DO $$
 BEGIN
@@ -14,7 +14,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.portfolios
     ADD CONSTRAINT portfolios_portfolio_type_check
-    CHECK (portfolio_type IN ('borsatil','cripto'));
+    CHECK (portfolio_type IN ('bursatil','cripto'));
   END IF;
 END $$;
 

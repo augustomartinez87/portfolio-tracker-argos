@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { getFilteredNavItems } from '@/config/navigation';
 
-export const DashboardSidebar = ({ user, signOut, isExpanded, portfolioType = 'borsatil' }) => {
+export const DashboardSidebar = ({ user, signOut, isExpanded, portfolioType = 'bursatil' }) => {
   const location = useLocation();
   const { isAdmin, allowedModules, userProfile } = useAuth();
 

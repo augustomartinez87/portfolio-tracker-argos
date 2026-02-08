@@ -129,7 +129,7 @@ export default function Admin() {
           signOut={signOut}
           isExpanded={sidebarExpanded}
           setIsExpanded={setSidebarExpanded}
-          portfolioType="borsatil"
+          portfolioType="bursatil"
         />
 
         <main className={`flex-1 transition-all duration-300 mt-16 lg:mt-0 pb-20 lg:pb-0 ${sidebarExpanded ? 'lg:ml-56' : 'lg:ml-16'
@@ -357,7 +357,7 @@ export default function Admin() {
           </div>
         </main>
 
-        <MobileNav portfolioType="borsatil" />
+        <MobileNav portfolioType="bursatil" />
       </div>
     </ErrorBoundary>
   );

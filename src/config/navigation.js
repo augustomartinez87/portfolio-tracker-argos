@@ -72,13 +72,13 @@ export const NAV_ITEMS = [
 ];
 
 export const MODULES_BY_PORTFOLIO_TYPE = {
-  borsatil: ['portfolio', 'fci', 'financiacion', 'funding', 'admin'],
+  bursatil: ['portfolio', 'fci', 'financiacion', 'funding', 'admin'],
   cripto: ['portfolio_cripto', 'nexo_loans', 'fci', 'funding_crypto', 'admin']
 };
 
 export const getModulesByPortfolioType = (portfolioType) => {
-  if (!portfolioType) return MODULES_BY_PORTFOLIO_TYPE.borsatil;
-  return MODULES_BY_PORTFOLIO_TYPE[portfolioType] || MODULES_BY_PORTFOLIO_TYPE.borsatil;
+  if (!portfolioType) return MODULES_BY_PORTFOLIO_TYPE.bursatil;
+  return MODULES_BY_PORTFOLIO_TYPE[portfolioType] || MODULES_BY_PORTFOLIO_TYPE.bursatil;
 };
 
 /**
@@ -88,7 +88,7 @@ export const getModulesByPortfolioType = (portfolioType) => {
  * @param {string} portfolioType - Tipo de portfolio activo
  * @returns {Array} Items de navegación filtrados
  */
-export const getFilteredNavItems = (isAdmin, allowedModules = [], portfolioType = 'borsatil') => {
+export const getFilteredNavItems = (isAdmin, allowedModules = [], portfolioType = 'bursatil') => {
   const modulesByType = getModulesByPortfolioType(portfolioType);
   const effectiveModules = isAdmin
     ? modulesByType
