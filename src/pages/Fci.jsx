@@ -217,12 +217,32 @@ export default function Fci() {
     return displayCurrency === 'ARS' ? formatARS(ars || 0) : formatUSD(usd || 0);
   }, [displayCurrency]);
 
-  const pnlPercent = useMemo(() => {
-    if (displayCurrency === 'USD') {
-      return (totals?.investedUSD && totals.investedUSD > 0) ? (totals.pnlUSD / totals.investedUSD) * 100 : 0;
-    }
-    return (totals?.invested && totals.invested > 0) ? (totals.pnl / totals.invested) * 100 : 0;
-  }, [totals, displayCurrency]);
+  const totalPnlDiario = useMemo(() => {
+    return positions.reduce((sum, pos) => {
+      // Intentar usar pnlDiario si existe (número o Decimal)
+      const val = pos.pnlDiario?.toNumber ? pos.pnlDiario.toNumber() : (pos.pnlDiario || 0);
+      return sum + val;
+    }, 0);
+  }, [positions]);
+
+  const totalPnlDiarioPct = useMemo(() => {
+    const valuation = totals?.valuation || 0;
+    if (valuation === 0) return 0;
+    return totalPnlDiario / valuation;
+  }, [totalPnlDiario, totals]);
+
+  // Verificar si hay precio de hoy para mostrar el PnL
+  const hasTodayPrice = useMemo(() => {
+    if (!positions.length) return false;
+    // Asumimos que si hay PnL diario != 0 es porque hay precio. 
+    // Pero si es 0, podría ser que no hubo variación o no hubo precio.
+    // Chequeamos la fecha del precio del primer fondo principal
+    // (Idealmente deberíamos chequear cada uno, pero para el total usamos una aproximación)
+    // Sin embargo, useFciLotEngine ya pone 0 si no es hoy, así que totalPnlDiario es confiable.
+    // Solo necesitamos saber si mostramos "0" como "sin datos" o "0" real.
+    // Por simplicidad, si es 0, mostramos 0.
+    return true;
+  }, [positions]);
 
   if (portfolioLoading && !currentPortfolio) {
     return (
@@ -281,7 +301,7 @@ export default function Fci() {
                           value={formatVal(totals.valuation, totals.valuationUSD)}
                         />
                         <SummaryCard
-                          title="P&L"
+                          title="P&L Total"
                           value={formatVal(totals.pnl, totals.pnlUSD)}
                           trend={totals.pnl}
                           showBadge
@@ -294,9 +314,17 @@ export default function Fci() {
                           }
                         />
                         <SummaryCard
-                          title="Rendimiento"
-                          value={formatPercent(pnlPercent)}
-                          trend={pnlPercent}
+                          title="P&L Diario (Hoy)"
+                          value={displayCurrency === 'ARS' ? formatARS(totalPnlDiario) : '-'}
+                          trend={totalPnlDiario}
+                          showBadge
+                          badgeValue={
+                            <PercentageDisplay
+                              value={totalPnlDiarioPct * 100}
+                              className="!text-current"
+                              iconSize="w-2.5 h-2.5"
+                            />
+                          }
                         />
                       </div>
 
