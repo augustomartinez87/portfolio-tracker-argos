@@ -87,34 +87,6 @@ export const formatDateAR = (date: Date | string | null | undefined): string => 
 };
 
 /**
- * Formatea una fecha/hora
- * @param date - Fecha a formatear
- * @param format - 'time' para solo hora, 'full' para fecha completa
- */
-export const formatDateTime = (date: Date | string | null | undefined, format: 'time' | 'full' = 'time'): string => {
-  if (!date) return '';
-
-  const d = typeof date === 'string' ? new Date(date) : date;
-
-  if (format === 'full') {
-    return d.toLocaleString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-  }
-
-  return d.toLocaleTimeString('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-};
-
-/**
  * Convierte una fecha a string ISO (YYYY-MM-DD)
  * Reemplaza el patrón .toISOString().split('T')[0]
  * @param date - Fecha a convertir (por defecto hoy)
@@ -123,19 +95,6 @@ export const formatDateTime = (date: Date | string | null | undefined, format: '
  */
 export const toDateString = (date: Date = new Date()): string => {
   return date.toISOString().split('T')[0];
-};
-
-/**
- * Formatea un precio de bono (4 decimales)
- * @example formatBondPrice(1.0325) => "$1.0325"
- */
-export const formatBondPrice = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  const formatted = new Intl.NumberFormat('es-AR', {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4
-  }).format(value);
-  return `$${formatted}`;
 };
 
 /**

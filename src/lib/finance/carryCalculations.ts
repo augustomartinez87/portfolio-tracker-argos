@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { toDateString } from '@/utils/formatters';
+import { toDateString, formatDateAR } from '@/utils/formatters';
 
 /**
  * Tipo para precios VCP
@@ -74,14 +74,6 @@ export interface TotalesOperaciones {
   capitalTotal: number;
   gananciaFCITotal: number;
   costoCaucionTotal: number;
-}
-
-/**
- * Formatea fecha de YYYY-MM-DD a DD/MM/AAAA
- */
-export function formatDateAR(fechaISO: string): string {
-  const [year, month, day] = fechaISO.split('T')[0].split('-');
-  return `${day}/${month}/${year}`;
 }
 
 /**

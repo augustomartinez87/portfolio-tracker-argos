@@ -3,7 +3,7 @@
 
 import { isBonoPesos, isBonoHardDollar } from './bondUtils';
 import { CONSTANTS, API_ENDPOINTS, KNOWN_CEDEARS, STORAGE_KEYS } from './constants';
-import type { HistoricalDataPoint, TickerInfo, CacheEntry } from '@/types';
+import type { HistoricalDataPoint, CacheEntry } from '@/types';
 
 const { API_RATE_LIMIT, API_RATE_WINDOW, PRICE_CACHE_TTL } = CONSTANTS;
 const CACHE_PREFIX = STORAGE_KEYS.PRICE_CACHE_PREFIX;
@@ -14,18 +14,6 @@ const CACHE_PREFIX = STORAGE_KEYS.PRICE_CACHE_PREFIX;
 
 interface RateLimiter {
   requests: number[];
-}
-
-interface BatchResult<T> {
-  ticker: string;
-  data: T;
-  success: boolean;
-  error?: string;
-}
-
-interface BatchHistoricalResult {
-  data: Record<string, HistoricalDataPoint[]>;
-  errors: Record<string, string>;
 }
 
 // ============================================
@@ -44,35 +32,6 @@ function isCedear(ticker: string, panel?: string): boolean {
   const tickerBase = upper.replace('.BA', '');
   return KNOWN_CEDEARS.includes(tickerBase as typeof KNOWN_CEDEARS[number]);
 }
-
-/**
- * Determina el endpoint live correcto para un ticker
- */
-function getEndpointForTicker(ticker: string, assetTag?: string): string {
-  const upper = ticker.toUpperCase();
-
-  if (assetTag) {
-    if (assetTag.includes('CEDEAR')) return '/live/arg_cedears';
-    if (assetTag.includes('BONOS EN PESOS')) return '/live/arg_bonds';
-    if (assetTag.includes('BONO HARD DOLLAR') || assetTag.includes('CORP')) return '/live/arg_corp';
-    if (assetTag.includes('ARGY') || assetTag.includes('ACCIONES')) return '/live/arg_stocks';
-  }
-
-  if (upper.endsWith('.BA')) return '/live/arg_cedears';
-  if (isCedear(upper)) return '/live/arg_cedears';
-  if (upper.includes('MEP')) return '/live/mep';
-  if (upper.includes('CCL')) return '/live/ccl';
-  if (upper.endsWith('D') && (upper.startsWith('AL') || upper.startsWith('GD'))) return '/live/mep';
-  if (/^[A-Z]{2,4}\d{2}[A-Z]?D?$/.test(upper)) return '/live/arg_bonds';
-  if (/^T[A-Z0-9]{2,5}$/.test(upper)) return '/live/arg_bonds';
-  if (upper.startsWith('TTD') || upper.startsWith('TTS')) return '/live/arg_bonds';
-
-  return '/live/arg_stocks';
-}
-
-// Small no-op to appease TS noUnusedLocals when this helper is not used in build env
-const _debugEndpoint = getEndpointForTicker; // eslint-disable-line @typescript-eslint/no-unused-vars
-void _debugEndpoint;
 
 // ============================================
 // CLASE PRINCIPAL
@@ -259,75 +218,6 @@ class Data912Helper {
     }
   }
 
-  /**
-   * Obtiene datos históricos en batch
-   */
-  async getBatchHistorical(
-    tickers: TickerInfo[],
-    fromDate: string
-  ): Promise<BatchHistoricalResult> {
-    const results: Record<string, HistoricalDataPoint[]> = {};
-    const errors: Record<string, string> = {};
-
-    const batchSize = 10;
-
-    for (let i = 0; i < tickers.length; i += batchSize) {
-      const batch = tickers.slice(i, i + batchSize);
-
-      const promises = batch.map(async ({ ticker }): Promise<BatchResult<HistoricalDataPoint[]>> => {
-        try {
-          const data = await this.getHistorical(ticker, fromDate);
-          return { ticker, data, success: true };
-        } catch (error) {
-          return {
-            ticker,
-            data: [],
-            success: false,
-            error: (error as Error).message
-          };
-        }
-      });
-
-      const batchResults = await Promise.all(promises);
-
-      batchResults.forEach(result => {
-        if (result.success) {
-          results[result.ticker] = result.data;
-        } else if (result.error) {
-          errors[result.ticker] = result.error;
-        }
-      });
-
-      // Rate limit delay between batches
-      if (i + batchSize < tickers.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    return { data: results, errors };
-  }
-
-  /**
-   * Obtiene precios en batch (placeholder - necesita implementación)
-   */
-  async getBatchPrices(tickers: TickerInfo[]): Promise<Record<string, number>> {
-    // TODO: Implementar fetching de precios por batch
-    // Por ahora retorna objeto vacío
-    // Silence unused parameter in some builds
-    void tickers;
-    return {};
-  }
-
-  /**
-   * Obtiene retornos diarios en batch (placeholder - necesita implementación)
-   */
-  async getBatchDailyReturns(tickers: TickerInfo[]): Promise<Record<string, number | null>> {
-    // Silence unused parameter in some builds
-    void tickers;
-    // TODO: Implementar fetching de retornos diarios
-    // Por ahora retorna objeto vacío
-    return {};
-  }
 }
 
 // Singleton export

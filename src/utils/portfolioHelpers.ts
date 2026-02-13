@@ -57,29 +57,6 @@ export function calculateAssetDistribution(positions: Position[], currency: 'ARS
 }
 
 /**
- * Formatea valor en pesos argentinos (sin decimales)
- * @deprecated Use formatARS from formatters.ts instead
- */
-export function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-}
-
-/**
- * Formatea porcentaje (1 decimal, sin signo)
- * @deprecated Use formatPercent from formatters.ts for signed percentages
- */
-export function formatPercentage(value: number | null | undefined): string {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value.toFixed(1)}%`;
-}
-
-/**
  * Calcula el costo promedio ponderado de un conjunto de trades
  */
 export function calculateWeightedAvgCost(
