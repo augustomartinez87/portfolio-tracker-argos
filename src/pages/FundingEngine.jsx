@@ -158,17 +158,19 @@ export default function FundingEngine() {
   }, [fciPositions, cauciones]);
 
 
-  // TNA FCI calculada desde últimos VCPs disponibles (no depende del precio de hoy)
+  // TNA FCI calculada con ventana MA-7 (media móvil de 7 datos VCP)
+  // Usar solo 2 puntos genera ruido excesivo por gaps de fines de semana/feriados
   const tnaFCIFromVCP = useMemo(() => {
     if (vcpHistoricos.length < 2) return 0;
+    const windowSize = Math.min(7, vcpHistoricos.length - 1);
+    const primero = vcpHistoricos[vcpHistoricos.length - 1 - windowSize];
     const ultimo = vcpHistoricos[vcpHistoricos.length - 1];
-    const penultimo = vcpHistoricos[vcpHistoricos.length - 2];
-    if (!ultimo.vcp || !penultimo.vcp || penultimo.vcp === 0) return 0;
+    if (!ultimo.vcp || !primero.vcp || primero.vcp === 0) return 0;
     const diasReales = Math.round(
-      (new Date(ultimo.fecha) - new Date(penultimo.fecha)) / (1000 * 60 * 60 * 24)
+      (new Date(ultimo.fecha) - new Date(primero.fecha)) / (1000 * 60 * 60 * 24)
     );
     if (diasReales <= 0) return 0;
-    const ratio = ultimo.vcp / penultimo.vcp;
+    const ratio = ultimo.vcp / primero.vcp;
     return Math.pow(ratio, 365 / diasReales) - 1;
   }, [vcpHistoricos]);
 

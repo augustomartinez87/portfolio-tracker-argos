@@ -234,8 +234,11 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // =========================================================================
     // 10. SPREAD NETO DIARIO
     // =========================================================================
-    // Ganancia FCI por día = saldo FCI * (TNA FCI / 365)
+    // Ganancia FCI total por día (sobre todo el saldo, para P&L global)
     const gananciaFCIDia = saldoFCI.times(tnaFCIDec).dividedBy(365);
+
+    // Ganancia FCI solo sobre capital que fondea cauciones (para carry spread)
+    const gananciaFCICarryDia = capitalProductivo.times(tnaFCIDec).dividedBy(365);
 
     // Costo caución por día (suma de TODAS las cauciones vigentes)
     const costoCaucionDia = caucionesVigentes.reduce((sum, c) => {
@@ -243,10 +246,10 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       return sum.plus(interesDiario);
     }, new Decimal(0));
 
-    // Spread neto diario
-    const spreadNetoDia = gananciaFCIDia.minus(costoCaucionDia);
+    // Spread neto diario del carry (FCI sobre capital productivo - costo caución)
+    const spreadNetoDia = gananciaFCICarryDia.minus(costoCaucionDia);
 
-    // ROE Caución (anualizado sobre capital de caución)
+    // ROE Caución (anualizado sobre capital de caución, usando solo ganancia carry)
     const roeCaucion = totalCaucion.gt(0)
       ? spreadNetoDia.times(365).dividedBy(totalCaucion).times(100)
       : new Decimal(0);

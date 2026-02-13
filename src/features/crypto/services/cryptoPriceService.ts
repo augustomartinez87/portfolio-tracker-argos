@@ -14,6 +14,14 @@ const FALLBACK_TOP_COINS = [
   { id: 'nexo', symbol: 'nexo', name: 'Nexo' }
 ];
 
+// CriptoYa USDT/ARS endpoint
+const CRIPTOYA_USDT_ARS_URL = 'https://criptoya.com/api/usdt/ars';
+const CRIPTOYA_CACHE_KEY = 'criptoya-usdt-ars';
+const CRIPTOYA_CACHE_TTL = 60 * 1000; // 1 minuto
+
+// Exchanges relevantes para promediar el TC USDT/ARS
+const CRIPTOYA_EXCHANGES = ['binancep2p', 'lemoncash', 'buenbit', 'belo', 'fiwind'];
+
 // Cache keys
 const COINS_LIST_CACHE_KEY = 'coingecko-coins-list';
 const COINS_LIST_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
@@ -98,7 +106,86 @@ async function retryWithBackoff<T>(
   }
 }
 
+export interface UsdtArsRate {
+  /** Precio promedio de compra USDT (ask) - lo que pagas para comprar USDT */
+  ask: number;
+  /** Precio promedio de venta USDT (bid) - lo que recibirias vendiendo USDT */
+  bid: number;
+  /** Punto medio (ask+bid)/2 */
+  mid: number;
+  /** Detalle por exchange */
+  exchanges: Record<string, { ask: number; bid: number; time: number }>;
+  /** Timestamp de la consulta */
+  timestamp: number;
+}
+
 export const cryptoPriceService = {
+  /**
+   * Obtener TC USDT/ARS en tiempo real desde CriptoYa.
+   * Promedia bid/ask de los exchanges relevantes (Binance P2P, Lemon, etc.)
+   */
+  async getUsdtArsRate(): Promise<UsdtArsRate | null> {
+    // Check cache
+    const cached = storage.get(CRIPTOYA_CACHE_KEY);
+    if (cached && Date.now() - cached.timestamp < CRIPTOYA_CACHE_TTL) {
+      return cached;
+    }
+
+    try {
+      const res = await fetch(CRIPTOYA_USDT_ARS_URL);
+      if (!res.ok) throw new Error(`CriptoYa HTTP ${res.status}`);
+      const data = await res.json();
+
+      const exchanges: Record<string, { ask: number; bid: number; time: number }> = {};
+      const bids: number[] = [];
+      const asks: number[] = [];
+
+      // Filtrar exchanges relevantes con datos recientes (< 1 hora)
+      const oneHourAgo = Date.now() / 1000 - 3600;
+
+      for (const name of CRIPTOYA_EXCHANGES) {
+        const ex = data[name];
+        if (ex && ex.bid > 0 && ex.ask > 0 && ex.time > oneHourAgo) {
+          exchanges[name] = { ask: ex.ask, bid: ex.bid, time: ex.time };
+          bids.push(ex.bid);
+          asks.push(ex.ask);
+        }
+      }
+
+      // Si no hay exchanges relevantes, usar todos los disponibles
+      if (bids.length === 0) {
+        for (const [name, ex] of Object.entries(data) as [string, any][]) {
+          if (ex && typeof ex.bid === 'number' && ex.bid > 0 && ex.ask > 0 && ex.time > oneHourAgo) {
+            exchanges[name] = { ask: ex.ask, bid: ex.bid, time: ex.time };
+            bids.push(ex.bid);
+            asks.push(ex.ask);
+          }
+        }
+      }
+
+      if (bids.length === 0) return null;
+
+      const avgBid = bids.reduce((a, b) => a + b, 0) / bids.length;
+      const avgAsk = asks.reduce((a, b) => a + b, 0) / asks.length;
+
+      const result: UsdtArsRate = {
+        ask: avgAsk,
+        bid: avgBid,
+        mid: (avgAsk + avgBid) / 2,
+        exchanges,
+        timestamp: Date.now(),
+      };
+
+      storage.set(CRIPTOYA_CACHE_KEY, result);
+      return result;
+    } catch (err) {
+      console.error('Error fetching CriptoYa USDT/ARS:', err);
+      // Fallback a cache viejo
+      if (cached) return cached;
+      return null;
+    }
+  },
+
   // Obtener lista completa de criptos desde CoinGecko
   async getCoinsList(): Promise<CoinInfo[]> {
     // Verificar cache primero
