@@ -405,8 +405,7 @@ export class FinancingService {
       }));
 
       // Calculate weighted TNA properly
-      // TNA weighted by Capital (Standard)
-      // Duration weighted by Capital
+      // TNA weighted by Capital × Days (standard for variable-duration instruments)
       let capitalTotal = new Decimal(0);
       let totalWeightedTna = new Decimal(0);
       let totalWeightedDays = new Decimal(0);
@@ -414,16 +413,16 @@ export class FinancingService {
       for (const c of typedRecords) {
         capitalTotal = capitalTotal.plus(c.capital);
 
-        // Weight TNA by capital
-        totalWeightedTna = totalWeightedTna.plus(c.capital.times(c.tna));
+        // Weight TNA by capital × days
+        totalWeightedTna = totalWeightedTna.plus(c.capital.times(c.tna).times(c.dias));
 
         // Weight Days by capital
         totalWeightedDays = totalWeightedDays.plus(c.capital.times(c.dias));
       }
 
-      const tnaPromedioPonderada = capitalTotal.isZero()
+      const tnaPromedioPonderada = totalWeightedDays.isZero()
         ? new Decimal(0)
-        : totalWeightedTna.div(capitalTotal);
+        : totalWeightedTna.div(totalWeightedDays);
 
       const diasPromedio = capitalTotal.isZero()
         ? 0

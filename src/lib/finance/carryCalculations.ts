@@ -10,6 +10,16 @@ export interface VcpPrice {
 }
 
 /**
+ * Datos mínimos de un lote FCI para reconstruir saldo histórico
+ */
+export interface FciLotForBalance {
+  cuotapartes: number;
+  fecha_suscripcion: string;
+  activo: boolean;
+  vcp_entrada: number;
+}
+
+/**
  * Tipo para cauciones (formato desde Supabase)
  */
 export interface CaucionData {
@@ -147,6 +157,40 @@ export function calcularDiasEntre(fechaInicio: string, fechaFin: string): number
 }
 
 /**
+ * Reconstruye el saldo FCI aproximado en una fecha dada.
+ *
+ * Filtra lotes activos cuya suscripción es <= fecha, y valúa cada uno
+ * usando el VCP disponible en esa fecha (buscarVcpAnteriorOIgual).
+ *
+ * Limitación: no conocemos la fecha de rescate de lotes ya rescatados,
+ * así que usamos solo lotes activos actuales. Esto es mejor que usar
+ * el saldo actual porque al menos excluye lotes suscriptos después de
+ * la fecha objetivo.
+ */
+export function calcularSaldoFCIEnFecha(
+  lots: FciLotForBalance[],
+  vcpPrices: VcpPrice[],
+  fecha: string
+): InstanceType<typeof Decimal> {
+  if (!lots.length || !vcpPrices.length) return new Decimal(0);
+
+  const vcpEnFecha = buscarVcpAnteriorOIgual(vcpPrices, fecha, true);
+  if (!vcpEnFecha || !vcpEnFecha.vcp) return new Decimal(0);
+
+  const vcpDec = new Decimal(vcpEnFecha.vcp);
+  let saldo = new Decimal(0);
+
+  for (const lot of lots) {
+    if (!lot.activo) continue;
+    const fechaSusc = String(lot.fecha_suscripcion).split('T')[0];
+    if (fechaSusc > fecha) continue; // suscripto después de la fecha objetivo
+    saldo = saldo.plus(new Decimal(lot.cuotapartes).mul(vcpDec));
+  }
+
+  return saldo;
+}
+
+/**
  * Calcula la ganancia FCI real entre dos VCPs
  */
 export function calcularGananciaFCIReal(
@@ -188,7 +232,7 @@ export function calcularSpreadPorCaucion(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCITotal: number
+  saldoFCIOrLots: number | FciLotForBalance[]
 ): SpreadCaucionResult | null {
   if (!vcpPrices || vcpPrices.length === 0) return null;
 
@@ -197,15 +241,17 @@ export function calcularSpreadPorCaucion(
 
   if (capital.isZero()) return null;
 
-  // Para calcular ganancia FCI, usamos el saldo FCI real disponible.
+  const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
+
+  // Reconstruir saldo FCI en la fecha de inicio de la caución.
+  // Si se pasan lotes, se calcula históricamente; si se pasa un número, es el saldo actual (legacy).
+  const saldoFCI = Array.isArray(saldoFCIOrLots)
+    ? calcularSaldoFCIEnFecha(saldoFCIOrLots, vcpPrices, fechaInicio)
+    : new Decimal(saldoFCIOrLots);
+
   // Usamos min(capital, saldoFCI) porque el FCI actúa como fondeador de la caución:
   // solo se calcula la rentabilidad sobre el capital efectivamente afectado a la operación.
-  // Esto evita sobreestimar ganancias atribuyendo rentabilidad sobre patrimonio del FCI
-  // que no participa de la caución.
-  const saldoFCI = new Decimal(saldoFCITotal);
   const baseCalculoGanancia = Decimal.min(capital, saldoFCI);
-
-  const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
   const fechaFin = String(caucion.fecha_fin).split('T')[0];
   const fechaHoy = toDateString(hoy);
 
@@ -370,12 +416,12 @@ export function calcularSpreadsTodasCauciones(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCITotal: number
+  saldoFCIOrLots: number | FciLotForBalance[]
 ): SpreadCaucionResult[] {
   const resultados: SpreadCaucionResult[] = [];
 
   for (const caucion of cauciones) {
-    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCITotal);
+    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCIOrLots);
     if (resultado) {
       resultados.push(resultado);
     }

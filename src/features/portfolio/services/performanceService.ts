@@ -231,6 +231,55 @@ export function calculateYTDWithDiagnostics(
 }
 
 /**
+ * Calculate Modified Dietz Return
+ *
+ * Better than simple TWR when historical valuations are unavailable.
+ * Weights each cash flow by the fraction of the period it was invested.
+ *
+ * R = (V1 - V0 - CF) / (V0 + Σ(CF_i × W_i))
+ * where W_i = (T - t_i) / T is the time weight of each flow.
+ *
+ * @param startValue Portfolio value at start (V0) - estimated from cumulative invested before period
+ * @param endValue Portfolio value at end (V1) - current valuation
+ * @param cashFlows Cash flows during the period (negative = buy, positive = sell)
+ * @param totalDays Total days in the period (T)
+ * @returns Modified Dietz return as decimal (e.g., 0.15 for 15%), or null
+ */
+export function calculateModifiedDietz(
+  startValue: number,
+  endValue: number,
+  cashFlows: CashFlow[],
+  totalDays: number
+): number | null {
+  if (totalDays <= 0) return null;
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - totalDays);
+  const startTime = startDate.getTime();
+  const msPerDay = 1000 * 60 * 60 * 24;
+
+  // Sum of cash flows
+  let totalCF = 0;
+  // Sum of time-weighted cash flows
+  let weightedCF = 0;
+
+  for (const cf of cashFlows) {
+    const daysSinceStart = (cf.date.getTime() - startTime) / msPerDay;
+    const weight = Math.max(0, Math.min(1, (totalDays - daysSinceStart) / totalDays));
+    // For Modified Dietz, we use the absolute flow direction:
+    // buys (negative amounts) increase the denominator, sells (positive) decrease it
+    totalCF += cf.amount;
+    weightedCF += cf.amount * weight;
+  }
+
+  const denominator = startValue + weightedCF;
+  if (denominator <= 0) return null;
+
+  const gain = endValue - startValue - totalCF;
+  return gain / denominator;
+}
+
+/**
  * Calculate TWR (Time Weighted Return)
  * Chains sub-period returns to eliminate effect of cash flows
  *

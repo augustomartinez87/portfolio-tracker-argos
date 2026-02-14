@@ -86,6 +86,21 @@ export interface CryptoFundingResult {
 }
 
 /**
+ * Calcula interés compuesto diario (como cobra Nexo).
+ * Formula: outstanding × ((1 + apr/365)^dias - 1)
+ */
+export function calcularInteresCompuesto(
+  outstanding: InstanceType<typeof Decimal>,
+  apr: InstanceType<typeof Decimal>,
+  dias: number
+): InstanceType<typeof Decimal> {
+  if (outstanding.isZero() || apr.isZero() || dias <= 0) return new Decimal(0);
+  const dailyRate = apr.div(365);
+  const factor = dailyRate.plus(1).pow(dias);
+  return outstanding.mul(factor.minus(1));
+}
+
+/**
  * Motor unificado de Funding Crypto.
  *
  * Combina costos de prestamos Nexo con rendimientos de FCI
@@ -213,8 +228,9 @@ export function useCryptoFundingEngine(params: CryptoFundingParams): CryptoFundi
       ? Math.max(1, Math.round((hoy.getTime() - primeraConversionDate.getTime()) / (1000 * 60 * 60 * 24)))
       : 0;
 
-    // Costo acumulado Nexo estimado = costo_diario * dias
-    const costoAcumuladoARS = costoDiarioARS.mul(diasEnCiclo);
+    // Costo acumulado Nexo con interés compuesto diario
+    const costoAcumuladoUSDT = calcularInteresCompuesto(totalOutstanding, aprPromedio, diasEnCiclo);
+    const costoAcumuladoARS = costoAcumuladoUSDT.mul(tcPromedio);
 
     // P&L nominal: FCI ganancia - intereses Nexo (ignora TC)
     const pnlCicloNominal = fciPnl.minus(costoAcumuladoARS);

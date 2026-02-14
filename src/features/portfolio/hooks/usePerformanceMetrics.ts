@@ -4,8 +4,10 @@ import {
   calculateXIRRWithDiagnostics,
   calculateYTDWithDiagnostics,
   calculateTWR,
+  calculateModifiedDietz,
   tradesToCashFlows,
   calculateNetFlows,
+  annualizeReturn,
   MetricResult
 } from '../services/performanceService';
 import type { PortfolioTotals } from '@/types';
@@ -116,15 +118,13 @@ export function usePerformanceMetrics(
     return calculateYTDWithDiagnostics(estimatedStartValue, currentValuation, ytdNetFlows, false);
   }, [trades, currentValuation, currentInvested, enabled]);
 
-  // TWR: Time Weighted Return
-  // Simplified calculation for now - will be enhanced with historical data
+  // TWR: Time Weighted Return using Modified Dietz method
+  // Weights cash flows by the fraction of the period they were invested,
+  // which is significantly better than the simple (V1-V0)/V0 approach.
   const twrResult = useMemo<MetricResult<number>>(() => {
     if (!enabled || trades.length === 0 || !currentValuation || currentValuation <= 0) {
       return { value: null, warning: 'Sin datos suficientes' };
     }
-
-    // For now, use a simplified TWR calculation
-    // Full implementation with sub-periods requires historical valuations
 
     // Get date range
     const tradeDates = trades.map(t =>
@@ -133,29 +133,43 @@ export function usePerformanceMetrics(
     const firstTradeDate = new Date(Math.min(...tradeDates.map(d => d.getTime())));
     const now = new Date();
 
-    // Calculate days held
     const daysHeld = Math.ceil((now.getTime() - firstTradeDate.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysHeld < 1) {
       return { value: null, warning: 'Período muy corto para calcular TWR' };
     }
 
-    // Simple TWR approximation: assume all investments at start
-    // This is less accurate than proper sub-period calculation but works as MVP
-    const totalReturn = (currentValuation - currentInvested) / currentInvested;
+    // Build cash flows for Modified Dietz (excluding the final valuation)
+    const cashFlows = trades.map(trade => {
+      const date = trade.trade_date instanceof Date
+        ? trade.trade_date
+        : new Date(trade.trade_date);
+      const amount = trade.total_amount || (trade.quantity * trade.price);
+      return {
+        date,
+        amount: trade.trade_type === 'buy' ? -Math.abs(amount) : Math.abs(amount)
+      };
+    });
+
+    // Start value = 0 (portfolio didn't exist before first trade)
+    const modDietzReturn = calculateModifiedDietz(0, currentValuation, cashFlows, daysHeld);
+
+    if (modDietzReturn === null) {
+      return { value: null, warning: 'No se pudo calcular Modified Dietz' };
+    }
 
     // For short periods, don't annualize
     if (daysHeld < 365) {
       return {
-        value: totalReturn * 100,
+        value: modDietzReturn * 100,
         warning: `Retorno de ${daysHeld} días (no anualizado)`
       };
     }
 
     // Annualize for periods >= 1 year
-    const annualizedReturn = (Math.pow(1 + totalReturn, 365 / daysHeld) - 1) * 100;
+    const annualized = annualizeReturn(modDietzReturn, daysHeld);
 
-    return { value: annualizedReturn };
+    return { value: annualized };
   }, [trades, currentValuation, currentInvested, enabled]);
 
   return {

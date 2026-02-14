@@ -4,6 +4,7 @@ import type {
   FundingCycleWithChildren,
   FundingCycleMetrics,
 } from '../types';
+import { calcularInteresCompuesto } from './useCryptoFundingEngine';
 
 interface LotValuation {
   lotId: string;
@@ -95,7 +96,9 @@ export function useFundingCycleEngine(params: FundingCycleEngineParams): Funding
       const exposicionCambiaria = totalConvUSDT.mul(tc.minus(tcPromedio));
 
       // ---- P&L ----
-      const costoAcumuladoARS = costoDiarioARS.mul(diasEnCiclo);
+      // Costo acumulado con interés compuesto diario (como cobra Nexo)
+      const costoAcumuladoUSDT = calcularInteresCompuesto(loanOutstanding, loanApr, diasEnCiclo);
+      const costoAcumuladoARS = costoAcumuladoUSDT.mul(tcPromedio);
       const pnlNominal = fciPnl.minus(costoAcumuladoARS);
       const pnlReal = pnlNominal.minus(exposicionCambiaria);
 

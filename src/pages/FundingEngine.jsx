@@ -187,6 +187,7 @@ export default function FundingEngine() {
     caucionCutoffMode,
     vcpPrices: vcpHistoricos,
     dataStartDate,
+    fciLots,
   });
 
   const handleManualRefresh = async () => {

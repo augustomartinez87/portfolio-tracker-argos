@@ -21,7 +21,7 @@ import {
 export { calcularSpreadPorCaucion } from '@/lib/finance/carryCalculations';
 export { calcularTotalesOperaciones, calcularSpreadsTodasCauciones };
 
-export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [], dataStartDate = '' }) {
+export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [], dataStartDate = '', fciLots = [] }) {
   return useMemo(() => {
     if (!cauciones?.length || !fciEngine?.totals) {
       return null;
@@ -260,8 +260,11 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     // Cada caución se evalúa contra el rendimiento real del FCI en su rango de fechas.
     // Cauciones vencidas: VCP real inicio→fin.
     // Cauciones activas: tramo real (inicio→hoy) + proyección con TNA MA-7d (hoy→fin).
+    // Usar lotes FCI para reconstruir saldo histórico si disponibles, sino fallback al saldo actual
+    const saldoOrLots = fciLots.length > 0 ? fciLots : saldoFCI.toNumber();
+
     const spreadsPorCaucion = caucionesFiltered.map(c => {
-      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy, saldoFCI.toNumber());
+      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy, saldoOrLots);
       // Convertir del formato nuevo al formato legacy esperado por el resto del hook
       return resultado ? {
         'spread_$': resultado.spreadPesos,
@@ -405,7 +408,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       ultimaActualizacion: new Date().toISOString(),
       metadata,
     };
-  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices, dataStartDate]);
+  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices, dataStartDate, fciLots]);
 }
 
 export default useCarryMetrics;
