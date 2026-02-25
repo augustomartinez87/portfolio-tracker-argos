@@ -49,12 +49,15 @@ export const calculateTotals = (positions: Position[]): PortfolioTotals => {
 
     const result = valuationTotal.minus(invested);
     const resultPct = invested.gt(0) ? result.dividedBy(invested).times(100) : new Decimal(0);
-    const dailyResultPct = invested.gt(0) ? dailyResultTotal.dividedBy(invested).times(100) : new Decimal(0);
+    // Daily % uses valuationTotal as base (consistent with per-position calculation:
+    // dailyResult = pctChange/100 * valuation, so pctChange = dailyResult/valuation*100).
+    // FCI positions are tracked in a separate module and never included in this engine.
+    const dailyResultPct = valuationTotal.gt(0) ? dailyResultTotal.dividedBy(valuationTotal).times(100) : new Decimal(0);
 
     const resultUSD = valuationUSDTotal.minus(investedUSD);
     const resultPctUSD = investedUSD.gt(0) ? resultUSD.dividedBy(investedUSD).times(100) : new Decimal(0);
     const dailyResultUSD = dailyResultUSDTotal;
-    const dailyResultPctUSD = investedUSD.gt(0) ? dailyResultUSDTotal.dividedBy(investedUSD).times(100) : new Decimal(0);
+    const dailyResultPctUSD = valuationUSDTotal.gt(0) ? dailyResultUSDTotal.dividedBy(valuationUSDTotal).times(100) : new Decimal(0);
 
     return {
         invested: invested.toNumber(),

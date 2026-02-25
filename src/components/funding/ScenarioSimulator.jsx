@@ -218,6 +218,16 @@ export function ScenarioSimulator({
     setVisualCaucion(tnaCaucionActual * 100);
   }, [tnaFCIActual, tnaCaucionActual]);
 
+  // Dynamic slider max — ensures current value is always within range
+  const fciSliderMax = Math.max(60, Math.ceil((tnaFCIActual * 100) / 10) * 10 + 10);
+  const caucionSliderMax = Math.max(50, Math.ceil((tnaCaucionActual * 100) / 10) * 10 + 10);
+
+  // Coverage: FCI capital vs Caución capital
+  const coveragePct = saldoFCI > 0 && totalCaucion > 0
+    ? (saldoFCI / totalCaucion) * 100
+    : null;
+  const hasDeficitCobertura = coveragePct !== null && coveragePct < 100;
+
   // Determinar estado visual
   const isSpreadPositive = spreadSimulado > 0;
   const isSpreadImproved = spreadSimulado > (bufferTasaActual / 100);
@@ -247,12 +257,14 @@ export function ScenarioSimulator({
           value={tnaFCISimulado}
           visualValue={visualFCI}
           onChange={handleFCIChange}
+          max={fciSliderMax}
         />
         <SliderControl
           label="TNA Caución"
           value={tnaCaucionSimulado}
           visualValue={visualCaucion}
           onChange={handleCaucionChange}
+          max={caucionSliderMax}
         />
       </div>
 
@@ -262,12 +274,23 @@ export function ScenarioSimulator({
           Resultado de la Simulación
         </h4>
 
-        {/* Spread resultante */}
+        {/* Spread TNA */}
         <div className="text-center mb-6">
-          <p className="text-sm text-text-secondary mb-1">Spread resultante</p>
+          <p className="text-sm text-text-secondary mb-1">
+            Spread TNA <span className="text-text-tertiary">(FCI vs Caución)</span>
+          </p>
           <p className={`text-3xl font-bold font-mono ${isSpreadPositive ? 'text-success' : 'text-danger'}`}>
             {formatPercent(spreadSimulado * 100)}
           </p>
+          {hasDeficitCobertura && (
+            <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-warning">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>
+                Carry efectivo menor: cobertura {coveragePct.toFixed(1)}%
+                (FCI &lt; Caución por {formatARS(totalCaucion - saldoFCI)})
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Cards de comparación */}
