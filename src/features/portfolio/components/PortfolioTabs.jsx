@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, PieChart, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, FileText, PieChart, HelpCircle, Target } from 'lucide-react';
 
 export const PortfolioTabs = ({ activeTab, currentPortfolio }) => {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export const PortfolioTabs = ({ activeTab, currentPortfolio }) => {
     { id: 'resumen', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'trades', label: 'Transacciones', icon: FileText },
     { id: 'distribution', label: 'Gráficos', icon: PieChart },
+    { id: 'estrategia', label: 'Estrategia', icon: Target },
     { id: 'help', label: 'Ayuda', icon: HelpCircle },
   ];
 

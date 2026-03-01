@@ -14,6 +14,7 @@ import { usePerformanceMetrics } from '@/features/portfolio/hooks/usePerformance
 import { PortfolioTabs } from '@/features/portfolio/components/PortfolioTabs';
 import { PortfolioCharts } from '@/features/portfolio/components/PortfolioCharts';
 import { TradesTabContent } from '@/features/portfolio/components/TradesTabContent';
+import { StrategyTab } from '@/features/portfolio/components/strategy/StrategyTab';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePortfolio } from '@/features/portfolio/contexts/PortfolioContext';
 import MobileNav from '@/components/common/MobileNav';
@@ -390,6 +391,10 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
+                  )}
+
+                  {activeTab === 'estrategia' && (
+                    <StrategyTab positions={positions} totals={allTotals} />
                   )}
 
                   {activeTab === 'distribution' && (
