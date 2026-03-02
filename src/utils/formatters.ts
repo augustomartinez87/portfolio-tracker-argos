@@ -76,6 +76,14 @@ export const formatNumber = (value: number | null | undefined, decimals = 0): st
 export const formatDateAR = (date: Date | string | null | undefined): string => {
   if (!date) return '';
 
+  // Fast path: if it's a YYYY-MM-DD string, parse directly to avoid UTC/timezone issues.
+  // new Date("2026-02-27") is interpreted as UTC midnight, which in UTC-3 becomes the
+  // previous day. Parsing components directly avoids this entirely.
+  if (typeof date === 'string') {
+    const isoMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  }
+
   const d = typeof date === 'string' ? new Date(date) : date;
   if (Number.isNaN(d.getTime())) return '';
 
@@ -94,7 +102,12 @@ export const formatDateAR = (date: Date | string | null | undefined): string => 
  * @example toDateString(new Date('2024-01-15')) => '2024-01-15'
  */
 export const toDateString = (date: Date = new Date()): string => {
-  return date.toISOString().split('T')[0];
+  // toISOString() returns UTC, so after 21:00 AR time it would return the next day.
+  // Use local date methods instead.
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 /**

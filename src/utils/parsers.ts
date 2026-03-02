@@ -103,7 +103,11 @@ export const parseDateDMY = (str: string | null | undefined): string | null => {
 export const parseISODate = (str: string | null | undefined): Date | null => {
   if (!str) return null;
 
-  const date = new Date(str);
+  // Parse components manually to avoid UTC midnight off-by-1 in local time
+  const parts = str.split('T')[0].split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [year, month, day] = parts;
+  const date = new Date(year, month - 1, day);
   if (isNaN(date.getTime())) return null;
 
   return date;

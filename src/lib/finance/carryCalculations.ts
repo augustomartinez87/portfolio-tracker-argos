@@ -150,8 +150,9 @@ export function buscarVcpAnteriorOIgual(
  * Calcula los días entre dos fechas
  */
 export function calcularDiasEntre(fechaInicio: string, fechaFin: string): number {
-  const inicio = new Date(fechaInicio);
-  const fin = new Date(fechaFin);
+  // Use noon to avoid any DST edge cases (Argentina has no DST but this is defensive)
+  const inicio = new Date(fechaInicio + 'T12:00:00');
+  const fin = new Date(fechaFin + 'T12:00:00');
   const diffTime = fin.getTime() - inicio.getTime();
   return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
@@ -330,7 +331,7 @@ export function calcularSpreadPorCaucion(
 
     // b) Tramo proyectado: hoy → fecha_fin
     const diasRestantes = Math.max(0, Math.round(
-      (new Date(fechaFin).getTime() - new Date(fechaHoy).getTime()) / (1000 * 60 * 60 * 24)
+      (new Date(fechaFin + 'T12:00:00').getTime() - new Date(fechaHoy + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)
     ));
 
     // Usar baseCalculoGanancia para la proyección también
@@ -427,8 +428,6 @@ export function calcularSpreadsTodasCauciones(
     }
   }
 
-  // Ordenar por fecha de inicio descendente (más reciente primero)
-  return resultados.sort((a, b) =>
-    new Date(b.fechaInicioRaw).getTime() - new Date(a.fechaInicioRaw).getTime()
-  );
+  // Ordenar por fecha de inicio descendente — string comparison es suficiente para YYYY-MM-DD
+  return resultados.sort((a, b) => b.fechaInicioRaw.localeCompare(a.fechaInicioRaw));
 }

@@ -88,7 +88,7 @@ export function ReinvestmentTracker({ cauciones = [], dataStartDate }) {
       const hayVencimientoCercano = reales.some(prev => {
         if (prev === c) return false;
         const diffDias = Math.abs(
-          (new Date(c.inicio) - new Date(prev.fin)) / (1000 * 60 * 60 * 24)
+          (new Date(c.inicio + 'T12:00:00') - new Date(prev.fin + 'T12:00:00')) / (1000 * 60 * 60 * 24)
         );
         return diffDias <= 2 && prev.fin <= c.inicio;
       });

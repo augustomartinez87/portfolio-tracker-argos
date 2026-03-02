@@ -27,8 +27,9 @@ const CaucionModal = ({ isOpen, onClose, onSubmit, loading }) => {
             return null;
         }
 
-        const startDate = new Date(fechaInicio);
-        const endDate = new Date(fechaFin);
+        // Use noon to avoid UTC midnight off-by-1 issues
+        const startDate = new Date(fechaInicio + 'T12:00:00');
+        const endDate = new Date(fechaFin + 'T12:00:00');
         const diffMs = endDate.getTime() - startDate.getTime();
         const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 

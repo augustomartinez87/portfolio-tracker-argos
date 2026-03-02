@@ -48,8 +48,9 @@ export function OperationsTab({
       const fechaFinRaw = String(caucion.fecha_fin || '').split('T')[0];
       const esVencida = fechaFinRaw && fechaFinRaw < hoyISO;
       const esDatoReal = fechaInicioRaw > dataStartDate;
+      // Use noon to avoid UTC midnight off-by-1 when comparing with local Date
       const diasRestantes = fechaFinRaw
-        ? Math.max(0, Math.round((new Date(fechaFinRaw).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(0, Math.round((new Date(fechaFinRaw + 'T12:00:00').getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
       const capital = Number(caucion.capital || 0);

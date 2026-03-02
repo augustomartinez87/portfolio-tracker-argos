@@ -56,7 +56,7 @@ export function EquityCurve({ fciLots = [], cauciones = [], vcpHistoricos = {}, 
     const caucionesProcessed = (cauciones || []).map(c => {
       const inicio = String(c.fecha_inicio || '').split('T')[0];
       const fin = String(c.fecha_fin || '').split('T')[0];
-      const dias = Number(c.dias || 0) || Math.max(1, Math.round((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60 * 24)));
+      const dias = Number(c.dias || 0) || Math.max(1, Math.round((new Date(fin + 'T12:00:00') - new Date(inicio + 'T12:00:00')) / (1000 * 60 * 60 * 24)));
       const interes = Number(c.interes || 0);
       const interesDiario = dias > 0 ? interes / dias : 0;
       return { inicio, fin, interesDiario, interes };
@@ -90,7 +90,7 @@ export function EquityCurve({ fciLots = [], cauciones = [], vcpHistoricos = {}, 
           interesAcumulado += c.interes;
         } else {
           const diasTranscurridos = Math.max(0, Math.round(
-            (new Date(fecha) - new Date(c.inicio)) / (1000 * 60 * 60 * 24)
+            (new Date(fecha + 'T12:00:00') - new Date(c.inicio + 'T12:00:00')) / (1000 * 60 * 60 * 24)
           ));
           interesAcumulado += c.interesDiario * diasTranscurridos;
         }

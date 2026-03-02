@@ -94,9 +94,10 @@ function parseDateSafe(dateStr: string): Date | null {
   // Remove leading single quote (plain text indicator in Sheets) and trim
   const s = dateStr.trim().replace(/^'/, '');
 
-  // Try ISO YYYY-MM-DD
+  // Try ISO YYYY-MM-DD — add T12:00:00 to avoid UTC midnight being interpreted as the
+  // previous day in local time (UTC-3 Argentina)
   if (/\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
-    const d = new Date(s);
+    const d = new Date(s + 'T12:00:00');
     return isNaN(d.getTime()) ? null : d;
   }
 
