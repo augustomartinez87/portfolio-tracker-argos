@@ -25,6 +25,7 @@ const buildIdentificador = (caucion) => {
 export function OperationsTab({
   cauciones,
   fciLots = [],
+  rescates = [],
   fciValuation,
   fciTotalPnl = 0,
   fciDailyPnl = 0,
@@ -61,7 +62,8 @@ export function OperationsTab({
         fciLots,
         vcpHistoricos,
         fechaInicioRaw,
-        fechaFinPeriodo
+        fechaFinPeriodo,
+        rescates
       );
 
       const gananciaPct = capital > 0 ? gananciaFCIAsignada / capital : 0;
@@ -86,7 +88,7 @@ export function OperationsTab({
         diasRestantes,
       };
     });
-  }, [cauciones, hoy, fciLots, vcpHistoricos, dataStartDate]);
+  }, [cauciones, hoy, fciLots, rescates, vcpHistoricos, dataStartDate]);
 
   // Bug 1 Fix: Totales solo de cauciones VIGENTES
   const totals = useMemo(() => {

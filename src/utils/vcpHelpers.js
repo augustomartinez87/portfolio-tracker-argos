@@ -41,14 +41,18 @@ export const dateRange = (startStr, endStr) => {
 };
 
 /**
- * Calcula PnL de lotes FCI durante un período específico
- * @param {Array} fciLots - Lotes activos
+ * Calcula PnL de lotes FCI durante un período específico.
+ * Reconstruye las cuotapartes históricas sumando las consumidas por rescates
+ * ocurridos DESPUÉS de fechaInicio (ya que lot.cuotapartes tiene todos los rescates descontados).
+ *
+ * @param {Array} fciLots - Todos los lotes (activos e inactivos)
  * @param {Object} vcpHistoricos - Mapa {fciId: {fecha: vcp}}
  * @param {string} fechaInicio - YYYY-MM-DD
  * @param {string} fechaFin - YYYY-MM-DD
+ * @param {Array} rescates - Registros de fci_rescates con mutations [{lot_id, cp_consumidas}]
  * @returns {number}
  */
-export const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin) => {
+export const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fechaFin, rescates = []) => {
   let totalPnl = 0;
 
   for (const lot of fciLots) {
@@ -56,6 +60,20 @@ export const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fecha
     const vcpMap = vcpHistoricos[fciId];
 
     if (!vcpMap) continue;
+
+    // Reconstruir CP históricas: sumar las CP consumidas por rescates que ocurrieron
+    // DESPUÉS de fechaInicio (esos rescates aún no habían sucedido en la fecha objetivo)
+    const cpRestored = rescates
+      .filter(r => {
+        const fechaR = String(r.fecha_rescate).split('T')[0];
+        return fechaR > fechaInicio;
+      })
+      .flatMap(r => r.mutations || [])
+      .filter(m => m.lot_id === lot.id)
+      .reduce((sum, m) => sum + Number(m.cp_consumidas || 0), 0);
+
+    const cpAtDate = Number(lot.cuotapartes || 0) + cpRestored;
+    if (cpAtDate <= 0) continue;
 
     const startDate = lot.fecha_suscripcion > fechaInicio ? lot.fecha_suscripcion : fechaInicio;
 
@@ -65,8 +83,8 @@ export const calculatePnlForPeriod = (fciLots, vcpHistoricos, fechaInicio, fecha
 
     const vcpFin = findVcp(vcpMap, fechaFin);
 
-    if (vcpInicio && vcpFin && lot.cuotapartes) {
-      const pnl = lot.cuotapartes * (vcpFin - vcpInicio);
+    if (vcpInicio && vcpFin) {
+      const pnl = cpAtDate * (vcpFin - vcpInicio);
       totalPnl += pnl;
     }
   }

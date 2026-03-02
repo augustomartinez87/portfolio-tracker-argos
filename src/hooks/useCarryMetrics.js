@@ -21,7 +21,7 @@ import {
 export { calcularSpreadPorCaucion } from '@/lib/finance/carryCalculations';
 export { calcularTotalesOperaciones, calcularSpreadsTodasCauciones };
 
-export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [], dataStartDate = '', fciLots = [] }) {
+export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMode = 'auto', vcpPrices = [], dataStartDate = '', fciLots = [], rescates = [] }) {
   return useMemo(() => {
     if (!cauciones?.length || !fciEngine?.totals) {
       return null;
@@ -264,7 +264,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
     const saldoOrLots = fciLots.length > 0 ? fciLots : saldoFCI.toNumber();
 
     const spreadsPorCaucion = caucionesFiltered.map(c => {
-      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy, saldoOrLots);
+      const resultado = calcularSpreadLib(c, vcpPrices, tnaFCIDec.toNumber(), hoy, saldoOrLots, rescates);
       // Convertir del formato nuevo al formato legacy esperado por el resto del hook
       return resultado ? {
         'spread_$': resultado.spreadPesos,
@@ -408,7 +408,7 @@ export function useCarryMetrics({ cauciones, fciEngine, tnaFCI, caucionCutoffMod
       ultimaActualizacion: new Date().toISOString(),
       metadata,
     };
-  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices, dataStartDate, fciLots]);
+  }, [cauciones, fciEngine, tnaFCI, caucionCutoffMode, vcpPrices, dataStartDate, fciLots, rescates]);
 }
 
 export default useCarryMetrics;

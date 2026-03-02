@@ -146,7 +146,7 @@ export const PortfolioProvider = ({ children }) => {
   // porque useFciLotEngine tiene portfolioId como dependencia del useEffect interno.
 
   // Motor de FCI por lotes — reemplaza la lógica duplicada de posiciones/totales
-  const fciLotEngine = useFciLotEngine(currentPortfolio?.id, mepRate, mepHistory)
+  const fciLotEngine = useFciLotEngine(currentPortfolio?.id, mepRate, mepHistory, user?.id)
 
   useEffect(() => {
     // Esperar a que el sistema esté totalmente READY (Auth + Profile)

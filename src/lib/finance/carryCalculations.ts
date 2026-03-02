@@ -13,10 +13,19 @@ export interface VcpPrice {
  * Datos mínimos de un lote FCI para reconstruir saldo histórico
  */
 export interface FciLotForBalance {
+  id: string;
   cuotapartes: number;
   fecha_suscripcion: string;
   activo: boolean;
   vcp_entrada: number;
+}
+
+/**
+ * Registro de rescate FCI con mutations por lote
+ */
+export interface RescateRecord {
+  fecha_rescate: string;
+  mutations: { lot_id: string; cp_consumidas: number }[];
 }
 
 /**
@@ -158,20 +167,19 @@ export function calcularDiasEntre(fechaInicio: string, fechaFin: string): number
 }
 
 /**
- * Reconstruye el saldo FCI aproximado en una fecha dada.
+ * Reconstruye el saldo FCI en una fecha dada con soporte de rescates históricos.
  *
- * Filtra lotes activos cuya suscripción es <= fecha, y valúa cada uno
- * usando el VCP disponible en esa fecha (buscarVcpAnteriorOIgual).
+ * Para cada lote (activo o inactivo), calcula las cuotapartes que tenía en `fecha`
+ * sumando las CP consumidas por rescates ocurridos DESPUÉS de `fecha`.
+ * Esto permite usar todos los lotes (incluidos los agotados) para reconstrucción histórica.
  *
- * Limitación: no conocemos la fecha de rescate de lotes ya rescatados,
- * así que usamos solo lotes activos actuales. Esto es mejor que usar
- * el saldo actual porque al menos excluye lotes suscriptos después de
- * la fecha objetivo.
+ * @param rescates - Registros de fci_rescates con mutations. Si se omite, comportamiento legacy.
  */
 export function calcularSaldoFCIEnFecha(
   lots: FciLotForBalance[],
   vcpPrices: VcpPrice[],
-  fecha: string
+  fecha: string,
+  rescates: RescateRecord[] = []
 ): InstanceType<typeof Decimal> {
   if (!lots.length || !vcpPrices.length) return new Decimal(0);
 
@@ -182,10 +190,21 @@ export function calcularSaldoFCIEnFecha(
   let saldo = new Decimal(0);
 
   for (const lot of lots) {
-    if (!lot.activo) continue;
     const fechaSusc = String(lot.fecha_suscripcion).split('T')[0];
     if (fechaSusc > fecha) continue; // suscripto después de la fecha objetivo
-    saldo = saldo.plus(new Decimal(lot.cuotapartes).mul(vcpDec));
+
+    // Reconstruir CP históricas: sumar las CP consumidas por rescates que ocurrieron
+    // DESPUÉS de la fecha objetivo (aún no habían sucedido en esa fecha)
+    const cpRestored = rescates
+      .filter(r => String(r.fecha_rescate).split('T')[0] > fecha)
+      .flatMap(r => r.mutations || [])
+      .filter(m => m.lot_id === lot.id)
+      .reduce((sum, m) => sum + Number(m.cp_consumidas || 0), 0);
+
+    const cpAtDate = new Decimal(lot.cuotapartes || 0).plus(cpRestored);
+    if (cpAtDate.lte(0)) continue;
+
+    saldo = saldo.plus(cpAtDate.mul(vcpDec));
   }
 
   return saldo;
@@ -233,7 +252,8 @@ export function calcularSpreadPorCaucion(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCIOrLots: number | FciLotForBalance[]
+  saldoFCIOrLots: number | FciLotForBalance[],
+  rescates: RescateRecord[] = []
 ): SpreadCaucionResult | null {
   if (!vcpPrices || vcpPrices.length === 0) return null;
 
@@ -245,9 +265,9 @@ export function calcularSpreadPorCaucion(
   const fechaInicio = String(caucion.fecha_inicio).split('T')[0];
 
   // Reconstruir saldo FCI en la fecha de inicio de la caución.
-  // Si se pasan lotes, se calcula históricamente; si se pasa un número, es el saldo actual (legacy).
+  // Si se pasan lotes, se calcula históricamente con rescates; si se pasa un número, es el saldo actual (legacy).
   const saldoFCI = Array.isArray(saldoFCIOrLots)
-    ? calcularSaldoFCIEnFecha(saldoFCIOrLots, vcpPrices, fechaInicio)
+    ? calcularSaldoFCIEnFecha(saldoFCIOrLots, vcpPrices, fechaInicio, rescates)
     : new Decimal(saldoFCIOrLots);
 
   // Usamos min(capital, saldoFCI) porque el FCI actúa como fondeador de la caución:
@@ -417,12 +437,13 @@ export function calcularSpreadsTodasCauciones(
   vcpPrices: VcpPrice[],
   tnaMA7: number,
   hoy: Date,
-  saldoFCIOrLots: number | FciLotForBalance[]
+  saldoFCIOrLots: number | FciLotForBalance[],
+  rescates: RescateRecord[] = []
 ): SpreadCaucionResult[] {
   const resultados: SpreadCaucionResult[] = [];
 
   for (const caucion of cauciones) {
-    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCIOrLots);
+    const resultado = calcularSpreadPorCaucion(caucion, vcpPrices, tnaMA7, hoy, saldoFCIOrLots, rescates);
     if (resultado) {
       resultados.push(resultado);
     }

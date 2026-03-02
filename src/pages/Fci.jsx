@@ -85,9 +85,9 @@ export default function Fci() {
     }
   };
 
-  const handleRedeem = async (fciId, cuotapartes) => {
+  const handleRedeem = async (fciId, cuotapartes, fechaRescate, vcpSalida) => {
     try {
-      await fciLotEngine.redeemFIFO(fciId, cuotapartes);
+      await fciLotEngine.redeemFIFO(fciId, cuotapartes, fechaRescate, vcpSalida);
       setFciModalOpen(false);
     } catch (e) {
       console.error('Error applying redemption:', e);

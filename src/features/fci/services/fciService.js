@@ -260,9 +260,9 @@ export const fciService = {
     },
 
     // 16. Aplicar rescate con lógica FIFO en el cliente
-    //     Fetch → calcula mutaciones → ejecuta UPDATEs
+    //     Fetch → calcula mutaciones → ejecuta UPDATEs → registra en fci_rescates
     //     Retorna array de { lotId, cuotapartesAntes, cuotapartesDespues, agotado }
-    async applyRedemptionFIFO(portfolioId, fciId, cuotapartesToRedeem) {
+    async applyRedemptionFIFO(portfolioId, fciId, cuotapartesToRedeem, fechaRescate, vcpSalida, userId) {
         const Decimal = (await import('decimal.js')).default;
 
         // 1. Fetch lotes activos de este fondo, ordenados por fecha ASC (FIFO)
@@ -294,7 +294,8 @@ export const fciService = {
                 cuotapartesAntes: lotCp.toNumber(),
                 cuotapartesDespues: agotado ? 0 : nuevaCp.toNumber(),
                 capitalInvertido: agotado ? 0 : nuevaCp.times(new Decimal(lot.vcp_entrada)).toNumber(),
-                agotado
+                agotado,
+                cpConsumidas: consumable.toNumber()
             });
 
             remaining = remaining.minus(consumable);
@@ -309,10 +310,42 @@ export const fciService = {
             });
         }
 
-        // 4. Retornar info de la operación
+        // 4. Registrar rescate con fecha y VCP en fci_rescates
+        const vcpSalidaNum = vcpSalida ? Number(vcpSalida) : null;
+        const rescateMutations = mutations.map(m => ({
+            lot_id: m.lotId,
+            cp_consumidas: m.cpConsumidas
+        }));
+        const { error: rescateError } = await supabase
+            .from('fci_rescates')
+            .insert([{
+                user_id: userId,
+                portfolio_id: portfolioId,
+                fci_id: fciId,
+                fecha_rescate: fechaRescate,
+                cuotapartes: cuotapartesToRedeem,
+                vcp_salida: vcpSalidaNum,
+                monto_rescatado: vcpSalidaNum ? new Decimal(cuotapartesToRedeem).times(vcpSalidaNum).toNumber() : null,
+                mutations: rescateMutations
+            }]);
+        if (rescateError) throw rescateError;
+
+        // 5. Retornar info de la operación
         return {
             mutations,
             remainingNotApplied: remaining.toNumber()  // > 0 si se intentó rescatar más de lo disponible
         };
+    },
+
+    // 17. Obtener todos los rescates de un portfolio
+    async getRescates(portfolioId) {
+        const { data, error } = await supabase
+            .from('fci_rescates')
+            .select('*')
+            .eq('portfolio_id', portfolioId)
+            .order('fecha_rescate', { ascending: true });
+
+        if (error) throw error;
+        return data;
     }
 };

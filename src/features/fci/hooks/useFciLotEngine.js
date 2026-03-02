@@ -14,9 +14,10 @@ import { mepService } from '../../portfolio/services/mepService';
  * @param {number} mepRate - MEP actual
  * @param {Array} mepHistory - Historial de MEP [{date, price}]
  */
-export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
+export function useFciLotEngine(portfolioId, mepRate, mepHistory = [], userId = null) {
     const [activeLots, setActiveLots] = useState([]);
     const [allLots, setAllLots] = useState([]);
+    const [rescates, setRescates] = useState([]);
     const [latestPrices, setLatestPrices] = useState({}); // { fciId: { fecha, vcp } }
     const [yesterdayPrices, setYesterdayPrices] = useState({}); // { fciId: { fecha, vcp } }
     const [lugaresList, setLugaresList] = useState([]);
@@ -37,14 +38,16 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
         setLoading(true);
         setError(null);
         try {
-            // Cargar lotes activos e inactivos en paralelo
-            const [active, all] = await Promise.all([
+            // Cargar lotes activos, inactivos y rescates en paralelo
+            const [active, all, rescatesData] = await Promise.all([
                 fciService.getActiveLots(portfolioId),
-                fciService.getLots(portfolioId)
+                fciService.getLots(portfolioId),
+                fciService.getRescates(portfolioId)
             ]);
 
             setActiveLots(active || []);
             setAllLots(all || []);
+            setRescates(rescatesData || []);
 
             // Identificar FCIs únicos para cargar precios
             const fciIds = [...new Set((active || []).map(l => l.fci_id))];
@@ -305,16 +308,16 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
         }
     }, [loadLots]);
 
-    const redeemFIFO = useCallback(async (fciId, cuotapartes) => {
+    const redeemFIFO = useCallback(async (fciId, cuotapartes, fechaRescate, vcpSalida) => {
         try {
-            const result = await fciService.applyRedemptionFIFO(portfolioId, fciId, cuotapartes);
+            const result = await fciService.applyRedemptionFIFO(portfolioId, fciId, cuotapartes, fechaRescate, vcpSalida, userId);
             await loadLots();
             return result;
         } catch (err) {
             console.error('[useFciLotEngine] Error applying redemption:', err);
             throw err;
         }
-    }, [portfolioId, loadLots]);
+    }, [portfolioId, userId, loadLots]);
 
     const addLugar = useCallback(async (userId, nombre) => {
         try {
@@ -335,6 +338,7 @@ export function useFciLotEngine(portfolioId, mepRate, mepHistory = []) {
         positions,
         totals,
         allLots,
+        rescates,
         lugaresList,
         loading,
         error,

@@ -50,13 +50,15 @@ export default function FundingEngine() {
 
   // Obtener el fciId del FCI con mayor valuación (el principal)
   const fciPositions = fciLotEngine?.positions || [];
+  const rescates = fciLotEngine?.rescates || [];
+
+  // Lotes activos (de positions) para compatibilidad hacia atrás
   const fciLots = useMemo(() => {
-    // Obtener todos los lotes activos de todas las posiciones
-    const allLots = [];
+    const lots = [];
     fciPositions.forEach(pos => {
       if (pos.lots && Array.isArray(pos.lots)) {
         pos.lots.forEach(lot => {
-          allLots.push({
+          lots.push({
             ...lot,
             fciId: pos.fciId,
             fciName: pos.name,
@@ -64,8 +66,16 @@ export default function FundingEngine() {
         });
       }
     });
-    return allLots;
+    return lots;
   }, [fciPositions]);
+
+  // Todos los lotes (activos + inactivos) para reconstrucción histórica correcta
+  const allLotsFlat = useMemo(() => {
+    return (fciLotEngine?.allLots || []).map(lot => ({
+      ...lot,
+      fciId: lot.fci_id,
+    }));
+  }, [fciLotEngine?.allLots]);
 
   const mainFciId = useMemo(() => {
     if (!fciPositions || fciPositions.length === 0) return null;
@@ -180,6 +190,7 @@ export default function FundingEngine() {
   };
 
   // Calcular métricas de carry con TNA desde VCP
+  // Usamos allLotsFlat (incluye lotes agotados) para reconstrucción histórica correcta
   const carryMetrics = useCarryMetrics({
     cauciones,
     fciEngine,
@@ -187,7 +198,8 @@ export default function FundingEngine() {
     caucionCutoffMode,
     vcpPrices: vcpHistoricos,
     dataStartDate,
-    fciLots,
+    fciLots: allLotsFlat,
+    rescates,
   });
 
   const handleManualRefresh = async () => {
@@ -324,7 +336,8 @@ export default function FundingEngine() {
               {activeTab === 'operations' && (
                 <OperationsTab
                   cauciones={cauciones}
-                  fciLots={fciLots}
+                  fciLots={allLotsFlat}
+                  rescates={rescates}
                   fciValuation={fciLotEngine?.totals?.valuation || 0}
                   fciTotalPnl={fciTotalPnl}
                   fciDailyPnl={totalPnlDiario}

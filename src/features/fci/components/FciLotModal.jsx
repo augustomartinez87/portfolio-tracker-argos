@@ -30,6 +30,10 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
 
     // Rescate
     const [redeemCuotapartes, setRedeemCuotapartes] = useState('');
+    const [redeemFecha, setRedeemFecha] = useState(toDateString());
+    const [redeemVcp, setRedeemVcp] = useState(null);
+    const [redeemVcpLoading, setRedeemVcpLoading] = useState(false);
+    const [redeemVcpError, setRedeemVcpError] = useState(null);
 
     // Sync modo cuando cambia initialType (modal re-abre con tipo diferente)
     useEffect(() => {
@@ -61,6 +65,41 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
         };
         loadFcis();
     }, [isOpen]);
+
+    // 2b. Buscar VCP para el modo rescate cuando cambia fecha o FCI
+    useEffect(() => {
+        if (!isOpen || modo !== 'REDEMPTION' || !selectedFciId || !redeemFecha) return;
+
+        const findRedeemVcp = async () => {
+            setRedeemVcpLoading(true);
+            setRedeemVcp(null);
+            setRedeemVcpError(null);
+            try {
+                const prices = await fciService.getPrices(selectedFciId);
+                const match = prices.find(p => p.fecha === redeemFecha);
+                if (match) {
+                    setRedeemVcp(match.vcp);
+                } else {
+                    const prevPrices = prices.filter(p => p.fecha < redeemFecha);
+                    if (prevPrices.length > 0) {
+                        const last = prevPrices[prevPrices.length - 1];
+                        setRedeemVcp(last.vcp);
+                        setRedeemVcpError(`Usando VCP del ${last.fecha} (Cierre anterior)`);
+                    } else {
+                        setRedeemVcpError('No hay VCP disponible para esta fecha o anterior.');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                setRedeemVcpError('Error buscando precio.');
+            } finally {
+                setRedeemVcpLoading(false);
+            }
+        };
+
+        const timeout = setTimeout(findRedeemVcp, 300);
+        return () => clearTimeout(timeout);
+    }, [isOpen, modo, selectedFciId, redeemFecha]);
 
     // 2. Buscar VCP cuando cambia fecha o FCI (solo modo suscripción)
     useEffect(() => {
@@ -154,11 +193,11 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
 
     const handleSubmitRescate = async (e) => {
         e.preventDefault();
-        if (!redeemCuotapartes || !selectedFciId) return;
+        if (!redeemCuotapartes || !selectedFciId || !redeemFecha) return;
 
         setSaving(true);
         try {
-            await onRedeem(selectedFciId, Number(redeemCuotapartes));
+            await onRedeem(selectedFciId, Number(redeemCuotapartes), redeemFecha, redeemVcp ? Number(redeemVcp) : null);
             onClose();
         } catch (err) {
             alert('Error aplicando rescate: ' + err.message);
@@ -349,6 +388,21 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
                     ) : (
                         /* MODO RESCATE */
                         <form onSubmit={handleSubmitRescate} className="space-y-4">
+                            {/* Fecha */}
+                            <div>
+                                <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1.5">Fecha de Rescate</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                                    <input
+                                        type="date"
+                                        required
+                                        value={redeemFecha}
+                                        onChange={(e) => setRedeemFecha(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-secondary rounded-lg text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Fondo */}
                             <div>
                                 <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1.5">Fondo</label>
@@ -364,6 +418,30 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
                                         ))
                                     }
                                 </select>
+                            </div>
+
+                            {/* VCP Rescate */}
+                            <div className={`p-3 rounded-lg border text-sm ${redeemVcpError ? 'bg-warning-muted border-warning/30 text-warning' : 'bg-loss/10 border-loss/20 text-text-secondary'}`}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-semibold text-xs uppercase">VCP de Salida</span>
+                                    {redeemVcpLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        step="0.000001"
+                                        className="bg-transparent border-b border-dashed border-text-secondary/50 text-lg font-mono font-bold text-text-primary focus:outline-none focus:border-loss w-full"
+                                        value={redeemVcp || ''}
+                                        onChange={(e) => setRedeemVcp(e.target.value)}
+                                        placeholder="0.000000"
+                                    />
+                                </div>
+                                {redeemVcpError && <p className="text-[10px] opacity-75 mt-1">{redeemVcpError}</p>}
+                                {redeemVcp && redeemCuotapartes && Number(redeemCuotapartes) > 0 && (
+                                    <p className="text-[10px] text-text-secondary mt-1">
+                                        Monto estimado: <strong className="text-text-primary">${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(redeemVcp) * Number(redeemCuotapartes))}</strong>
+                                    </p>
+                                )}
                             </div>
 
                             {/* Cuotapartes a Rescatar */}
