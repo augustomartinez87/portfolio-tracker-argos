@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { formatARS } from '@/utils/formatters';
 
 const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChange, isLoading, highlight, showBadge, badgeValue }) => {
   const getTrendColor = (value) => {
@@ -42,7 +43,7 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
           <span className="text-[10px] text-text-tertiary">P&L del día:</span>
           <span className={`text-sm font-mono font-medium ${dailyChange >= 0 ? 'text-success' : 'text-danger'
             }`}>
-            {dailyChange >= 0 ? '+' : ''}{dailyChange.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            {dailyChange >= 0 ? '+' : ''}{formatARS(dailyChange)}
           </span>
         </div>
       )}

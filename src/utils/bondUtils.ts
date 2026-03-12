@@ -281,7 +281,7 @@ export const formatBondPrice = (
   formatARS: (value: number) => string
 ): string => {
   if (isBonoPesos(ticker) || isBonoHardDollar(ticker)) {
-    return `$${price.toFixed(2)}`;
+    return `$ ${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price)}`;
   }
   return formatARS(price);
 };

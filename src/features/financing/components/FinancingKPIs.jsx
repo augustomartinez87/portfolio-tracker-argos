@@ -6,7 +6,7 @@ import {
   BarChart3,
   Calculator
 } from 'lucide-react';
-import { formatARS, formatPercent } from '@/utils/formatters';
+import { formatARS, formatPercent, formatNumber } from '@/utils/formatters';
 
 const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) => {
   if (loading) {
@@ -40,7 +40,7 @@ const MetricCard = memo(({ title, value, icon: Icon, loading, trend, tooltip }) 
           {trend !== undefined && (
             <p className={`text-xs font-medium mt-1 ${trend > 0 ? 'text-success' : trend < 0 ? 'text-danger' : 'text-text-tertiary'
               }`}>
-              {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
+              {trend > 0 ? '+' : ''}{formatNumber(trend, 1)}%
             </p>
           )}
         </div>
@@ -111,14 +111,14 @@ const FinancingKPIs = ({ metrics, csvData, operations, loading }) => {
       />
       <MetricCard
         title="Duración Promedio"
-        value={`${kpiData.duracionPromedio.toFixed(0)} días`}
+        value={`${formatNumber(kpiData.duracionPromedio, 0)} días`}
         icon={Clock}
         loading={loading}
         tooltip="Plazo promedio de las operaciones de caución"
       />
       <MetricCard
         title="Total Operaciones"
-        value={kpiData.operaciones.toLocaleString('es-AR')}
+        value={formatNumber(kpiData.operaciones, 0)}
         icon={BarChart3}
         loading={loading}
         tooltip="Número total de operaciones procesadas"

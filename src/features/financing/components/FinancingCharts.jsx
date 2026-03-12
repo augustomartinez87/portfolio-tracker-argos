@@ -10,6 +10,7 @@ import {
   ChartTooltip,
   CHART_COLORS
 } from '@/utils/chartTheme';
+import { formatNumber, formatPercentNoSign, formatARS } from '@/utils/formatters';
 
 const FinancingCharts = ({ operations, csvData, loading }) => {
   // Procesamiento de datos para visualizaciones
@@ -120,12 +121,12 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
       tenorDistribution: Object.entries(tenorBuckets).map(([label, data]) => ({
         label,
         count: data.count,
-        percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
+        percentage: totalOps > 0 ? Math.round((data.count / totalOps * 100) * 10) / 10 : 0
       })),
       rateDistribution: Object.entries(rateBuckets).map(([label, data]) => ({
         label,
         count: data.count,
-        percentage: totalOps > 0 ? (data.count / totalOps * 100).toFixed(1) : 0
+        percentage: totalOps > 0 ? Math.round((data.count / totalOps * 100) * 10) / 10 : 0
       })),
       monthlyTrends,
       capitalFlow: monthlyTrends.map(m => ({
@@ -184,7 +185,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
                 <div className="flex justify-between text-xs">
                   <span className="text-text-tertiary">{item.label}</span>
                   <span className="text-text-primary">
-                    {item.count} ({item.percentage}%)
+                    {item.count} ({formatNumber(item.percentage, 1)}%)
                   </span>
                 </div>
                 <div className="h-6 bg-background-secondary rounded-sm overflow-hidden">
@@ -259,7 +260,7 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
                 content={
                   <ChartTooltip
                     labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR')}
-                    valueFormatter={(value) => `${Number(value).toFixed(2)}%`}
+                    valueFormatter={(value) => formatPercentNoSign(Number(value))}
                   />
                 }
               />
@@ -288,10 +289,10 @@ const FinancingCharts = ({ operations, csvData, loading }) => {
                 <p className="text-xs text-text-tertiary">{trend.month}</p>
                 <p className="text-sm font-medium text-text-primary">{trend.count} ops</p>
                 <p className="text-xs text-text-tertiary">
-                  Capital: ${(trend.capital / 1000000).toFixed(1)}M
+                  Capital: {formatARS(trend.capital)}
                 </p>
                 <p className="text-xs text-text-tertiary">
-                  TNA Prom: {(trend.avgRate).toFixed(1)}%
+                  TNA Prom: {formatNumber(trend.avgRate, 1)}%
                 </p>
               </div>
             ))}

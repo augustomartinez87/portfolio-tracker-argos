@@ -50,16 +50,21 @@ const CaucionModal = ({ isOpen, onClose, onSubmit, loading }) => {
 
     const formatCurrency = (value) => {
         if (!value && value !== 0) return '-';
-        return new Intl.NumberFormat('es-AR', {
-            style: 'currency',
-            currency: 'ARS',
-            minimumFractionDigits: 2
+        const formatted = new Intl.NumberFormat('es-AR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(value);
+        return `$ ${formatted}`;
     };
 
     const formatPercent = (value) => {
         if (!value && value !== 0) return '-';
-        return `${(value * 100).toFixed(2)}%`;
+        const pct = value * 100;
+        const formatted = new Intl.NumberFormat('es-AR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(pct);
+        return `${formatted}%`;
     };
 
     const handleSubmit = async (e) => {

@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChartIcon, X } from 'lucide-react';
 import { calculateAssetDistribution } from '@/utils/portfolioHelpers';
 import { PercentageDisplay } from '@/components/common/PercentageDisplay';
-import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 export const DistributionChart = ({ positions, currency = 'ARS' }) => {
   const formatCurrency = (val) => currency === 'ARS' ? formatARS(val) : formatUSD(val);
@@ -132,7 +132,7 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
                 <span className="text-sm text-text-primary font-medium">{item.name}</span>
                 {item.pnlPct !== undefined && (
                   <span className={`text - [10px] font - bold ${item.pnlPct >= 0 ? 'text-profit' : 'text-loss'} `}>
-                    {item.pnlPct >= 0 ? '+' : ''}{item.pnlPct.toFixed(1)}% P&L
+                    {item.pnlPct >= 0 ? '+' : ''}{formatNumber(item.pnlPct, 1)}% P&L
                   </span>
                 )}
               </div>

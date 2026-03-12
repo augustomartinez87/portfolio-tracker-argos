@@ -111,18 +111,32 @@ export const toDateString = (date: Date = new Date()): string => {
 };
 
 /**
- * Formatea un número en formato compacto (K, M)
- * @example formatCompactNumber(1234567) => "1.2M"
- * @example formatCompactNumber(12345) => "12.3K"
+ * Formatea un número en formato compacto (K, M) con locale es-AR
+ * @example formatCompactNumber(1234567) => "1,2M"
+ * @example formatCompactNumber(12345) => "12,3K"
  * @example formatCompactNumber(123) => "123"
  */
 export const formatCompactNumber = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
+    return formatNumber(value / 1000000, 1) + 'M';
   }
   if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
+    return formatNumber(value / 1000, 1) + 'K';
   }
-  return value.toFixed(0);
+  return formatNumber(value, 0);
+};
+
+/**
+ * Formatea un porcentaje sin signo (para uso en contextos no-PnL)
+ * @example formatPercentNoSign(5.25) => "5,25%"
+ * @example formatPercentNoSign(0) => "0,00%"
+ */
+export const formatPercentNoSign = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const formatted = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+  return `${formatted}%`;
 };

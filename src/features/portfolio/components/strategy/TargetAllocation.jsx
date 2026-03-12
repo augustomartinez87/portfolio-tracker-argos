@@ -1,6 +1,6 @@
 import React from 'react';
 import { Target } from 'lucide-react';
-import { formatARS } from '@/utils/formatters';
+import { formatARS, formatNumber } from '@/utils/formatters';
 
 function AllocationRow({ name, target, actual, totalValuation, isAuto, colorClass, onChangeTarget }) {
   const diff = actual - target;
@@ -22,7 +22,7 @@ function AllocationRow({ name, target, actual, totalValuation, isAuto, colorClas
         </div>
         <div className="flex-shrink-0">
           {isAuto ? (
-            <span className="text-lg font-bold text-text-primary tabular-nums">{target.toFixed(0)}%</span>
+            <span className="text-lg font-bold text-text-primary tabular-nums">{formatNumber(target, 0)}%</span>
           ) : (
             <div className="flex items-center gap-1">
               <button
@@ -56,10 +56,10 @@ function AllocationRow({ name, target, actual, totalValuation, isAuto, colorClas
         <div className="flex justify-between text-xs text-text-tertiary mb-1.5">
           <span>
             Actual:{' '}
-            <span className="text-text-primary font-semibold tabular-nums">{actual.toFixed(1)}%</span>
+            <span className="text-text-primary font-semibold tabular-nums">{formatNumber(actual, 1)}%</span>
           </span>
           <span className={`font-semibold tabular-nums ${diffColorClass}`}>
-            {diff >= 0 ? '+' : ''}{diff.toFixed(1)}pp
+            {diff >= 0 ? '+' : ''}{formatNumber(diff, 1)}pp
           </span>
         </div>
         <div className="h-2 bg-background-secondary rounded-full overflow-hidden">
@@ -165,8 +165,8 @@ export function TargetAllocation({ positions, totals, targets, onChangeTargets }
 
       <div className="mt-3 flex justify-end">
         <span className="text-xs text-text-tertiary">
-          Core 1 + Core 2 = {(targets.core1 + targets.core2).toFixed(0)}% → Satélite ={' '}
-          <span className="text-text-secondary font-medium">{satelliteTarget.toFixed(0)}%</span>
+          Core 1 + Core 2 = {formatNumber(targets.core1 + targets.core2, 0)}% → Satélite ={' '}
+          <span className="text-text-secondary font-medium">{formatNumber(satelliteTarget, 0)}%</span>
         </span>
       </div>
     </section>

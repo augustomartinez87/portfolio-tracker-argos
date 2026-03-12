@@ -15,7 +15,9 @@ const buildIdentificador = (caucion) => {
     maximumFractionDigits: 0,
   }).format(capital);
   const tnaRaw = Number(caucion.tna_real || 0);
-  const tnaFormateado = Number.isFinite(tnaRaw) ? tnaRaw.toFixed(2) : '0.00';
+  const tnaFormateado = Number.isFinite(tnaRaw)
+    ? new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tnaRaw)
+    : '0,00';
   return `${fecha} | $${capitalFormateado} | ${tnaFormateado}%`;
 };
 

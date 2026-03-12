@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ShieldCheck } from 'lucide-react';
-import { formatARS, formatUSD, formatPercent } from '@/utils/formatters';
+import { formatARS, formatUSD, formatPercent, formatNumber } from '@/utils/formatters';
 
 const COLORS = {
     'Dólar': '#f59e0b',      // Amber
@@ -54,7 +54,7 @@ const CurrencyExposureChart = ({ positions, currency = 'ARS' }) => {
                     <p className="text-text-secondary text-xs">
                         {currency === 'ARS' ? formatARS(data?.value || 0) : formatUSD(data?.value || 0)}
                     </p>
-                    <p className="text-primary text-xs font-bold">{data?.percentage?.toFixed(1) || '0.0'}%</p>
+                    <p className="text-primary text-xs font-bold">{formatNumber(data?.percentage || 0, 1)}%</p>
                 </div>
             );
         }

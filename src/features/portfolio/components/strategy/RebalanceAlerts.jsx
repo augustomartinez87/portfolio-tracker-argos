@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { formatNumber } from '@/utils/formatters';
 
 export function RebalanceAlerts({ positions, totals, targets }) {
   const totalValuation = totals?.valuation || 0;
@@ -45,14 +46,14 @@ export function RebalanceAlerts({ positions, totals, targets }) {
               <p className="text-sm font-medium text-text-primary">
                 {alert.label} está{' '}
                 <span className="text-warning font-bold">
-                  {Math.abs(alert.diff).toFixed(1)}pp
+                  {formatNumber(Math.abs(alert.diff), 1)}pp
                 </span>{' '}
                 {alert.diff < 0 ? 'por debajo' : 'por encima'} de tu objetivo
               </p>
               <p className="text-xs text-text-secondary mt-0.5">
                 {alert.diff < 0
-                  ? `Considerá hacer DCA en ${alert.name} — objetivo ${alert.target.toFixed(0)}%, actual ${alert.actual.toFixed(1)}%`
-                  : `Considerá tomar ganancias en ${alert.name} — objetivo ${alert.target.toFixed(0)}%, actual ${alert.actual.toFixed(1)}%`
+                  ? `Considerá hacer DCA en ${alert.name} — objetivo ${formatNumber(alert.target, 0)}%, actual ${formatNumber(alert.actual, 1)}%`
+                  : `Considerá tomar ganancias en ${alert.name} — objetivo ${formatNumber(alert.target, 0)}%, actual ${formatNumber(alert.actual, 1)}%`
                 }
               </p>
             </div>

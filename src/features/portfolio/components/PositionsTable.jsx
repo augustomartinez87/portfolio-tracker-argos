@@ -223,14 +223,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                   {columnSettings.showPPC && (
                     <td className={`text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
                       {currency === 'ARS'
-                        ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$${pos.avgPrice.toFixed(2)}` : formatARS(pos.avgPrice))
+                        ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$ ${formatNumber(pos.avgPrice, 2)}` : formatARS(pos.avgPrice))
                         : formatUSD(pos.costUSD / pos.totalQuantity)
                       }
                     </td>
                   )}
                   <td className={`text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
                     {currency === 'ARS'
-                      ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$${pos.currentPrice.toFixed(2)}` : formatARS(pos.currentPrice))
+                      ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$ ${formatNumber(pos.currentPrice, 2)}` : formatARS(pos.currentPrice))
                       : formatUSD(pos.valuationUSD / pos.totalQuantity)
                     }
                   </td>

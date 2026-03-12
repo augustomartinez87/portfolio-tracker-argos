@@ -60,7 +60,7 @@ const RiskConcentrationChart = ({ positions, currency = 'ARS' }) => {
                         Valuación: {currency === 'ARS' ? formatARS(data.size || 0) : formatUSD(data.size || 0)}
                     </p>
                     <p className={`text-xs font-bold ${data?.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        P&L: {data?.pnl?.toFixed(2) || '0.00'}%
+                        P&L: {formatPercent(data?.pnl || 0)}
                     </p>
                 </div>
             );

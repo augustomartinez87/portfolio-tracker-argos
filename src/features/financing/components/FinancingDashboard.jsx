@@ -195,9 +195,9 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
                   icon={BarChart3}
                 />
                 <div className="text-text-tertiary">
-                  <p>• Capital promedio por operación: ${metrics?.capitalTotal ? (metrics.capitalTotal / operations.length).toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '—'}</p>
-                  <p>• Tasa promedio: {metrics?.tnaPromedioPonderada?.toFixed?.(2) || '—'}%</p>
-                  <p>• Duración promedio: {metrics?.diasPromedio?.toFixed?.(0) || '—'} días</p>
+                  <p>• Capital promedio por operación: {metrics?.capitalTotal ? new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(metrics.capitalTotal / operations.length) : '—'}</p>
+                  <p>• Tasa promedio: {metrics?.tnaPromedioPonderada != null ? new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(metrics.tnaPromedioPonderada) : '—'}%</p>
+                  <p>• Duración promedio: {metrics?.diasPromedio != null ? new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(metrics.diasPromedio) : '—'} días</p>
                 </div>
               </div>
             ) : (

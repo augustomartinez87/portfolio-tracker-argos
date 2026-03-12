@@ -106,7 +106,11 @@ const MetricCard = memo(({ icon: Icon, title, tooltip, metric, isLoading }) => {
   const formatValue = (val) => {
     if (val === null || val === undefined) return 'N/A';
     const sign = val >= 0 ? '+' : '';
-    return `${sign}${val.toFixed(1)}%`;
+    const formatted = new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(val);
+    return `${sign}${formatted}%`;
   };
 
   return (

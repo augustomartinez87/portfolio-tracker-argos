@@ -29,8 +29,7 @@ const formatDateSafe = (dateStr) => {
 
 const formatPercentage = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return formatPercent(value);
 };
 
 const formatGenericCurrency = (value, currency) => {
@@ -362,7 +361,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
               <p className="text-text-tertiary text-xs mb-1">Precio Prom.</p>
               <p className="text-text-primary font-mono text-lg font-semibold">
                 {currency === 'ARS' && isBonoPesos(position.ticker)
-                  ? `$${displayValues.avgPrice.toFixed(4)}`
+                  ? `$ ${formatNumber(displayValues.avgPrice, 4)}`
                   : formatGenericCurrency(displayValues.avgPrice, currency)
                 }
               </p>
@@ -372,7 +371,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
               <p className="text-text-tertiary text-xs mb-1">Precio Actual</p>
               <p className="text-text-primary font-mono text-lg font-bold">
                 {currency === 'ARS' && isBonoPesos(position.ticker)
-                  ? `$${displayValues.price.toFixed(4)}`
+                  ? `$ ${formatNumber(displayValues.price, 4)}`
                   : formatGenericCurrency(displayValues.price, currency)
                 }
               </p>
@@ -567,7 +566,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                         try {
                           const isARS = currency === 'ARS';
                           const displayVal = isARS ? value : (value / mepRate);
-                          return isARS ? `$${Number(displayVal).toFixed(0)}` : `u$s ${Number(displayVal).toFixed(0)}`;
+                              return isARS ? `$ ${formatNumber(Number(displayVal), 0)}` : `u$s ${formatNumber(Number(displayVal), 0)}`;
                         } catch {
                           return '$0';
                         }
@@ -651,7 +650,7 @@ export default function PositionDetailModal({ open, onClose, position, trades, c
                           <td className="text-right px-3 py-3 text-text-primary font-mono">{trade.quantity}</td>
                           <td className="text-right px-3 py-3 text-text-primary font-mono">
                             {currency === 'ARS' && isBonoPesos(trade.ticker)
-                              ? `$${trade.price.toFixed(4)}`
+                              ? `$ ${formatNumber(trade.price, 4)}`
                               : formatGenericCurrency(isARS ? trade.price : (trade.price / mepRate), currency)
                             }
                           </td>

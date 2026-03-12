@@ -183,10 +183,10 @@ const FciLotTable = ({ positions, onSubscribe, onRedeem, onEditLot, onDeleteLot,
                                         {formatNumber(pos.quantity, 2)}
                                     </td>
                                     <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary">
-                                        {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)}`}
+                                        {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${formatNumber(vcpDisplay, 6)}`}
                                     </td>
                                     <td className="px-4 py-3 text-right text-sm font-mono text-text-tertiary">
-                                        {currency === 'ARS' ? formatNumber(vcpPpcDisplay, 6) : `u$s ${vcpPpcDisplay.toFixed(6)}`}
+                                        {currency === 'ARS' ? formatNumber(vcpPpcDisplay, 6) : `u$s ${formatNumber(vcpPpcDisplay, 6)}`}
                                     </td>
                                     <td className="px-4 py-3 text-right font-mono font-bold text-text-primary">
                                         {formatVal(pos.valuation, pos.valuationUSD)}
@@ -246,7 +246,7 @@ const FciLotTable = ({ positions, onSubscribe, onRedeem, onEditLot, onDeleteLot,
                                                     {formatNumber(lot.cuotapartes, 2)}
                                                 </td>
                                                 <td className="px-4 py-2 text-right text-xs font-mono text-text-tertiary">
-                                                    {currency === 'ARS' ? formatNumber(lotVcpDisplay, 6) : `u$s ${lotVcpDisplay.toFixed(6)}`}
+                                                    {currency === 'ARS' ? formatNumber(lotVcpDisplay, 6) : `u$s ${formatNumber(lotVcpDisplay, 6)}`}
                                                 </td>
                                                 <td className="px-4 py-2 text-right text-xs font-mono text-text-tertiary">
                                                     —

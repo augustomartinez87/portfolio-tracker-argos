@@ -286,7 +286,7 @@ export function ScenarioSimulator({
             <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-warning">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>
-                Carry efectivo menor: cobertura {coveragePct.toFixed(1)}%
+                Carry efectivo menor: cobertura {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(coveragePct)}%
                 (FCI &lt; Caución por {formatARS(totalCaucion - saldoFCI)})
               </span>
             </div>

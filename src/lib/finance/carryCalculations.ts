@@ -111,9 +111,11 @@ export function generarIdentificadorCaucion(
   }).format(capital);
   // tna viene como porcentaje (ej: 28.74) o decimal (ej: 0.2874)
   // Si es > 1, ya es porcentaje. Si es < 1, es decimal y hay que convertir
-  const tnaFormateado = tna
-    ? (tna > 1 ? tna.toFixed(2) : (tna * 100).toFixed(2))
-    : '0.00';
+  const tnaValue = tna ? (tna > 1 ? tna : tna * 100) : 0;
+  const tnaFormateado = new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(tnaValue);
   return `${fecha} | $${capitalFormateado} | ${tnaFormateado}%`;
 }
 

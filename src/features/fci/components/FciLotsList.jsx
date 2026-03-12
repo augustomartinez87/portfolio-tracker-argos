@@ -54,7 +54,7 @@ const FciLotsList = ({ allLots, onDelete, currency = 'ARS', mepHistory = [] }) =
                                     {lot.lugares?.nombre || <span className="text-text-tertiary italic text-xs">Sin lugar</span>}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-tertiary tabular-nums">
-                                    {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${vcpDisplay.toFixed(6)}`}
+                                    {currency === 'ARS' ? formatNumber(vcpDisplay, 6) : `u$s ${formatNumber(vcpDisplay, 6)}`}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-mono text-text-secondary tabular-nums">
                                     {formatNumber(lot.cuotapartes, 2)}

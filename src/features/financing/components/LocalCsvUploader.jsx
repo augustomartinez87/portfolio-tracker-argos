@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, FileCheck, AlertCircle, X, FileText } from 'lucide-react';
 import { processCsvClient } from '../utils/csvSpreadClient';
+import { formatARS, formatPercentNoSign } from '@/utils/formatters';
 
 const LocalCsvUploader = ({ onFilesParsed }) => {
   const [loading, setLoading] = useState(false);
@@ -223,19 +224,19 @@ const LocalCsvUploader = ({ onFilesParsed }) => {
             <div className="bg-background-secondary rounded-lg p-3">
               <p className="text-xs text-text-tertiary mb-1">Capital Caucionado</p>
               <p className="text-text-primary font-semibold">
-                ${result.summary?.totalCapital?.toLocaleString?.() ?? '—'}
+                {result.summary?.totalCapital != null ? formatARS(result.summary.totalCapital) : '—'}
               </p>
             </div>
             <div className="bg-background-secondary rounded-lg p-3">
               <p className="text-xs text-text-tertiary mb-1">Interés Total</p>
               <p className="text-text-primary font-semibold">
-                ${result.summary?.totalInteres?.toLocaleString?.() ?? '—'}
+                {result.summary?.totalInteres != null ? formatARS(result.summary.totalInteres) : '—'}
               </p>
             </div>
             <div className="bg-background-secondary rounded-lg p-3">
               <p className="text-xs text-text-tertiary mb-1">TNA Promedio</p>
               <p className="text-text-primary font-semibold">
-                {result.summary?.tnaPromedioPonderado?.toFixed(2) ?? '—'}%
+                {result.summary?.tnaPromedioPonderado != null ? formatPercentNoSign(result.summary.tnaPromedioPonderado) : '—'}
               </p>
             </div>
             <div className="bg-background-secondary rounded-lg p-3">

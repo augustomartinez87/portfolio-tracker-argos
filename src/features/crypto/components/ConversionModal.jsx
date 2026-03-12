@@ -185,7 +185,7 @@ const ConversionModal = ({ isOpen, onClose, onSave, loans = [], activeCycles = [
                 <option value="">Sin vincular</option>
                 {activeLoans.map(l => (
                   <option key={l.id} value={l.id}>
-                    {l.loan_currency} {Number(l.outstanding).toLocaleString('es-AR', { maximumFractionDigits: 2 })} - APR {(l.interest_rate_apr * 100).toFixed(1)}%
+                    {l.loan_currency} {new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(Number(l.outstanding))} - APR {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(l.interest_rate_apr * 100)}%
                   </option>
                 ))}
               </select>

@@ -439,7 +439,7 @@ const FciLotModal = ({ isOpen, onClose, onSaveLot, onRedeem, portfolioId, userId
                                 {redeemVcpError && <p className="text-[10px] opacity-75 mt-1">{redeemVcpError}</p>}
                                 {redeemVcp && redeemCuotapartes && Number(redeemCuotapartes) > 0 && (
                                     <p className="text-[10px] text-text-secondary mt-1">
-                                        Monto estimado: <strong className="text-text-primary">${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(redeemVcp) * Number(redeemCuotapartes))}</strong>
+                                        Monto estimado: <strong className="text-text-primary">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(redeemVcp) * Number(redeemCuotapartes))}</strong>
                                     </p>
                                 )}
                             </div>

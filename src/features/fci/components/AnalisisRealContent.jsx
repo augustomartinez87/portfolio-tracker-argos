@@ -542,7 +542,7 @@ const AnalisisRealContent = () => {
                             <YAxis
                                 {...axisProps}
                                 domain={['auto', 'auto']}
-                                tickFormatter={(val) => `${val.toFixed(0)}`}
+                                tickFormatter={(val) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(val)}
                             />
                             <Tooltip
                                 content={
@@ -551,7 +551,7 @@ const AnalisisRealContent = () => {
                                             const d = new Date(label);
                                             return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
                                         }}
-                                        valueFormatter={(value, name) => `${Number(value).toFixed(2)}%`}
+                                        valueFormatter={(value, name) => `${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value))}%`}
                                     />
                                 }
                             />
@@ -675,7 +675,7 @@ const AnalisisRealContent = () => {
                             <YAxis
                                 {...axisProps}
                                 domain={['auto', 'auto']}
-                                tickFormatter={(val) => `${val.toFixed(0)}`}
+                                tickFormatter={(val) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(val)}
                             />
                             <Tooltip
                                 content={
@@ -684,7 +684,7 @@ const AnalisisRealContent = () => {
                                             const d = new Date(label);
                                             return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
                                         }}
-                                        valueFormatter={(value, name) => `${Number(value).toFixed(2)}%`}
+                                        valueFormatter={(value, name) => `${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value))}%`}
                                     />
                                 }
                             />

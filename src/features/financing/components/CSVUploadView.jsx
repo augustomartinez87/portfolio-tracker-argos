@@ -3,6 +3,7 @@ import { Upload, CheckCircle, AlertCircle, FileText, ChevronDown, ChevronUp, Tab
 import { useMutation } from '@tanstack/react-query';
 import LocalCsvUploader from './LocalCsvUploader';
 import { financingService } from '../services/financingService';
+import { formatARS, formatPercentNoSign } from '@/utils/formatters';
 
 const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
   const [processedFiles, setProcessedFiles] = useState([]);
@@ -242,8 +243,8 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
                             file.error || 'Error desconocido'
                           ) : (
                             `${file.summary?.totalRecords || file.operations?.length || 0} operaciones • ` +
-                            `Capital: $${(file.summary?.totalCapital || 0).toLocaleString('es-AR')} • ` +
-                            `Intereses: $${(file.summary?.totalInteres || 0).toLocaleString('es-AR')}`
+                            `Capital: ${formatARS(file.summary?.totalCapital || 0)} • ` +
+                            `Intereses: ${formatARS(file.summary?.totalInteres || 0)}`
                           )}
                         </p>
                       </div>
@@ -263,19 +264,19 @@ const CSVUploadView = ({ onProcessed, userId, portfolioId, queryClient }) => {
                           <div className="bg-background-secondary rounded-lg p-3">
                             <p className="text-xs text-text-tertiary mb-1">Capital Total</p>
                             <p className="text-sm font-semibold text-text-primary">
-                              ${(file.summary.totalCapital || 0).toLocaleString('es-AR')}
+                              {formatARS(file.summary.totalCapital || 0)}
                             </p>
                           </div>
                           <div className="bg-background-secondary rounded-lg p-3">
                             <p className="text-xs text-text-tertiary mb-1">Interés Total</p>
                             <p className="text-sm font-semibold text-text-primary">
-                              ${(file.summary.totalInteres || 0).toLocaleString('es-AR')}
+                              {formatARS(file.summary.totalInteres || 0)}
                             </p>
                           </div>
                           <div className="bg-background-secondary rounded-lg p-3">
                             <p className="text-xs text-text-tertiary mb-1">TNA Promedio</p>
                             <p className="text-sm font-semibold text-text-primary">
-                              {((file.summary.tnaPromedioPonderado || 0)).toFixed(2)}%
+                              {formatPercentNoSign(file.summary.tnaPromedioPonderado || 0)}
                             </p>
                           </div>
                           <div className="bg-background-secondary rounded-lg p-3">

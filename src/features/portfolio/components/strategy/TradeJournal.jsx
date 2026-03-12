@@ -272,7 +272,7 @@ export function TradeJournal() {
   const stats = [
     {
       label: 'Win Rate',
-      value: winRate !== null ? `${winRate.toFixed(0)}%` : '—',
+      value: winRate !== null ? `${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(winRate)}%` : '—',
       color: winRate !== null ? (winRate >= 50 ? 'text-profit' : 'text-loss') : 'text-text-tertiary',
     },
     {

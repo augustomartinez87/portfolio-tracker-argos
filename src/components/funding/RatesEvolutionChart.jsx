@@ -76,7 +76,7 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId, dataStartDate 
                         <div className="pt-1 mt-1 border-t border-border-secondary flex justify-between gap-4">
                             <span className="text-xs text-primary font-bold">Spread:</span>
                             <span className="text-xs font-mono font-bold text-primary">
-                                {(payload[0].value - payload[1].value).toFixed(2)}%
+                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payload[0].value - payload[1].value)}%
                             </span>
                         </div>
                     </div>
