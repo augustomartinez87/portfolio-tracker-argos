@@ -8,7 +8,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-accent)',
         background: {
           primary: 'var(--bg-primary)',
           secondary: 'var(--bg-secondary)',

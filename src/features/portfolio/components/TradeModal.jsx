@@ -225,7 +225,7 @@ export const TradeModal = ({ isOpen, onClose, onSave, trade, tickers }) => {
               type="submit"
               className={`flex-1 px-3 py-2.5 h-10 font-medium rounded-lg transition-all active:scale-95 text-sm ${formData.type === TRANSACTION_TYPES.SELL
                 ? 'bg-danger text-white hover:bg-danger/90'
-                : 'bg-primary text-white hover:bg-primary/90'
+                : 'bg-text-primary text-background-primary hover:opacity-90'
                 }`}
             >
               {trade ? 'Guardar' : (formData.type === TRANSACTION_TYPES.SELL ? 'Registrar' : 'Agregar')}
