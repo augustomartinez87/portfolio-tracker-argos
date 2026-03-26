@@ -8,7 +8,7 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
   };
 
   return (
-    <div className={`bg-background-secondary rounded-lg p-2.5 border transition-all duration-200 ${highlight ? 'border-primary/50' : 'border-border-primary hover:border-border-secondary'
+    <div className={`bg-background-secondary rounded-lg p-2 sm:p-2.5 border transition-all duration-200 ${highlight ? 'border-primary/50' : 'border-border-primary hover:border-border-secondary'
       }`}>
       <div className="flex flex-col items-center justify-center text-center">
         <p className="text-text-tertiary text-[10px] font-semibold uppercase tracking-wider mb-0.5">{title}</p>
@@ -18,8 +18,8 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
           </div>
         ) : (
           <>
-            <div className="relative inline-flex items-center justify-center">
-              <p className={`text-xl font-bold font-mono tracking-tight ${trend !== undefined ? getTrendColor(trend) : 'text-text-primary'}`}>
+            <div className="relative inline-flex items-center justify-center w-full">
+              <p className={`text-base sm:text-xl font-bold font-mono tracking-tight break-all px-1 ${trend !== undefined ? getTrendColor(trend) : 'text-text-primary'}`}>
                 {value}
               </p>
               {showBadge && badgeValue && (

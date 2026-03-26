@@ -60,11 +60,6 @@ export const PageHeader = ({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-                {/* Mobile Portfolio Selector */}
-                <div className="lg:hidden">
-                    <PortfolioSelector />
-                </div>
-
                 {showCurrencySelector && onCurrencyChange && (
                     <CurrencySelector
                         currentCurrency={displayCurrency}

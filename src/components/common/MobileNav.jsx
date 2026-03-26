@@ -8,8 +8,8 @@ export const MobileNav = ({ portfolioType = 'bursatil' }) => {
     const { isAdmin, allowedModules } = useAuth();
 
     // Filtrar items de navegación según permisos del usuario
-    // Limitar a los primeros 5 items para móvil
-    const navItems = getFilteredNavItems(isAdmin, allowedModules, portfolioType).slice(0, 5);
+    // Limitar a los primeros 4 items para móvil (para no saturar el espacio horizontal)
+    const navItems = getFilteredNavItems(isAdmin, allowedModules, portfolioType).slice(0, 4);
 
     const isActive = (path) => location.pathname === path;
 

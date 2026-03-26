@@ -24,7 +24,7 @@ export const PortfolioTabs = ({ activeTab, currentPortfolio }) => {
 
   return (
     <div className="border-b border-border-secondary">
-      <div className="flex gap-1">
+      <div className="flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide w-full">
         {tabs.map((tab) => (
           <button
             key={tab.id}
