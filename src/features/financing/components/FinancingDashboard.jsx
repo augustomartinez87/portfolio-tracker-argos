@@ -143,12 +143,12 @@ const FinancingDashboard = ({ operations, metrics, loading, queryClient, userId,
     <div className="space-y-6">
       {/* Sub-navigation */}
       <div className="border-b border-border-secondary">
-        <div className="flex gap-1">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
           {viewOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setActiveView(option.id)}
-              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeView === option.id
+              className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeView === option.id
                 ? 'border-primary text-primary bg-primary/5'
                 : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
                 }`}

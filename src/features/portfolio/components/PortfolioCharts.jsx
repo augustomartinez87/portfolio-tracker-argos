@@ -26,21 +26,21 @@ export const PortfolioCharts = ({ positions, currency = 'ARS' }) => {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm min-h-[380px]">
                     <DistributionChart positions={filteredPositions} currency={currency} />
                 </div>
 
-                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm min-h-[380px]">
                     <TopPerformersChart positions={filteredPositions} currency={currency} />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm min-h-[340px]">
                     <CurrencyExposureChart positions={filteredPositions} currency={currency} />
                 </div>
 
-                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm">
+                <div className="bg-background-secondary border border-border-primary rounded-xl p-6 shadow-sm min-h-[380px]">
                     <RiskConcentrationChart positions={filteredPositions} currency={currency} />
                 </div>
             </div>

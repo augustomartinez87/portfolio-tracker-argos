@@ -73,7 +73,7 @@ const CurrencyExposureChart = ({ positions, currency = 'ARS' }) => {
             </div>
 
             <div className="flex-1 min-h-[250px] relative">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                         <Pie
                             data={chartData}

@@ -46,13 +46,13 @@ export const getDateRange = (rangeValue) => {
 
 export const DateRangeSelector = ({ selectedRange, onChange, className = '' }) => {
     return (
-        <div className={`inline-flex bg-background-tertiary p-1 rounded-lg border border-border-secondary ${className}`}>
+        <div className={`flex bg-background-tertiary p-1 rounded-lg border border-border-secondary overflow-x-auto scrollbar-hide ${className}`}>
             {RANGES.map((range) => (
                 <button
                     key={range.value}
                     onClick={() => onChange(range.value)}
                     className={`
-            px-3 py-1 text-xs font-medium rounded-md transition-all
+            flex-shrink-0 px-3 py-1 text-xs font-medium rounded-md transition-all
             ${selectedRange === range.value
                             ? 'bg-background-primary text-text-primary shadow-sm border border-border-primary/50'
                             : 'text-text-tertiary hover:text-text-primary hover:bg-background-secondary/50'}

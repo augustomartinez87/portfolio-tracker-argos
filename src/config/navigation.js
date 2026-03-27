@@ -40,7 +40,7 @@ export const NAV_ITEMS = [
   {
     id: 'fci',
     moduleId: 'fci',
-    label: 'Fondos (FCI)',
+    label: 'Fondos',
     icon: PieChart,
     path: '/portfolio/fci',
     adminOnly: true
@@ -56,7 +56,7 @@ export const NAV_ITEMS = [
   {
     id: 'funding',
     moduleId: 'funding',
-    label: 'Funding & Carry',
+    label: 'Funding',
     icon: Coins,
     path: '/portfolio/funding',
     adminOnly: true

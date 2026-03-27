@@ -49,7 +49,7 @@ const TopPerformersChart = ({ positions, currency = 'ARS' }) => {
             </div>
 
             <div className="flex-1 min-h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={250}>
                     <BarChart
                         data={chartData}
                         layout="vertical"

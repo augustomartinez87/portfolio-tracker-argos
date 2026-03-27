@@ -158,8 +158,8 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
       */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full table-auto sm:min-w-[900px] sm:table-fixed">
-            <colgroup className="hidden sm:table-column-group">
+          <table className="w-full table-auto lg:min-w-[900px] lg:table-fixed">
+            <colgroup className="hidden lg:table-column-group">
               <col className="w-[140px]" /> {/* Ticker */}
               <col className="w-[80px]" />  {/* Cant */}
               {columnSettings.showPPC && <col className="w-[100px]" />}  {/* PPC */}
@@ -184,22 +184,22 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     )}
                   </div>
                 </th>
-                <SortHeader label="Cant." sortKey="totalQuantity" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                <SortHeader label="Cant." sortKey="totalQuantity" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 {columnSettings.showPPC && (
-                  <SortHeader label="PPC" sortKey="avgPrice" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                  <SortHeader label="PPC" sortKey="avgPrice" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 )}
-                <SortHeader label="P. Actual" sortKey="currentPrice" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                <SortHeader label="P. Actual" sortKey="currentPrice" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 <SortHeader label="Valuación" sortKey="valuation" currentSort={currentSort} onSort={handleSort} />
                 {columnSettings.showInvertido && (
-                  <SortHeader label="Invertido" sortKey="totalCost" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                  <SortHeader label="Invertido" sortKey="totalCost" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 )}
-                <SortHeader label="P&L $" sortKey="result" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                <SortHeader label="P&L $" sortKey="result" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 <SortHeader label="P&L %" sortKey="resultPct" currentSort={currentSort} onSort={handleSort} />
                 {columnSettings.showDiario && (
-                  <SortHeader label="P&L Diario $" sortKey="dailyResult" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                  <SortHeader label="P&L Diario $" sortKey="dailyResult" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 )}
                 {columnSettings.showDiarioPct && (
-                  <SortHeader label="P&L Diario %" sortKey="dailyResultPct" currentSort={currentSort} onSort={handleSort} className="hidden sm:table-cell" />
+                  <SortHeader label="P&L Diario %" sortKey="dailyResultPct" currentSort={currentSort} onSort={handleSort} className="hidden lg:table-cell" />
                 )}
               </tr>
             </thead>
@@ -217,18 +217,18 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                       isStale={prices[pos.ticker]?.isStale}
                     />
                   </td>
-                  <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                  <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
                     {formatNumber(pos.totalQuantity)}
                   </td>
                   {columnSettings.showPPC && (
-                    <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
+                    <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} text-text-tertiary font-mono text-xs font-normal tabular-nums`}>
                       {currency === 'ARS'
                         ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$ ${formatNumber(pos.avgPrice, 2)}` : formatARS(pos.avgPrice))
                         : formatUSD(pos.costUSD / pos.totalQuantity)
                       }
                     </td>
                   )}
-                  <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
+                  <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} text-text-primary font-mono font-medium text-sm tabular-nums`}>
                     {currency === 'ARS'
                       ? ((isBonoPesos(pos.ticker) || isBonoHardDollar(pos.ticker)) ? `$ ${formatNumber(pos.currentPrice, 2)}` : formatARS(pos.currentPrice))
                       : formatUSD(pos.valuationUSD / pos.totalQuantity)
@@ -238,11 +238,11 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     {currency === 'ARS' ? formatARS(pos.valuation) : formatUSD(pos.valuationUSD)}
                   </td>
                   {columnSettings.showInvertido && (
-                    <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
+                    <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} text-text-secondary font-mono text-xs font-normal tabular-nums`}>
                       {currency === 'ARS' ? formatARS(pos.totalCost) : formatUSD(pos.costUSD)}
                     </td>
                   )}
-                  <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                  <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                     <span className={`font-mono font-semibold text-base ${pos.result >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {currency === 'ARS' ? formatARS(pos.result) : formatUSD(pos.resultUSD)}
                     </span>
@@ -256,14 +256,14 @@ const PositionsTable = memo(({ positions, onRowClick, prices, mepRate, sortConfi
                     </span>
                   </td>
                   {columnSettings.showDiario && (
-                    <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
+                    <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY} whitespace-nowrap tabular-nums`}>
                       <span className={`font-mono text-sm font-medium ${pos.dailyResult >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {currency === 'ARS' ? formatARS(pos.dailyResult || 0) : formatUSD(pos.dailyResultUSD || 0)}
                       </span>
                     </td>
                   )}
                   {columnSettings.showDiarioPct && (
-                    <td className={`hidden sm:table-cell text-center ${paddingX} ${paddingY}`}>
+                    <td className={`hidden lg:table-cell text-center ${paddingX} ${paddingY}`}>
                       <span className={`font-medium px-1.5 py-0.5 rounded text-xs inline-block ${(currency === 'ARS' ? pos.dailyResultPct : pos.dailyResultPctUSD) >= 0
                         ? 'bg-profit-muted text-profit'
                         : 'bg-loss-muted text-loss'

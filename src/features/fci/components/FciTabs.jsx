@@ -10,12 +10,12 @@ export const FciTabs = ({ activeTab, setActiveTab }) => {
 
     return (
         <div className="border-b border-border-secondary">
-            <div className="flex gap-1">
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
+                        className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
                             ? 'border-primary text-primary bg-primary/5'
                             : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary'
                             }`}
