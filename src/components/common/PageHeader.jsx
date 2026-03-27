@@ -34,16 +34,16 @@ export const PageHeader = ({
 
     return (
         <>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-1 lg:mb-2">
-            <div className="flex items-center gap-3">
+        <div className="flex flex-row items-center justify-between gap-2 mb-1 lg:mb-2">
+            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
                 {Icon && (
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Icon className="w-6 h-6 text-primary" />
+                    <div className="p-1.5 lg:p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                        <Icon className="w-4 h-4 lg:w-6 lg:h-6 text-primary" />
                     </div>
                 )}
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-xl lg:text-2xl font-bold text-text-primary tracking-tight">
+                <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <h1 className="text-base lg:text-2xl font-bold text-text-primary tracking-tight truncate">
                             {title}
                         </h1>
                         <div className="hidden lg:block border-l border-border-primary h-6 mx-1"></div>
@@ -52,14 +52,14 @@ export const PageHeader = ({
                         </div>
                     </div>
                     {subtitle && (
-                        <p className="text-text-tertiary text-[10px] uppercase font-bold tracking-widest mt-0 ml-0.5">
+                        <p className="hidden lg:block text-text-tertiary text-[10px] uppercase font-bold tracking-widest mt-0 ml-0.5">
                             {subtitle}
                         </p>
                     )}
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 {showCurrencySelector && onCurrencyChange && (
                     <CurrencySelector
                         currentCurrency={displayCurrency}

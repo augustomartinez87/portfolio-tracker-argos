@@ -118,3 +118,11 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--text-tertiary) var(--bg-tertiary);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -15,7 +15,7 @@ export const DashboardSummaryCards = ({ totals, lastUpdate, isLoading = false, c
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
       <SummaryCard
         title="Invertido"
         value={formatValue(totals.invested, totals.investedUSD)}

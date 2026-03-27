@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useLayoutEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChartIcon, X } from 'lucide-react';
 import { calculateAssetDistribution } from '@/utils/portfolioHelpers';
@@ -9,6 +9,10 @@ export const DistributionChart = ({ positions, currency = 'ARS' }) => {
   const formatCurrency = (val) => currency === 'ARS' ? formatARS(val) : formatUSD(val);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  useLayoutEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, []);
 
   const { distribution, totalValue } = useMemo(
     () => calculateAssetDistribution(positions, currency),

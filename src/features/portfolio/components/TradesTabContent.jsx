@@ -238,8 +238,8 @@ export function TradesTabContent({
           </div>
         )}
 
-        <div className="overflow-auto flex-1 min-h-0">
-          <table className="w-full min-w-[700px]">
+        <div className="overflow-auto flex-1 min-h-0 scrollbar-hide">
+          <table className="w-full min-w-0">
             <thead className="sticky top-0 z-10">
               <tr className="bg-background-tertiary text-left text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
                 <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('date')}>
@@ -251,8 +251,8 @@ export function TradesTabContent({
                 <th className="px-3 sm:px-4 py-3 cursor-pointer hover:text-text-primary transition-colors whitespace-nowrap" onClick={() => handleSort('type')}>
                   <div className="flex items-center gap-1">Tipo {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
                 </th>
-                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Cant.</th>
-                <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Precio</th>
+                <th className="hidden sm:table-cell px-3 sm:px-4 py-3 text-right whitespace-nowrap">Cant.</th>
+                <th className="hidden sm:table-cell px-3 sm:px-4 py-3 text-right whitespace-nowrap">Precio</th>
                 <th className="px-3 sm:px-4 py-3 text-right whitespace-nowrap">Total</th>
                 <th className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">Acciones</th>
               </tr>
@@ -274,8 +274,8 @@ export function TradesTabContent({
                       {trade.type === 'compra' ? 'Compra' : 'Venta'}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.quantity), 2)}</td>
-                  <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.price)}</td>
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatNumber(Math.abs(trade.quantity), 2)}</td>
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(trade.price)}</td>
                   <td className="px-3 sm:px-4 py-3 text-sm text-right whitespace-nowrap font-mono font-semibold tabular-nums text-text-primary">{formatARS(Math.abs(trade.quantity) * trade.price)}</td>
                   <td className="px-3 sm:px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
