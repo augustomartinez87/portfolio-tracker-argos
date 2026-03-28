@@ -19,15 +19,15 @@ const SummaryCard = memo(({ title, value, subValue, icon: Icon, trend, dailyChan
         ) : (
           <>
             <div className="flex flex-col items-center justify-center w-full">
-              <p className={`text-sm sm:text-xl font-bold font-mono tracking-tight whitespace-nowrap px-1 ${trend !== undefined ? getTrendColor(trend) : 'text-text-primary'}`}>
-                {value}
-              </p>
               {showBadge && badgeValue && (
-                <span className={`mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold flex items-center ${trend >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                <span className={`mb-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold flex items-center ${trend >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                   }`}>
                   {badgeValue}
                 </span>
               )}
+              <p className={`text-sm sm:text-xl font-bold font-mono tracking-tight whitespace-nowrap px-1 ${trend !== undefined ? getTrendColor(trend) : 'text-text-primary'}`}>
+                {value}
+              </p>
             </div>
             {subValue && !showBadge && (
               <p className={`text-[10px] mt-0.5 font-medium ${trend !== undefined ? getTrendColor(trend) : 'text-text-tertiary'}`}>
