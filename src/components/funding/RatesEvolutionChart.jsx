@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, Legend, ReferenceArea
+    ResponsiveContainer, Legend
 } from 'recharts';
 import { useHistoricalRates } from '@/hooks/useHistoricalRates';
 import { format } from 'date-fns';
@@ -58,32 +58,45 @@ export function RatesEvolutionChart({ fciId, portfolioId, userId, dataStartDate 
     }
 
     const CustomTooltip = ({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-background-tertiary border border-border-primary p-3 rounded-lg shadow-xl backdrop-blur-md">
-                    <p className="text-xs text-text-tertiary mb-2 font-medium">
-                        {format(new Date(label), "d 'de' MMMM, yyyy", { locale: es })}
-                    </p>
-                    <div className="space-y-1">
-                        <div className="flex justify-between gap-4">
-                            <span className="text-xs text-success font-medium">TNA FCI:</span>
-                            <span className="text-xs font-mono font-bold text-text-primary">{payload[0].value}%</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                            <span className="text-xs text-danger font-medium">TNA Caución:</span>
-                            <span className="text-xs font-mono font-bold text-text-primary">{payload[1].value}%</span>
-                        </div>
-                        <div className="pt-1 mt-1 border-t border-border-secondary flex justify-between gap-4">
-                            <span className="text-xs text-primary font-bold">Spread:</span>
-                            <span className="text-xs font-mono font-bold text-primary">
-                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payload[0].value - payload[1].value)}%
-                            </span>
-                        </div>
+        if (!active || !payload || payload.length === 0) return null;
+
+        const fciEntry = payload.find(p => p?.dataKey === 'tnaFCI');
+        const caucionEntry = payload.find(p => p?.dataKey === 'tnaCaucion');
+        const fciValue = fciEntry?.value;
+        const caucionValue = caucionEntry?.value;
+
+        const labelDate = label ? new Date(label) : null;
+        const validDate = labelDate && !isNaN(labelDate.getTime());
+
+        const formatPct = (v) =>
+            v == null || !isFinite(v) ? '—' : `${v}%`;
+
+        const spreadFormatted =
+            fciValue != null && caucionValue != null && isFinite(fciValue) && isFinite(caucionValue)
+                ? `${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(fciValue - caucionValue)}%`
+                : '—';
+
+        return (
+            <div className="bg-background-tertiary border border-border-primary p-3 rounded-lg shadow-xl backdrop-blur-md">
+                <p className="text-xs text-text-tertiary mb-2 font-medium">
+                    {validDate ? format(labelDate, "d 'de' MMMM, yyyy", { locale: es }) : ''}
+                </p>
+                <div className="space-y-1">
+                    <div className="flex justify-between gap-4">
+                        <span className="text-xs text-success font-medium">TNA FCI:</span>
+                        <span className="text-xs font-mono font-bold text-text-primary">{formatPct(fciValue)}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                        <span className="text-xs text-danger font-medium">TNA Caución:</span>
+                        <span className="text-xs font-mono font-bold text-text-primary">{formatPct(caucionValue)}</span>
+                    </div>
+                    <div className="pt-1 mt-1 border-t border-border-secondary flex justify-between gap-4">
+                        <span className="text-xs text-primary font-bold">Spread:</span>
+                        <span className="text-xs font-mono font-bold text-primary">{spreadFormatted}</span>
                     </div>
                 </div>
-            );
-        }
-        return null;
+            </div>
+        );
     };
 
     return (
